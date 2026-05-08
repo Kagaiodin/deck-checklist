@@ -36,13 +36,25 @@ function groupCards(cards: Card[], groupBy: GroupBy): [string, Card[]][] {
   return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0]));
 }
 
+function matchesSearch(card: Card, query: string): boolean {
+  const q = query.toLowerCase();
+  return (
+    card.name.toLowerCase().includes(q) ||
+    (card.inputName?.toLowerCase().includes(q) ?? false) ||
+    card.type.toLowerCase().includes(q)
+  );
+}
+
 export function Checklist({ deck, onToggleAcquired }: Props) {
   const [groupBy, setGroupBy] = useState<GroupBy>("none");
   const [showMissingOnly, setShowMissingOnly] = useState(false);
+  const [search, setSearch] = useState("");
 
-  const visibleCards = showMissingOnly
-    ? deck.cards.filter(c => !c.acquired)
-    : deck.cards;
+  const query = search.trim();
+
+  const visibleCards = deck.cards
+    .filter(c => !showMissingOnly || !c.acquired)
+    .filter(c => !query || matchesSearch(c, query));
 
   const groups = groupCards(visibleCards, groupBy);
 
@@ -64,6 +76,16 @@ export function Checklist({ deck, onToggleAcquired }: Props) {
               style={{ width: totalCards > 0 ? `${(acquiredCards / totalCards) * 100}%` : "0%" }}
             />
           </div>
+        </div>
+
+        <div className="checklist-search">
+          <input
+            className="search-input"
+            type="search"
+            placeholder="Search cards…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
         </div>
 
         <div className="checklist-controls">
@@ -126,7 +148,11 @@ export function Checklist({ deck, onToggleAcquired }: Props) {
 
       {visibleCards.length === 0 && (
         <p className="empty-state">
-          {showMissingOnly ? "All cards acquired!" : "No cards in this deck."}
+          {query
+            ? `No cards match "${query}".`
+            : showMissingOnly
+              ? "All cards acquired!"
+              : "No cards in this deck."}
         </p>
       )}
     </div>

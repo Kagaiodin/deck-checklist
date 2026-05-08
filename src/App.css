@@ -199,6 +199,15 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 .checklist-stats { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--text-muted); }
 .stats-items-note { font-size: 12px; opacity: 0.7; }
 
+.checklist-search { width: 100%; }
+.search-input {
+  width: 100%; padding: 8px 12px; border-radius: var(--radius);
+  background: var(--surface-2); border: 1px solid var(--border);
+  color: var(--text); font-size: 13px;
+}
+.search-input:focus { outline: none; border-color: var(--accent); }
+.search-input::placeholder { color: var(--text-muted); }
+
 .checklist-controls { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
 .control-label { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); cursor: pointer; }
 .control-select {
