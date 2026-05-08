@@ -1,0 +1,100 @@
+1 Academy Ruins
+1 An Offer You Can't Refuse
+1 Arcane Signet
+1 Archway of Innovation
+1 Auton Soldier
+1 Bala Ged Recovery
+1 Barkchannel Pathway
+1 Beast Within
+1 Boseiju, Who Endures
+1 Breeding Pool
+1 Bridgeworks Battle
+1 Buried Ruin
+1 Collective Resistance
+1 Command Tower
+1 Copper Myr
+1 Cyberdrive Awakener
+1 Cybermen Squadron
+1 Cyclonic Rift
+1 Darksteel Citadel
+1 Dauntless Scrapbot
+1 Desynchronization
+1 Disciple of Freyalise
+1 Dreamroot Cascade
+1 Etherium Sculptor
+1 Fabricate
+1 Fangorn Forest
+1 Farseek
+1 FAS-BOR7 Horus
+1 Fellwar Stone
+1 Fierce Guardianship
+1 Flooded Grove
+1 Forest
+1 Foundry Inspector
+1 Glasspool Mimic
+1 Haywire Mite
+1 Hedge Maze
+1 Herd Heirloom
+1 Heroic Intervention
+1 Hinterland Harbor
+1 Hydroelectric Specimen
+1 Inevitable Betrayal
+1 Inkmoth Nexus
+1 Inventors' Fair
+1 Island
+1 Island
+1 Kappa Cannoneer
+1 Karn, Legacy Reforged
+1 Karn, Scion of Urza
+1 Krang, Master Mind
+1 Krang, Utrom Warlord
+1 Lightning Greaves
+1 Liquimetal Torque
+1 Master of Etherium
+1 Master Transmuter
+1 Misty Rainforest
+1 Mosswort Bridge
+1 Mycosynth Golem
+1 One with the Machine
+1 Ornithopter of Paradise
+1 Otawara, Soaring City
+1 Oviya, Automech Artisan
+1 Padeem, Consul of Innovation
+1 Phyrexian Metamorph
+1 Rapid Hybridization
+1 Rejuvenating Springs
+1 Return of the Wildspeaker
+1 Rishkar's Expertise
+1 Roaming Throne
+1 Season of Gathering
+1 Seat of the Synod
+1 Silver Myr
+1 Simic Signet
+1 Simulacrum Synthesizer
+1 Sink into Stupor
+1 Sol Ring
+1 Solemn Simulacrum
+1 Spellskite
+1 Swan Song
+1 Talisman of Curiosity
+1 Tanglepool Bridge
+1 The Great Henge
+1 The Indomitable
+1 The Mycosynth Gardens
+1 Thunderjaw
+1 Thunderous Velocipede
+1 Traverse Eternity
+1 Traxos, Scourge of Kroog
+1 Tree of Tales
+1 Twitching Doll
+1 Urza, Lord High Artificer
+1 Urza's Saga
+1 Uthros Research Craft
+1 Uthros, Titanic Godcore
+1 Verdurous Gearhulk
+1 Waterlogged Grove
+1 Willowrush Verge
+1 Worldly Tutor
+1 Wurmcoil Engine
+1 Yavimaya Coast
+1 Aloy, Savior of Meridian
