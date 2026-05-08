@@ -119,6 +119,7 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 .deck-content { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
 
 .deck-content-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.deck-header-actions { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
 .deck-content-title {
   font-size: 18px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px;
 }
