@@ -11,11 +11,9 @@ type DeckAction =
   | { type: "DELETE_DECK"; payload: string }
   | { type: "RENAME_DECK"; payload: { id: string; name: string } }
   | { type: "SET_CARDS"; payload: { deckId: string; cards: Deck["cards"] } }
-  | { type: "TOGGLE_ACQUIRED"; payload: { deckId: string; cardId: string } };
-
-const initialState: DeckState = {
-  decks: []
-};
+  | { type: "TOGGLE_ACQUIRED"; payload: { deckId: string; cardId: string } }
+  | { type: "SET_CARD_SOURCE"; payload: { deckId: string; cardId: string; source: import("../types/index").AcquisitionSource | undefined } }
+  | { type: "BULK_SET_SOURCE"; payload: { deckId: string; cardIds: string[]; source: import("../types/index").AcquisitionSource | undefined } };
 
 function deckReducer(state: DeckState, action: DeckAction): DeckState {
   switch (action.type) {
@@ -46,6 +44,34 @@ function deckReducer(state: DeckState, action: DeckAction): DeckState {
                 ...d,
                 cards: d.cards.map(c =>
                   c.id === action.payload.cardId ? { ...c, acquired: !c.acquired } : c
+                )
+              }
+            : d
+        )
+      };
+    case "SET_CARD_SOURCE":
+      return {
+        ...state,
+        decks: state.decks.map(d =>
+          d.id === action.payload.deckId
+            ? {
+                ...d,
+                cards: d.cards.map(c =>
+                  c.id === action.payload.cardId ? { ...c, source: action.payload.source } : c
+                )
+              }
+            : d
+        )
+      };
+    case "BULK_SET_SOURCE":
+      return {
+        ...state,
+        decks: state.decks.map(d =>
+          d.id === action.payload.deckId
+            ? {
+                ...d,
+                cards: d.cards.map(c =>
+                  action.payload.cardIds.includes(c.id) ? { ...c, source: action.payload.source } : c
                 )
               }
             : d
