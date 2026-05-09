@@ -8,7 +8,7 @@ import { useLocalStorage } from "./hooks/useLocalStorage";
 import { Checklist } from "./components/Checklist";
 import { ErrorQueue } from "./components/ErrorQueue";
 import { ProgressTracker } from "./components/ProgressTracker";
-import type { Deck, ErrorQueueItem } from "./types/index";
+import type { Deck, ErrorQueueItem, AcquisitionSource } from "./types/index";
 
 function AppInner() {
   const { state, dispatch } = useDecks();
@@ -78,6 +78,16 @@ function AppInner() {
   function handleToggleAcquired(cardId: string) {
     if (!activeDeckId) return;
     dispatch({ type: "TOGGLE_ACQUIRED", payload: { deckId: activeDeckId, cardId } });
+  }
+
+  function handleSetSource(cardId: string, source: AcquisitionSource | undefined) {
+    if (!activeDeckId) return;
+    dispatch({ type: "SET_CARD_SOURCE", payload: { deckId: activeDeckId, cardId, source } });
+  }
+
+  function handleBulkSetSource(cardIds: string[], source: AcquisitionSource | undefined) {
+    if (!activeDeckId) return;
+    dispatch({ type: "BULK_SET_SOURCE", payload: { deckId: activeDeckId, cardIds, source } });
   }
 
   async function handleRemap(originalName: string, newName: string) {
@@ -300,6 +310,8 @@ function AppInner() {
                   <Checklist
                     deck={activeDeck}
                     onToggleAcquired={handleToggleAcquired}
+                    onSetSource={handleSetSource}
+                    onBulkSetSource={handleBulkSetSource}
                   />
                 </>
               ) : (
