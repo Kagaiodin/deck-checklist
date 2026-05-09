@@ -15,6 +15,7 @@ function AppInner() {
   const [activeDeckId, setActiveDeckId] = useState<string | null>(null);
   const [importText, setImportText] = useState("");
   const [deckName, setDeckName] = useState("");
+  const [deckUrl, setDeckUrl] = useState("");
   const [allErrors, setAllErrors] = useLocalStorage<Record<string, ErrorQueueItem[]>>("mtg-checklist-errors", {});
   const [validating, setValidating] = useState(false);
   const [progress, setProgress] = useState<ValidationProgress>({ total: 0, validated: 0 });
@@ -55,6 +56,7 @@ function AppInner() {
       const deck: Deck = {
         id,
         name,
+        url: deckUrl.trim() || undefined,
         cards: result.cards,
         createdAt: Date.now()
       };
@@ -64,6 +66,7 @@ function AppInner() {
       setActiveDeckId(id);
       setImportText("");
       setDeckName("");
+      setDeckUrl("");
       setView("decks");
     } catch (e) {
       setImportError(e instanceof Error ? e.message : "Validation failed. Please try again.");
@@ -174,6 +177,13 @@ function AppInner() {
               onChange={e => setDeckName(e.target.value)}
               disabled={validating}
             />
+            <input
+              className="deck-name-input"
+              placeholder="Deck URL (optional) — e.g. moxfield.com/decks/..."
+              value={deckUrl}
+              onChange={e => setDeckUrl(e.target.value)}
+              disabled={validating}
+            />
             <label className="file-upload-label">
               <input
                 type="file"
@@ -266,9 +276,21 @@ function AppInner() {
                         <span className="rename-hint">✎</span>
                       </h2>
                     )}
-                    <button className="btn btn-secondary btn-sm" onClick={handleExportMissing}>
-                      Export missing
-                    </button>
+                    <div className="deck-header-actions">
+                      {activeDeck.url && (
+                        <a
+                          href={activeDeck.url.startsWith("http") ? activeDeck.url : `https://${activeDeck.url}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn btn-secondary btn-sm"
+                        >
+                          View deck ↗
+                        </a>
+                      )}
+                      <button className="btn btn-secondary btn-sm" onClick={handleExportMissing}>
+                        Export missing
+                      </button>
+                    </div>
                   </div>
                   <ErrorQueue
                     errors={errors}

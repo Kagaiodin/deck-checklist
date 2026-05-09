@@ -11,6 +11,7 @@ export interface Card {
 export interface Deck {
   id: string;
   name: string;
+  url?: string;
   cards: Card[];
   createdAt: number;
 }
