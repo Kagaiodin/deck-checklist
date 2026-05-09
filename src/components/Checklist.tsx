@@ -308,7 +308,7 @@ export function Checklist({ deck, onToggleAcquired, onSetSource, onBulkSetSource
                     type="checkbox"
                     checked={isSelected}
                     onChange={() => toggleSelect(card.id)}
-                    onClick={e => { e.stopPropagation(); toggleSelect(card.id); }}
+                    onClick={e => e.stopPropagation()}
                     className="card-checkbox card-select-checkbox"
                     title="Select for bulk action"
                   />
