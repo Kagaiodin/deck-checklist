@@ -273,9 +273,8 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 
 /* ─── Card row selection ────────────────────────────────────────────────────── */
 .card-row.selected { background: rgba(124,106,247,.08); border-color: rgba(124,106,247,.3); }
-.card-select-checkbox { opacity: 0; transition: opacity 0.12s; }
-.card-row:hover .card-select-checkbox,
-.card-row.selected .card-select-checkbox { opacity: 1; }
+.btn-select-mode { font-size: 12px; padding: 4px 10px; }
+.btn-select-mode.active { background: rgba(124,106,247,.2); color: var(--accent); border-color: rgba(124,106,247,.4); }
 
 .card-row-select-all {
   background: transparent; border-color: transparent;

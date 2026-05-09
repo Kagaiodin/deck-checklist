@@ -122,9 +122,16 @@ export function Checklist({ deck, onToggleAcquired, onSetSource, onBulkSetSource
   const [showMissingOnly, setShowMissingOnly] = useState(false);
   const [search, setSearch] = useState("");
   const [filterSource, setFilterSource] = useState<AcquisitionSource | "untagged" | "">("");
+  const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [openPickerId, setOpenPickerId] = useState<string | null>(null);
   const [bulkSource, setBulkSource] = useState<AcquisitionSource | "">("");
+
+  function toggleSelectMode() {
+    setSelectMode(prev => !prev);
+    setSelectedIds(new Set());
+    setBulkSource("");
+  }
 
   const query = search.trim();
 
@@ -245,6 +252,13 @@ export function Checklist({ deck, onToggleAcquired, onSetSource, onBulkSetSource
             />
             Missing only
           </label>
+
+          <button
+            className={`btn btn-ghost btn-select-mode${selectMode ? " active" : ""}`}
+            onClick={toggleSelectMode}
+          >
+            {selectMode ? "Done" : "Select"}
+          </button>
         </div>
 
         {/* Bulk action bar */}
@@ -281,8 +295,8 @@ export function Checklist({ deck, onToggleAcquired, onSetSource, onBulkSetSource
             </h3>
           )}
           <ul className="card-list">
-            {/* Select-all row header when in selection mode */}
-            {groupBy === "none" && cards.length > 0 && (
+            {/* Select-all row — only in select mode */}
+            {selectMode && cards.length > 0 && (
               <li className="card-row card-row-select-all" onClick={toggleSelectAll}>
                 <input
                   type="checkbox"
@@ -301,25 +315,25 @@ export function Checklist({ deck, onToggleAcquired, onSetSource, onBulkSetSource
                 <li
                   key={card.id}
                   className={`card-row${card.acquired ? " acquired" : ""}${isSelected ? " selected" : ""}`}
-                  onClick={() => onToggleAcquired(card.id)}
+                  onClick={() => selectMode ? toggleSelect(card.id) : onToggleAcquired(card.id)}
                 >
-                  {/* Selection checkbox */}
-                  <input
-                    type="checkbox"
-                    checked={isSelected}
-                    onChange={() => toggleSelect(card.id)}
-                    onClick={e => e.stopPropagation()}
-                    className="card-checkbox card-select-checkbox"
-                    title="Select for bulk action"
-                  />
-                  {/* Acquired checkbox */}
-                  <input
-                    type="checkbox"
-                    checked={card.acquired}
-                    onChange={() => onToggleAcquired(card.id)}
-                    onClick={e => e.stopPropagation()}
-                    className="card-checkbox"
-                  />
+                  {selectMode ? (
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => toggleSelect(card.id)}
+                      onClick={e => e.stopPropagation()}
+                      className="card-checkbox"
+                    />
+                  ) : (
+                    <input
+                      type="checkbox"
+                      checked={card.acquired}
+                      onChange={() => onToggleAcquired(card.id)}
+                      onClick={e => e.stopPropagation()}
+                      className="card-checkbox"
+                    />
+                  )}
                   <span className="card-qty">{card.quantity}x</span>
                   <span className="card-name">
                     <span className="card-name-primary">{card.name}</span>
