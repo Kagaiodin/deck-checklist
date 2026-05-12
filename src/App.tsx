@@ -155,6 +155,36 @@ function AppInner() {
     URL.revokeObjectURL(url);
   }
 
+  function buildProxyList(): string {
+    if (!activeDeck) return "";
+    return activeDeck.cards
+      .filter(c => c.source === "proxy")
+      .map(c => `${c.quantity}x ${c.inputName ?? c.name}`)
+      .join("\n");
+  }
+
+  function handleProxyDownload() {
+    if (!activeDeck) return;
+    const text = buildProxyList();
+    const blob = new Blob([text], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${activeDeck.name} - proxies.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function handleProxyCopy() {
+    const text = buildProxyList();
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  const [copied, setCopied] = useState(false);
+  const proxyCards = activeDeck?.cards.filter(c => c.source === "proxy") ?? [];
+
   return (
     <div className="app">
       <header className="app-header">
@@ -302,6 +332,22 @@ function AppInner() {
                       </button>
                     </div>
                   </div>
+                  {proxyCards.length > 0 && (
+                    <div className="proxy-export-bar">
+                      <span className="proxy-export-label">
+                        🖨 {proxyCards.reduce((s, c) => s + c.quantity, 0)} proxy card{proxyCards.reduce((s, c) => s + c.quantity, 0) !== 1 ? "s" : ""} — export for{" "}
+                        <a href="https://proxxied.com" target="_blank" rel="noopener noreferrer" className="proxy-export-link">proxxied.com</a>
+                      </span>
+                      <div className="proxy-export-actions">
+                        <button className="btn btn-secondary btn-sm" onClick={handleProxyCopy}>
+                          {copied ? "✓ Copied!" : "Copy to clipboard"}
+                        </button>
+                        <button className="btn btn-secondary btn-sm" onClick={handleProxyDownload}>
+                          Download .txt
+                        </button>
+                      </div>
+                    </div>
+                  )}
                   <ErrorQueue
                     errors={errors}
                     onRemap={handleRemap}

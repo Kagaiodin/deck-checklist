@@ -292,6 +292,17 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 }
 .bulk-count { font-size: 13px; font-weight: 600; color: var(--accent); flex-shrink: 0; }
 
+/* ─── Proxy export bar ──────────────────────────────────────────────────────── */
+.proxy-export-bar {
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+  padding: 10px 16px; border-radius: var(--radius);
+  background: rgba(168,85,247,.08); border: 1px solid rgba(168,85,247,.25);
+}
+.proxy-export-label { font-size: 13px; color: var(--text-muted); }
+.proxy-export-link { color: #c084fc; text-decoration: none; }
+.proxy-export-link:hover { text-decoration: underline; }
+.proxy-export-actions { display: flex; gap: 8px; }
+
 /* ─── Utilities ─────────────────────────────────────────────────────────────── */
 .empty-state { color: var(--text-muted); font-size: 13px; padding: 16px 0; }
 .empty-state.centered { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 48px 0; }
