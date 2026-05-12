@@ -292,6 +292,62 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 }
 .bulk-count { font-size: 13px; font-weight: 600; color: var(--accent); flex-shrink: 0; }
 
+/* ─── Edit mode ─────────────────────────────────────────────────────────────── */
+.edit-mode-banner {
+  font-size: 12px; color: var(--accent); padding: 8px 12px;
+  background: rgba(124,106,247,.08); border: 1px solid rgba(124,106,247,.2);
+  border-radius: var(--radius);
+}
+
+.edit-mode-row { cursor: default; }
+.edit-mode-row:hover { border-color: var(--border); background: var(--surface); }
+
+.qty-edit-btn {
+  background: var(--surface-2); border: 1px dashed var(--border);
+  border-radius: 4px; cursor: pointer; color: var(--text);
+  font-size: 12px; padding: 1px 6px; min-width: 28px;
+  transition: border-color 0.12s;
+}
+.qty-edit-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+.qty-edit-input {
+  width: 52px; padding: 2px 6px; border-radius: 4px;
+  background: var(--surface-2); border: 1px solid var(--accent);
+  color: var(--text); font-size: 12px; text-align: center;
+}
+.qty-edit-input:focus { outline: none; }
+
+.card-remove-btn {
+  background: none; border: none; color: var(--text-muted); cursor: pointer;
+  font-size: 18px; line-height: 1; padding: 0 4px; flex-shrink: 0;
+  transition: color 0.12s;
+}
+.card-remove-btn:hover { color: var(--danger); }
+
+/* Add card row */
+.add-card-row {
+  background: rgba(124,106,247,.04); border: 1px dashed rgba(124,106,247,.3);
+  gap: 8px; flex-wrap: wrap;
+}
+.add-card-row:hover { border-color: rgba(124,106,247,.5); background: rgba(124,106,247,.04); }
+
+.add-card-qty {
+  width: 52px; padding: 4px 6px; border-radius: 4px;
+  background: var(--surface-2); border: 1px solid var(--border);
+  color: var(--text); font-size: 13px; text-align: center; flex-shrink: 0;
+}
+.add-card-qty:focus { outline: none; border-color: var(--accent); }
+
+.add-card-autocomplete { position: relative; flex: 1; min-width: 160px; }
+.add-card-input {
+  width: 100%; padding: 5px 10px; border-radius: var(--radius);
+  background: var(--surface-2); border: 1px solid var(--border);
+  color: var(--text); font-size: 13px;
+}
+.add-card-input:focus { outline: none; border-color: var(--accent); }
+.add-card-input::placeholder { color: var(--text-muted); }
+.add-card-error { font-size: 11px; color: var(--danger); flex-basis: 100%; padding-left: 60px; }
+
 /* ─── Proxy export bar ──────────────────────────────────────────────────────── */
 .proxy-export-bar {
   display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
