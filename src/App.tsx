@@ -318,13 +318,15 @@ function AppInner() {
             className={`nav-btn${view === "decks" ? " active" : ""}`}
             onClick={() => setView("decks")}
           >
-            My Decks
+            <span className="nav-label-short">Decks</span>
+            <span className="nav-label-full">My Decks</span>
           </button>
           <button
             className={`nav-btn${view === "import" ? " active" : ""}`}
             onClick={() => setView("import")}
           >
-            + Import Deck
+            <span className="nav-label-short">+ Import</span>
+            <span className="nav-label-full">+ Import Deck</span>
           </button>
         </nav>
       </header>

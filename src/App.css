@@ -39,6 +39,15 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 
 .app-nav { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
 
+/* Short nav labels on mobile, full labels on larger screens */
+.nav-label-short { display: none; }
+.nav-label-full  { display: inline; }
+@media (max-width: 479px) {
+  .nav-label-short { display: inline; }
+  .nav-label-full  { display: none; }
+  .app-logo { max-width: 120px; }
+}
+
 .app-main { flex: 1; padding: 16px; }
 
 @media (min-width: 640px) {
