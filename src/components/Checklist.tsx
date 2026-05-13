@@ -4,6 +4,8 @@ import { ACQUISITION_SOURCES } from "../types/index";
 
 interface Props {
   deck: Deck;
+  editMode: boolean;
+  selectMode: boolean;
   onToggleAcquired: (cardId: string) => void;
   onSetSource: (cardId: string, source: AcquisitionSource | undefined) => void;
   onBulkSetSource: (cardIds: string[], source: AcquisitionSource | undefined) => void;
@@ -21,6 +23,26 @@ const COLOR_LABELS: Record<string, string> = {
   R: "Red",
   G: "Green"
 };
+
+const COLOR_FILTERS = [
+  { value: "W", label: "W", title: "White" },
+  { value: "U", label: "U", title: "Blue" },
+  { value: "B", label: "B", title: "Black" },
+  { value: "R", label: "R", title: "Red" },
+  { value: "G", label: "G", title: "Green" },
+  { value: "colorless", label: "C", title: "Colorless" },
+  { value: "multi", label: "M", title: "Multicolor" },
+] as const;
+
+const MAIN_TYPES = ["Creature", "Instant", "Sorcery", "Enchantment", "Artifact", "Planeswalker", "Land", "Battle", "Tribal"] as const;
+
+function extractMainType(typeStr: string): string {
+  const beforeDash = typeStr.split("—")[0].trim();
+  for (const t of MAIN_TYPES) {
+    if (beforeDash.includes(t)) return t;
+  }
+  return beforeDash;
+}
 
 const SOURCE_STYLES: Record<AcquisitionSource, { bg: string; color: string }> = {
   owned:           { bg: "rgba(34,197,94,.18)",   color: "#4ade80" },
@@ -232,18 +254,23 @@ function AddCardRow({ onAdd }: { onAdd: (name: string) => Promise<{ success: boo
 }
 
 // ─── Main Checklist component ─────────────────────────────────────────────────
-export function Checklist({ deck, onToggleAcquired, onSetSource, onBulkSetSource, onRemoveCard, onUpdateQuantity, onAddCard }: Props) {
-  const [editMode, setEditMode] = useState(false);
-  const [selectMode, setSelectMode] = useState(false);
+export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetSource, onBulkSetSource, onRemoveCard, onUpdateQuantity, onAddCard }: Props) {
   const [groupBy, setGroupBy] = useState<GroupBy>("none");
   const [showMissingOnly, setShowMissingOnly] = useState(false);
   const [search, setSearch] = useState("");
   const [filterSource, setFilterSource] = useState<AcquisitionSource | "untagged" | "">("");
+  const [filterColor, setFilterColor] = useState<Set<string>>(new Set());
+  const [filterType, setFilterType] = useState<Set<string>>(new Set());
+
+  // Derive available types from this deck's cards (in MAIN_TYPES order)
+  const availableTypes = MAIN_TYPES.filter(t => deck.cards.some(c => extractMainType(c.type) === t));
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [openPickerId, setOpenPickerId] = useState<string | null>(null);
   const [bulkSource, setBulkSource] = useState<AcquisitionSource | "">("");
   const [editingQtyId, setEditingQtyId] = useState<string | null>(null);
   const [qtyDraft, setQtyDraft] = useState("");
+  const [displayOpen, setDisplayOpen] = useState(false);
+  const displayMenuRef = useRef<HTMLDivElement>(null);
 
   const query = search.trim();
 
@@ -254,7 +281,16 @@ export function Checklist({ deck, onToggleAcquired, onSetSource, onBulkSetSource
       if (!filterSource) return true;
       if (filterSource === "untagged") return !c.source;
       return c.source === filterSource;
-    });
+    })
+    .filter(c => {
+      if (filterColor.size === 0) return true;
+      return [...filterColor].some(fc => {
+        if (fc === "colorless") return c.color.length === 0;
+        if (fc === "multi") return c.color.length > 1;
+        return c.color.includes(fc);
+      });
+    })
+    .filter(c => filterType.size === 0 || filterType.has(extractMainType(c.type)));
 
   const groups = groupCards(visibleCards, groupBy);
 
@@ -310,13 +346,34 @@ export function Checklist({ deck, onToggleAcquired, onSetSource, onBulkSetSource
     return result;
   }
 
-  function toggleEditMode() {
-    setEditMode(prev => !prev);
-    setSelectMode(false);
-    setSelectedIds(new Set());
-    setBulkSource("");
-    setEditingQtyId(null);
-  }
+  useEffect(() => {
+    if (!displayOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (displayMenuRef.current && !displayMenuRef.current.contains(e.target as Node)) {
+        setDisplayOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [displayOpen]);
+
+  const activeFilterCount = [
+    groupBy !== "none",
+    filterSource !== "",
+    filterColor.size > 0,
+    filterType.size > 0,
+    showMissingOnly,
+  ].filter(Boolean).length;
+
+  // Reset internal selection state when selectMode is turned off from parent
+  useEffect(() => {
+    if (!selectMode) { setSelectedIds(new Set()); setBulkSource(""); }
+  }, [selectMode]);
+
+  // Reset qty editing when editMode is turned off from parent
+  useEffect(() => {
+    if (!editMode) setEditingQtyId(null);
+  }, [editMode]);
 
   const selectedCount = selectedIds.size;
 
@@ -325,8 +382,8 @@ export function Checklist({ deck, onToggleAcquired, onSetSource, onBulkSetSource
       <div className="checklist-header">
         <div className="checklist-stats">
           <span>
-            {acquiredCards} / {totalCards} cards acquired
-            <span className="stats-items-note"> · {totalItems} items</span>
+            {acquiredCards} / {totalCards} fetched
+            <span className="stats-items-note"> · {totalItems} unique cards</span>
           </span>
           <div className="progress-bar-track">
             <div
@@ -350,59 +407,105 @@ export function Checklist({ deck, onToggleAcquired, onSetSource, onBulkSetSource
         </div>
 
         <div className="checklist-controls">
-          <div className="checklist-filters">
-            <label className="control-label">
-              Group by:
-              <select value={groupBy} onChange={e => setGroupBy(e.target.value as GroupBy)} className="control-select">
-                <option value="none">None</option>
-                <option value="color">Color</option>
-                <option value="type">Type</option>
-                <option value="source">Source</option>
-              </select>
-            </label>
-
-            <label className="control-label">
-              Source:
-              <select
-                value={filterSource}
-                onChange={e => setFilterSource(e.target.value as AcquisitionSource | "untagged" | "")}
-                className="control-select"
-              >
-                <option value="">All</option>
-                <option value="untagged">Untagged</option>
-                {ACQUISITION_SOURCES.map(s => (
-                  <option key={s.value} value={s.value}>{s.label}</option>
-                ))}
-              </select>
-            </label>
-
-            <label className="control-label toggle-label">
-              <input type="checkbox" checked={showMissingOnly} onChange={e => setShowMissingOnly(e.target.checked)} />
-              Missing only
-            </label>
-          </div>
-
-          <div className="checklist-actions">
-            {!editMode && (
-              <button
-                className={`btn btn-sm ${selectMode ? "btn-primary" : "btn-secondary"}`}
-                onClick={() => {
-                  setSelectedIds(new Set());
-                  setBulkSource("");
-                  setSelectMode(prev => !prev);
-                }}
-              >
-                {selectMode ? "Done" : "Bulk tag"}
-              </button>
-            )}
-
+          <div className="display-menu-container" ref={displayMenuRef}>
             <button
-              className={`btn btn-sm ${editMode ? "btn-primary" : "btn-secondary"}`}
-              onClick={toggleEditMode}
-              title={editMode ? "Exit edit mode" : "Edit deck"}
+              className={`btn btn-secondary btn-sm${displayOpen ? " active" : ""}`}
+              onClick={() => setDisplayOpen(v => !v)}
             >
-              {editMode ? "Done editing" : "Edit deck"}
+              Display {activeFilterCount > 0 && <span className="display-filter-badge">{activeFilterCount}</span>} {displayOpen ? "▴" : "▾"}
             </button>
+            {displayOpen && (
+              <div className="display-menu-dropdown">
+                <div className="display-menu-section-label">Group &amp; sort</div>
+                <div className="display-menu-row">
+                  <span className="display-menu-row-label">Group by</span>
+                  <select value={groupBy} onChange={e => setGroupBy(e.target.value as GroupBy)} className="control-select">
+                    <option value="none">None</option>
+                    <option value="color">Color</option>
+                    <option value="type">Type</option>
+                    <option value="source">Source</option>
+                  </select>
+                </div>
+
+                <div className="display-menu-divider" />
+                <div className="display-menu-section-label">Filter</div>
+
+                <div className="display-menu-row">
+                  <span className="display-menu-row-label">Card source</span>
+                  <select
+                    value={filterSource}
+                    onChange={e => setFilterSource(e.target.value as AcquisitionSource | "untagged" | "")}
+                    className="control-select"
+                  >
+                    <option value="">All</option>
+                    <option value="untagged">Untagged</option>
+                    {ACQUISITION_SOURCES.map(s => (
+                      <option key={s.value} value={s.value}>{s.label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {availableTypes.length > 0 && (
+                  <div className="display-menu-row display-menu-row-wrap">
+                    <span className="display-menu-row-label">Type</span>
+                    <div className="type-filter-pills">
+                      {availableTypes.map(t => (
+                        <button
+                          key={t}
+                          className={`type-pill${filterType.has(t) ? " active" : ""}`}
+                          onClick={() => setFilterType(prev => {
+                            const next = new Set(prev);
+                            next.has(t) ? next.delete(t) : next.add(t);
+                            return next;
+                          })}
+                        >
+                          {t}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="display-menu-row">
+                  <span className="display-menu-row-label">Color</span>
+                  <div className="color-filter-pills">
+                    {COLOR_FILTERS.map(cf => (
+                      <button
+                        key={cf.value}
+                        className={`color-pill color-pill-${cf.value}${filterColor.has(cf.value) ? " active" : ""}`}
+                        title={cf.title}
+                        onClick={() => setFilterColor(prev => {
+                          const next = new Set(prev);
+                          next.has(cf.value) ? next.delete(cf.value) : next.add(cf.value);
+                          return next;
+                        })}
+                      >
+                        {cf.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="display-menu-row">
+                  <label className="display-menu-toggle">
+                    <input type="checkbox" checked={showMissingOnly} onChange={e => setShowMissingOnly(e.target.checked)} />
+                    Missing only
+                  </label>
+                </div>
+
+                {activeFilterCount > 0 && (
+                  <>
+                    <div className="display-menu-divider" />
+                    <button
+                      className="display-menu-clear"
+                      onClick={() => { setGroupBy("none"); setFilterSource(""); setFilterColor(new Set()); setFilterType(new Set()); setShowMissingOnly(false); }}
+                    >
+                      Clear all
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -537,7 +640,7 @@ export function Checklist({ deck, onToggleAcquired, onSetSource, onBulkSetSource
                       onClick={() => setOpenPickerId(openPickerId === card.id ? null : card.id)}
                       title="Set acquisition source"
                     >
-                      {card.source ? sourceLabel(card.source) : "+ source"}
+                      {card.source ? sourceLabel(card.source) : "+ card source"}
                     </button>
                     {openPickerId === card.id && (
                       <SourcePicker
