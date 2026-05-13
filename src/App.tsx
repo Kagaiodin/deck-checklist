@@ -314,7 +314,7 @@ function AppInner() {
                         <li
                           key={deck.id}
                           className={`deck-item${activeDeckId === deck.id ? " active" : ""}`}
-                          onClick={() => { setActiveDeckId(deck.id); setSidebarOpen(false); }}
+                          onClick={() => { setActiveDeckId(deck.id); if (window.innerWidth < 768) setSidebarOpen(false); }}
                         >
                           <span className="deck-item-name">{deck.name}</span>
                           <span className="deck-item-progress">{acquiredCards}/{totalCards}</span>
