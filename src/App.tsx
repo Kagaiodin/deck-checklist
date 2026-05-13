@@ -316,8 +316,21 @@ function AppInner() {
                           className={`deck-item${activeDeckId === deck.id ? " active" : ""}`}
                           onClick={() => { setActiveDeckId(deck.id); if (window.innerWidth < 768) setSidebarOpen(false); }}
                         >
-                          <span className="deck-item-name">{deck.name}</span>
-                          <span className="deck-item-progress">{acquiredCards}/{totalCards}</span>
+                          <div className="deck-item-info">
+                            <div className="deck-item-top">
+                              <span className="deck-item-name">{deck.name}</span>
+                              <span className="deck-item-progress">{acquiredCards}/{totalCards}</span>
+                            </div>
+                            <div className="deck-item-bar-track">
+                              <div
+                                className="deck-item-bar-fill"
+                                style={{
+                                  width: totalCards > 0 ? `${(acquiredCards / totalCards) * 100}%` : "0%",
+                                  backgroundPosition: totalCards > 0 ? `${100 - (acquiredCards / totalCards) * 100}% center` : "100% center"
+                                }}
+                              />
+                            </div>
+                          </div>
                           <button
                             className="deck-delete-btn"
                             onClick={e => { e.stopPropagation(); handleDeleteDeck(deck.id); }}
