@@ -7,6 +7,9 @@ interface Props {
   onToggleAcquired: (cardId: string) => void;
   onSetSource: (cardId: string, source: AcquisitionSource | undefined) => void;
   onBulkSetSource: (cardIds: string[], source: AcquisitionSource | undefined) => void;
+  onRemoveCard: (cardId: string) => void;
+  onUpdateQuantity: (cardId: string, quantity: number) => void;
+  onAddCard: (name: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 type GroupBy = "none" | "color" | "type" | "source";
@@ -19,7 +22,6 @@ const COLOR_LABELS: Record<string, string> = {
   G: "Green"
 };
 
-// Color-coded source tags
 const SOURCE_STYLES: Record<AcquisitionSource, { bg: string; color: string }> = {
   owned:           { bg: "rgba(34,197,94,.18)",   color: "#4ade80" },
   ordered:         { bg: "rgba(59,130,246,.18)",  color: "#60a5fa" },
@@ -73,7 +75,7 @@ function matchesSearch(card: Card, query: string): boolean {
   );
 }
 
-// Dropdown for picking a source on a single card
+// ─── Source picker dropdown ───────────────────────────────────────────────────
 function SourcePicker({
   current,
   onSelect,
@@ -117,21 +119,131 @@ function SourcePicker({
   );
 }
 
-export function Checklist({ deck, onToggleAcquired, onSetSource, onBulkSetSource }: Props) {
+// ─── Add card row (shown at bottom in edit mode) ──────────────────────────────
+function AddCardRow({ onAdd }: { onAdd: (name: string) => Promise<{ success: boolean; error?: string }> }) {
+  const [value, setValue] = useState("");
+  const [qty, setQty] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [highlighted, setHighlighted] = useState(-1);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  async function fetchSuggestions(q: string) {
+    if (q.length < 2) { setSuggestions([]); return; }
+    try {
+      const res = await fetch(`https://api.scryfall.com/cards/autocomplete?q=${encodeURIComponent(q)}`);
+      const data = await res.json() as { data: string[] };
+      setSuggestions(data.data?.slice(0, 8) ?? []);
+    } catch {
+      setSuggestions([]);
+    }
+  }
+
+  function handleInput(val: string) {
+    setValue(val);
+    setError(null);
+    setHighlighted(-1);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => fetchSuggestions(val), 250);
+  }
+
+  async function submit(nameOverride?: string) {
+    const name = (nameOverride ?? value).trim();
+    if (!name) return;
+    setSuggestions([]);
+    setLoading(true);
+    setError(null);
+    const result = await onAdd(`${qty} ${name}`);
+    setLoading(false);
+    if (result.success) {
+      setValue("");
+      setQty(1);
+      inputRef.current?.focus();
+    } else {
+      setError(result.error ?? "Card not found on Scryfall.");
+    }
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (e.key === "ArrowDown") { e.preventDefault(); setHighlighted(h => Math.min(h + 1, suggestions.length - 1)); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); setHighlighted(h => Math.max(h - 1, -1)); }
+    else if (e.key === "Enter") {
+      e.preventDefault();
+      if (highlighted >= 0 && suggestions[highlighted]) {
+        setValue(suggestions[highlighted]);
+        setSuggestions([]);
+        setHighlighted(-1);
+      } else {
+        void submit();
+      }
+    } else if (e.key === "Escape") {
+      setSuggestions([]);
+      setHighlighted(-1);
+    }
+  }
+
+  return (
+    <li className="card-row add-card-row">
+      <input
+        type="number"
+        className="add-card-qty"
+        value={qty}
+        min={1}
+        max={99}
+        onChange={e => setQty(Math.max(1, parseInt(e.target.value) || 1))}
+      />
+      <div className="add-card-autocomplete">
+        <input
+          ref={inputRef}
+          className="add-card-input"
+          placeholder="Add card…"
+          value={value}
+          onChange={e => handleInput(e.target.value)}
+          onKeyDown={handleKeyDown}
+          disabled={loading}
+          autoComplete="off"
+        />
+        {suggestions.length > 0 && (
+          <ul className="autocomplete-list">
+            {suggestions.map((s, i) => (
+              <li
+                key={s}
+                className={`autocomplete-item${i === highlighted ? " highlighted" : ""}`}
+                onMouseDown={() => { setValue(s); setSuggestions([]); void submit(s); }}
+              >
+                {s}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+      <button
+        className="btn btn-primary btn-sm"
+        onClick={() => void submit()}
+        disabled={loading || !value.trim()}
+      >
+        {loading ? "…" : "Add"}
+      </button>
+      {error && <span className="add-card-error">{error}</span>}
+    </li>
+  );
+}
+
+// ─── Main Checklist component ─────────────────────────────────────────────────
+export function Checklist({ deck, onToggleAcquired, onSetSource, onBulkSetSource, onRemoveCard, onUpdateQuantity, onAddCard }: Props) {
+  const [editMode, setEditMode] = useState(false);
+  const [selectMode, setSelectMode] = useState(false);
   const [groupBy, setGroupBy] = useState<GroupBy>("none");
   const [showMissingOnly, setShowMissingOnly] = useState(false);
   const [search, setSearch] = useState("");
   const [filterSource, setFilterSource] = useState<AcquisitionSource | "untagged" | "">("");
-  const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [openPickerId, setOpenPickerId] = useState<string | null>(null);
   const [bulkSource, setBulkSource] = useState<AcquisitionSource | "">("");
-
-  function toggleSelectMode() {
-    setSelectMode(prev => !prev);
-    setSelectedIds(new Set());
-    setBulkSource("");
-  }
+  const [editingQtyId, setEditingQtyId] = useState<string | null>(null);
+  const [qtyDraft, setQtyDraft] = useState("");
 
   const query = search.trim();
 
@@ -164,11 +276,7 @@ export function Checklist({ deck, onToggleAcquired, onSetSource, onBulkSetSource
 
   function toggleSelectAll() {
     if (allSelected) {
-      setSelectedIds(prev => {
-        const next = new Set(prev);
-        visibleIds.forEach(id => next.delete(id));
-        return next;
-      });
+      setSelectedIds(prev => { const next = new Set(prev); visibleIds.forEach(id => next.delete(id)); return next; });
     } else {
       setSelectedIds(prev => new Set([...prev, ...visibleIds]));
     }
@@ -186,10 +294,34 @@ export function Checklist({ deck, onToggleAcquired, onSetSource, onBulkSetSource
     setBulkSource("");
   }
 
+  function startEditQty(card: Card) {
+    setEditingQtyId(card.id);
+    setQtyDraft(String(card.quantity));
+  }
+
+  function commitQty(cardId: string) {
+    const qty = parseInt(qtyDraft);
+    if (!isNaN(qty) && qty > 0) onUpdateQuantity(cardId, qty);
+    setEditingQtyId(null);
+  }
+
+  async function handleAddCard(line: string) {
+    const result = await onAddCard(line);
+    return result;
+  }
+
+  function toggleEditMode() {
+    setEditMode(prev => !prev);
+    setSelectMode(false);
+    setSelectedIds(new Set());
+    setBulkSource("");
+    setEditingQtyId(null);
+  }
+
   const selectedCount = selectedIds.size;
 
   return (
-    <div className="checklist">
+    <div className={`checklist${editMode ? " edit-mode" : ""}`}>
       <div className="checklist-header">
         <div className="checklist-stats">
           <span>
@@ -217,11 +349,7 @@ export function Checklist({ deck, onToggleAcquired, onSetSource, onBulkSetSource
         <div className="checklist-controls">
           <label className="control-label">
             Group by:
-            <select
-              value={groupBy}
-              onChange={e => setGroupBy(e.target.value as GroupBy)}
-              className="control-select"
-            >
+            <select value={groupBy} onChange={e => setGroupBy(e.target.value as GroupBy)} className="control-select">
               <option value="none">None</option>
               <option value="color">Color</option>
               <option value="type">Type</option>
@@ -245,24 +373,46 @@ export function Checklist({ deck, onToggleAcquired, onSetSource, onBulkSetSource
           </label>
 
           <label className="control-label toggle-label">
-            <input
-              type="checkbox"
-              checked={showMissingOnly}
-              onChange={e => setShowMissingOnly(e.target.checked)}
-            />
+            <input type="checkbox" checked={showMissingOnly} onChange={e => setShowMissingOnly(e.target.checked)} />
             Missing only
           </label>
 
+          {!editMode && (
+            <button
+              className={`btn btn-ghost btn-select-mode${selectMode ? " active" : ""}`}
+              onClick={() => {
+                setSelectedIds(new Set());
+                setBulkSource("");
+                setSelectMode(prev => !prev);
+              }}
+            >
+              {selectMode ? "Done" : "Select"}
+            </button>
+          )}
+
           <button
-            className={`btn btn-ghost btn-select-mode${selectMode ? " active" : ""}`}
-            onClick={toggleSelectMode}
+            className={`btn btn-sm ${editMode ? "btn-primary" : "btn-secondary"}`}
+            onClick={toggleEditMode}
+            title={editMode ? "Exit edit mode" : "Edit deck"}
           >
-            {selectMode ? "Done" : "Select"}
+            {editMode ? "✓ Done editing" : "✎ Edit deck"}
           </button>
         </div>
 
+        {/* Edit mode banner + add card */}
+        {editMode && (
+          <div className="edit-mode-banner">
+            ✎ Edit mode — add, remove, or adjust quantities. Changes save automatically.
+          </div>
+        )}
+        {editMode && (
+          <ul className="card-list">
+            <AddCardRow onAdd={handleAddCard} />
+          </ul>
+        )}
+
         {/* Bulk action bar */}
-        {selectedCount > 0 && (
+        {selectedCount > 0 && !editMode && (
           <div className="bulk-bar">
             <span className="bulk-count">{selectedCount} selected</span>
             <select
@@ -275,13 +425,7 @@ export function Checklist({ deck, onToggleAcquired, onSetSource, onBulkSetSource
                 <option key={s.value} value={s.value}>{s.label}</option>
               ))}
             </select>
-            <button
-              className="btn btn-primary btn-sm"
-              onClick={applyBulkSource}
-              disabled={!bulkSource}
-            >
-              Apply
-            </button>
+            <button className="btn btn-primary btn-sm" onClick={applyBulkSource} disabled={!bulkSource}>Apply</button>
             <button className="btn btn-ghost btn-sm" onClick={clearBulkSelection}>Cancel</button>
           </div>
         )}
@@ -295,8 +439,7 @@ export function Checklist({ deck, onToggleAcquired, onSetSource, onBulkSetSource
             </h3>
           )}
           <ul className="card-list">
-            {/* Select-all row — only in select mode */}
-            {selectMode && cards.length > 0 && (
+            {selectMode && !editMode && cards.length > 0 && (
               <li className="card-row card-row-select-all" onClick={toggleSelectAll}>
                 <input
                   type="checkbox"
@@ -308,16 +451,20 @@ export function Checklist({ deck, onToggleAcquired, onSetSource, onBulkSetSource
                 <span className="card-select-all-label">Select all</span>
               </li>
             )}
+
             {cards.map(card => {
               const isSelected = selectedIds.has(card.id);
               const style = card.source ? SOURCE_STYLES[card.source] : undefined;
+              const isEditingQty = editingQtyId === card.id;
+
               return (
                 <li
                   key={card.id}
-                  className={`card-row${card.acquired ? " acquired" : ""}${isSelected ? " selected" : ""}`}
-                  onClick={() => selectMode ? toggleSelect(card.id) : onToggleAcquired(card.id)}
+                  className={`card-row${card.acquired ? " acquired" : ""}${isSelected ? " selected" : ""}${editMode ? " edit-mode-row" : ""}`}
+                  onClick={editMode ? undefined : selectMode ? () => toggleSelect(card.id) : () => onToggleAcquired(card.id)}
                 >
-                  {selectMode ? (
+                  {/* Selection checkbox — only in select mode */}
+                  {selectMode && !editMode && (
                     <input
                       type="checkbox"
                       checked={isSelected}
@@ -325,7 +472,10 @@ export function Checklist({ deck, onToggleAcquired, onSetSource, onBulkSetSource
                       onClick={e => e.stopPropagation()}
                       className="card-checkbox"
                     />
-                  ) : (
+                  )}
+
+                  {/* Acquired checkbox — hidden in edit mode and select mode */}
+                  {!editMode && !selectMode && (
                     <input
                       type="checkbox"
                       checked={card.acquired}
@@ -334,14 +484,45 @@ export function Checklist({ deck, onToggleAcquired, onSetSource, onBulkSetSource
                       className="card-checkbox"
                     />
                   )}
-                  <span className="card-qty">{card.quantity}x</span>
+
+                  {/* Quantity — editable in edit mode */}
+                  {editMode ? (
+                    isEditingQty ? (
+                      <input
+                        type="number"
+                        className="qty-edit-input"
+                        value={qtyDraft}
+                        min={1}
+                        max={99}
+                        autoFocus
+                        onChange={e => setQtyDraft(e.target.value)}
+                        onBlur={() => commitQty(card.id)}
+                        onKeyDown={e => {
+                          if (e.key === "Enter") commitQty(card.id);
+                          if (e.key === "Escape") setEditingQtyId(null);
+                        }}
+                        onClick={e => e.stopPropagation()}
+                      />
+                    ) : (
+                      <button
+                        className="card-qty qty-edit-btn"
+                        onClick={e => { e.stopPropagation(); startEditQty(card); }}
+                        title="Click to edit quantity"
+                      >
+                        {card.quantity}x
+                      </button>
+                    )
+                  ) : (
+                    <span className="card-qty">{card.quantity}x</span>
+                  )}
+
                   <span className="card-name">
                     <span className="card-name-primary">{card.name}</span>
                     {card.inputName && <span className="card-input-name">{card.inputName}</span>}
                   </span>
                   <span className="card-type">{card.type}</span>
 
-                  {/* Source tag */}
+                  {/* Source tag — visible in both modes */}
                   <div className="source-tag-wrapper" onClick={e => e.stopPropagation()}>
                     <button
                       className={`source-tag${card.source ? " has-source" : ""}`}
@@ -359,9 +540,21 @@ export function Checklist({ deck, onToggleAcquired, onSetSource, onBulkSetSource
                       />
                     )}
                   </div>
+
+                  {/* Remove button — only in edit mode */}
+                  {editMode && (
+                    <button
+                      className="card-remove-btn"
+                      onClick={e => { e.stopPropagation(); onRemoveCard(card.id); }}
+                      title="Remove card"
+                    >
+                      ×
+                    </button>
+                  )}
                 </li>
               );
             })}
+
           </ul>
         </div>
       ))}

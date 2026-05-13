@@ -90,6 +90,32 @@ function AppInner() {
     dispatch({ type: "BULK_SET_SOURCE", payload: { deckId: activeDeckId, cardIds, source } });
   }
 
+  function handleRemoveCard(cardId: string) {
+    if (!activeDeckId) return;
+    dispatch({ type: "REMOVE_CARD", payload: { deckId: activeDeckId, cardId } });
+  }
+
+  function handleUpdateQuantity(cardId: string, quantity: number) {
+    if (!activeDeckId) return;
+    dispatch({ type: "UPDATE_CARD_QUANTITY", payload: { deckId: activeDeckId, cardId, quantity } });
+  }
+
+  async function handleAddCard(line: string): Promise<{ success: boolean; error?: string }> {
+    if (!activeDeckId) return { success: false, error: "No deck selected." };
+    try {
+      const parsed = parseDecklist(line);
+      if (parsed.length === 0) return { success: false, error: "Invalid card format." };
+      const result = await validateDecklist(parsed);
+      if (result.cards.length > 0) {
+        dispatch({ type: "ADD_CARD", payload: { deckId: activeDeckId, card: result.cards[0] } });
+        return { success: true };
+      }
+      return { success: false, error: `"${parsed[0].name}" not found on Scryfall.` };
+    } catch {
+      return { success: false, error: "Validation failed. Please try again." };
+    }
+  }
+
   async function handleRemap(originalName: string, newName: string) {
     if (!activeDeckId) return;
     try {
@@ -358,6 +384,9 @@ function AppInner() {
                     onToggleAcquired={handleToggleAcquired}
                     onSetSource={handleSetSource}
                     onBulkSetSource={handleBulkSetSource}
+                    onRemoveCard={handleRemoveCard}
+                    onUpdateQuantity={handleUpdateQuantity}
+                    onAddCard={handleAddCard}
                   />
                 </>
               ) : (

@@ -13,7 +13,10 @@ type DeckAction =
   | { type: "SET_CARDS"; payload: { deckId: string; cards: Deck["cards"] } }
   | { type: "TOGGLE_ACQUIRED"; payload: { deckId: string; cardId: string } }
   | { type: "SET_CARD_SOURCE"; payload: { deckId: string; cardId: string; source: import("../types/index").AcquisitionSource | undefined } }
-  | { type: "BULK_SET_SOURCE"; payload: { deckId: string; cardIds: string[]; source: import("../types/index").AcquisitionSource | undefined } };
+  | { type: "BULK_SET_SOURCE"; payload: { deckId: string; cardIds: string[]; source: import("../types/index").AcquisitionSource | undefined } }
+  | { type: "REMOVE_CARD"; payload: { deckId: string; cardId: string } }
+  | { type: "UPDATE_CARD_QUANTITY"; payload: { deckId: string; cardId: string; quantity: number } }
+  | { type: "ADD_CARD"; payload: { deckId: string; card: import("../types/index").Card } };
 
 function deckReducer(state: DeckState, action: DeckAction): DeckState {
   switch (action.type) {
@@ -74,6 +77,38 @@ function deckReducer(state: DeckState, action: DeckAction): DeckState {
                   action.payload.cardIds.includes(c.id) ? { ...c, source: action.payload.source } : c
                 )
               }
+            : d
+        )
+      };
+    case "REMOVE_CARD":
+      return {
+        ...state,
+        decks: state.decks.map(d =>
+          d.id === action.payload.deckId
+            ? { ...d, cards: d.cards.filter(c => c.id !== action.payload.cardId) }
+            : d
+        )
+      };
+    case "UPDATE_CARD_QUANTITY":
+      return {
+        ...state,
+        decks: state.decks.map(d =>
+          d.id === action.payload.deckId
+            ? {
+                ...d,
+                cards: d.cards.map(c =>
+                  c.id === action.payload.cardId ? { ...c, quantity: action.payload.quantity } : c
+                )
+              }
+            : d
+        )
+      };
+    case "ADD_CARD":
+      return {
+        ...state,
+        decks: state.decks.map(d =>
+          d.id === action.payload.deckId
+            ? { ...d, cards: [...d.cards, action.payload.card] }
             : d
         )
       };
