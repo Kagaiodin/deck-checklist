@@ -259,7 +259,7 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
   const [showMissingOnly, setShowMissingOnly] = useState(false);
   const [search, setSearch] = useState("");
   const [filterSource, setFilterSource] = useState<AcquisitionSource | "untagged" | "">("");
-  const [filterColor, setFilterColor] = useState<string>("");
+  const [filterColor, setFilterColor] = useState<Set<string>>(new Set());
   const [filterType, setFilterType] = useState<string>("");
 
   // Derive available types from this deck's cards (in MAIN_TYPES order)
@@ -283,10 +283,12 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
       return c.source === filterSource;
     })
     .filter(c => {
-      if (!filterColor) return true;
-      if (filterColor === "colorless") return c.color.length === 0;
-      if (filterColor === "multi") return c.color.length > 1;
-      return c.color.includes(filterColor);
+      if (filterColor.size === 0) return true;
+      return [...filterColor].some(fc => {
+        if (fc === "colorless") return c.color.length === 0;
+        if (fc === "multi") return c.color.length > 1;
+        return c.color.includes(fc);
+      });
     })
     .filter(c => !filterType || extractMainType(c.type) === filterType);
 
@@ -358,7 +360,7 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
   const activeFilterCount = [
     groupBy !== "none",
     filterSource !== "",
-    filterColor !== "",
+    filterColor.size > 0,
     filterType !== "",
     showMissingOnly,
   ].filter(Boolean).length;
@@ -461,9 +463,13 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
                     {COLOR_FILTERS.map(cf => (
                       <button
                         key={cf.value}
-                        className={`color-pill color-pill-${cf.value}${filterColor === cf.value ? " active" : ""}`}
+                        className={`color-pill color-pill-${cf.value}${filterColor.has(cf.value) ? " active" : ""}`}
                         title={cf.title}
-                        onClick={() => setFilterColor(prev => prev === cf.value ? "" : cf.value)}
+                        onClick={() => setFilterColor(prev => {
+                          const next = new Set(prev);
+                          next.has(cf.value) ? next.delete(cf.value) : next.add(cf.value);
+                          return next;
+                        })}
                       >
                         {cf.label}
                       </button>
@@ -483,7 +489,7 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
                     <div className="display-menu-divider" />
                     <button
                       className="display-menu-clear"
-                      onClick={() => { setGroupBy("none"); setFilterSource(""); setFilterColor(""); setFilterType(""); setShowMissingOnly(false); }}
+                      onClick={() => { setGroupBy("none"); setFilterSource(""); setFilterColor(new Set()); setFilterType(""); setShowMissingOnly(false); }}
                     >
                       Clear all
                     </button>
