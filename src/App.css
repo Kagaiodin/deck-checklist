@@ -553,6 +553,29 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 .proxy-export-link:hover { text-decoration: underline; }
 .proxy-export-actions { display: flex; gap: 8px; }
 
+/* ─── Color filter pills ────────────────────────────────────────────────────── */
+.color-filter-pills { display: flex; gap: 4px; }
+
+.color-pill {
+  width: 24px; height: 24px; border-radius: 50%;
+  border: 2px solid transparent;
+  font-size: 10px; font-weight: 700; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: border-color 0.12s, transform 0.1s;
+  line-height: 1;
+}
+.color-pill:hover { transform: scale(1.15); }
+.color-pill.active { border-color: #fff; transform: scale(1.15); }
+
+.color-pill-W { background: #e8e4d0; color: #5c4a1e; }
+.color-pill-U { background: #1a56a0; color: #c8e0f8; }
+.color-pill-B { background: #2a2432; color: #b8a8c8; border-color: var(--border); }
+.color-pill-B.active { border-color: #b8a8c8; }
+.color-pill-R { background: #c0392b; color: #fdd8d4; }
+.color-pill-G { background: #1a6b3a; color: #b8e8c8; }
+.color-pill-colorless { background: #6b7280; color: #e5e7eb; }
+.color-pill-multi { background: linear-gradient(135deg, #c0392b 0%, #d4a017 50%, #1a6b3a 100%); color: #fff; }
+
 /* ─── Edit menu (Bulk tag / Edit deck dropdown) ─────────────────────────────── */
 .edit-menu-container { position: relative; }
 

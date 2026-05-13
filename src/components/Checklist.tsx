@@ -24,6 +24,26 @@ const COLOR_LABELS: Record<string, string> = {
   G: "Green"
 };
 
+const COLOR_FILTERS = [
+  { value: "W", label: "W", title: "White" },
+  { value: "U", label: "U", title: "Blue" },
+  { value: "B", label: "B", title: "Black" },
+  { value: "R", label: "R", title: "Red" },
+  { value: "G", label: "G", title: "Green" },
+  { value: "colorless", label: "C", title: "Colorless" },
+  { value: "multi", label: "M", title: "Multicolor" },
+] as const;
+
+const MAIN_TYPES = ["Creature", "Instant", "Sorcery", "Enchantment", "Artifact", "Planeswalker", "Land", "Battle", "Tribal"] as const;
+
+function extractMainType(typeStr: string): string {
+  const beforeDash = typeStr.split("—")[0].trim();
+  for (const t of MAIN_TYPES) {
+    if (beforeDash.includes(t)) return t;
+  }
+  return beforeDash;
+}
+
 const SOURCE_STYLES: Record<AcquisitionSource, { bg: string; color: string }> = {
   owned:           { bg: "rgba(34,197,94,.18)",   color: "#4ade80" },
   ordered:         { bg: "rgba(59,130,246,.18)",  color: "#60a5fa" },
@@ -239,6 +259,11 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
   const [showMissingOnly, setShowMissingOnly] = useState(false);
   const [search, setSearch] = useState("");
   const [filterSource, setFilterSource] = useState<AcquisitionSource | "untagged" | "">("");
+  const [filterColor, setFilterColor] = useState<string>("");
+  const [filterType, setFilterType] = useState<string>("");
+
+  // Derive available types from this deck's cards (in MAIN_TYPES order)
+  const availableTypes = MAIN_TYPES.filter(t => deck.cards.some(c => extractMainType(c.type) === t));
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [openPickerId, setOpenPickerId] = useState<string | null>(null);
   const [bulkSource, setBulkSource] = useState<AcquisitionSource | "">("");
@@ -254,7 +279,14 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
       if (!filterSource) return true;
       if (filterSource === "untagged") return !c.source;
       return c.source === filterSource;
-    });
+    })
+    .filter(c => {
+      if (!filterColor) return true;
+      if (filterColor === "colorless") return c.color.length === 0;
+      if (filterColor === "multi") return c.color.length > 1;
+      return c.color.includes(filterColor);
+    })
+    .filter(c => !filterType || extractMainType(c.type) === filterType);
 
   const groups = groupCards(visibleCards, groupBy);
 
@@ -377,6 +409,38 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
                 ))}
               </select>
             </label>
+
+            {availableTypes.length > 0 && (
+              <label className="control-label">
+                Type:
+                <select
+                  value={filterType}
+                  onChange={e => setFilterType(e.target.value)}
+                  className="control-select"
+                >
+                  <option value="">All</option>
+                  {availableTypes.map(t => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+              </label>
+            )}
+
+            <div className="control-label">
+              Color:
+              <div className="color-filter-pills">
+                {COLOR_FILTERS.map(cf => (
+                  <button
+                    key={cf.value}
+                    className={`color-pill color-pill-${cf.value}${filterColor === cf.value ? " active" : ""}`}
+                    title={cf.title}
+                    onClick={() => setFilterColor(prev => prev === cf.value ? "" : cf.value)}
+                  >
+                    {cf.label}
+                  </button>
+                ))}
+              </div>
+            </div>
 
             <label className="control-label toggle-label">
               <input type="checkbox" checked={showMissingOnly} onChange={e => setShowMissingOnly(e.target.checked)} />
