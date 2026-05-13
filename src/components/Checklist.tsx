@@ -379,7 +379,7 @@ export function Checklist({ deck, onToggleAcquired, onSetSource, onBulkSetSource
 
           {!editMode && (
             <button
-              className={`btn btn-ghost btn-select-mode${selectMode ? " active" : ""}`}
+              className={`btn btn-sm ${selectMode ? "btn-primary" : "btn-secondary"}`}
               onClick={() => {
                 setSelectedIds(new Set());
                 setBulkSource("");
