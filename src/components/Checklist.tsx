@@ -392,7 +392,7 @@ export function Checklist({ deck, onToggleAcquired, onSetSource, onBulkSetSource
                   setSelectMode(prev => !prev);
                 }}
               >
-                {selectMode ? "Done" : "Select"}
+                {selectMode ? "✓ Done" : "⊞ Bulk tag"}
               </button>
             )}
 
