@@ -462,6 +462,16 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 .add-card-input::placeholder { color: var(--text-muted); }
 .add-card-error { font-size: 11px; color: var(--danger); flex-basis: 100%; padding-left: 60px; }
 
+/* ─── Buy bar ───────────────────────────────────────────────────────────────── */
+.buy-bar {
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+  padding: 10px 16px; border-radius: var(--radius);
+  background: rgba(52,211,153,.08); border: 1px solid rgba(52,211,153,.25);
+}
+.buy-bar-label { font-size: 13px; color: var(--text-muted); }
+.buy-bar-actions { display: flex; gap: 8px; align-items: center; }
+.buy-vendor-select { padding: 4px 10px; font-size: 13px; }
+
 /* ─── Proxy export bar ──────────────────────────────────────────────────────── */
 .proxy-export-bar {
   display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;

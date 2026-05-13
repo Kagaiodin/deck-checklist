@@ -212,6 +212,25 @@ function AppInner() {
   const [copied, setCopied] = useState(false);
   const proxyCards = activeDeck?.cards.filter(c => c.source === "proxy") ?? [];
 
+  // ── Buy links ──────────────────────────────────────────────────────────────
+  const VENDORS = [
+    { label: "Manapool",     url: "https://manapool.com/add-deck" },
+    { label: "TCGPlayer",    url: "https://www.tcgplayer.com/massentry" },
+    { label: "Card Kingdom", url: "https://www.cardkingdom.com/builder" },
+  ];
+  const [selectedVendorIdx, setSelectedVendorIdx] = useState(0);
+  const [buyCopied, setBuyCopied] = useState(false);
+  const toBuyCards = activeDeck?.cards.filter(c => c.source === "need_to_buy") ?? [];
+  const toBuyTotal = toBuyCards.reduce((s, c) => s + c.quantity, 0);
+
+  async function handleSendToVendor() {
+    const list = toBuyCards.map(c => `${c.quantity} ${c.name}`).join("\n");
+    await navigator.clipboard.writeText(list);
+    window.open(VENDORS[selectedVendorIdx].url, "_blank");
+    setBuyCopied(true);
+    setTimeout(() => setBuyCopied(false), 2500);
+  }
+
   return (
     <div className="app">
       <header className="app-header">
@@ -397,6 +416,28 @@ function AppInner() {
                         </button>
                         <button className="btn btn-secondary btn-sm" onClick={handleProxyDownload}>
                           Download .txt
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {toBuyCards.length > 0 && (
+                    <div className="buy-bar">
+                      <span className="buy-bar-label">
+                        🛒 {toBuyTotal} card{toBuyTotal !== 1 ? "s" : ""} to buy — send list to:
+                      </span>
+                      <div className="buy-bar-actions">
+                        <select
+                          className="control-select buy-vendor-select"
+                          value={selectedVendorIdx}
+                          onChange={e => setSelectedVendorIdx(Number(e.target.value))}
+                        >
+                          {VENDORS.map((v, i) => (
+                            <option key={v.label} value={i}>{v.label}</option>
+                          ))}
+                        </select>
+                        <button className="btn btn-secondary btn-sm" onClick={handleSendToVendor}>
+                          {buyCopied ? "✓ Copied! Tab opened" : "Copy & open"}
                         </button>
                       </div>
                     </div>
