@@ -14,29 +14,38 @@
   --radius: 8px;
 }
 
-body { background: var(--bg); color: var(--text); font-family: system-ui, sans-serif; font-size: 14px; }
+body { background: var(--bg); color: var(--text); font-family: system-ui, sans-serif; font-size: 14px; -webkit-text-size-adjust: 100%; }
 
 /* ─── Layout ────────────────────────────────────────────────────────────────── */
 .app { display: flex; flex-direction: column; min-height: 100vh; }
 
 .app-header {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 0 24px; height: 56px;
+  padding: 0 16px; height: 56px;
   background: var(--surface); border-bottom: 1px solid var(--border);
   position: sticky; top: 0; z-index: 10;
+  gap: 12px;
 }
 
-.app-title { font-size: 18px; font-weight: 700; color: var(--accent); }
+.app-title { font-size: 18px; font-weight: 700; color: var(--accent); white-space: nowrap; }
 
-.app-nav { display: flex; gap: 8px; }
+.app-nav { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
 
-.app-main { flex: 1; padding: 24px; }
+.app-main { flex: 1; padding: 16px; }
+
+@media (min-width: 640px) {
+  .app-header { padding: 0 24px; }
+  .app-main { padding: 24px; }
+}
 
 /* ─── Navigation buttons ────────────────────────────────────────────────────── */
 .nav-btn {
-  padding: 6px 14px; border-radius: var(--radius); border: 1px solid var(--border);
-  background: transparent; color: var(--text-muted); cursor: pointer; font-size: 13px;
-  transition: color 0.15s, border-color 0.15s;
+  padding: 5px 10px; border-radius: var(--radius); border: 1px solid var(--border);
+  background: transparent; color: var(--text-muted); cursor: pointer; font-size: 12px;
+  transition: color 0.15s, border-color 0.15s; white-space: nowrap;
+}
+@media (min-width: 640px) {
+  .nav-btn { padding: 6px 14px; font-size: 13px; }
 }
 .nav-btn:hover { color: var(--text); border-color: var(--accent); }
 .nav-btn.active { color: var(--accent); border-color: var(--accent); background: rgba(124,106,247,.1); }
@@ -58,7 +67,7 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 
 /* ─── Import panel ──────────────────────────────────────────────────────────── */
 .import-panel {
-  max-width: 640px; margin: 0 auto;
+  width: 100%; max-width: 640px; margin: 0 auto;
   display: flex; flex-direction: column; gap: 12px;
 }
 .import-panel h2 { font-size: 20px; }
@@ -87,17 +96,33 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 .import-error { color: var(--danger); font-size: 13px; }
 
 /* ─── Decks layout ──────────────────────────────────────────────────────────── */
-.decks-layout { display: flex; gap: 24px; align-items: flex-start; }
+.decks-layout { display: flex; flex-direction: column; gap: 16px; align-items: stretch; }
+
+@media (min-width: 768px) {
+  .decks-layout { flex-direction: row; gap: 24px; align-items: flex-start; }
+}
 
 /* ─── Sidebar ───────────────────────────────────────────────────────────────── */
 .deck-sidebar {
-  width: 220px; flex-shrink: 0;
+  width: 100%;
   background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--radius); padding: 16px;
+  border-radius: var(--radius); padding: 12px 16px;
 }
+
+@media (min-width: 768px) {
+  .deck-sidebar { width: 220px; flex-shrink: 0; padding: 16px; }
+}
+
 .deck-sidebar h2 { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 12px; }
 
-.deck-list { list-style: none; display: flex; flex-direction: column; gap: 4px; }
+.deck-list {
+  list-style: none; display: flex; gap: 4px;
+  flex-direction: row; flex-wrap: wrap;
+}
+
+@media (min-width: 768px) {
+  .deck-list { flex-direction: column; flex-wrap: nowrap; }
+}
 .deck-item {
   display: flex; align-items: center; gap: 8px; padding: 8px 10px;
   border-radius: var(--radius); cursor: pointer;
@@ -118,8 +143,11 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 /* ─── Deck content area ─────────────────────────────────────────────────────── */
 .deck-content { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
 
-.deck-content-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.deck-header-actions { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
+.deck-content-header {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 8px; flex-wrap: wrap;
+}
+.deck-header-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; flex-shrink: 0; }
 .deck-content-title {
   font-size: 18px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px;
 }
@@ -209,7 +237,7 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 .search-input:focus { outline: none; border-color: var(--accent); }
 .search-input::placeholder { color: var(--text-muted); }
 
-.checklist-controls { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+.checklist-controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; row-gap: 8px; }
 .control-label { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); cursor: pointer; }
 .control-select {
   padding: 4px 8px; border-radius: 6px;
@@ -234,10 +262,14 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 
 .card-checkbox { accent-color: var(--accent); width: 15px; height: 15px; cursor: pointer; flex-shrink: 0; }
 .card-qty { font-size: 12px; color: var(--text-muted); min-width: 28px; flex-shrink: 0; }
-.card-name { flex: 1; font-size: 13px; text-align: left; display: flex; flex-direction: column; gap: 2px; }
-.card-name-primary { line-height: 1.2; }
+.card-name { flex: 1; font-size: 13px; text-align: left; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.card-name-primary { line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .card-input-name { font-size: 11px; color: var(--text-muted); }
-.card-type { font-size: 11px; color: var(--text-muted); flex-shrink: 0; min-width: 90px; text-align: right; }
+.card-type { display: none; font-size: 11px; color: var(--text-muted); flex-shrink: 0; min-width: 90px; text-align: right; }
+
+@media (min-width: 540px) {
+  .card-type { display: block; }
+}
 
 /* ─── Source tags ───────────────────────────────────────────────────────────── */
 .source-tag-wrapper { position: relative; flex-shrink: 0; }
@@ -254,6 +286,7 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 
 .source-picker {
   position: absolute; right: 0; top: calc(100% + 6px); z-index: 100;
+  max-width: calc(100vw - 32px);
   background: var(--surface-2); border: 1px solid var(--border);
   border-radius: var(--radius); min-width: 160px;
   box-shadow: 0 4px 20px rgba(0,0,0,.5);
