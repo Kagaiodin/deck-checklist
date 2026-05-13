@@ -118,7 +118,9 @@ function SourcePicker({
   }, [onClose]);
 
   return (
-    <div className="source-picker" ref={ref}>
+    <>
+      <div className="mobile-sheet-backdrop" onClick={onClose} />
+      <div className="source-picker" ref={ref}>
       {current && (
         <button
           className="source-picker-item source-picker-clear"
@@ -137,7 +139,8 @@ function SourcePicker({
           {s.label}
         </button>
       ))}
-    </div>
+      </div>
+    </>
   );
 }
 
@@ -414,6 +417,7 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
             >
               Display {activeFilterCount > 0 && <span className="display-filter-badge">{activeFilterCount}</span>} {displayOpen ? "▴" : "▾"}
             </button>
+            {displayOpen && <div className="mobile-sheet-backdrop" onClick={() => setDisplayOpen(false)} />}
             {displayOpen && (
               <div className="display-menu-dropdown">
                 <div className="display-menu-section-label">Group &amp; sort</div>

@@ -733,6 +733,17 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 
 .edit-menu-divider { height: 1px; background: var(--border); }
 
+/* ─── Mobile bottom sheet backdrop ─────────────────────────────────────────── */
+/* Hidden on desktop — only active when bottom-sheet dropdowns are open         */
+.mobile-sheet-backdrop {
+  display: none;
+  position: fixed; inset: 0; z-index: 399;
+  background: rgba(0,0,0,.45);
+}
+@media (max-width: 639px) {
+  .mobile-sheet-backdrop { display: block; }
+}
+
 /* ─── Mobile dropdown / overlay fixes ──────────────────────────────────────── */
 @media (max-width: 639px) {
   /* Actions dropdown: button is right-aligned, so open leftward */
@@ -853,7 +864,20 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 
   /* Safe area insets for notched/dynamic island phones */
   .app-header { padding-top: env(safe-area-inset-top, 0px); }
-  .deck-picker-sheet { padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .app-main { padding-bottom: max(24px, env(safe-area-inset-bottom, 24px)); }
+  .deck-picker-sheet,
+  .source-picker,
+  .display-menu-dropdown { padding-bottom: env(safe-area-inset-bottom, 0px); }
+
+  /* Deck content header — stack title above action buttons */
+  .deck-content-header { flex-direction: column; gap: 10px; }
+  .deck-header-actions { width: 100%; justify-content: flex-end; }
+  .deck-content-title { font-size: 17px; width: 100%; }
+  .rename-form { width: 100%; }
+  .rename-input { min-height: 44px; font-size: 16px; }
+
+  /* Bulk bar — stretch source select to fill row */
+  .bulk-bar .control-select { flex: 1; }
 }
 
 /* ─── Utilities ─────────────────────────────────────────────────────────────── */
