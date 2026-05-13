@@ -519,3 +519,45 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
   .decks-layout { gap: 32px; }
   .deck-content { gap: 20px; }
 }
+
+/* ─── XL screen (1280px+) ───────────────────────────────────────────────────── */
+@media (min-width: 1280px) {
+  body { font-size: 16px; }
+
+  /* Cap content width and centre it so it doesn't stretch at 2560px */
+  .app-main { max-width: 1600px; margin-left: auto; margin-right: auto; width: 100%; padding: 40px 48px; }
+  .app-header { padding: 0 48px; height: 68px; }
+  .app-logo { height: 44px; }
+
+  /* Sidebar roomier */
+  .deck-sidebar { width: 300px; padding: 24px; }
+  .deck-item { padding: 12px 14px; gap: 10px; }
+  .deck-item-name { font-size: 15px; }
+  .deck-item-progress { font-size: 12px; }
+  .deck-item-bar-track { height: 4px; }
+
+  /* Card rows */
+  .card-row { padding: 12px 20px; gap: 14px; }
+  .card-name { font-size: 15px; }
+  .card-qty { font-size: 14px; min-width: 36px; }
+  .card-type { font-size: 13px; min-width: 130px; }
+  .card-checkbox { width: 17px; height: 17px; }
+
+  /* Deck header */
+  .deck-content-title { font-size: 22px; }
+  .deck-content { gap: 24px; }
+  .decks-layout { gap: 40px; }
+
+  /* Checklist header */
+  .checklist-header { padding: 18px 20px; gap: 14px; }
+  .search-input { padding: 10px 14px; font-size: 14px; }
+
+  /* Buttons */
+  .btn { padding: 10px 20px; font-size: 15px; }
+  .btn-sm { padding: 6px 14px; font-size: 13px; }
+  .nav-btn { padding: 8px 18px; font-size: 15px; }
+
+  /* Progress bar */
+  .progress-bar-track { height: 10px; }
+  .progress-label { font-size: 14px; }
+}
