@@ -27,6 +27,7 @@ function AppInner() {
   const [archidektFetching, setArchidektFetching] = useState(false);
   const [archidektError, setArchidektError] = useState<string | null>(null);
   const [showFormats, setShowFormats] = useState(false);
+  const [deckPickerOpen, setDeckPickerOpen] = useState(false);
 
   const activeDeck = state.decks.find(d => d.id === activeDeckId) ?? null;
   const errors = activeDeckId ? (allErrors[activeDeckId] ?? []) : [];
@@ -430,6 +431,66 @@ function AppInner() {
 
         {view === "decks" && (
           <div className="decks-layout">
+
+            {/* ── Mobile deck picker overlay ───────────────────────────────── */}
+            {deckPickerOpen && (
+              <div className="deck-picker-overlay" onClick={() => setDeckPickerOpen(false)}>
+                <div className="deck-picker-sheet" onClick={e => e.stopPropagation()}>
+                  <div className="deck-picker-header">
+                    <span className="deck-picker-title">My Decks</span>
+                    <button className="deck-picker-close" onClick={() => setDeckPickerOpen(false)}>✕</button>
+                  </div>
+                  <ul className="deck-picker-list">
+                    {state.decks.length === 0 ? (
+                      <li className="deck-picker-empty">No decks yet — import one to get started.</li>
+                    ) : state.decks.map(deck => {
+                      const acquiredCards = deck.cards.filter(c => c.acquired).reduce((s, c) => s + c.quantity, 0);
+                      const totalCards = deck.cards.reduce((s, c) => s + c.quantity, 0);
+                      return (
+                        <li
+                          key={deck.id}
+                          className={`deck-item${activeDeckId === deck.id ? " active" : ""}`}
+                          onClick={() => { setActiveDeckId(deck.id); setDeckPickerOpen(false); }}
+                        >
+                          <div className="deck-item-info">
+                            <div className="deck-item-top">
+                              <span className="deck-item-name">{deck.name}</span>
+                              <span className="deck-item-progress">{acquiredCards}/{totalCards}</span>
+                            </div>
+                            <div className="deck-item-bar-track">
+                              <div
+                                className="deck-item-bar-fill"
+                                style={{
+                                  width: totalCards > 0 ? `${(acquiredCards / totalCards) * 100}%` : "0%",
+                                  backgroundPosition: totalCards > 0 ? `${100 - (acquiredCards / totalCards) * 100}% center` : "100% center"
+                                }}
+                              />
+                            </div>
+                          </div>
+                          <button
+                            className="deck-delete-btn"
+                            onClick={e => { e.stopPropagation(); handleDeleteDeck(deck.id); }}
+                            title="Delete deck"
+                          >
+                            ×
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                  <div className="deck-picker-footer">
+                    <button
+                      className="btn btn-primary"
+                      style={{ width: "100%" }}
+                      onClick={() => { setDeckPickerOpen(false); setView("import"); }}
+                    >
+                      + Import Deck
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <aside className={`deck-sidebar${sidebarOpen ? "" : " sidebar-collapsed"}`}>
               <div className="sidebar-header">
                 <h2>Decks</h2>
@@ -486,6 +547,21 @@ function AppInner() {
             </aside>
 
             <div className="deck-content">
+              {/* ── Mobile deck switcher bar (hidden on desktop) ─────────── */}
+              <div className="mobile-deck-bar">
+                <button className="mobile-deck-current" onClick={() => setDeckPickerOpen(true)}>
+                  <div className="mobile-deck-info">
+                    <span className="mobile-deck-name">
+                      {activeDeck ? activeDeck.name : "Select a deck…"}
+                    </span>
+                    <span className="mobile-deck-sub">
+                      {state.decks.length} deck{state.decks.length !== 1 ? "s" : ""} · tap to switch
+                    </span>
+                  </div>
+                  <span className="mobile-deck-chevron">▾</span>
+                </button>
+              </div>
+
               {activeDeck ? (
                 <>
                   <div className="deck-content-header">
