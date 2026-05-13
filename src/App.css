@@ -16,6 +16,7 @@
 }
 
 body { background: var(--bg); color: var(--text); font-family: system-ui, sans-serif; font-size: 14px; -webkit-text-size-adjust: 100%; }
+@media (min-width: 1024px) { body { font-size: 15px; } }
 
 /* ─── Layout ────────────────────────────────────────────────────────────────── */
 .app { display: flex; flex-direction: column; min-height: 100vh; }
@@ -474,3 +475,47 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 /* ─── Utilities ─────────────────────────────────────────────────────────────── */
 .empty-state { color: var(--text-muted); font-size: 13px; padding: 16px 0; }
 .empty-state.centered { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 48px 0; }
+
+/* ─── Large screen (1024px+) ────────────────────────────────────────────────── */
+@media (min-width: 1024px) {
+  /* Header */
+  .app-header { height: 64px; padding: 0 32px; }
+  .app-logo { height: 40px; }
+  .app-title { font-size: 20px; }
+
+  /* Main padding */
+  .app-main { padding: 32px; }
+
+  /* Sidebar */
+  .deck-sidebar { width: 260px; padding: 20px; }
+  .deck-sidebar.sidebar-collapsed { padding-bottom: 20px; }
+  .deck-item { padding: 10px 12px; }
+  .deck-item-name { font-size: 14px; }
+  .deck-item-progress { font-size: 11px; }
+
+  /* Deck header */
+  .deck-content-title { font-size: 20px; }
+
+  /* Card rows */
+  .card-row { padding: 10px 16px; }
+  .card-name { font-size: 14px; }
+  .card-qty { font-size: 13px; }
+  .card-type { font-size: 12px; min-width: 110px; }
+
+  /* Controls */
+  .control-select { padding: 6px 10px; font-size: 14px; }
+  .toggle-label input[type="checkbox"] { width: 16px; height: 16px; }
+
+  /* Buttons */
+  .btn { padding: 9px 18px; font-size: 14px; }
+  .btn-sm { padding: 5px 12px; font-size: 13px; }
+  .nav-btn { padding: 7px 16px; font-size: 14px; }
+
+  /* Progress bar */
+  .progress-bar-track { height: 8px; border-radius: 4px; }
+  .progress-bar-fill { border-radius: 4px; }
+
+  /* Layout gap */
+  .decks-layout { gap: 32px; }
+  .deck-content { gap: 20px; }
+}
