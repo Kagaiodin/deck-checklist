@@ -91,6 +91,12 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 .deck-name-input::placeholder, .import-textarea::placeholder { color: var(--text-muted); }
 .import-textarea { font-family: monospace; }
 
+.url-field-row {
+  display: flex; gap: 8px; align-items: center;
+}
+.url-field-row .deck-name-input { flex: 1; }
+.archidekt-fetch-btn { white-space: nowrap; }
+
 .file-upload-label {
   display: inline-flex; align-items: center; gap: 8px;
   padding: 8px 16px; border-radius: var(--radius);
