@@ -109,11 +109,33 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
   border-radius: var(--radius); padding: 12px 16px;
 }
 
+.deck-sidebar.sidebar-collapsed { padding-bottom: 12px; }
+
 @media (min-width: 768px) {
   .deck-sidebar { width: 220px; flex-shrink: 0; padding: 16px; }
+  .deck-sidebar.sidebar-collapsed { padding-bottom: 16px; }
 }
 
-.deck-sidebar h2 { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 12px; }
+.sidebar-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px;
+}
+.deck-sidebar h2 { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 0; }
+
+.sidebar-toggle {
+  display: inline-flex; align-items: center;
+  background: none; border: none; color: var(--text-muted);
+  font-size: 11px; cursor: pointer; padding: 4px 8px;
+  border-radius: var(--radius); transition: color 0.12s, background 0.12s;
+}
+.sidebar-toggle:hover { color: var(--text); background: var(--surface-2); }
+
+/* On desktop the toggle is hidden — sidebar is always visible */
+@media (min-width: 768px) {
+  .sidebar-toggle { display: none; }
+  .sidebar-header { margin-bottom: 12px; }
+  .deck-sidebar h2 { margin-bottom: 0; }
+}
 
 .deck-list {
   list-style: none; display: flex; gap: 4px;

@@ -23,6 +23,7 @@ function AppInner() {
   const [view, setView] = useState<"import" | "decks">("decks");
   const [renamingDeckId, setRenamingDeckId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const activeDeck = state.decks.find(d => d.id === activeDeckId) ?? null;
   const errors = activeDeckId ? (allErrors[activeDeckId] ?? []) : [];
@@ -290,34 +291,45 @@ function AppInner() {
 
         {view === "decks" && (
           <div className="decks-layout">
-            <aside className="deck-sidebar">
-              <h2>Decks</h2>
-              {state.decks.length === 0 ? (
-                <p className="empty-state">No decks yet. Import one to get started.</p>
-              ) : (
-                <ul className="deck-list">
-                  {state.decks.map(deck => {
-                    const acquiredCards = deck.cards.filter(c => c.acquired).reduce((s, c) => s + c.quantity, 0);
-                    const totalCards = deck.cards.reduce((s, c) => s + c.quantity, 0);
-                    return (
-                      <li
-                        key={deck.id}
-                        className={`deck-item${activeDeckId === deck.id ? " active" : ""}`}
-                        onClick={() => setActiveDeckId(deck.id)}
-                      >
-                        <span className="deck-item-name">{deck.name}</span>
-                        <span className="deck-item-progress">{acquiredCards}/{totalCards}</span>
-                        <button
-                          className="deck-delete-btn"
-                          onClick={e => { e.stopPropagation(); handleDeleteDeck(deck.id); }}
-                          title="Delete deck"
+            <aside className={`deck-sidebar${sidebarOpen ? "" : " sidebar-collapsed"}`}>
+              <div className="sidebar-header">
+                <h2>Decks</h2>
+                <button
+                  className="sidebar-toggle"
+                  onClick={() => setSidebarOpen(o => !o)}
+                  aria-label={sidebarOpen ? "Hide deck list" : "Show deck list"}
+                >
+                  {sidebarOpen ? "▲ Hide" : "▼ Show"}
+                </button>
+              </div>
+              {sidebarOpen && (
+                state.decks.length === 0 ? (
+                  <p className="empty-state">No decks yet. Import one to get started.</p>
+                ) : (
+                  <ul className="deck-list">
+                    {state.decks.map(deck => {
+                      const acquiredCards = deck.cards.filter(c => c.acquired).reduce((s, c) => s + c.quantity, 0);
+                      const totalCards = deck.cards.reduce((s, c) => s + c.quantity, 0);
+                      return (
+                        <li
+                          key={deck.id}
+                          className={`deck-item${activeDeckId === deck.id ? " active" : ""}`}
+                          onClick={() => { setActiveDeckId(deck.id); setSidebarOpen(false); }}
                         >
-                          ×
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
+                          <span className="deck-item-name">{deck.name}</span>
+                          <span className="deck-item-progress">{acquiredCards}/{totalCards}</span>
+                          <button
+                            className="deck-delete-btn"
+                            onClick={e => { e.stopPropagation(); handleDeleteDeck(deck.id); }}
+                            title="Delete deck"
+                          >
+                            ×
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )
               )}
             </aside>
 
