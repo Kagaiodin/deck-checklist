@@ -234,6 +234,7 @@ function AddCardRow({ onAdd }: { onAdd: (name: string) => Promise<{ success: boo
 // ─── Main Checklist component ─────────────────────────────────────────────────
 export function Checklist({ deck, onToggleAcquired, onSetSource, onBulkSetSource, onRemoveCard, onUpdateQuantity, onAddCard }: Props) {
   const [editMode, setEditMode] = useState(false);
+  const [selectMode, setSelectMode] = useState(false);
   const [groupBy, setGroupBy] = useState<GroupBy>("none");
   const [showMissingOnly, setShowMissingOnly] = useState(false);
   const [search, setSearch] = useState("");
@@ -311,6 +312,7 @@ export function Checklist({ deck, onToggleAcquired, onSetSource, onBulkSetSource
 
   function toggleEditMode() {
     setEditMode(prev => !prev);
+    setSelectMode(false);
     setSelectedIds(new Set());
     setBulkSource("");
     setEditingQtyId(null);
@@ -375,6 +377,19 @@ export function Checklist({ deck, onToggleAcquired, onSetSource, onBulkSetSource
             Missing only
           </label>
 
+          {!editMode && (
+            <button
+              className={`btn btn-ghost btn-select-mode${selectMode ? " active" : ""}`}
+              onClick={() => {
+                setSelectedIds(new Set());
+                setBulkSource("");
+                setSelectMode(prev => !prev);
+              }}
+            >
+              {selectMode ? "Done" : "Select"}
+            </button>
+          )}
+
           <button
             className={`btn btn-sm ${editMode ? "btn-primary" : "btn-secondary"}`}
             onClick={toggleEditMode}
@@ -384,11 +399,16 @@ export function Checklist({ deck, onToggleAcquired, onSetSource, onBulkSetSource
           </button>
         </div>
 
-        {/* Edit mode banner */}
+        {/* Edit mode banner + add card */}
         {editMode && (
           <div className="edit-mode-banner">
             ✎ Edit mode — add, remove, or adjust quantities. Changes save automatically.
           </div>
+        )}
+        {editMode && (
+          <ul className="card-list">
+            <AddCardRow onAdd={handleAddCard} />
+          </ul>
         )}
 
         {/* Bulk action bar */}
@@ -419,7 +439,7 @@ export function Checklist({ deck, onToggleAcquired, onSetSource, onBulkSetSource
             </h3>
           )}
           <ul className="card-list">
-            {!editMode && groupBy === "none" && cards.length > 0 && (
+            {selectMode && !editMode && cards.length > 0 && (
               <li className="card-row card-row-select-all" onClick={toggleSelectAll}>
                 <input
                   type="checkbox"
@@ -441,21 +461,21 @@ export function Checklist({ deck, onToggleAcquired, onSetSource, onBulkSetSource
                 <li
                   key={card.id}
                   className={`card-row${card.acquired ? " acquired" : ""}${isSelected ? " selected" : ""}${editMode ? " edit-mode-row" : ""}`}
-                  onClick={editMode ? undefined : () => onToggleAcquired(card.id)}
+                  onClick={editMode ? undefined : selectMode ? () => toggleSelect(card.id) : () => onToggleAcquired(card.id)}
                 >
-                  {/* Selection checkbox — hidden in edit mode */}
-                  {!editMode && (
+                  {/* Selection checkbox — only in select mode */}
+                  {selectMode && !editMode && (
                     <input
                       type="checkbox"
                       checked={isSelected}
                       onChange={() => toggleSelect(card.id)}
-                      onClick={e => { e.stopPropagation(); toggleSelect(card.id); }}
-                      className="card-checkbox card-select-checkbox"
+                      onClick={e => e.stopPropagation()}
+                      className="card-checkbox"
                     />
                   )}
 
-                  {/* Acquired checkbox — hidden in edit mode */}
-                  {!editMode && (
+                  {/* Acquired checkbox — hidden in edit mode and select mode */}
+                  {!editMode && !selectMode && (
                     <input
                       type="checkbox"
                       checked={card.acquired}
@@ -535,22 +555,9 @@ export function Checklist({ deck, onToggleAcquired, onSetSource, onBulkSetSource
               );
             })}
 
-            {/* Add card row at bottom of list in edit mode (only show once, under the ungrouped list) */}
-            {editMode && groupBy === "none" && (
-              <AddCardRow onAdd={handleAddCard} />
-            )}
           </ul>
         </div>
       ))}
-
-      {/* Add card row for grouped view */}
-      {editMode && groupBy !== "none" && (
-        <div className="card-group">
-          <ul className="card-list">
-            <AddCardRow onAdd={handleAddCard} />
-          </ul>
-        </div>
-      )}
 
       {visibleCards.length === 0 && (
         <p className="empty-state">
