@@ -215,7 +215,7 @@ function AppInner() {
   return (
     <div className="app">
       <header className="app-header">
-        <h1 className="app-title">MTG Checklist</h1>
+        <h1 className="app-title">Fetchlist</h1>
         <nav className="app-nav">
           <button
             className={`nav-btn${view === "decks" ? " active" : ""}`}
