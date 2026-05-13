@@ -588,6 +588,20 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 
 .display-menu-divider { height: 1px; background: var(--border); margin: 6px 0; }
 
+.display-menu-row-wrap { align-items: flex-start; }
+
+.type-filter-pills { display: flex; flex-wrap: wrap; gap: 4px; }
+
+.type-pill {
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--text-muted); font-size: 11px; font-weight: 600;
+  padding: 3px 8px; border-radius: 4px; cursor: pointer;
+  transition: background 0.1s, color 0.1s, border-color 0.1s;
+  white-space: nowrap;
+}
+.type-pill:hover { background: var(--surface-2); color: var(--text); }
+.type-pill.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
 .display-menu-clear {
   margin: 0 14px 4px;
   background: none; border: none; cursor: pointer;

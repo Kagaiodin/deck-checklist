@@ -260,7 +260,7 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
   const [search, setSearch] = useState("");
   const [filterSource, setFilterSource] = useState<AcquisitionSource | "untagged" | "">("");
   const [filterColor, setFilterColor] = useState<Set<string>>(new Set());
-  const [filterType, setFilterType] = useState<string>("");
+  const [filterType, setFilterType] = useState<Set<string>>(new Set());
 
   // Derive available types from this deck's cards (in MAIN_TYPES order)
   const availableTypes = MAIN_TYPES.filter(t => deck.cards.some(c => extractMainType(c.type) === t));
@@ -290,7 +290,7 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
         return c.color.includes(fc);
       });
     })
-    .filter(c => !filterType || extractMainType(c.type) === filterType);
+    .filter(c => filterType.size === 0 || filterType.has(extractMainType(c.type)));
 
   const groups = groupCards(visibleCards, groupBy);
 
@@ -361,7 +361,7 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
     groupBy !== "none",
     filterSource !== "",
     filterColor.size > 0,
-    filterType !== "",
+    filterType.size > 0,
     showMissingOnly,
   ].filter(Boolean).length;
 
@@ -446,14 +446,23 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
                 </div>
 
                 {availableTypes.length > 0 && (
-                  <div className="display-menu-row">
+                  <div className="display-menu-row display-menu-row-wrap">
                     <span className="display-menu-row-label">Type</span>
-                    <select value={filterType} onChange={e => setFilterType(e.target.value)} className="control-select">
-                      <option value="">All</option>
+                    <div className="type-filter-pills">
                       {availableTypes.map(t => (
-                        <option key={t} value={t}>{t}</option>
+                        <button
+                          key={t}
+                          className={`type-pill${filterType.has(t) ? " active" : ""}`}
+                          onClick={() => setFilterType(prev => {
+                            const next = new Set(prev);
+                            next.has(t) ? next.delete(t) : next.add(t);
+                            return next;
+                          })}
+                        >
+                          {t}
+                        </button>
                       ))}
-                    </select>
+                    </div>
                   </div>
                 )}
 
@@ -489,7 +498,7 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
                     <div className="display-menu-divider" />
                     <button
                       className="display-menu-clear"
-                      onClick={() => { setGroupBy("none"); setFilterSource(""); setFilterColor(new Set()); setFilterType(""); setShowMissingOnly(false); }}
+                      onClick={() => { setGroupBy("none"); setFilterSource(""); setFilterColor(new Set()); setFilterType(new Set()); setShowMissingOnly(false); }}
                     >
                       Clear all
                     </button>
