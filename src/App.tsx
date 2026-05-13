@@ -24,6 +24,9 @@ function AppInner() {
   const [renamingDeckId, setRenamingDeckId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [archidektFetching, setArchidektFetching] = useState(false);
+  const [archidektError, setArchidektError] = useState<string | null>(null);
+  const [showFormats, setShowFormats] = useState(false);
 
   const activeDeck = state.decks.find(d => d.id === activeDeckId) ?? null;
   const errors = activeDeckId ? (allErrors[activeDeckId] ?? []) : [];
@@ -147,6 +150,34 @@ function AppInner() {
     setErrors(prev =>
       prev.map(e => e.originalName === originalName ? { ...e, resolved: true } : e)
     );
+  }
+
+  // ── Archidekt import ───────────────────────────────────────────────────────
+  function getArchidektId(url: string): string | null {
+    const match = url.match(/archidekt\.com\/decks\/(\d+)/i);
+    return match ? match[1] : null;
+  }
+
+  async function fetchFromArchidekt() {
+    const deckId = getArchidektId(deckUrl);
+    if (!deckId) return;
+    setArchidektFetching(true);
+    setArchidektError(null);
+    try {
+      const res = await fetch(`/api/archidekt?id=${deckId}`);
+      if (!res.ok) throw new Error(`Archidekt returned ${res.status} — is the deck public?`);
+      const data = await res.json();
+      const lines = (data.cards as { quantity: number; categories: string[]; card: { oracleCard: { name: string } } }[])
+        .filter(c => !c.categories?.includes("Maybeboard"))
+        .map(c => `${c.quantity} ${c.card.oracleCard.name}`)
+        .join("\n");
+      setImportText(lines);
+      if (!deckName.trim()) setDeckName(data.name ?? "");
+    } catch (e) {
+      setArchidektError(e instanceof Error ? e.message : "Failed to fetch from Archidekt.");
+    } finally {
+      setArchidektFetching(false);
+    }
   }
 
   function handleDeleteDeck(id: string) {
@@ -279,7 +310,38 @@ function AppInner() {
         {view === "import" && (
           <section className="import-panel">
             <h2>Import Decklist</h2>
-            <p className="import-hint">Paste your decklist below or upload a file. One card per line: <code>4 Lightning Bolt</code></p>
+            <div className="import-formats">
+              <button className="import-formats-toggle" onClick={() => setShowFormats(v => !v)}>
+                {showFormats ? "▾" : "▸"} Supported formats
+              </button>
+              {showFormats && (
+                <div className="import-formats-body">
+                  <div className="import-format-row">
+                    <span className="import-format-label">Plain decklist</span>
+                    <code>4 Lightning Bolt</code>
+                  </div>
+                  <div className="import-format-row">
+                    <span className="import-format-label">Moxfield export</span>
+                    <code>1 Sol Ring (SLD) 912 *F*</code>
+                    <span className="import-format-note">Set codes & foil markers stripped automatically</span>
+                  </div>
+                  <div className="import-format-row">
+                    <span className="import-format-label">Double-faced cards</span>
+                    <code>1 Bala Ged Recovery / Bala Ged Sanctuary (ZNR) 180</code>
+                    <span className="import-format-note">Back face stripped, front face used</span>
+                  </div>
+                  <div className="import-format-row">
+                    <span className="import-format-label">Archidekt URL</span>
+                    <code>archidekt.com/decks/365563/…</code>
+                    <span className="import-format-note">Paste URL above → click Fetch to auto-import</span>
+                  </div>
+                  <div className="import-format-row">
+                    <span className="import-format-label">.txt file</span>
+                    <span className="import-format-note">Any of the above formats, one card per line</span>
+                  </div>
+                </div>
+              )}
+            </div>
             <input
               className="deck-name-input"
               placeholder="Deck name (optional)"
@@ -287,13 +349,25 @@ function AppInner() {
               onChange={e => setDeckName(e.target.value)}
               disabled={validating}
             />
-            <input
-              className="deck-name-input"
-              placeholder="Deck URL (optional) — e.g. moxfield.com/decks/..."
-              value={deckUrl}
-              onChange={e => setDeckUrl(e.target.value)}
-              disabled={validating}
-            />
+            <div className="url-field-row">
+              <input
+                className="deck-name-input"
+                placeholder="Deck URL (optional) — paste an Archidekt URL to auto-import"
+                value={deckUrl}
+                onChange={e => { setDeckUrl(e.target.value); setArchidektError(null); }}
+                disabled={validating || archidektFetching}
+              />
+              {getArchidektId(deckUrl) && (
+                <button
+                  className="btn btn-primary btn-sm archidekt-fetch-btn"
+                  onClick={fetchFromArchidekt}
+                  disabled={archidektFetching || validating}
+                >
+                  {archidektFetching ? "Fetching…" : "Fetch from Archidekt"}
+                </button>
+              )}
+            </div>
+            {archidektError && <p className="import-error">{archidektError}</p>}
             <label className="file-upload-label">
               <input
                 type="file"

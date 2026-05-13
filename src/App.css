@@ -91,6 +91,44 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 .deck-name-input::placeholder, .import-textarea::placeholder { color: var(--text-muted); }
 .import-textarea { font-family: monospace; }
 
+/* ─── Import format helper ──────────────────────────────────────────────────── */
+.import-formats { display: flex; flex-direction: column; gap: 8px; }
+
+.import-formats-toggle {
+  background: none; border: none; cursor: pointer;
+  color: var(--text-muted); font-size: 13px; text-align: left; padding: 0;
+  transition: color 0.12s;
+}
+.import-formats-toggle:hover { color: var(--text); }
+
+.import-formats-body {
+  display: flex; flex-direction: column; gap: 10px;
+  padding: 12px 14px; border-radius: var(--radius);
+  background: var(--surface-2); border: 1px solid var(--border);
+}
+
+.import-format-row {
+  display: flex; flex-direction: column; gap: 3px;
+}
+.import-format-label {
+  font-size: 11px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .05em; color: var(--text-muted);
+}
+.import-format-row code {
+  font-size: 12px; color: var(--accent-light);
+  background: var(--surface); padding: 2px 6px; border-radius: 4px;
+  align-self: flex-start;
+}
+.import-format-note {
+  font-size: 11px; color: var(--text-muted); font-style: italic;
+}
+
+.url-field-row {
+  display: flex; gap: 8px; align-items: center;
+}
+.url-field-row .deck-name-input { flex: 1; }
+.archidekt-fetch-btn { white-space: nowrap; }
+
 .file-upload-label {
   display: inline-flex; align-items: center; gap: 8px;
   padding: 8px 16px; border-radius: var(--radius);
