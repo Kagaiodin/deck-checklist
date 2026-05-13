@@ -28,6 +28,8 @@ export interface Card {
   color: string[];
   type: string;
   source?: AcquisitionSource;
+  set?: string;
+  rarity?: "common" | "uncommon" | "rare" | "mythic" | "special" | "bonus";
 }
 
 export interface Deck {

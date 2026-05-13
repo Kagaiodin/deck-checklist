@@ -632,7 +632,14 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
 
                   <span className="card-name">
                     <span className="card-name-primary">{card.name}</span>
-                    {card.inputName && <span className="card-input-name">{card.inputName}</span>}
+                    <span className="card-meta">
+                      {card.set && card.rarity && (
+                        <span className={`card-rarity card-rarity-${card.rarity}`}>
+                          {card.set} · {card.rarity === "mythic" ? "M" : card.rarity === "rare" ? "R" : card.rarity === "uncommon" ? "U" : card.rarity === "special" || card.rarity === "bonus" ? "S" : "C"}
+                        </span>
+                      )}
+                      {card.inputName && <span className="card-input-name">{card.inputName}</span>}
+                    </span>
                   </span>
                   <span className="card-type">{card.type}</span>
 
