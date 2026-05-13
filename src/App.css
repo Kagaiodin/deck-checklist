@@ -195,7 +195,10 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 }
 .progress-bar-fill {
   height: 100%; border-radius: 3px;
-  background: var(--accent); transition: width 0.2s ease;
+  background: linear-gradient(90deg, var(--accent) 0%, #a78bfa 40%, #34d399 100%);
+  background-size: 200% 100%;
+  background-position: left center;
+  transition: width 0.3s ease, background-position 0.3s ease;
 }
 
 /* ─── Error queue ───────────────────────────────────────────────────────────── */
@@ -285,8 +288,13 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
   min-height: 52px;
 }
 .card-row:hover { border-color: var(--accent); }
-.card-row.acquired { opacity: 0.45; }
+.card-row.acquired {
+  opacity: 0.5;
+  border-left: 3px solid #4ade80;
+  padding-left: 10px;
+}
 .card-row.acquired .card-name { text-decoration: line-through; }
+.card-row.acquired .card-name-primary { color: var(--text-muted); }
 
 @media (min-width: 640px) {
   .card-list { gap: 2px; }

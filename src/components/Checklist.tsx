@@ -331,7 +331,10 @@ export function Checklist({ deck, onToggleAcquired, onSetSource, onBulkSetSource
           <div className="progress-bar-track">
             <div
               className="progress-bar-fill"
-              style={{ width: totalCards > 0 ? `${(acquiredCards / totalCards) * 100}%` : "0%" }}
+              style={{
+                width: totalCards > 0 ? `${(acquiredCards / totalCards) * 100}%` : "0%",
+                backgroundPosition: totalCards > 0 ? `${100 - (acquiredCards / totalCards) * 100}% center` : "100% center"
+              }}
             />
           </div>
         </div>
