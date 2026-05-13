@@ -31,10 +31,10 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 }
 
 .app-title { font-size: 18px; font-weight: 700; color: var(--accent); white-space: nowrap; line-height: 1; }
-.app-logo { height: 32px; width: auto; display: block; mix-blend-mode: lighten; }
+.app-logo { height: 36px; width: auto; display: block; mix-blend-mode: lighten; }
 
 @media (min-width: 640px) {
-  .app-logo { height: 36px; }
+  .app-logo { height: 42px; }
 }
 
 .app-nav { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
@@ -480,7 +480,7 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 @media (min-width: 1024px) {
   /* Header */
   .app-header { height: 64px; padding: 0 32px; }
-  .app-logo { height: 40px; }
+  .app-logo { height: 46px; }
   .app-title { font-size: 20px; }
 
   /* Main padding */
@@ -527,7 +527,7 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
   /* Cap content width and centre it so it doesn't stretch at 2560px */
   .app-main { max-width: 1600px; margin-left: auto; margin-right: auto; width: 100%; padding: 40px 48px; }
   .app-header { padding: 0 48px; height: 68px; }
-  .app-logo { height: 44px; }
+  .app-logo { height: 50px; }
 
   /* Sidebar roomier */
   .deck-sidebar { width: 300px; padding: 24px; }

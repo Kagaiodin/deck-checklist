@@ -216,7 +216,7 @@ function AppInner() {
     <div className="app">
       <header className="app-header">
         <h1 className="app-title">
-          <img src="/banner_temp.png" alt="Fetchlist" className="app-logo" />
+          <img src="/banner_temp_new.png" alt="Fetchlist" className="app-logo" />
         </h1>
         <nav className="app-nav">
           <button
