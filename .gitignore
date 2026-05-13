@@ -28,3 +28,10 @@ dist-ssr
 AGENTS.md
 implementation-plan.md
 decklist_sample.txt
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+.env*
+!.env.example

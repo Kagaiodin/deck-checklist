@@ -8,13 +8,14 @@ import { useLocalStorage } from "./hooks/useLocalStorage";
 import { Checklist } from "./components/Checklist";
 import { ErrorQueue } from "./components/ErrorQueue";
 import { ProgressTracker } from "./components/ProgressTracker";
-import type { Deck, ErrorQueueItem } from "./types/index";
+import type { Deck, ErrorQueueItem, AcquisitionSource } from "./types/index";
 
 function AppInner() {
   const { state, dispatch } = useDecks();
   const [activeDeckId, setActiveDeckId] = useState<string | null>(null);
   const [importText, setImportText] = useState("");
   const [deckName, setDeckName] = useState("");
+  const [deckUrl, setDeckUrl] = useState("");
   const [allErrors, setAllErrors] = useLocalStorage<Record<string, ErrorQueueItem[]>>("mtg-checklist-errors", {});
   const [validating, setValidating] = useState(false);
   const [progress, setProgress] = useState<ValidationProgress>({ total: 0, validated: 0 });
@@ -55,6 +56,7 @@ function AppInner() {
       const deck: Deck = {
         id,
         name,
+        url: deckUrl.trim() || undefined,
         cards: result.cards,
         createdAt: Date.now()
       };
@@ -64,6 +66,7 @@ function AppInner() {
       setActiveDeckId(id);
       setImportText("");
       setDeckName("");
+      setDeckUrl("");
       setView("decks");
     } catch (e) {
       setImportError(e instanceof Error ? e.message : "Validation failed. Please try again.");
@@ -75,6 +78,16 @@ function AppInner() {
   function handleToggleAcquired(cardId: string) {
     if (!activeDeckId) return;
     dispatch({ type: "TOGGLE_ACQUIRED", payload: { deckId: activeDeckId, cardId } });
+  }
+
+  function handleSetSource(cardId: string, source: AcquisitionSource | undefined) {
+    if (!activeDeckId) return;
+    dispatch({ type: "SET_CARD_SOURCE", payload: { deckId: activeDeckId, cardId, source } });
+  }
+
+  function handleBulkSetSource(cardIds: string[], source: AcquisitionSource | undefined) {
+    if (!activeDeckId) return;
+    dispatch({ type: "BULK_SET_SOURCE", payload: { deckId: activeDeckId, cardIds, source } });
   }
 
   async function handleRemap(originalName: string, newName: string) {
@@ -142,6 +155,36 @@ function AppInner() {
     URL.revokeObjectURL(url);
   }
 
+  function buildProxyList(): string {
+    if (!activeDeck) return "";
+    return activeDeck.cards
+      .filter(c => c.source === "proxy")
+      .map(c => `${c.quantity}x ${c.inputName ?? c.name}`)
+      .join("\n");
+  }
+
+  function handleProxyDownload() {
+    if (!activeDeck) return;
+    const text = buildProxyList();
+    const blob = new Blob([text], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${activeDeck.name} - proxies.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function handleProxyCopy() {
+    const text = buildProxyList();
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  const [copied, setCopied] = useState(false);
+  const proxyCards = activeDeck?.cards.filter(c => c.source === "proxy") ?? [];
+
   return (
     <div className="app">
       <header className="app-header">
@@ -172,6 +215,13 @@ function AppInner() {
               placeholder="Deck name (optional)"
               value={deckName}
               onChange={e => setDeckName(e.target.value)}
+              disabled={validating}
+            />
+            <input
+              className="deck-name-input"
+              placeholder="Deck URL (optional) — e.g. moxfield.com/decks/..."
+              value={deckUrl}
+              onChange={e => setDeckUrl(e.target.value)}
               disabled={validating}
             />
             <label className="file-upload-label">
@@ -266,10 +316,38 @@ function AppInner() {
                         <span className="rename-hint">✎</span>
                       </h2>
                     )}
-                    <button className="btn btn-secondary btn-sm" onClick={handleExportMissing}>
-                      Export missing
-                    </button>
+                    <div className="deck-header-actions">
+                      {activeDeck.url && (
+                        <a
+                          href={activeDeck.url.startsWith("http") ? activeDeck.url : `https://${activeDeck.url}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn btn-secondary btn-sm"
+                        >
+                          View deck ↗
+                        </a>
+                      )}
+                      <button className="btn btn-secondary btn-sm" onClick={handleExportMissing}>
+                        Export missing
+                      </button>
+                    </div>
                   </div>
+                  {proxyCards.length > 0 && (
+                    <div className="proxy-export-bar">
+                      <span className="proxy-export-label">
+                        🖨 {proxyCards.reduce((s, c) => s + c.quantity, 0)} proxy card{proxyCards.reduce((s, c) => s + c.quantity, 0) !== 1 ? "s" : ""} — export for{" "}
+                        <a href="https://proxxied.com" target="_blank" rel="noopener noreferrer" className="proxy-export-link">proxxied.com</a>
+                      </span>
+                      <div className="proxy-export-actions">
+                        <button className="btn btn-secondary btn-sm" onClick={handleProxyCopy}>
+                          {copied ? "✓ Copied!" : "Copy to clipboard"}
+                        </button>
+                        <button className="btn btn-secondary btn-sm" onClick={handleProxyDownload}>
+                          Download .txt
+                        </button>
+                      </div>
+                    </div>
+                  )}
                   <ErrorQueue
                     errors={errors}
                     onRemap={handleRemap}
@@ -278,6 +356,8 @@ function AppInner() {
                   <Checklist
                     deck={activeDeck}
                     onToggleAcquired={handleToggleAcquired}
+                    onSetSource={handleSetSource}
+                    onBulkSetSource={handleBulkSetSource}
                   />
                 </>
               ) : (
