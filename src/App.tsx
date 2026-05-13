@@ -284,6 +284,28 @@ function AppInner() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [actionsOpen]);
 
+  // ── Edit menu ──────────────────────────────────────────────────────────────
+  const [editMode, setEditMode] = useState(false);
+  const [selectMode, setSelectMode] = useState(false);
+  const [editMenuOpen, setEditMenuOpen] = useState(false);
+  const editMenuRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!editMenuOpen) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (editMenuRef.current && !editMenuRef.current.contains(e.target as Node)) {
+        setEditMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [editMenuOpen]);
+
+  // Reset edit/select modes when the active deck changes
+  useEffect(() => {
+    setEditMode(false);
+    setSelectMode(false);
+  }, [activeDeckId]);
+
   return (
     <div className="app">
       <header className="app-header">
@@ -541,6 +563,38 @@ function AppInner() {
                           </div>
                         )}
                       </div>
+
+                      {/* Edit menu */}
+                      {(editMode || selectMode) ? (
+                        <button
+                          className="btn btn-primary btn-sm"
+                          onClick={() => { setEditMode(false); setSelectMode(false); }}
+                        >
+                          Done
+                        </button>
+                      ) : (
+                        <div className="edit-menu-container" ref={editMenuRef}>
+                          <button
+                            className={`btn btn-secondary btn-sm${editMenuOpen ? " active" : ""}`}
+                            onClick={() => setEditMenuOpen(v => !v)}
+                          >
+                            Edit {editMenuOpen ? "▴" : "▾"}
+                          </button>
+                          {editMenuOpen && (
+                            <div className="edit-menu-dropdown">
+                              <button className="edit-menu-item" onClick={() => { setEditMenuOpen(false); setSelectMode(true); }}>
+                                Bulk tag
+                                <span className="edit-menu-item-hint">Select cards and set a source tag</span>
+                              </button>
+                              <div className="edit-menu-divider" />
+                              <button className="edit-menu-item" onClick={() => { setEditMenuOpen(false); setEditMode(true); }}>
+                                Edit deck
+                                <span className="edit-menu-item-hint">Add, remove, or adjust quantities</span>
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                   <ErrorQueue
@@ -550,6 +604,8 @@ function AppInner() {
                   />
                   <Checklist
                     deck={activeDeck}
+                    editMode={editMode}
+                    selectMode={selectMode}
                     onToggleAcquired={handleToggleAcquired}
                     onSetSource={handleSetSource}
                     onBulkSetSource={handleBulkSetSource}

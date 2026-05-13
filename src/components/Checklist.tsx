@@ -4,6 +4,8 @@ import { ACQUISITION_SOURCES } from "../types/index";
 
 interface Props {
   deck: Deck;
+  editMode: boolean;
+  selectMode: boolean;
   onToggleAcquired: (cardId: string) => void;
   onSetSource: (cardId: string, source: AcquisitionSource | undefined) => void;
   onBulkSetSource: (cardIds: string[], source: AcquisitionSource | undefined) => void;
@@ -232,9 +234,7 @@ function AddCardRow({ onAdd }: { onAdd: (name: string) => Promise<{ success: boo
 }
 
 // ─── Main Checklist component ─────────────────────────────────────────────────
-export function Checklist({ deck, onToggleAcquired, onSetSource, onBulkSetSource, onRemoveCard, onUpdateQuantity, onAddCard }: Props) {
-  const [editMode, setEditMode] = useState(false);
-  const [selectMode, setSelectMode] = useState(false);
+export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetSource, onBulkSetSource, onRemoveCard, onUpdateQuantity, onAddCard }: Props) {
   const [groupBy, setGroupBy] = useState<GroupBy>("none");
   const [showMissingOnly, setShowMissingOnly] = useState(false);
   const [search, setSearch] = useState("");
@@ -244,8 +244,6 @@ export function Checklist({ deck, onToggleAcquired, onSetSource, onBulkSetSource
   const [bulkSource, setBulkSource] = useState<AcquisitionSource | "">("");
   const [editingQtyId, setEditingQtyId] = useState<string | null>(null);
   const [qtyDraft, setQtyDraft] = useState("");
-  const [editMenuOpen, setEditMenuOpen] = useState(false);
-  const editMenuRef = useRef<HTMLDivElement>(null);
 
   const query = search.trim();
 
@@ -312,23 +310,15 @@ export function Checklist({ deck, onToggleAcquired, onSetSource, onBulkSetSource
     return result;
   }
 
-  function toggleEditMode() {
-    setEditMode(prev => !prev);
-    setSelectMode(false);
-    setSelectedIds(new Set());
-    setBulkSource("");
-    setEditingQtyId(null);
-  }
-
+  // Reset internal selection state when selectMode is turned off from parent
   useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (editMenuRef.current && !editMenuRef.current.contains(e.target as Node)) {
-        setEditMenuOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, []);
+    if (!selectMode) { setSelectedIds(new Set()); setBulkSource(""); }
+  }, [selectMode]);
+
+  // Reset qty editing when editMode is turned off from parent
+  useEffect(() => {
+    if (!editMode) setEditingQtyId(null);
+  }, [editMode]);
 
   const selectedCount = selectedIds.size;
 
@@ -394,47 +384,6 @@ export function Checklist({ deck, onToggleAcquired, onSetSource, onBulkSetSource
             </label>
           </div>
 
-          <div className="checklist-actions">
-            {(selectMode || editMode) ? (
-              <button
-                className="btn btn-primary btn-sm"
-                onClick={() => {
-                  if (editMode) toggleEditMode();
-                  else { setSelectMode(false); setSelectedIds(new Set()); setBulkSource(""); }
-                }}
-              >
-                Done
-              </button>
-            ) : (
-              <div className="edit-menu-container" ref={editMenuRef}>
-                <button
-                  className="btn btn-secondary btn-sm"
-                  onClick={() => setEditMenuOpen(v => !v)}
-                >
-                  Edit {editMenuOpen ? "▴" : "▾"}
-                </button>
-                {editMenuOpen && (
-                  <div className="edit-menu-dropdown">
-                    <button
-                      className="edit-menu-item"
-                      onClick={() => { setEditMenuOpen(false); setSelectMode(true); }}
-                    >
-                      Bulk tag
-                      <span className="edit-menu-item-hint">Select cards and set a source tag</span>
-                    </button>
-                    <div className="edit-menu-divider" />
-                    <button
-                      className="edit-menu-item"
-                      onClick={() => { setEditMenuOpen(false); toggleEditMode(); }}
-                    >
-                      Edit deck
-                      <span className="edit-menu-item-hint">Add, remove, or adjust quantities</span>
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
         </div>
 
         {/* Edit mode banner + add card */}
