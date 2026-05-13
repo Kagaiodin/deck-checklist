@@ -429,7 +429,7 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
                 <div className="display-menu-section-label">Filter</div>
 
                 <div className="display-menu-row">
-                  <span className="display-menu-row-label">Source</span>
+                  <span className="display-menu-row-label">Card source</span>
                   <select
                     value={filterSource}
                     onChange={e => setFilterSource(e.target.value as AcquisitionSource | "untagged" | "")}
