@@ -269,6 +269,8 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
   const [bulkSource, setBulkSource] = useState<AcquisitionSource | "">("");
   const [editingQtyId, setEditingQtyId] = useState<string | null>(null);
   const [qtyDraft, setQtyDraft] = useState("");
+  const [displayOpen, setDisplayOpen] = useState(false);
+  const displayMenuRef = useRef<HTMLDivElement>(null);
 
   const query = search.trim();
 
@@ -342,6 +344,25 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
     return result;
   }
 
+  useEffect(() => {
+    if (!displayOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (displayMenuRef.current && !displayMenuRef.current.contains(e.target as Node)) {
+        setDisplayOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [displayOpen]);
+
+  const activeFilterCount = [
+    groupBy !== "none",
+    filterSource !== "",
+    filterColor !== "",
+    filterType !== "",
+    showMissingOnly,
+  ].filter(Boolean).length;
+
   // Reset internal selection state when selectMode is turned off from parent
   useEffect(() => {
     if (!selectMode) { setSelectedIds(new Set()); setBulkSource(""); }
@@ -384,70 +405,93 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
         </div>
 
         <div className="checklist-controls">
-          <div className="checklist-filters">
-            <label className="control-label">
-              Group by:
-              <select value={groupBy} onChange={e => setGroupBy(e.target.value as GroupBy)} className="control-select">
-                <option value="none">None</option>
-                <option value="color">Color</option>
-                <option value="type">Type</option>
-                <option value="source">Source</option>
-              </select>
-            </label>
+          <div className="display-menu-container" ref={displayMenuRef}>
+            <button
+              className={`btn btn-secondary btn-sm${displayOpen ? " active" : ""}`}
+              onClick={() => setDisplayOpen(v => !v)}
+            >
+              Display {activeFilterCount > 0 && <span className="display-filter-badge">{activeFilterCount}</span>} {displayOpen ? "▴" : "▾"}
+            </button>
+            {displayOpen && (
+              <div className="display-menu-dropdown">
+                <div className="display-menu-section-label">Group &amp; sort</div>
+                <div className="display-menu-row">
+                  <span className="display-menu-row-label">Group by</span>
+                  <select value={groupBy} onChange={e => setGroupBy(e.target.value as GroupBy)} className="control-select">
+                    <option value="none">None</option>
+                    <option value="color">Color</option>
+                    <option value="type">Type</option>
+                    <option value="source">Source</option>
+                  </select>
+                </div>
 
-            <label className="control-label">
-              Source:
-              <select
-                value={filterSource}
-                onChange={e => setFilterSource(e.target.value as AcquisitionSource | "untagged" | "")}
-                className="control-select"
-              >
-                <option value="">All</option>
-                <option value="untagged">Untagged</option>
-                {ACQUISITION_SOURCES.map(s => (
-                  <option key={s.value} value={s.value}>{s.label}</option>
-                ))}
-              </select>
-            </label>
+                <div className="display-menu-divider" />
+                <div className="display-menu-section-label">Filter</div>
 
-            {availableTypes.length > 0 && (
-              <label className="control-label">
-                Type:
-                <select
-                  value={filterType}
-                  onChange={e => setFilterType(e.target.value)}
-                  className="control-select"
-                >
-                  <option value="">All</option>
-                  {availableTypes.map(t => (
-                    <option key={t} value={t}>{t}</option>
-                  ))}
-                </select>
-              </label>
-            )}
-
-            <div className="control-label">
-              Color:
-              <div className="color-filter-pills">
-                {COLOR_FILTERS.map(cf => (
-                  <button
-                    key={cf.value}
-                    className={`color-pill color-pill-${cf.value}${filterColor === cf.value ? " active" : ""}`}
-                    title={cf.title}
-                    onClick={() => setFilterColor(prev => prev === cf.value ? "" : cf.value)}
+                <div className="display-menu-row">
+                  <span className="display-menu-row-label">Source</span>
+                  <select
+                    value={filterSource}
+                    onChange={e => setFilterSource(e.target.value as AcquisitionSource | "untagged" | "")}
+                    className="control-select"
                   >
-                    {cf.label}
-                  </button>
-                ))}
+                    <option value="">All</option>
+                    <option value="untagged">Untagged</option>
+                    {ACQUISITION_SOURCES.map(s => (
+                      <option key={s.value} value={s.value}>{s.label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {availableTypes.length > 0 && (
+                  <div className="display-menu-row">
+                    <span className="display-menu-row-label">Type</span>
+                    <select value={filterType} onChange={e => setFilterType(e.target.value)} className="control-select">
+                      <option value="">All</option>
+                      {availableTypes.map(t => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                <div className="display-menu-row">
+                  <span className="display-menu-row-label">Color</span>
+                  <div className="color-filter-pills">
+                    {COLOR_FILTERS.map(cf => (
+                      <button
+                        key={cf.value}
+                        className={`color-pill color-pill-${cf.value}${filterColor === cf.value ? " active" : ""}`}
+                        title={cf.title}
+                        onClick={() => setFilterColor(prev => prev === cf.value ? "" : cf.value)}
+                      >
+                        {cf.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="display-menu-row">
+                  <label className="display-menu-toggle">
+                    <input type="checkbox" checked={showMissingOnly} onChange={e => setShowMissingOnly(e.target.checked)} />
+                    Missing only
+                  </label>
+                </div>
+
+                {activeFilterCount > 0 && (
+                  <>
+                    <div className="display-menu-divider" />
+                    <button
+                      className="display-menu-clear"
+                      onClick={() => { setGroupBy("none"); setFilterSource(""); setFilterColor(""); setFilterType(""); setShowMissingOnly(false); }}
+                    >
+                      Clear all
+                    </button>
+                  </>
+                )}
               </div>
-            </div>
-
-            <label className="control-label toggle-label">
-              <input type="checkbox" checked={showMissingOnly} onChange={e => setShowMissingOnly(e.target.checked)} />
-              Missing only
-            </label>
+            )}
           </div>
-
         </div>
 
         {/* Edit mode banner + add card */}
