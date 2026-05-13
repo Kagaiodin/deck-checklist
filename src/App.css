@@ -147,16 +147,12 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 
 .deck-list {
   list-style: none; display: flex; gap: 4px;
-  flex-direction: row; flex-wrap: wrap;
-}
-
-@media (min-width: 768px) {
-  .deck-list { flex-direction: column; flex-wrap: nowrap; }
+  flex-direction: column; flex-wrap: nowrap;
 }
 .deck-item {
   display: flex; align-items: center; gap: 8px; padding: 8px 10px;
   border-radius: var(--radius); cursor: pointer;
-  transition: background 0.12s;
+  transition: background 0.12s; min-width: 0;
 }
 .deck-item:hover { background: var(--surface-2); }
 .deck-item.active { background: rgba(108,92,231,.18); }
