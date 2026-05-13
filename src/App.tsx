@@ -318,13 +318,15 @@ function AppInner() {
             className={`nav-btn${view === "decks" ? " active" : ""}`}
             onClick={() => setView("decks")}
           >
-            My Decks
+            <span className="nav-label-short">Decks</span>
+            <span className="nav-label-full">My Decks</span>
           </button>
           <button
             className={`nav-btn${view === "import" ? " active" : ""}`}
             onClick={() => setView("import")}
           >
-            + Import Deck
+            <span className="nav-label-short">+ Import</span>
+            <span className="nav-label-full">+ Import Deck</span>
           </button>
         </nav>
       </header>
@@ -415,7 +417,7 @@ function AppInner() {
               value={importText}
               onChange={e => setImportText(e.target.value)}
               disabled={validating}
-              rows={16}
+              rows={typeof window !== "undefined" && window.innerWidth < 640 ? 8 : 16}
             />
             {importError && <p className="import-error">{importError}</p>}
             {validating && <ProgressTracker progress={progress} />}

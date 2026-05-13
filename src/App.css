@@ -39,6 +39,15 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 
 .app-nav { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
 
+/* Short nav labels on mobile, full labels on larger screens */
+.nav-label-short { display: none; }
+.nav-label-full  { display: inline; }
+@media (max-width: 479px) {
+  .nav-label-short { display: inline; }
+  .nav-label-full  { display: none; }
+  .app-logo { max-width: 120px; }
+}
+
 .app-main { flex: 1; padding: 16px; }
 
 @media (min-width: 640px) {
@@ -732,6 +741,153 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 }
 
 .edit-menu-divider { height: 1px; background: var(--border); }
+
+/* ─── Mobile bottom sheet backdrop ─────────────────────────────────────────── */
+/* Hidden on desktop — only active when bottom-sheet dropdowns are open         */
+.mobile-sheet-backdrop {
+  display: none;
+  position: fixed; inset: 0; z-index: 399;
+  background: rgba(0,0,0,.45);
+}
+@media (max-width: 639px) {
+  .mobile-sheet-backdrop { display: block; }
+}
+
+/* ─── Mobile dropdown / overlay fixes ──────────────────────────────────────── */
+@media (max-width: 639px) {
+  /* Actions dropdown: button is right-aligned, so open leftward */
+  .actions-dropdown {
+    left: auto;
+    right: 0;
+  }
+
+  /* Drag handle for bottom sheet panels */
+  .source-picker::before,
+  .display-menu-dropdown::before {
+    content: "";
+    display: block;
+    width: 36px; height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin: 10px auto 4px;
+    flex-shrink: 0;
+  }
+
+  /* Source picker: convert to a full-width bottom sheet */
+  .source-picker {
+    position: fixed;
+    left: 0; right: 0; bottom: 0; top: auto;
+    max-width: 100%;
+    border-radius: 16px 16px 0 0;
+    border-left: none; border-right: none; border-bottom: none;
+    max-height: 65vh; overflow-y: auto;
+    z-index: 400;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .source-picker-item {
+    padding: 14px 20px;
+    font-size: 15px;
+    min-height: 52px;
+    display: flex; align-items: center;
+  }
+  .source-picker-clear { font-size: 14px; }
+
+  /* Display dropdown: full-width bottom sheet */
+  .display-menu-dropdown {
+    position: fixed;
+    left: 0; right: 0; bottom: 0; top: auto;
+    width: 100%;
+    border-radius: 16px 16px 0 0;
+    border-left: none; border-right: none; border-bottom: none;
+    max-height: 75vh; overflow-y: auto;
+    z-index: 400;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  /* Edit + Actions dropdowns: constrain so they can't overflow the screen */
+  .edit-menu-dropdown,
+  .actions-dropdown {
+    max-width: calc(100vw - 32px);
+    max-height: 70vh; overflow-y: auto;
+  }
+}
+
+/* ─── Mobile touch targets & layout fixes ───────────────────────────────────── */
+/* Minimum 44px touch targets on small screens (Apple HIG / WCAG 2.5.5)        */
+@media (max-width: 639px) {
+  /* Navigation */
+  .nav-btn { padding: 10px 14px; font-size: 13px; }
+
+  /* All buttons */
+  .btn { min-height: 44px; padding: 10px 18px; }
+  .btn-sm { min-height: 40px; padding: 8px 14px; font-size: 13px; }
+
+  /* Deck delete button in the mobile picker sheet */
+  .deck-picker-list .deck-delete-btn {
+    font-size: 20px; opacity: 1;
+    min-width: 44px; min-height: 44px;
+    display: flex; align-items: center; justify-content: center;
+    padding: 0;
+  }
+
+  /* Source tag pill on card rows */
+  .source-tag { min-height: 40px; padding: 8px 14px; font-size: 13px; }
+
+  /* Color filter pills */
+  .color-pill { width: 36px; height: 36px; font-size: 12px; }
+
+  /* Type filter pills */
+  .type-pill { padding: 8px 12px; font-size: 13px; }
+
+  /* Filter / group selects in Display menu */
+  .control-select { min-height: 40px; padding: 8px 10px; font-size: 14px; }
+
+  /* Missing only checkbox label */
+  .display-menu-toggle { font-size: 14px; gap: 10px; }
+  .display-menu-toggle input[type="checkbox"] { width: 18px; height: 18px; }
+
+  /* Search input */
+  .search-input { min-height: 44px; font-size: 15px; padding: 10px 14px; }
+
+  /* Rename hint — always visible on touch (no hover state) */
+  .rename-hint { opacity: 1; }
+
+  /* Edit mode tap targets */
+  .qty-edit-btn { min-width: 44px; min-height: 36px; font-size: 14px; padding: 4px 10px; }
+  .qty-edit-input { width: 64px; min-height: 36px; font-size: 14px; padding: 4px 8px; }
+  .card-remove-btn { min-width: 44px; min-height: 44px; font-size: 20px; padding: 0; display: flex; align-items: center; justify-content: center; }
+  .add-card-qty { min-height: 44px; width: 60px; font-size: 15px; }
+  .add-card-input { min-height: 44px; font-size: 15px; }
+
+  /* Autocomplete items */
+  .autocomplete-item { padding: 12px 16px; font-size: 15px; }
+
+  /* Error queue — stack remap form vertically */
+  .error-row { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .remap-form { width: 100%; }
+  .remap-input { min-height: 40px; font-size: 14px; }
+
+  /* Import panel — stack URL + Fetch button vertically */
+  .url-field-row { flex-direction: column; }
+  .archidekt-fetch-btn { width: 100%; }
+
+  /* Safe area insets for notched/dynamic island phones */
+  .app-header { padding-top: env(safe-area-inset-top, 0px); }
+  .app-main { padding-bottom: max(24px, env(safe-area-inset-bottom, 24px)); }
+  .deck-picker-sheet,
+  .source-picker,
+  .display-menu-dropdown { padding-bottom: env(safe-area-inset-bottom, 0px); }
+
+  /* Deck content header — stack title above action buttons */
+  .deck-content-header { flex-direction: column; gap: 10px; }
+  .deck-header-actions { width: 100%; justify-content: flex-end; }
+  .deck-content-title { font-size: 17px; width: 100%; }
+  .rename-form { width: 100%; }
+  .rename-input { min-height: 44px; font-size: 16px; }
+
+  /* Bulk bar — stretch source select to fill row */
+  .bulk-bar .control-select { flex: 1; }
+}
 
 /* ─── Utilities ─────────────────────────────────────────────────────────────── */
 .empty-state { color: var(--text-muted); font-size: 13px; padding: 16px 0; }
