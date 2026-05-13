@@ -311,9 +311,16 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 }
 .card-row:hover { border-color: var(--accent); }
 .card-row.acquired {
-  opacity: 0.5;
   border-left: 3px solid #4ade80;
   padding-left: 10px;
+}
+/* Dim content elements only — not the whole row, so dropdowns don't inherit opacity */
+.card-row.acquired .card-checkbox,
+.card-row.acquired .card-qty,
+.card-row.acquired .card-name,
+.card-row.acquired .card-type,
+.card-row.acquired .source-tag {
+  opacity: 0.45;
 }
 .card-row.acquired .card-name { text-decoration: line-through; }
 .card-row.acquired .card-name-primary { color: var(--text-muted); }
