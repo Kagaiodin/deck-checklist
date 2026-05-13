@@ -1,5 +1,5 @@
 interface Env {
-  ASSETS: Fetcher;
+  ASSETS: { fetch: typeof fetch };
 }
 
 export default {
