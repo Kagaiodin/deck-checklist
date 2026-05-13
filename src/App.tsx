@@ -415,7 +415,7 @@ function AppInner() {
               value={importText}
               onChange={e => setImportText(e.target.value)}
               disabled={validating}
-              rows={16}
+              rows={typeof window !== "undefined" && window.innerWidth < 640 ? 8 : 16}
             />
             {importError && <p className="import-error">{importError}</p>}
             {validating && <ProgressTracker progress={progress} />}
