@@ -359,8 +359,8 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
       <div className="checklist-header">
         <div className="checklist-stats">
           <span>
-            {acquiredCards} / {totalCards} cards acquired
-            <span className="stats-items-note"> · {totalItems} items</span>
+            {acquiredCards} / {totalCards} fetched
+            <span className="stats-items-note"> · {totalItems} unique cards</span>
           </span>
           <div className="progress-bar-track">
             <div
