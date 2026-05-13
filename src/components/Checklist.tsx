@@ -392,7 +392,7 @@ export function Checklist({ deck, onToggleAcquired, onSetSource, onBulkSetSource
                   setSelectMode(prev => !prev);
                 }}
               >
-                {selectMode ? "✓ Done" : "⊞ Bulk tag"}
+                {selectMode ? "Done" : "Bulk tag"}
               </button>
             )}
 
@@ -401,7 +401,7 @@ export function Checklist({ deck, onToggleAcquired, onSetSource, onBulkSetSource
               onClick={toggleEditMode}
               title={editMode ? "Exit edit mode" : "Edit deck"}
             >
-              {editMode ? "✓ Done editing" : "✎ Edit deck"}
+              {editMode ? "Done editing" : "Edit deck"}
             </button>
           </div>
         </div>
