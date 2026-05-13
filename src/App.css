@@ -170,7 +170,7 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 }
 .deck-item-bar-fill {
   height: 100%; border-radius: 2px;
-  background: linear-gradient(90deg, #6c5ce7 0%, #a78bfa 50%, #34d399 100%);
+  background: linear-gradient(90deg, #4c3dbf 0%, #6c5ce7 50%, #a78bfa 100%);
   background-size: 200% 100%;
   transition: width 0.3s ease, background-position 0.3s ease;
 }
@@ -215,7 +215,7 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 }
 .progress-bar-fill {
   height: 100%; border-radius: 3px;
-  background: linear-gradient(90deg, #6c5ce7 0%, #a78bfa 50%, #34d399 100%);
+  background: linear-gradient(90deg, #4c3dbf 0%, #6c5ce7 50%, #a78bfa 100%);
   background-size: 200% 100%;
   background-position: left center;
   transition: width 0.3s ease, background-position 0.3s ease;
