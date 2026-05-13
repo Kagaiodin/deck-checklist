@@ -3,14 +3,14 @@
 
 :root {
   --bg: #0d0f1a;
-  --surface: #13162a;
-  --surface-2: #1c2040;
-  --border: #2a2f52;
+  --surface: #151829;
+  --surface-2: #1e2238;
+  --border: #2d3258;
   --accent: #6c5ce7;
   --accent-hover: #8b7cf8;
   --accent-light: #a78bfa;
   --text: #eceef8;
-  --text-muted: #7b82b0;
+  --text-muted: #8890b8;
   --danger: #e05353;
   --radius: 8px;
 }
@@ -26,13 +26,14 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
   background: var(--surface); border-bottom: 1px solid var(--border);
   position: sticky; top: 0; z-index: 10;
   gap: 12px;
+  box-shadow: 0 1px 12px rgba(0,0,0,.4);
 }
 
 .app-title { font-size: 18px; font-weight: 700; color: var(--accent); white-space: nowrap; line-height: 1; }
-.app-logo { height: 36px; width: auto; display: block; }
+.app-logo { height: 32px; width: auto; display: block; mix-blend-mode: lighten; }
 
 @media (min-width: 640px) {
-  .app-logo { height: 40px; }
+  .app-logo { height: 36px; }
 }
 
 .app-nav { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
