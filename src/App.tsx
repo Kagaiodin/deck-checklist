@@ -213,10 +213,12 @@ function AppInner() {
   const proxyCards = activeDeck?.cards.filter(c => c.source === "proxy") ?? [];
 
   // ── Buy links ──────────────────────────────────────────────────────────────
+  // Manapool supports ?deck=base64list for direct prefill (no paste needed).
+  // TCGPlayer and Card Kingdom require manual paste, so we copy to clipboard.
   const VENDORS = [
-    { label: "Manapool",     url: "https://manapool.com/add-deck" },
-    { label: "TCGPlayer",    url: "https://www.tcgplayer.com/massentry" },
-    { label: "Card Kingdom", url: "https://www.cardkingdom.com/builder" },
+    { label: "Manapool",     url: "https://manapool.com/add-deck", prefill: true  },
+    { label: "TCGPlayer",    url: "https://www.tcgplayer.com/massentry",  prefill: false },
+    { label: "Card Kingdom", url: "https://www.cardkingdom.com/builder",  prefill: false },
   ];
   const [selectedVendorIdx, setSelectedVendorIdx] = useState(0);
   const [buyCopied, setBuyCopied] = useState(false);
@@ -225,8 +227,16 @@ function AppInner() {
 
   async function handleSendToVendor() {
     const list = toBuyCards.map(c => `${c.quantity} ${c.name}`).join("\n");
-    await navigator.clipboard.writeText(list);
-    window.open(VENDORS[selectedVendorIdx].url, "_blank");
+    const vendor = VENDORS[selectedVendorIdx];
+    if (vendor.prefill) {
+      // Base64-encode the list and append as ?deck= — opens pre-filled
+      const encoded = btoa(unescape(encodeURIComponent(list)));
+      window.open(`${vendor.url}?deck=${encoded}`, "_blank");
+    } else {
+      // Vendors without prefill support: copy list, user pastes it in
+      await navigator.clipboard.writeText(list);
+      window.open(vendor.url, "_blank");
+    }
     setBuyCopied(true);
     setTimeout(() => setBuyCopied(false), 2500);
   }
@@ -437,7 +447,11 @@ function AppInner() {
                           ))}
                         </select>
                         <button className="btn btn-secondary btn-sm" onClick={handleSendToVendor}>
-                          {buyCopied ? "✓ Copied! Tab opened" : "Copy & open"}
+                          {buyCopied
+                            ? "✓ Done!"
+                            : VENDORS[selectedVendorIdx].prefill
+                              ? "Open pre-filled"
+                              : "Copy & open"}
                         </button>
                       </div>
                     </div>
