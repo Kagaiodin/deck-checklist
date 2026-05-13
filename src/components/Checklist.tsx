@@ -350,56 +350,60 @@ export function Checklist({ deck, onToggleAcquired, onSetSource, onBulkSetSource
         </div>
 
         <div className="checklist-controls">
-          <label className="control-label">
-            Group by:
-            <select value={groupBy} onChange={e => setGroupBy(e.target.value as GroupBy)} className="control-select">
-              <option value="none">None</option>
-              <option value="color">Color</option>
-              <option value="type">Type</option>
-              <option value="source">Source</option>
-            </select>
-          </label>
+          <div className="checklist-filters">
+            <label className="control-label">
+              Group by:
+              <select value={groupBy} onChange={e => setGroupBy(e.target.value as GroupBy)} className="control-select">
+                <option value="none">None</option>
+                <option value="color">Color</option>
+                <option value="type">Type</option>
+                <option value="source">Source</option>
+              </select>
+            </label>
 
-          <label className="control-label">
-            Source:
-            <select
-              value={filterSource}
-              onChange={e => setFilterSource(e.target.value as AcquisitionSource | "untagged" | "")}
-              className="control-select"
-            >
-              <option value="">All</option>
-              <option value="untagged">Untagged</option>
-              {ACQUISITION_SOURCES.map(s => (
-                <option key={s.value} value={s.value}>{s.label}</option>
-              ))}
-            </select>
-          </label>
+            <label className="control-label">
+              Source:
+              <select
+                value={filterSource}
+                onChange={e => setFilterSource(e.target.value as AcquisitionSource | "untagged" | "")}
+                className="control-select"
+              >
+                <option value="">All</option>
+                <option value="untagged">Untagged</option>
+                {ACQUISITION_SOURCES.map(s => (
+                  <option key={s.value} value={s.value}>{s.label}</option>
+                ))}
+              </select>
+            </label>
 
-          <label className="control-label toggle-label">
-            <input type="checkbox" checked={showMissingOnly} onChange={e => setShowMissingOnly(e.target.checked)} />
-            Missing only
-          </label>
+            <label className="control-label toggle-label">
+              <input type="checkbox" checked={showMissingOnly} onChange={e => setShowMissingOnly(e.target.checked)} />
+              Missing only
+            </label>
+          </div>
 
-          {!editMode && (
+          <div className="checklist-actions">
+            {!editMode && (
+              <button
+                className={`btn btn-sm ${selectMode ? "btn-primary" : "btn-secondary"}`}
+                onClick={() => {
+                  setSelectedIds(new Set());
+                  setBulkSource("");
+                  setSelectMode(prev => !prev);
+                }}
+              >
+                {selectMode ? "Done" : "Select"}
+              </button>
+            )}
+
             <button
-              className={`btn btn-sm ${selectMode ? "btn-primary" : "btn-secondary"}`}
-              onClick={() => {
-                setSelectedIds(new Set());
-                setBulkSource("");
-                setSelectMode(prev => !prev);
-              }}
+              className={`btn btn-sm ${editMode ? "btn-primary" : "btn-secondary"}`}
+              onClick={toggleEditMode}
+              title={editMode ? "Exit edit mode" : "Edit deck"}
             >
-              {selectMode ? "Done" : "Select"}
+              {editMode ? "✓ Done editing" : "✎ Edit deck"}
             </button>
-          )}
-
-          <button
-            className={`btn btn-sm ${editMode ? "btn-primary" : "btn-secondary"}`}
-            onClick={toggleEditMode}
-            title={editMode ? "Exit edit mode" : "Edit deck"}
-          >
-            {editMode ? "✓ Done editing" : "✎ Edit deck"}
-          </button>
+          </div>
         </div>
 
         {/* Edit mode banner + add card */}

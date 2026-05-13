@@ -283,7 +283,13 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 .search-input:focus { outline: none; border-color: var(--accent); }
 .search-input::placeholder { color: var(--text-muted); }
 
-.checklist-controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; row-gap: 8px; }
+.checklist-controls {
+  display: flex; align-items: center;
+  justify-content: space-between;
+  gap: 12px; flex-wrap: wrap;
+}
+.checklist-filters { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; row-gap: 8px; }
+.checklist-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 .control-label { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); cursor: pointer; }
 .control-select {
   padding: 8px 10px; border-radius: 6px;
