@@ -27,7 +27,12 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
   gap: 12px;
 }
 
-.app-title { font-size: 18px; font-weight: 700; color: var(--accent); white-space: nowrap; }
+.app-title { font-size: 18px; font-weight: 700; color: var(--accent); white-space: nowrap; line-height: 1; }
+.app-logo { height: 36px; width: auto; display: block; }
+
+@media (min-width: 640px) {
+  .app-logo { height: 40px; }
+}
 
 .app-nav { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
 
