@@ -733,6 +733,65 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 
 .edit-menu-divider { height: 1px; background: var(--border); }
 
+/* ─── Mobile dropdown / overlay fixes ──────────────────────────────────────── */
+@media (max-width: 639px) {
+  /* Actions dropdown: button is right-aligned, so open leftward */
+  .actions-dropdown {
+    left: auto;
+    right: 0;
+  }
+
+  /* Drag handle for bottom sheet panels */
+  .source-picker::before,
+  .display-menu-dropdown::before {
+    content: "";
+    display: block;
+    width: 36px; height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin: 10px auto 4px;
+    flex-shrink: 0;
+  }
+
+  /* Source picker: convert to a full-width bottom sheet */
+  .source-picker {
+    position: fixed;
+    left: 0; right: 0; bottom: 0; top: auto;
+    max-width: 100%;
+    border-radius: 16px 16px 0 0;
+    border-left: none; border-right: none; border-bottom: none;
+    max-height: 65vh; overflow-y: auto;
+    z-index: 400;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .source-picker-item {
+    padding: 14px 20px;
+    font-size: 15px;
+    min-height: 52px;
+    display: flex; align-items: center;
+  }
+  .source-picker-clear { font-size: 14px; }
+
+  /* Display dropdown: full-width bottom sheet */
+  .display-menu-dropdown {
+    position: fixed;
+    left: 0; right: 0; bottom: 0; top: auto;
+    width: 100%;
+    border-radius: 16px 16px 0 0;
+    border-left: none; border-right: none; border-bottom: none;
+    max-height: 75vh; overflow-y: auto;
+    z-index: 400;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  /* Edit + Actions dropdowns: constrain so they can't overflow the screen */
+  .edit-menu-dropdown,
+  .actions-dropdown {
+    max-width: calc(100vw - 32px);
+    max-height: 70vh; overflow-y: auto;
+  }
+}
+
 /* ─── Mobile touch targets ──────────────────────────────────────────────────── */
 /* Minimum 44px touch targets on small screens (Apple HIG / WCAG 2.5.5)        */
 @media (max-width: 639px) {
