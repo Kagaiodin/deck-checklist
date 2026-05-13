@@ -26,6 +26,7 @@ function AppInner() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [archidektFetching, setArchidektFetching] = useState(false);
   const [archidektError, setArchidektError] = useState<string | null>(null);
+  const [showFormats, setShowFormats] = useState(false);
 
   const activeDeck = state.decks.find(d => d.id === activeDeckId) ?? null;
   const errors = activeDeckId ? (allErrors[activeDeckId] ?? []) : [];
@@ -309,9 +310,38 @@ function AppInner() {
         {view === "import" && (
           <section className="import-panel">
             <h2>Import Decklist</h2>
-            <p className="import-hint">
-              Paste your decklist below, upload a file, or paste an <strong>Archidekt</strong> URL to import automatically. One card per line: <code>4 Lightning Bolt</code>
-            </p>
+            <div className="import-formats">
+              <button className="import-formats-toggle" onClick={() => setShowFormats(v => !v)}>
+                {showFormats ? "▾" : "▸"} Supported formats
+              </button>
+              {showFormats && (
+                <div className="import-formats-body">
+                  <div className="import-format-row">
+                    <span className="import-format-label">Plain decklist</span>
+                    <code>4 Lightning Bolt</code>
+                  </div>
+                  <div className="import-format-row">
+                    <span className="import-format-label">Moxfield export</span>
+                    <code>1 Sol Ring (SLD) 912 *F*</code>
+                    <span className="import-format-note">Set codes & foil markers stripped automatically</span>
+                  </div>
+                  <div className="import-format-row">
+                    <span className="import-format-label">Double-faced cards</span>
+                    <code>1 Bala Ged Recovery / Bala Ged Sanctuary (ZNR) 180</code>
+                    <span className="import-format-note">Back face stripped, front face used</span>
+                  </div>
+                  <div className="import-format-row">
+                    <span className="import-format-label">Archidekt URL</span>
+                    <code>archidekt.com/decks/365563/…</code>
+                    <span className="import-format-note">Paste URL above → click Fetch to auto-import</span>
+                  </div>
+                  <div className="import-format-row">
+                    <span className="import-format-label">.txt file</span>
+                    <span className="import-format-note">Any of the above formats, one card per line</span>
+                  </div>
+                </div>
+              )}
+            </div>
             <input
               className="deck-name-input"
               placeholder="Deck name (optional)"
