@@ -163,7 +163,7 @@ function AppInner() {
     setArchidektFetching(true);
     setArchidektError(null);
     try {
-      const res = await fetch(`https://archidekt.com/api/decks/${deckId}/`);
+      const res = await fetch(`/api/archidekt?id=${deckId}`);
       if (!res.ok) throw new Error(`Archidekt returned ${res.status} — is the deck public?`);
       const data = await res.json();
       const lines = (data.cards as { quantity: number; categories: string[]; card: { oracleCard: { name: string } } }[])
