@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import "./App.css";
 import { DeckProvider, useDecks } from "./store/decks";
 import { parseDecklist } from "./utils/parser";
@@ -211,6 +211,47 @@ function AppInner() {
 
   const [copied, setCopied] = useState(false);
   const proxyCards = activeDeck?.cards.filter(c => c.source === "proxy") ?? [];
+  const proxyTotal = proxyCards.reduce((s, c) => s + c.quantity, 0);
+
+  // ── Buy links ──────────────────────────────────────────────────────────────
+  // Manapool supports ?deck=base64list for direct prefill (no paste needed).
+  // TCGPlayer and Card Kingdom require manual paste, so we copy to clipboard.
+  const VENDORS = [
+    { label: "Manapool",     url: "https://manapool.com/add-deck",       prefill: true  },
+    { label: "TCGPlayer",    url: "https://www.tcgplayer.com/massentry", prefill: false },
+    { label: "Card Kingdom", url: "https://www.cardkingdom.com/builder", prefill: false },
+  ];
+  const [sentVendor, setSentVendor] = useState<string | null>(null);
+  const toBuyCards = activeDeck?.cards.filter(c => c.source === "need_to_buy") ?? [];
+  const toBuyTotal = toBuyCards.reduce((s, c) => s + c.quantity, 0);
+
+  async function handleSendToVendor(idx: number) {
+    const list = toBuyCards.map(c => `${c.quantity} ${c.name}`).join("\n");
+    const vendor = VENDORS[idx];
+    if (vendor.prefill) {
+      const encoded = btoa(unescape(encodeURIComponent(list)));
+      window.open(`${vendor.url}?deck=${encoded}`, "_blank");
+    } else {
+      await navigator.clipboard.writeText(list);
+      window.open(vendor.url, "_blank");
+    }
+    setSentVendor(vendor.label);
+    setTimeout(() => setSentVendor(null), 2500);
+  }
+
+  // ── Actions menu ───────────────────────────────────────────────────────────
+  const [actionsOpen, setActionsOpen] = useState(false);
+  const actionsMenuRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!actionsOpen) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (actionsMenuRef.current && !actionsMenuRef.current.contains(e.target as Node)) {
+        setActionsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [actionsOpen]);
 
   return (
     <div className="app">
@@ -380,27 +421,54 @@ function AppInner() {
                           View deck ↗
                         </a>
                       )}
-                      <button className="btn btn-secondary btn-sm" onClick={handleExportMissing}>
-                        Export missing
-                      </button>
-                    </div>
-                  </div>
-                  {proxyCards.length > 0 && (
-                    <div className="proxy-export-bar">
-                      <span className="proxy-export-label">
-                        🖨 {proxyCards.reduce((s, c) => s + c.quantity, 0)} proxy card{proxyCards.reduce((s, c) => s + c.quantity, 0) !== 1 ? "s" : ""} — export for{" "}
-                        <a href="https://proxxied.com" target="_blank" rel="noopener noreferrer" className="proxy-export-link">proxxied.com</a>
-                      </span>
-                      <div className="proxy-export-actions">
-                        <button className="btn btn-secondary btn-sm" onClick={handleProxyCopy}>
-                          {copied ? "✓ Copied!" : "Copy to clipboard"}
+                      <div className="actions-menu-container" ref={actionsMenuRef}>
+                        <button
+                          className={`btn btn-secondary btn-sm${actionsOpen ? " active" : ""}`}
+                          onClick={() => setActionsOpen(o => !o)}
+                        >
+                          Actions ▾
                         </button>
-                        <button className="btn btn-secondary btn-sm" onClick={handleProxyDownload}>
-                          Download .txt
-                        </button>
+                        {actionsOpen && (
+                          <div className="actions-dropdown">
+                            {/* Export missing */}
+                            <div className="actions-section-label">Missing cards</div>
+                            <button className="actions-item" onClick={() => { handleExportMissing(); setActionsOpen(false); }}>
+                              Export missing list
+                            </button>
+
+                            {/* Proxy export */}
+                            {proxyCards.length > 0 && (
+                              <>
+                                <div className="actions-divider" />
+                                <div className="actions-section-label">🖨 {proxyTotal} proxy card{proxyTotal !== 1 ? "s" : ""}</div>
+                                <button className="actions-item" onClick={handleProxyCopy}>
+                                  {copied ? "✓ Copied!" : "Copy proxy list"}
+                                  <span className="actions-item-hint">for proxxied.com</span>
+                                </button>
+                                <button className="actions-item" onClick={() => { handleProxyDownload(); setActionsOpen(false); }}>
+                                  Download .txt
+                                </button>
+                              </>
+                            )}
+
+                            {/* Send to vendor */}
+                            {toBuyCards.length > 0 && (
+                              <>
+                                <div className="actions-divider" />
+                                <div className="actions-section-label">🛒 {toBuyTotal} card{toBuyTotal !== 1 ? "s" : ""} to buy</div>
+                                {VENDORS.map((v, i) => (
+                                  <button key={v.label} className="actions-item" onClick={() => handleSendToVendor(i)}>
+                                    {sentVendor === v.label ? "✓ Done!" : `Send to ${v.label}`}
+                                    <span className="actions-item-hint">{v.prefill ? "Opens pre-filled" : "Paste when tab opens"}</span>
+                                  </button>
+                                ))}
+                              </>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
-                  )}
+                  </div>
                   <ErrorQueue
                     errors={errors}
                     onRemap={handleRemap}

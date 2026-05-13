@@ -311,9 +311,16 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 }
 .card-row:hover { border-color: var(--accent); }
 .card-row.acquired {
-  opacity: 0.5;
   border-left: 3px solid #4ade80;
   padding-left: 10px;
+}
+/* Dim content elements only — not the whole row, so dropdowns don't inherit opacity */
+.card-row.acquired .card-checkbox,
+.card-row.acquired .card-qty,
+.card-row.acquired .card-name,
+.card-row.acquired .card-type,
+.card-row.acquired .source-tag {
+  opacity: 0.45;
 }
 .card-row.acquired .card-name { text-decoration: line-through; }
 .card-row.acquired .card-name-primary { color: var(--text-muted); }
@@ -461,6 +468,41 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 .add-card-input:focus { outline: none; border-color: var(--accent); }
 .add-card-input::placeholder { color: var(--text-muted); }
 .add-card-error { font-size: 11px; color: var(--danger); flex-basis: 100%; padding-left: 60px; }
+
+/* ─── Actions menu ──────────────────────────────────────────────────────────── */
+.actions-menu-container { position: relative; }
+
+.actions-dropdown {
+  position: absolute; left: 0; top: calc(100% + 6px); z-index: 200;
+  min-width: 220px;
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 20px rgba(0,0,0,.5);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+
+.actions-section-label {
+  padding: 8px 14px 4px;
+  font-size: 11px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .05em; color: var(--text-muted);
+}
+
+.actions-divider {
+  height: 1px; background: var(--border); margin: 4px 0;
+}
+
+.actions-item {
+  display: flex; flex-direction: column; align-items: flex-start;
+  padding: 8px 14px; gap: 2px;
+  background: none; border: none; cursor: pointer;
+  color: var(--text); font-size: 13px; text-align: left;
+  transition: background 0.1s;
+  width: 100%;
+}
+.actions-item:hover { background: rgba(255,255,255,.06); }
+.actions-item-hint {
+  font-size: 11px; color: var(--text-muted);
+}
 
 /* ─── Proxy export bar ──────────────────────────────────────────────────────── */
 .proxy-export-bar {
