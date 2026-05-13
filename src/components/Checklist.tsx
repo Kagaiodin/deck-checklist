@@ -631,7 +631,7 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
                       onClick={() => setOpenPickerId(openPickerId === card.id ? null : card.id)}
                       title="Set acquisition source"
                     >
-                      {card.source ? sourceLabel(card.source) : "+ source"}
+                      {card.source ? sourceLabel(card.source) : "+ card source"}
                     </button>
                     {openPickerId === card.id && (
                       <SourcePicker
