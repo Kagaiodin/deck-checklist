@@ -14,6 +14,8 @@ interface ScryfallCard {
   color_identity: string[];
   type_line: string;
   card_faces?: ScryfallCardFace[];
+  set: string;
+  rarity: "common" | "uncommon" | "rare" | "mythic" | "special" | "bonus";
 }
 
 interface ScryfallNotFound {
@@ -65,7 +67,9 @@ function scryfallCardToCard(sc: ScryfallCard, quantity: number): Card {
     quantity,
     acquired: false,
     color: colors,
-    type
+    type,
+    set: sc.set.toUpperCase(),
+    rarity: sc.rarity,
   };
 }
 
