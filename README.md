@@ -1,73 +1,56 @@
-# React + TypeScript + Vite
+# Fetchlist
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A Magic: The Gathering deck acquisition tracker. Paste a decklist, validate it against Scryfall, then check off cards as you collect them physically.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **Import decklists** — paste plain text, Moxfield export format, or a `.txt` file
+- **Archidekt import** — paste an Archidekt deck URL to auto-import via CORS proxy
+- **Scryfall validation** — all cards verified against the Scryfall API with fuzzy matching for typos
+- **Acquisition tracking** — check off cards as you acquire them with a progress bar
+- **Card sources** — tag each card: Owned, Ordered, Proxy, In binder, Need to buy, etc.
+- **Bulk tagging** — select multiple cards and set a source tag in one action
+- **Filters & grouping** — filter by color, type, source, or missing only; group by color, type, or source
+- **Set & rarity badges** — each card shows its set code and colour-coded rarity (C/U/R/M)
+- **Buy links** — send your "Need to buy" list to Manapool (pre-filled), TCGPlayer, or Card Kingdom
+- **Export** — download missing cards or proxy list as `.txt`
+- **Edit mode** — add, remove, or adjust card quantities after import
+- **Multiple decks** — manage any number of decks, each stored locally in the browser
+- **Mobile friendly** — responsive layout with bottom sheet pickers and touch-optimised controls
 
-## React Compiler
+## Tech Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **React 19** + TypeScript + Vite
+- **Cloudflare Workers** + Workers Assets (handles CORS proxy for Archidekt)
+- All data stored in `localStorage` — no account or backend required
 
-## Expanding the ESLint configuration
+## Getting Started
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev          # local dev (no Worker proxy)
+npm run preview      # full build with Cloudflare Worker (requires wrangler)
+npm run deploy       # deploy to Cloudflare
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+> **Note:** Archidekt URL import requires the Cloudflare Worker proxy. Use `npm run preview` or a deployed environment — it won't work with plain `vite dev`.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Supported Import Formats
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+| Format | Example |
+|---|---|
+| Plain decklist | `4 Lightning Bolt` |
+| Moxfield export | `1 Sol Ring (SLD) 912 *F*` |
+| Double-faced cards | `1 Bala Ged Recovery / Bala Ged Sanctuary (ZNR) 180` |
+| Archidekt URL | `https://archidekt.com/decks/123456/my_deck` |
+| `.txt` file | Any of the above, one card per line |
+
+Set codes, collector numbers, foil markers, and back-face names are all stripped automatically.
+
+## Contributing
+
+Bug reports and feature requests are welcome via [GitHub Issues](../../issues). Please check existing issues before opening a new one.
+
+## License
+
+[MIT](LICENSE)
