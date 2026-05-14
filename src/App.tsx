@@ -307,6 +307,20 @@ function AppInner() {
     setSelectMode(false);
   }, [activeDeckId]);
 
+  // ── Feedback menu ──────────────────────────────────────────────────────────
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const feedbackMenuRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!feedbackOpen) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (feedbackMenuRef.current && !feedbackMenuRef.current.contains(e.target as Node)) {
+        setFeedbackOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [feedbackOpen]);
+
   return (
     <div className="app">
       <header className="app-header">
@@ -329,6 +343,41 @@ function AppInner() {
             <span className="nav-label-full">+ Import Deck</span>
           </button>
         </nav>
+        <div className="feedback-menu-container" ref={feedbackMenuRef}>
+          <button
+            className={`btn btn-secondary btn-sm feedback-btn${feedbackOpen ? " active" : ""}`}
+            onClick={() => setFeedbackOpen(o => !o)}
+            title="Give feedback"
+          >
+            Feedback
+          </button>
+          {feedbackOpen && <div className="mobile-sheet-backdrop" onClick={() => setFeedbackOpen(false)} />}
+          {feedbackOpen && (
+            <div className="feedback-dropdown">
+              <div className="feedback-dropdown-label">Have something to share?</div>
+              <a
+                className="feedback-item"
+                href="https://github.com/Kagaiodin/deck-checklist/issues/new?template=bug_report.md"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setFeedbackOpen(false)}
+              >
+                🐛 Report a bug
+                <span className="feedback-item-hint">Something not working right</span>
+              </a>
+              <a
+                className="feedback-item"
+                href="https://github.com/Kagaiodin/deck-checklist/issues/new?template=feature_request.md"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setFeedbackOpen(false)}
+              >
+                ✨ Request a feature
+                <span className="feedback-item-hint">Suggest an idea or improvement</span>
+              </a>
+            </div>
+          )}
+        </div>
       </header>
 
       <main className="app-main">
