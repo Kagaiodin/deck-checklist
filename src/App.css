@@ -842,9 +842,28 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
   /* Filter / group selects in Display menu */
   .control-select { min-height: 40px; padding: 8px 10px; font-size: 14px; }
 
-  /* Missing only checkbox label */
-  .display-menu-toggle { font-size: 14px; gap: 10px; }
-  .display-menu-toggle input[type="checkbox"] { width: 18px; height: 18px; }
+  /* Missing only toggle — full-width tap target with prominent active state */
+  .display-menu-toggle {
+    font-size: 15px; gap: 10px;
+    width: 100%; min-height: 44px;
+    flex-direction: row-reverse; justify-content: space-between;
+    padding: 4px 2px;
+    border-radius: 8px;
+    transition: background 0.15s, color 0.15s;
+  }
+  .display-menu-toggle input[type="checkbox"] {
+    width: 22px; height: 22px;
+    accent-color: var(--accent);
+    cursor: pointer; flex-shrink: 0;
+  }
+  .display-menu-row:has(.display-menu-toggle input:checked) {
+    background: rgba(108, 92, 231, 0.18);
+    border-radius: 8px;
+  }
+  .display-menu-toggle:has(input:checked) {
+    color: var(--accent-light);
+    font-weight: 600;
+  }
 
   /* Search input */
   .search-input { min-height: 44px; font-size: 15px; padding: 10px 14px; }
