@@ -645,7 +645,9 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
                         rel="noopener noreferrer"
                         onClick={e => e.stopPropagation()}
                         title="View all printings on Scryfall"
-                      >All printings ↗</a>
+                      >
+                        <span className="card-printings-label">All printings </span>↗
+                      </a>
                       {card.inputName && <span className="card-input-name">{card.inputName}</span>}
                     </span>
                   </span>
