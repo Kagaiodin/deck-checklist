@@ -23,10 +23,11 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 
 .app-header {
   display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: nowrap;
   padding: 0 16px; height: 56px;
   background: var(--surface); border-bottom: 1px solid var(--border);
   position: sticky; top: 0; z-index: 10;
-  gap: 12px;
+  gap: 8px;
   box-shadow: 0 1px 12px rgba(0,0,0,.4);
 }
 
@@ -37,15 +38,20 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
   .app-logo { height: 42px; }
 }
 
-.app-nav { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.app-nav { display: flex; gap: 6px; flex-wrap: nowrap; justify-content: flex-end; }
 
 /* Short nav labels on mobile, full labels on larger screens */
 .nav-label-short { display: none; }
 .nav-label-full  { display: inline; }
+.feedback-label-short { display: none; }
+.feedback-label-full  { display: inline; }
+
 @media (max-width: 479px) {
   .nav-label-short { display: inline; }
   .nav-label-full  { display: none; }
   .app-logo { max-width: 120px; }
+  .feedback-label-short { display: inline; }
+  .feedback-label-full  { display: none; }
 }
 
 .app-main { flex: 1; padding: 16px; }
@@ -872,12 +878,17 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 /* ─── Mobile touch targets & layout fixes ───────────────────────────────────── */
 /* Minimum 44px touch targets on small screens (Apple HIG / WCAG 2.5.5)        */
 @media (max-width: 639px) {
-  /* Navigation */
-  .nav-btn { padding: 10px 14px; font-size: 13px; }
+  /* Navigation — compact so they fit in the 56px header */
+  .nav-btn { padding: 7px 10px; font-size: 12px; }
 
   /* All buttons */
   .btn { min-height: 44px; padding: 10px 18px; }
   .btn-sm { min-height: 40px; padding: 8px 14px; font-size: 13px; }
+
+  /* Header buttons must stay compact — do not apply 44px min-height */
+  .app-header .btn,
+  .app-header .btn-sm,
+  .app-header .feedback-btn { min-height: unset; padding: 6px 10px; font-size: 12px; }
 
   /* Deck delete button in the mobile picker sheet */
   .deck-picker-list .deck-delete-btn {
