@@ -1,9 +1,12 @@
-import type { Collection } from "../types/index";
+import type { Collection, CollectionPrinting } from "../types/index";
 import { getFrontFaceName } from "./dualface";
 
 // ── Column alias lists ────────────────────────────────────────────────────────
-const COUNT_ALIASES = ["count", "quantity", "qty", "amount", "have"];
-const NAME_ALIASES  = ["name", "card name", "card", "title"];
+const COUNT_ALIASES     = ["count", "quantity", "qty", "amount", "have"];
+const NAME_ALIASES      = ["name", "card name", "card", "title"];
+const SET_ALIASES       = ["edition", "set", "set code", "set_code", "expansion", "set name"];
+const COLLECTOR_ALIASES = ["collector number", "collector_number", "card number", "number", "#"];
+const FOIL_ALIASES      = ["foil", "is foil", "isfol", "foil?"];
 
 // ── CSV row parser (handles quoted fields) ────────────────────────────────────
 function parseCSVRow(row: string): string[] {
@@ -32,11 +35,7 @@ function parseCSVRow(row: string): string[] {
 }
 
 // ── Header detection ──────────────────────────────────────────────────────────
-function detectColumn(
-  headers: string[],
-  aliases: string[],
-  label: string
-): number {
+function detectColumn(headers: string[], aliases: string[], label: string): number {
   const matches = headers
     .map((h, i) => ({ h: h.toLowerCase().trim(), i }))
     .filter(({ h }) => aliases.includes(h));
@@ -57,6 +56,14 @@ function detectColumn(
   return matches[0].i;
 }
 
+// Returns -1 if column not found (optional columns)
+function detectColumnOptional(headers: string[], aliases: string[]): number {
+  const matches = headers
+    .map((h, i) => ({ h: h.toLowerCase().trim(), i }))
+    .filter(({ h }) => aliases.includes(h));
+  return matches.length === 1 ? matches[0].i : -1;
+}
+
 // ── Main parser ───────────────────────────────────────────────────────────────
 export function parseCollectionCSV(raw: string): Collection {
   // Strip UTF-8 BOM and normalise line endings
@@ -68,15 +75,18 @@ export function parseCollectionCSV(raw: string): Collection {
   }
 
   const headerFields = parseCSVRow(lines[0]);
-  const countIdx = detectColumn(headerFields, COUNT_ALIASES, "quantity");
-  const nameIdx  = detectColumn(headerFields, NAME_ALIASES,  "card name");
+  const countIdx     = detectColumn(headerFields, COUNT_ALIASES, "quantity");
+  const nameIdx      = detectColumn(headerFields, NAME_ALIASES,  "card name");
+  const setIdx       = detectColumnOptional(headerFields, SET_ALIASES);
+  const collectorIdx = detectColumnOptional(headerFields, COLLECTOR_ALIASES);
+  const foilIdx      = detectColumnOptional(headerFields, FOIL_ALIASES);
 
   const collection: Collection = {};
 
   for (let i = 1; i < lines.length; i++) {
-    const fields = parseCSVRow(lines[i]);
-    const rawName  = (fields[nameIdx]  ?? "").trim();
-    const rawCount = (fields[countIdx] ?? "").trim();
+    const fields    = parseCSVRow(lines[i]);
+    const rawName   = (fields[nameIdx]  ?? "").trim();
+    const rawCount  = (fields[countIdx] ?? "").trim();
 
     if (!rawName) continue;
 
@@ -84,12 +94,25 @@ export function parseCollectionCSV(raw: string): Collection {
     if (isNaN(qty) || qty <= 0) continue;
 
     // Normalise DFC names: "Bala Ged Recovery // Bala Ged Sanctuary" → "Bala Ged Recovery"
-    const name = rawName.includes(" // ")
-      ? getFrontFaceName(rawName)
-      : rawName;
+    const name = rawName.includes(" // ") ? getFrontFaceName(rawName) : rawName;
+    const key  = name.toLowerCase();
 
-    const key = name.toLowerCase();
-    collection[key] = (collection[key] ?? 0) + qty;
+    const set             = setIdx       >= 0 ? (fields[setIdx]       ?? "").trim().toUpperCase() || undefined : undefined;
+    const collectorNumber = collectorIdx >= 0 ? (fields[collectorIdx] ?? "").trim() || undefined : undefined;
+    const foilRaw         = foilIdx      >= 0 ? (fields[foilIdx]      ?? "").trim().toLowerCase() : "";
+    const foil            = foilRaw === "true" || foilRaw === "yes" || foilRaw === "1" ? true : undefined;
+
+    // Merge rows with identical printing key (same set + collector + foil)
+    const existing = collection[key] ?? [];
+    const match = existing.find(
+      p => p.set === set && p.collectorNumber === collectorNumber && p.foil === foil
+    );
+    if (match) {
+      match.quantity += qty;
+    } else {
+      existing.push({ quantity: qty, set, collectorNumber, foil });
+    }
+    collection[key] = existing;
   }
 
   return collection;
@@ -107,13 +130,13 @@ export function applyCollectionToCards<T extends {
   return cards.map(card => {
     if (card.manuallyTagged) return card;
 
-    const qty = collection[card.name.toLowerCase()] ?? 0;
+    const printings = collection[card.name.toLowerCase()] ?? [];
+    const qty = printings.reduce((sum, p) => sum + p.quantity, 0);
 
     if (qty >= card.quantity && card.source !== "owned") {
       return { ...card, source: "owned" as const };
     }
     if (qty < card.quantity && card.source === "owned") {
-      // Auto-clear: card dropped below required quantity in collection
       return { ...card, source: undefined };
     }
     return card;

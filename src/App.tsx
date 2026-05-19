@@ -32,22 +32,28 @@ function AppInner() {
   const [deckPickerOpen, setDeckPickerOpen] = useState(false);
 
   // ── Collection state ───────────────────────────────────────────────────────
-  const [collection, setCollection] = useLocalStorage<Collection>("mtg-checklist-collection", {});
-  const [collectionMeta, setCollectionMeta] = useLocalStorage<CollectionMeta | null>("mtg-checklist-collection-meta", null);
+  const [collection, setCollection] = useLocalStorage<Collection>("mtg-checklist-collection-v2", {});
+  const [collectionMeta, setCollectionMeta] = useLocalStorage<CollectionMeta | null>("mtg-checklist-collection-meta-v2", null);
   const [collectionError, setCollectionError] = useState<string | null>(null);
   const [collectionSearch, setCollectionSearch] = useState("");
   const [collectionSort, setCollectionSort] = useState<"name-asc" | "name-desc" | "qty-desc" | "qty-asc">("name-asc");
   const [collectionPage, setCollectionPage] = useState(0);
+  const [expandedCollectionKey, setExpandedCollectionKey] = useState<string | null>(null);
 
   const COLLECTION_PAGE_SIZE = 100;
 
   const collectionFiltered = Object.entries(collection)
     .filter(([name]) => name.includes(collectionSearch.toLowerCase()))
-    .sort(([an, aq], [bn, bq]) => {
-      if (collectionSort === "name-asc")  return an.localeCompare(bn);
-      if (collectionSort === "name-desc") return bn.localeCompare(an);
-      if (collectionSort === "qty-desc")  return bq - aq || an.localeCompare(bn);
-      return aq - bq || an.localeCompare(bn); // qty-asc
+    .map(([name, printings]) => ({
+      name,
+      printings,
+      total: printings.reduce((s, p) => s + p.quantity, 0),
+    }))
+    .sort((a, b) => {
+      if (collectionSort === "name-asc")  return a.name.localeCompare(b.name);
+      if (collectionSort === "name-desc") return b.name.localeCompare(a.name);
+      if (collectionSort === "qty-desc")  return b.total - a.total || a.name.localeCompare(b.name);
+      return a.total - b.total || a.name.localeCompare(b.name); // qty-asc
     });
   const collectionPageCount = Math.max(1, Math.ceil(collectionFiltered.length / COLLECTION_PAGE_SIZE));
   const collectionPageSafe = Math.min(collectionPage, collectionPageCount - 1);
@@ -55,6 +61,16 @@ function AppInner() {
     collectionPageSafe * COLLECTION_PAGE_SIZE,
     (collectionPageSafe + 1) * COLLECTION_PAGE_SIZE
   );
+
+  function getCommittedInfo(name: string): { total: number; deckCount: number } {
+    let total = 0;
+    let deckCount = 0;
+    for (const deck of state.decks) {
+      const card = deck.cards.find(c => c.name.toLowerCase() === name);
+      if (card) { total += card.quantity; deckCount++; }
+    }
+    return { total, deckCount };
+  }
 
   const activeDeck = state.decks.find(d => d.id === activeDeckId) ?? null;
   const errors = activeDeckId ? (allErrors[activeDeckId] ?? []) : [];
@@ -907,12 +923,47 @@ function AppInner() {
                 </div>
 
                 <ul className="collection-list">
-                  {collectionPageRows.map(([name, qty]) => (
-                    <li key={name} className="collection-row">
-                      <span className="collection-card-name">{name}</span>
-                      <span className="collection-card-qty">{qty}×</span>
-                    </li>
-                  ))}
+                  {collectionPageRows.map(({ name, printings, total }) => {
+                    const isExpanded = expandedCollectionKey === name;
+                    const committed = isExpanded ? getCommittedInfo(name) : null;
+                    return (
+                      <li key={name} className={`collection-row${isExpanded ? " expanded" : ""}`}>
+                        <button
+                          className="collection-row-summary"
+                          onClick={() => setExpandedCollectionKey(isExpanded ? null : name)}
+                        >
+                          <span className="collection-card-name">{name}</span>
+                          <span className="collection-row-right">
+                            <span className="collection-card-qty">{total}×</span>
+                            <span className="collection-expand-chevron">{isExpanded ? "▴" : "▾"}</span>
+                          </span>
+                        </button>
+                        {isExpanded && (
+                          <div className="collection-row-detail">
+                            <ul className="collection-printings">
+                              {printings.map((p, i) => (
+                                <li key={i} className="collection-printing">
+                                  <span className="collection-printing-qty">{p.quantity}×</span>
+                                  <span className="collection-printing-set">
+                                    {p.set ?? "Unknown set"}
+                                    {p.collectorNumber ? ` #${p.collectorNumber}` : ""}
+                                  </span>
+                                  {p.foil && <span className="collection-printing-foil">✦ Foil</span>}
+                                </li>
+                              ))}
+                            </ul>
+                            {committed && state.decks.length > 0 && (
+                              <p className="collection-committed">
+                                {committed.total > 0
+                                  ? `${committed.total} committed across ${committed.deckCount} deck${committed.deckCount !== 1 ? "s" : ""}`
+                                  : "Not in any deck"}
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </li>
+                    );
+                  })}
                 </ul>
 
                 {collectionPageCount > 1 && (

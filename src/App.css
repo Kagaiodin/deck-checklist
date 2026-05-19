@@ -1102,12 +1102,45 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 }
 
 .collection-row {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 8px 14px; font-size: 13px; border-bottom: 1px solid var(--border);
-  background: var(--surface);
+  display: flex; flex-direction: column;
+  border-bottom: 1px solid var(--border); background: var(--surface);
+  font-size: 13px;
 }
 .collection-row:last-child { border-bottom: none; }
 .collection-row:nth-child(even) { background: var(--surface-2); }
+.collection-row.expanded { background: rgba(108,92,231,.06); }
 
+.collection-row-summary {
+  display: flex; align-items: center; justify-content: space-between;
+  width: 100%; padding: 8px 14px;
+  background: none; border: none; cursor: pointer;
+  color: var(--text); text-align: left;
+}
+.collection-row-summary:hover { background: rgba(255,255,255,.03); }
+
+.collection-row-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 .collection-card-name { text-transform: capitalize; }
 .collection-card-qty { color: var(--text-muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.collection-expand-chevron { font-size: 10px; color: var(--text-muted); }
+
+.collection-row-detail {
+  padding: 4px 14px 12px 14px;
+  border-top: 1px solid var(--border);
+}
+
+.collection-printings {
+  list-style: none; display: flex; flex-direction: column; gap: 4px;
+  margin-bottom: 8px;
+}
+.collection-printing {
+  display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted);
+}
+.collection-printing-qty { font-variant-numeric: tabular-nums; color: var(--text); font-weight: 500; min-width: 24px; }
+.collection-printing-set { font-family: monospace; font-size: 11px; }
+.collection-printing-foil { color: #a78bfa; font-size: 11px; }
+
+.collection-committed {
+  font-size: 12px; color: var(--text-muted);
+  padding-top: 6px; border-top: 1px solid var(--border);
+  margin: 0;
+}

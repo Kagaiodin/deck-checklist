@@ -33,8 +33,15 @@ export interface Card {
   manuallyTagged?: boolean;
 }
 
-// Collection: lowercased card name → total quantity owned
-export type Collection = Record<string, number>;
+export interface CollectionPrinting {
+  quantity: number;
+  set?: string;
+  collectorNumber?: string;
+  foil?: boolean;
+}
+
+// Collection: lowercased card name → list of printings (one entry per set/printing/foil combo)
+export type Collection = Record<string, CollectionPrinting[]>;
 
 export interface CollectionMeta {
   fileName: string;
