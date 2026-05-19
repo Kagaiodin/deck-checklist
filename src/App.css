@@ -124,9 +124,12 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 
 /* ─── Import panel ──────────────────────────────────────────────────────────── */
 .import-panel {
-  width: 100%; max-width: 640px; margin: 0 auto;
+  width: 100%; max-width: 640px; margin: 0 auto 24px;
   display: flex; flex-direction: column; gap: 12px;
+  padding: 20px; background: var(--surface); border-radius: var(--radius);
+  border: 1px solid var(--border);
 }
+.import-panel-header { display: flex; align-items: center; justify-content: space-between; }
 .import-panel h2 { font-size: 20px; }
 .import-hint { color: var(--text-muted); }
 .import-hint code { background: var(--surface-2); padding: 2px 6px; border-radius: 4px; font-size: 12px; }
@@ -1032,3 +1035,47 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
   .progress-bar-track { height: 10px; }
   .progress-label { font-size: 14px; }
 }
+
+/* ─── Collection panel ──────────────────────────────────────────────────────── */
+.collection-panel {
+  width: 100%; max-width: 760px; margin: 0 auto;
+  display: flex; flex-direction: column; gap: 16px;
+}
+
+.collection-header {
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+}
+.collection-header h2 { font-size: 20px; }
+.collection-header-actions { display: flex; gap: 8px; align-items: center; }
+
+.collection-upload-btn { cursor: pointer; }
+
+.collection-meta {
+  font-size: 12px; color: var(--text-muted);
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 8px 12px;
+}
+
+.collection-empty {
+  text-align: center; padding: 40px 24px; color: var(--text-muted);
+  background: var(--surface); border: 1px dashed var(--border); border-radius: var(--radius);
+}
+.collection-empty-hint { font-size: 13px; margin-top: 8px; max-width: 480px; margin-left: auto; margin-right: auto; }
+
+.collection-search { margin-bottom: 4px; }
+
+.collection-list {
+  list-style: none; display: flex; flex-direction: column;
+  border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden;
+}
+
+.collection-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 14px; font-size: 13px; border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.collection-row:last-child { border-bottom: none; }
+.collection-row:nth-child(even) { background: var(--surface-2); }
+
+.collection-card-name { text-transform: capitalize; }
+.collection-card-qty { color: var(--text-muted); font-size: 12px; font-variant-numeric: tabular-nums; }

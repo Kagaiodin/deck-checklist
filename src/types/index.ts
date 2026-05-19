@@ -30,6 +30,16 @@ export interface Card {
   source?: AcquisitionSource;
   set?: string;
   rarity?: "common" | "uncommon" | "rare" | "mythic" | "special" | "bonus";
+  manuallyTagged?: boolean;
+}
+
+// Collection: lowercased card name → total quantity owned
+export type Collection = Record<string, number>;
+
+export interface CollectionMeta {
+  fileName: string;
+  importedAt: number;
+  cardCount: number;
 }
 
 export interface Deck {

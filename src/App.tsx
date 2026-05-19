@@ -8,7 +8,8 @@ import { useLocalStorage } from "./hooks/useLocalStorage";
 import { Checklist } from "./components/Checklist";
 import { ErrorQueue } from "./components/ErrorQueue";
 import { ProgressTracker } from "./components/ProgressTracker";
-import type { Deck, ErrorQueueItem, AcquisitionSource } from "./types/index";
+import type { Deck, ErrorQueueItem, AcquisitionSource, Collection, CollectionMeta } from "./types/index";
+import { parseCollectionCSV, applyCollectionToCards } from "./utils/csvParser";
 
 function AppInner() {
   const { state, dispatch } = useDecks();
@@ -20,7 +21,8 @@ function AppInner() {
   const [validating, setValidating] = useState(false);
   const [progress, setProgress] = useState<ValidationProgress>({ total: 0, validated: 0 });
   const [importError, setImportError] = useState<string | null>(null);
-  const [view, setView] = useState<"import" | "decks">("decks");
+  const [view, setView] = useState<"decks" | "collection">("decks");
+  const [showImport, setShowImport] = useState(false);
   const [renamingDeckId, setRenamingDeckId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -28,6 +30,12 @@ function AppInner() {
   const [archidektError, setArchidektError] = useState<string | null>(null);
   const [showFormats, setShowFormats] = useState(false);
   const [deckPickerOpen, setDeckPickerOpen] = useState(false);
+
+  // ── Collection state ───────────────────────────────────────────────────────
+  const [collection, setCollection] = useLocalStorage<Collection>("mtg-checklist-collection", {});
+  const [collectionMeta, setCollectionMeta] = useLocalStorage<CollectionMeta | null>("mtg-checklist-collection-meta", null);
+  const [collectionError, setCollectionError] = useState<string | null>(null);
+  const [collectionSearch, setCollectionSearch] = useState("");
 
   const activeDeck = state.decks.find(d => d.id === activeDeckId) ?? null;
   const errors = activeDeckId ? (allErrors[activeDeckId] ?? []) : [];
@@ -56,13 +64,18 @@ function AppInner() {
 
       const result = await validateDecklist(parsed, p => setProgress(p));
 
+      // Auto-tag owned cards from collection before creating deck
+      const taggedCards = Object.keys(collection).length > 0
+        ? applyCollectionToCards(result.cards, collection)
+        : result.cards;
+
       const id = crypto.randomUUID();
       const name = deckName.trim() || `Deck ${state.decks.length + 1}`;
       const deck: Deck = {
         id,
         name,
         url: deckUrl.trim() || undefined,
-        cards: result.cards,
+        cards: taggedCards,
         createdAt: Date.now()
       };
 
@@ -72,7 +85,7 @@ function AppInner() {
       setImportText("");
       setDeckName("");
       setDeckUrl("");
-      setView("decks");
+      setShowImport(false);
     } catch (e) {
       setImportError(e instanceof Error ? e.message : "Validation failed. Please try again.");
     } finally {
@@ -112,7 +125,8 @@ function AppInner() {
       if (parsed.length === 0) return { success: false, error: "Invalid card format." };
       const result = await validateDecklist(parsed);
       if (result.cards.length > 0) {
-        dispatch({ type: "ADD_CARD", payload: { deckId: activeDeckId, card: result.cards[0] } });
+        const [tagged] = applyCollectionToCards(result.cards, collection);
+        dispatch({ type: "ADD_CARD", payload: { deckId: activeDeckId, card: tagged } });
         return { success: true };
       }
       return { success: false, error: `"${parsed[0].name}" not found on Scryfall.` };
@@ -151,6 +165,35 @@ function AppInner() {
     setErrors(prev =>
       prev.map(e => e.originalName === originalName ? { ...e, resolved: true } : e)
     );
+  }
+
+  // ── Collection handlers ────────────────────────────────────────────────────
+  function handleCollectionUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setCollectionError(null);
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const raw = ev.target?.result as string ?? "";
+        const parsed = parseCollectionCSV(raw);
+        const cardCount = Object.keys(parsed).length;
+        setCollection(parsed);
+        setCollectionMeta({ fileName: file.name, importedAt: Date.now(), cardCount });
+        dispatch({ type: "APPLY_COLLECTION", payload: parsed });
+      } catch (err) {
+        setCollectionError(err instanceof Error ? err.message : "Failed to parse CSV.");
+      }
+      e.target.value = "";
+    };
+    reader.readAsText(file);
+  }
+
+  function handleClearCollection() {
+    setCollection({});
+    setCollectionMeta(null);
+    setCollectionError(null);
+    dispatch({ type: "APPLY_COLLECTION", payload: {} });
   }
 
   // ── Archidekt import ───────────────────────────────────────────────────────
@@ -336,11 +379,11 @@ function AppInner() {
             <span className="nav-label-full">My Decks</span>
           </button>
           <button
-            className={`nav-btn${view === "import" ? " active" : ""}`}
-            onClick={() => setView("import")}
+            className={`nav-btn${view === "collection" ? " active" : ""}`}
+            onClick={() => setView("collection")}
           >
-            <span className="nav-label-short">+ Import</span>
-            <span className="nav-label-full">+ Import Deck</span>
+            <span className="nav-label-short">Collection</span>
+            <span className="nav-label-full">My Collection</span>
           </button>
         </nav>
         <div className="feedback-menu-container" ref={feedbackMenuRef}>
@@ -381,104 +424,6 @@ function AppInner() {
       </header>
 
       <main className="app-main">
-        {view === "import" && (
-          <section className="import-panel">
-            <h2>Import Decklist</h2>
-            <div className="import-formats">
-              <button className="import-formats-toggle" onClick={() => setShowFormats(v => !v)}>
-                {showFormats ? "▾" : "▸"} Supported formats
-              </button>
-              {showFormats && (
-                <div className="import-formats-body">
-                  <div className="import-format-row">
-                    <span className="import-format-label">Plain decklist</span>
-                    <code>4 Lightning Bolt</code>
-                  </div>
-                  <div className="import-format-row">
-                    <span className="import-format-label">Moxfield export</span>
-                    <code>1 Sol Ring (SLD) 912 *F*</code>
-                    <span className="import-format-note">Set codes & foil markers stripped automatically</span>
-                  </div>
-                  <div className="import-format-row">
-                    <span className="import-format-label">Double-faced cards</span>
-                    <code>1 Bala Ged Recovery / Bala Ged Sanctuary (ZNR) 180</code>
-                    <span className="import-format-note">Back face stripped, front face used</span>
-                  </div>
-                  <div className="import-format-row">
-                    <span className="import-format-label">Archidekt URL</span>
-                    <code>archidekt.com/decks/365563/…</code>
-                    <span className="import-format-note">Paste URL above → click Fetch to auto-import</span>
-                  </div>
-                  <div className="import-format-row">
-                    <span className="import-format-label">.txt file</span>
-                    <span className="import-format-note">Any of the above formats, one card per line</span>
-                  </div>
-                </div>
-              )}
-            </div>
-            <input
-              className="deck-name-input"
-              placeholder="Deck name (optional)"
-              value={deckName}
-              onChange={e => setDeckName(e.target.value)}
-              disabled={validating}
-            />
-            <div className="url-field-row">
-              <input
-                className="deck-name-input"
-                placeholder="Deck URL (optional) — paste an Archidekt URL to auto-import"
-                value={deckUrl}
-                onChange={e => { setDeckUrl(e.target.value); setArchidektError(null); }}
-                disabled={validating || archidektFetching}
-              />
-              {getArchidektId(deckUrl) && (
-                <button
-                  className="btn btn-primary btn-sm archidekt-fetch-btn"
-                  onClick={fetchFromArchidekt}
-                  disabled={archidektFetching || validating}
-                >
-                  {archidektFetching ? "Fetching…" : "Fetch from Archidekt"}
-                </button>
-              )}
-            </div>
-            {archidektError && <p className="import-error">{archidektError}</p>}
-            <label className="file-upload-label">
-              <input
-                type="file"
-                accept=".txt"
-                className="file-upload-input"
-                disabled={validating}
-                onChange={e => {
-                  const file = e.target.files?.[0];
-                  if (!file) return;
-                  if (!deckName) setDeckName(file.name.replace(/\.[^.]+$/, ""));
-                  const reader = new FileReader();
-                  reader.onload = ev => setImportText(ev.target?.result as string ?? "");
-                  reader.readAsText(file);
-                  e.target.value = "";
-                }}
-              />
-              Upload .txt file
-            </label>
-            <textarea
-              className="import-textarea"
-              placeholder={"4 Lightning Bolt\n2 Snapcaster Mage\n1 Black Lotus"}
-              value={importText}
-              onChange={e => setImportText(e.target.value)}
-              disabled={validating}
-              rows={typeof window !== "undefined" && window.innerWidth < 640 ? 8 : 16}
-            />
-            {importError && <p className="import-error">{importError}</p>}
-            {validating && <ProgressTracker progress={progress} />}
-            <button
-              className="btn btn-primary"
-              onClick={handleImport}
-              disabled={validating || !importText.trim()}
-            >
-              {validating ? "Validating…" : "Import & Validate"}
-            </button>
-          </section>
-        )}
 
         {view === "decks" && (
           <div className="decks-layout">
@@ -533,7 +478,7 @@ function AppInner() {
                     <button
                       className="btn btn-primary"
                       style={{ width: "100%" }}
-                      onClick={() => { setDeckPickerOpen(false); setView("import"); }}
+                      onClick={() => { setDeckPickerOpen(false); setShowImport(true); }}
                     >
                       + Import Deck
                     </button>
@@ -545,6 +490,9 @@ function AppInner() {
             <aside className={`deck-sidebar${sidebarOpen ? "" : " sidebar-collapsed"}`}>
               <div className="sidebar-header">
                 <h2>Decks</h2>
+                <button className="btn btn-primary btn-sm" onClick={() => setShowImport(v => !v)}>
+                  {showImport ? "✕ Cancel" : "+ Import"}
+                </button>
                 <button
                   className="sidebar-toggle"
                   onClick={() => setSidebarOpen(o => !o)}
@@ -598,6 +546,109 @@ function AppInner() {
             </aside>
 
             <div className="deck-content">
+              {/* ── Import panel ─────────────────────────────────────────── */}
+              {showImport && (
+                <section className="import-panel">
+                  <div className="import-panel-header">
+                    <h2>Import Decklist</h2>
+                    <button className="btn btn-secondary btn-sm" onClick={() => setShowImport(false)}>✕ Cancel</button>
+                  </div>
+                  <div className="import-formats">
+                    <button className="import-formats-toggle" onClick={() => setShowFormats(v => !v)}>
+                      {showFormats ? "▾" : "▸"} Supported formats
+                    </button>
+                    {showFormats && (
+                      <div className="import-formats-body">
+                        <div className="import-format-row">
+                          <span className="import-format-label">Plain decklist</span>
+                          <code>4 Lightning Bolt</code>
+                        </div>
+                        <div className="import-format-row">
+                          <span className="import-format-label">Moxfield export</span>
+                          <code>1 Sol Ring (SLD) 912 *F*</code>
+                          <span className="import-format-note">Set codes & foil markers stripped automatically</span>
+                        </div>
+                        <div className="import-format-row">
+                          <span className="import-format-label">Double-faced cards</span>
+                          <code>1 Bala Ged Recovery / Bala Ged Sanctuary (ZNR) 180</code>
+                          <span className="import-format-note">Back face stripped, front face used</span>
+                        </div>
+                        <div className="import-format-row">
+                          <span className="import-format-label">Archidekt URL</span>
+                          <code>archidekt.com/decks/365563/…</code>
+                          <span className="import-format-note">Paste URL above → click Fetch to auto-import</span>
+                        </div>
+                        <div className="import-format-row">
+                          <span className="import-format-label">.txt file</span>
+                          <span className="import-format-note">Any of the above formats, one card per line</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <input
+                    className="deck-name-input"
+                    placeholder="Deck name (optional)"
+                    value={deckName}
+                    onChange={e => setDeckName(e.target.value)}
+                    disabled={validating}
+                  />
+                  <div className="url-field-row">
+                    <input
+                      className="deck-name-input"
+                      placeholder="Deck URL (optional) — paste an Archidekt URL to auto-import"
+                      value={deckUrl}
+                      onChange={e => { setDeckUrl(e.target.value); setArchidektError(null); }}
+                      disabled={validating || archidektFetching}
+                    />
+                    {getArchidektId(deckUrl) && (
+                      <button
+                        className="btn btn-primary btn-sm archidekt-fetch-btn"
+                        onClick={fetchFromArchidekt}
+                        disabled={archidektFetching || validating}
+                      >
+                        {archidektFetching ? "Fetching…" : "Fetch from Archidekt"}
+                      </button>
+                    )}
+                  </div>
+                  {archidektError && <p className="import-error">{archidektError}</p>}
+                  <label className="file-upload-label">
+                    <input
+                      type="file"
+                      accept=".txt"
+                      className="file-upload-input"
+                      disabled={validating}
+                      onChange={e => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        if (!deckName) setDeckName(file.name.replace(/\.[^.]+$/, ""));
+                        const reader = new FileReader();
+                        reader.onload = ev => setImportText(ev.target?.result as string ?? "");
+                        reader.readAsText(file);
+                        e.target.value = "";
+                      }}
+                    />
+                    Upload .txt file
+                  </label>
+                  <textarea
+                    className="import-textarea"
+                    placeholder={"4 Lightning Bolt\n2 Snapcaster Mage\n1 Black Lotus"}
+                    value={importText}
+                    onChange={e => setImportText(e.target.value)}
+                    disabled={validating}
+                    rows={typeof window !== "undefined" && window.innerWidth < 640 ? 8 : 16}
+                  />
+                  {importError && <p className="import-error">{importError}</p>}
+                  {validating && <ProgressTracker progress={progress} />}
+                  <button
+                    className="btn btn-primary"
+                    onClick={handleImport}
+                    disabled={validating || !importText.trim()}
+                  >
+                    {validating ? "Validating…" : "Import & Validate"}
+                  </button>
+                </section>
+              )}
+
               {/* ── Mobile deck switcher bar (hidden on desktop) ─────────── */}
               <div className="mobile-deck-bar">
                 <button className="mobile-deck-current" onClick={() => setDeckPickerOpen(true)}>
@@ -744,13 +795,78 @@ function AppInner() {
               ) : (
                 <div className="empty-state centered">
                   <p>Select a deck from the sidebar, or import a new one.</p>
-                  <button className="btn btn-primary" onClick={() => setView("import")}>
+                  <button className="btn btn-primary" onClick={() => setShowImport(true)}>
                     Import Deck
                   </button>
                 </div>
               )}
             </div>
           </div>
+        )}
+
+        {/* ── Collection tab ─────────────────────────────────────────────── */}
+        {view === "collection" && (
+          <section className="collection-panel">
+            <div className="collection-header">
+              <h2>My Collection</h2>
+              <div className="collection-header-actions">
+                <label className="btn btn-primary btn-sm collection-upload-btn">
+                  <input
+                    type="file"
+                    accept=".csv"
+                    className="file-upload-input"
+                    onChange={handleCollectionUpload}
+                  />
+                  {collectionMeta ? "Replace CSV" : "Upload CSV"}
+                </label>
+                {collectionMeta && (
+                  <button className="btn btn-secondary btn-sm" onClick={handleClearCollection}>
+                    Clear
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {collectionMeta && (
+              <p className="collection-meta">
+                {collectionMeta.fileName} · {collectionMeta.cardCount.toLocaleString()} unique cards · imported {new Date(collectionMeta.importedAt).toLocaleDateString()}
+              </p>
+            )}
+
+            {collectionError && <p className="import-error">{collectionError}</p>}
+
+            {!collectionMeta && !collectionError && (
+              <div className="collection-empty">
+                <p>No collection uploaded yet.</p>
+                <p className="collection-empty-hint">
+                  Export your collection from Moxfield (Account → Collection → Export) or any other supported app and upload the CSV above. Cards you own will be automatically tagged across all your decks.
+                </p>
+              </div>
+            )}
+
+            {collectionMeta && (
+              <>
+                <input
+                  className="deck-name-input collection-search"
+                  placeholder="Search cards…"
+                  value={collectionSearch}
+                  onChange={e => setCollectionSearch(e.target.value)}
+                />
+                <ul className="collection-list">
+                  {Object.entries(collection)
+                    .filter(([name]) => name.includes(collectionSearch.toLowerCase()))
+                    .sort(([a], [b]) => a.localeCompare(b))
+                    .map(([name, qty]) => (
+                      <li key={name} className="collection-row">
+                        <span className="collection-card-name">{name}</span>
+                        <span className="collection-card-qty">{qty}×</span>
+                      </li>
+                    ))
+                  }
+                </ul>
+              </>
+            )}
+          </section>
         )}
       </main>
     </div>
