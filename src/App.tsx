@@ -36,6 +36,25 @@ function AppInner() {
   const [collectionMeta, setCollectionMeta] = useLocalStorage<CollectionMeta | null>("mtg-checklist-collection-meta", null);
   const [collectionError, setCollectionError] = useState<string | null>(null);
   const [collectionSearch, setCollectionSearch] = useState("");
+  const [collectionSort, setCollectionSort] = useState<"name-asc" | "name-desc" | "qty-desc" | "qty-asc">("name-asc");
+  const [collectionPage, setCollectionPage] = useState(0);
+
+  const COLLECTION_PAGE_SIZE = 100;
+
+  const collectionFiltered = Object.entries(collection)
+    .filter(([name]) => name.includes(collectionSearch.toLowerCase()))
+    .sort(([an, aq], [bn, bq]) => {
+      if (collectionSort === "name-asc")  return an.localeCompare(bn);
+      if (collectionSort === "name-desc") return bn.localeCompare(an);
+      if (collectionSort === "qty-desc")  return bq - aq || an.localeCompare(bn);
+      return aq - bq || an.localeCompare(bn); // qty-asc
+    });
+  const collectionPageCount = Math.max(1, Math.ceil(collectionFiltered.length / COLLECTION_PAGE_SIZE));
+  const collectionPageSafe = Math.min(collectionPage, collectionPageCount - 1);
+  const collectionPageRows = collectionFiltered.slice(
+    collectionPageSafe * COLLECTION_PAGE_SIZE,
+    (collectionPageSafe + 1) * COLLECTION_PAGE_SIZE
+  );
 
   const activeDeck = state.decks.find(d => d.id === activeDeckId) ?? null;
   const errors = activeDeckId ? (allErrors[activeDeckId] ?? []) : [];
@@ -847,24 +866,76 @@ function AppInner() {
 
             {collectionMeta && (
               <>
-                <input
-                  className="deck-name-input collection-search"
-                  placeholder="Search cards…"
-                  value={collectionSearch}
-                  onChange={e => setCollectionSearch(e.target.value)}
-                />
+                <div className="collection-controls">
+                  <input
+                    className="deck-name-input collection-search"
+                    placeholder="Search cards…"
+                    value={collectionSearch}
+                    onChange={e => { setCollectionSearch(e.target.value); setCollectionPage(0); }}
+                  />
+                  <select
+                    className="collection-sort-select"
+                    value={collectionSort}
+                    onChange={e => { setCollectionSort(e.target.value as typeof collectionSort); setCollectionPage(0); }}
+                  >
+                    <option value="name-asc">Name A→Z</option>
+                    <option value="name-desc">Name Z→A</option>
+                    <option value="qty-desc">Quantity ↓</option>
+                    <option value="qty-asc">Quantity ↑</option>
+                  </select>
+                </div>
+
+                <div className="collection-pagination">
+                  <button
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => setCollectionPage(p => Math.max(0, p - 1))}
+                    disabled={collectionPageSafe === 0}
+                  >
+                    ← Prev
+                  </button>
+                  <span className="collection-page-info">
+                    Page {collectionPageSafe + 1} of {collectionPageCount}
+                    <span className="collection-page-total"> · {collectionFiltered.length.toLocaleString()} cards</span>
+                  </span>
+                  <button
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => setCollectionPage(p => Math.min(collectionPageCount - 1, p + 1))}
+                    disabled={collectionPageSafe >= collectionPageCount - 1}
+                  >
+                    Next →
+                  </button>
+                </div>
+
                 <ul className="collection-list">
-                  {Object.entries(collection)
-                    .filter(([name]) => name.includes(collectionSearch.toLowerCase()))
-                    .sort(([a], [b]) => a.localeCompare(b))
-                    .map(([name, qty]) => (
-                      <li key={name} className="collection-row">
-                        <span className="collection-card-name">{name}</span>
-                        <span className="collection-card-qty">{qty}×</span>
-                      </li>
-                    ))
-                  }
+                  {collectionPageRows.map(([name, qty]) => (
+                    <li key={name} className="collection-row">
+                      <span className="collection-card-name">{name}</span>
+                      <span className="collection-card-qty">{qty}×</span>
+                    </li>
+                  ))}
                 </ul>
+
+                {collectionPageCount > 1 && (
+                  <div className="collection-pagination collection-pagination-bottom">
+                    <button
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => setCollectionPage(p => Math.max(0, p - 1))}
+                      disabled={collectionPageSafe === 0}
+                    >
+                      ← Prev
+                    </button>
+                    <span className="collection-page-info">
+                      Page {collectionPageSafe + 1} of {collectionPageCount}
+                    </span>
+                    <button
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => setCollectionPage(p => Math.min(collectionPageCount - 1, p + 1))}
+                      disabled={collectionPageSafe >= collectionPageCount - 1}
+                    >
+                      Next →
+                    </button>
+                  </div>
+                )}
               </>
             )}
           </section>

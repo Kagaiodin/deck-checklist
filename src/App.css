@@ -1073,7 +1073,28 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 }
 .collection-empty-hint { font-size: 13px; margin-top: 8px; max-width: 480px; margin-left: auto; margin-right: auto; }
 
-.collection-search { margin-bottom: 4px; }
+.collection-controls {
+  display: flex; gap: 8px; align-items: center; margin-bottom: 10px;
+}
+.collection-controls .collection-search { margin-bottom: 0; flex: 1; min-width: 0; }
+
+.collection-sort-select {
+  flex-shrink: 0;
+  padding: 6px 10px; border-radius: var(--radius);
+  border: 1px solid var(--border); background: var(--surface-2);
+  color: var(--text); font-size: 13px; cursor: pointer;
+}
+.collection-sort-select:focus { outline: none; border-color: var(--accent); }
+
+.collection-pagination {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; margin-bottom: 8px;
+}
+.collection-pagination-bottom { margin-top: 10px; margin-bottom: 0; }
+.collection-page-info {
+  font-size: 13px; color: var(--text-muted); white-space: nowrap;
+}
+.collection-page-total { color: var(--text-muted); }
 
 .collection-list {
   list-style: none; display: flex; flex-direction: column;
