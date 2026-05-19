@@ -44,11 +44,11 @@ function AppInner() {
 
   const collectionFiltered = Object.entries(collection)
     .filter(([name]) => name.includes(collectionSearch.toLowerCase()))
-    .map(([name, printings]) => ({
-      name,
-      printings,
-      total: printings.reduce((s, p) => s + p.quantity, 0),
-    }))
+    .map(([name, rawPrintings]) => {
+      // Guard against stale localStorage data in old flat number format
+      const printings = Array.isArray(rawPrintings) ? rawPrintings : [];
+      return { name, printings, total: printings.reduce((s, p) => s + p.quantity, 0) };
+    })
     .sort((a, b) => {
       if (collectionSort === "name-asc")  return a.name.localeCompare(b.name);
       if (collectionSort === "name-desc") return b.name.localeCompare(a.name);
