@@ -62,6 +62,20 @@ function AppInner() {
     (collectionPageSafe + 1) * COLLECTION_PAGE_SIZE
   );
 
+  // Letter → page index, only meaningful for alphabetical sorts
+  const alphaSort = collectionSort === "name-asc" || collectionSort === "name-desc";
+  const letterPageMap = new Map<string, number>();
+  if (alphaSort) {
+    collectionFiltered.forEach(({ name }, idx) => {
+      const letter = name[0]?.toUpperCase();
+      if (letter && !letterPageMap.has(letter)) {
+        letterPageMap.set(letter, Math.floor(idx / COLLECTION_PAGE_SIZE));
+      }
+    });
+  }
+  // Which letter is active (first letter of the first card on the current page)
+  const activeAlphaLetter = collectionPageRows[0]?.name[0]?.toUpperCase() ?? null;
+
   function getCommittedInfo(name: string): { total: number; deckCount: number } {
     let total = 0;
     let deckCount = 0;
@@ -900,6 +914,25 @@ function AppInner() {
                     <option value="qty-asc">Quantity ↑</option>
                   </select>
                 </div>
+
+                {alphaSort && (
+                  <div className="collection-alpha-strip">
+                    {"ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").map(letter => {
+                      const page = letterPageMap.get(letter);
+                      const isActive = letter === activeAlphaLetter;
+                      return (
+                        <button
+                          key={letter}
+                          className={`collection-alpha-btn${isActive ? " active" : ""}${page === undefined ? " empty" : ""}`}
+                          onClick={() => { if (page !== undefined) setCollectionPage(page); }}
+                          disabled={page === undefined}
+                        >
+                          {letter}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
 
                 <div className="collection-pagination">
                   <button
