@@ -39,6 +39,7 @@ function AppInner() {
   const [collectionSort, setCollectionSort] = useState<"name-asc" | "name-desc" | "qty-desc" | "qty-asc">("name-asc");
   const [collectionPage, setCollectionPage] = useState(0);
   const [expandedCollectionKey, setExpandedCollectionKey] = useState<string | null>(null);
+  const [scrollToCollectionKey, setScrollToCollectionKey] = useState<string | null>(null);
 
   const COLLECTION_PAGE_SIZE = 100;
 
@@ -62,19 +63,31 @@ function AppInner() {
     (collectionPageSafe + 1) * COLLECTION_PAGE_SIZE
   );
 
-  // Letter → page index, only meaningful for alphabetical sorts
+  // Letter → page index and first card name, only meaningful for alphabetical sorts
   const alphaSort = collectionSort === "name-asc" || collectionSort === "name-desc";
   const letterPageMap = new Map<string, number>();
+  const letterFirstKeyMap = new Map<string, string>(); // letter → first card name on that page
   if (alphaSort) {
     collectionFiltered.forEach(({ name }, idx) => {
       const letter = name[0]?.toUpperCase();
       if (letter && !letterPageMap.has(letter)) {
         letterPageMap.set(letter, Math.floor(idx / COLLECTION_PAGE_SIZE));
+        letterFirstKeyMap.set(letter, name);
       }
     });
   }
   // Which letter is active (first letter of the first card on the current page)
   const activeAlphaLetter = collectionPageRows[0]?.name[0]?.toUpperCase() ?? null;
+
+  // After a letter jump, scroll to the target card once the new page renders
+  useEffect(() => {
+    if (!scrollToCollectionKey) return;
+    const el = document.querySelector(`[data-collection-key="${CSS.escape(scrollToCollectionKey)}"]`);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+      setScrollToCollectionKey(null);
+    }
+  }, [scrollToCollectionKey, collectionPageRows]);
 
   function getCommittedInfo(name: string): { total: number; deckCount: number } {
     let total = 0;
@@ -924,7 +937,12 @@ function AppInner() {
                         <button
                           key={letter}
                           className={`collection-alpha-btn${isActive ? " active" : ""}${page === undefined ? " empty" : ""}`}
-                          onClick={() => { if (page !== undefined) setCollectionPage(page); }}
+                          onClick={() => {
+                            if (page === undefined) return;
+                            const firstKey = letterFirstKeyMap.get(letter);
+                            setCollectionPage(page);
+                            if (firstKey) setScrollToCollectionKey(firstKey);
+                          }}
                           disabled={page === undefined}
                         >
                           {letter}
@@ -960,7 +978,7 @@ function AppInner() {
                     const isExpanded = expandedCollectionKey === name;
                     const committed = isExpanded ? getCommittedInfo(name) : null;
                     return (
-                      <li key={name} className={`collection-row${isExpanded ? " expanded" : ""}`}>
+                      <li key={name} data-collection-key={name} className={`collection-row${isExpanded ? " expanded" : ""}`}>
                         <button
                           className="collection-row-summary"
                           onClick={() => setExpandedCollectionKey(isExpanded ? null : name)}
