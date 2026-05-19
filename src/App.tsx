@@ -349,7 +349,8 @@ function AppInner() {
             onClick={() => setFeedbackOpen(o => !o)}
             title="Give feedback"
           >
-            Feedback
+            <span className="feedback-btn-full">Feedback</span>
+            <span className="feedback-btn-icon">?</span>
           </button>
           {feedbackOpen && <div className="mobile-sheet-backdrop" onClick={() => setFeedbackOpen(false)} />}
           {feedbackOpen && (
