@@ -63,6 +63,8 @@ function AppInner() {
   const [orderNotes, setOrderNotes] = useState("");
   const [orderCards, setOrderCards] = useState<OrderCard[]>([]);
   const [orderCardSearch, setOrderCardSearch] = useState("");
+  const [freeformCardName, setFreeformCardName] = useState("");
+  const [freeformCardQty, setFreeformCardQty] = useState(1);
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [deleteConfirmOrderId, setDeleteConfirmOrderId] = useState<string | null>(null);
   const [notificationFilterIds, setNotificationFilterIds] = useState<string[] | null>(null);
@@ -437,6 +439,8 @@ function AppInner() {
     setOrderNotes("");
     setOrderCards([]);
     setOrderCardSearch("");
+    setFreeformCardName("");
+    setFreeformCardQty(1);
   }
 
   function handleAddOrderCard(deckId: string, deckName: string, cardId: string, cardName: string, qty: number) {
@@ -446,16 +450,29 @@ function AppInner() {
       return [...prev, { deckId, cardId, cardName, quantity: qty }];
     });
     setOrderCardSearch("");
+    void deckName; // used in UI display only
   }
 
-  function handleRemoveOrderCard(cardId: string, deckId: string) {
-    setOrderCards(prev => prev.filter(oc => !(oc.cardId === cardId && oc.deckId === deckId)));
+  function handleAddFreeformOrderCard() {
+    const name = freeformCardName.trim();
+    if (!name || freeformCardQty <= 0) return;
+    // Avoid exact duplicates (same name, no deckId)
+    const alreadyAdded = orderCards.some(oc => !oc.deckId && oc.cardName.toLowerCase() === name.toLowerCase());
+    if (!alreadyAdded) {
+      setOrderCards(prev => [...prev, { cardName: name, quantity: freeformCardQty }]);
+    }
+    setFreeformCardName("");
+    setFreeformCardQty(1);
   }
 
-  function handleUpdateOrderCardQty(cardId: string, deckId: string, qty: number) {
-    if (qty <= 0) { handleRemoveOrderCard(cardId, deckId); return; }
+  function handleRemoveOrderCard(cardName: string, deckId?: string) {
+    setOrderCards(prev => prev.filter(oc => !(oc.cardName === cardName && oc.deckId === deckId)));
+  }
+
+  function handleUpdateOrderCardQty(cardName: string, deckId: string | undefined, qty: number) {
+    if (qty <= 0) { handleRemoveOrderCard(cardName, deckId); return; }
     setOrderCards(prev => prev.map(oc =>
-      oc.cardId === cardId && oc.deckId === deckId ? { ...oc, quantity: qty } : oc
+      oc.cardName === cardName && oc.deckId === deckId ? { ...oc, quantity: qty } : oc
     ));
   }
 
@@ -477,10 +494,12 @@ function AppInner() {
     // Update order status
     setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: "received" as const } : o));
 
-    // Tag all order cards as "owned" (manuallyTagged so collection won't overwrite)
+    // Tag deck-linked cards as "owned" (manuallyTagged so collection won't overwrite)
     const cardsByDeck = new Map<string, string[]>();
     for (const oc of order.cards) {
-      cardsByDeck.set(oc.deckId, [...(cardsByDeck.get(oc.deckId) ?? []), oc.cardId]);
+      if (oc.deckId && oc.cardId) {
+        cardsByDeck.set(oc.deckId, [...(cardsByDeck.get(oc.deckId) ?? []), oc.cardId]);
+      }
     }
     for (const [deckId, cardIds] of cardsByDeck) {
       dispatch({ type: "BULK_SET_SOURCE", payload: { deckId, cardIds, source: "owned" } });
@@ -503,10 +522,12 @@ function AppInner() {
     // Update order status
     setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: "cancelled" as const } : o));
 
-    // Unset source + manuallyTagged so collection can re-tag
+    // Unset source + manuallyTagged on deck-linked cards so collection can re-tag
     const cardsByDeck = new Map<string, string[]>();
     for (const oc of order.cards) {
-      cardsByDeck.set(oc.deckId, [...(cardsByDeck.get(oc.deckId) ?? []), oc.cardId]);
+      if (oc.deckId && oc.cardId) {
+        cardsByDeck.set(oc.deckId, [...(cardsByDeck.get(oc.deckId) ?? []), oc.cardId]);
+      }
     }
     for (const [deckId, cardIds] of cardsByDeck) {
       dispatch({ type: "UNSET_CARD_SOURCES", payload: { deckId, cardIds } });
@@ -1568,29 +1589,56 @@ function AppInner() {
                       {orderCards.length > 0 && (
                         <ul className="order-card-list">
                           {orderCards.map(oc => {
-                            const deck = state.decks.find(d => d.id === oc.deckId);
-                            const maxQty = deck?.cards.find(c => c.id === oc.cardId)?.quantity ?? oc.quantity;
+                            const deck = oc.deckId ? state.decks.find(d => d.id === oc.deckId) : undefined;
+                            const maxQty = oc.cardId ? (deck?.cards.find(c => c.id === oc.cardId)?.quantity ?? oc.quantity) : 999;
                             return (
-                              <li key={`${oc.deckId}-${oc.cardId}`} className="order-card-item">
+                              <li key={`${oc.deckId ?? "free"}-${oc.cardName}`} className="order-card-item">
                                 <span className="order-card-item-name">{oc.cardName}</span>
-                                <span className="order-card-item-deck">{deck?.name ?? "Unknown deck"}</span>
+                                <span className="order-card-item-deck">
+                                  {oc.deckId ? (deck?.name ?? "Unknown deck") : <em>Not in a deck</em>}
+                                </span>
                                 <input
                                   type="number"
                                   className="order-card-qty-input"
                                   value={oc.quantity}
                                   min={1}
                                   max={maxQty}
-                                  onChange={e => handleUpdateOrderCardQty(oc.cardId, oc.deckId, parseInt(e.target.value) || 1)}
+                                  onChange={e => handleUpdateOrderCardQty(oc.cardName, oc.deckId, parseInt(e.target.value) || 1)}
                                 />
-                                <span className="order-card-qty-max">/ {maxQty}</span>
-                                <button className="order-card-remove" onClick={() => handleRemoveOrderCard(oc.cardId, oc.deckId)} title="Remove">×</button>
+                                <span className="order-card-qty-max">{maxQty < 999 ? `/ ${maxQty}` : ""}</span>
+                                <button className="order-card-remove" onClick={() => handleRemoveOrderCard(oc.cardName, oc.deckId)} title="Remove">×</button>
                               </li>
                             );
                           })}
                         </ul>
                       )}
+                      {/* Freeform card entry — for cards not in any deck */}
+                      <div className="order-freeform-row">
+                        <input
+                          className="deck-name-input order-freeform-name"
+                          placeholder="Or type any card name…"
+                          value={freeformCardName}
+                          onChange={e => setFreeformCardName(e.target.value)}
+                          onKeyDown={e => { if (e.key === "Enter") handleAddFreeformOrderCard(); }}
+                        />
+                        <input
+                          type="number"
+                          className="order-card-qty-input"
+                          value={freeformCardQty}
+                          min={1}
+                          onChange={e => setFreeformCardQty(Math.max(1, parseInt(e.target.value) || 1))}
+                        />
+                        <button
+                          className="btn btn-secondary btn-sm"
+                          onClick={handleAddFreeformOrderCard}
+                          disabled={!freeformCardName.trim()}
+                        >
+                          Add
+                        </button>
+                      </div>
+
                       {orderCards.length === 0 && (
-                        <p className="order-card-picker-hint">Search above to add cards from your decks.</p>
+                        <p className="order-card-picker-hint">Search above to add cards from your decks, or type any card name below.</p>
                       )}
                     </>
                   )}
@@ -1623,9 +1671,11 @@ function AppInner() {
                   const isExpanded = expandedOrderId === order.id;
                   const isConfirmingDelete = deleteConfirmOrderId === order.id;
                   const cardsByDeck = order.cards.reduce<Record<string, { deckName: string; cards: OrderCard[] }>>((acc, oc) => {
-                    const deck = state.decks.find(d => d.id === oc.deckId);
-                    if (!acc[oc.deckId]) acc[oc.deckId] = { deckName: deck?.name ?? "Deleted deck", cards: [] };
-                    acc[oc.deckId].cards.push(oc);
+                    const groupKey = oc.deckId ?? "__freeform__";
+                    const deck = oc.deckId ? state.decks.find(d => d.id === oc.deckId) : undefined;
+                    const deckName = oc.deckId ? (deck?.name ?? "Deleted deck") : "No deck";
+                    if (!acc[groupKey]) acc[groupKey] = { deckName, cards: [] };
+                    acc[groupKey].cards.push(oc);
                     return acc;
                   }, {});
 

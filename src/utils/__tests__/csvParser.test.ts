@@ -219,6 +219,15 @@ describe("mergeOrderCardsIntoCollection", () => {
     expect(result["counterspell"][0].quantity).toBe(2);
   });
 
+  it("works for freeform cards with no deckId or cardId", () => {
+    // Freeform order cards (not tied to any deck) have no deckId/cardId
+    const result = mergeOrderCardsIntoCollection(
+      [{ cardName: "Black Lotus", quantity: 1 }],
+      {}
+    );
+    expect(result["black lotus"]).toEqual([{ quantity: 1 }]);
+  });
+
   it("does not mutate the original collection", () => {
     const collection = { "lightning bolt": [{ quantity: 2 }] };
     mergeOrderCardsIntoCollection(

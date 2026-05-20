@@ -79,8 +79,8 @@ export type Carrier = "ups" | "usps" | "fedex" | "dhl" | "other";
 export type OrderStatus = "active" | "received" | "cancelled";
 
 export interface OrderCard {
-  deckId: string;
-  cardId: string;
+  deckId?: string;   // undefined = freeform card not tied to any deck
+  cardId?: string;   // undefined = freeform card not tied to any deck
   cardName: string;  // denormalized for display without deck lookup
   quantity: number;
 }

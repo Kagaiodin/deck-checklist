@@ -1391,6 +1391,12 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 }
 .order-card-remove:hover { color: var(--danger); }
 
+.order-freeform-row {
+  display: flex; gap: 8px; align-items: center;
+  padding-top: 8px; border-top: 1px solid var(--border); margin-top: 4px;
+}
+.order-freeform-name { flex: 1; }
+
 /* ─── Order list ─────────────────────────────────────────────────────────────── */
 .order-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
 
