@@ -638,6 +638,16 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
                           {card.set} · {card.rarity === "mythic" ? "M" : card.rarity === "rare" ? "R" : card.rarity === "uncommon" ? "U" : card.rarity === "special" || card.rarity === "bonus" ? "S" : "C"}
                         </span>
                       )}
+                      <a
+                        className="card-printings-link"
+                        href={`https://scryfall.com/search?q=!"${encodeURIComponent(card.name)}"&unique=prints`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={e => e.stopPropagation()}
+                        title="View all printings on Scryfall"
+                      >
+                        <span className="card-printings-label">All printings </span>↗
+                      </a>
                       {card.inputName && <span className="card-input-name">{card.inputName}</span>}
                     </span>
                   </span>
