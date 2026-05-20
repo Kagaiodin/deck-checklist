@@ -1,4 +1,4 @@
-import type { Collection, CollectionPrinting } from "../types/index";
+import type { Collection } from "../types/index";
 import { getFrontFaceName } from "./dualface";
 
 // ── Column alias lists ────────────────────────────────────────────────────────
