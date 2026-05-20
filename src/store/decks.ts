@@ -20,7 +20,7 @@ type DeckAction =
   | { type: "ADD_CARD"; payload: { deckId: string; card: import("../types/index").Card } }
   | { type: "APPLY_COLLECTION"; payload: Collection };
 
-function deckReducer(state: DeckState, action: DeckAction): DeckState {
+export function deckReducer(state: DeckState, action: DeckAction): DeckState {
   switch (action.type) {
     case "ADD_DECK":
       return { ...state, decks: [...state.decks, action.payload] };
