@@ -8,8 +8,9 @@ import { useLocalStorage } from "./hooks/useLocalStorage";
 import { Checklist } from "./components/Checklist";
 import { ErrorQueue } from "./components/ErrorQueue";
 import { ProgressTracker } from "./components/ProgressTracker";
-import type { Deck, ErrorQueueItem, AcquisitionSource, Collection, CollectionMeta } from "./types/index";
-import { parseCollectionCSV, applyCollectionToCards } from "./utils/csvParser";
+import type { Deck, ErrorQueueItem, AcquisitionSource, Collection, CollectionMeta, Order, OrderCard, DeckNotification } from "./types/index";
+import { parseCollectionCSV, applyCollectionToCards, mergeOrderCardsIntoCollection } from "./utils/csvParser";
+import { detectCarrier, getTrackingUrl, CARRIER_NAMES } from "./utils/carrier";
 
 function AppInner() {
   const { state, dispatch } = useDecks();
@@ -21,7 +22,7 @@ function AppInner() {
   const [validating, setValidating] = useState(false);
   const [progress, setProgress] = useState<ValidationProgress>({ total: 0, validated: 0 });
   const [importError, setImportError] = useState<string | null>(null);
-  const [view, setView] = useState<"decks" | "collection">("decks");
+  const [view, setView] = useState<"decks" | "collection" | "orders">("decks");
   const [showImport, setShowImport] = useState(false);
   const [renamingDeckId, setRenamingDeckId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
@@ -51,6 +52,32 @@ function AppInner() {
   const [editingPrinting, setEditingPrinting] = useState<{
     key: string; idx: number; qty: string; set: string; cn: string; foil: boolean;
   } | null>(null);
+
+  // ── Orders state ──────────────────────────────────────────────────────────
+  const [orders, setOrders] = useLocalStorage<Order[]>("mtg-checklist-orders-v1", []);
+  const [showCreateOrder, setShowCreateOrder] = useState(false);
+  const [orderVendor, setOrderVendor] = useState("");
+  const [orderTracking, setOrderTracking] = useState("");
+  const [orderDate, setOrderDate] = useState("");
+  const [orderExpected, setOrderExpected] = useState("");
+  const [orderNotes, setOrderNotes] = useState("");
+  const [orderCards, setOrderCards] = useState<OrderCard[]>([]);
+  const [orderCardSearch, setOrderCardSearch] = useState("");
+  const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
+  const [deleteConfirmOrderId, setDeleteConfirmOrderId] = useState<string | null>(null);
+  const [notificationFilterIds, setNotificationFilterIds] = useState<string[] | null>(null);
+
+  const detectedCarrier = orderTracking.trim() ? detectCarrier(orderTracking) : null;
+
+  // Cards across all decks matching the search term (exclude already-added)
+  const orderCardResults = orderCardSearch.trim().length >= 2
+    ? state.decks.flatMap(deck =>
+        deck.cards
+          .filter(c => c.name.toLowerCase().includes(orderCardSearch.toLowerCase()))
+          .filter(c => !orderCards.some(oc => oc.cardId === c.id && oc.deckId === deck.id))
+          .map(c => ({ deckId: deck.id, deckName: deck.name, cardId: c.id, cardName: c.name, maxQty: c.quantity }))
+      ).slice(0, 12)
+    : [];
 
   const COLLECTION_PAGE_SIZE = 100;
 
@@ -379,6 +406,137 @@ function AppInner() {
     setBulkEditOpen(false);
   }
 
+  // ── Order handlers ────────────────────────────────────────────────────────
+  function orderLabel(order: Order): string {
+    const d = order.orderDate
+      ? new Date(order.orderDate).toLocaleDateString("en-US", { month: "long", day: "numeric" })
+      : "";
+    return d ? `${order.vendor} — ${d}` : order.vendor;
+  }
+
+  function handleCreateOrder() {
+    if (!orderVendor.trim() || orderCards.length === 0) return;
+    const newOrder: Order = {
+      id: crypto.randomUUID(),
+      createdAt: Date.now(),
+      vendor: orderVendor.trim(),
+      trackingNumber: orderTracking.trim() || undefined,
+      carrier: orderTracking.trim() ? detectCarrier(orderTracking) : undefined,
+      orderDate: orderDate ? new Date(orderDate).getTime() : undefined,
+      expectedArrival: orderExpected ? new Date(orderExpected).getTime() : undefined,
+      notes: orderNotes.trim() || undefined,
+      status: "active",
+      cards: orderCards,
+    };
+    setOrders(prev => [newOrder, ...prev]);
+    setShowCreateOrder(false);
+    setOrderVendor("");
+    setOrderTracking("");
+    setOrderDate("");
+    setOrderExpected("");
+    setOrderNotes("");
+    setOrderCards([]);
+    setOrderCardSearch("");
+  }
+
+  function handleAddOrderCard(deckId: string, deckName: string, cardId: string, cardName: string, qty: number) {
+    setOrderCards(prev => {
+      const existing = prev.find(oc => oc.cardId === cardId && oc.deckId === deckId);
+      if (existing) return prev;
+      return [...prev, { deckId, cardId, cardName, quantity: qty }];
+    });
+    setOrderCardSearch("");
+  }
+
+  function handleRemoveOrderCard(cardId: string, deckId: string) {
+    setOrderCards(prev => prev.filter(oc => !(oc.cardId === cardId && oc.deckId === deckId)));
+  }
+
+  function handleUpdateOrderCardQty(cardId: string, deckId: string, qty: number) {
+    if (qty <= 0) { handleRemoveOrderCard(cardId, deckId); return; }
+    setOrderCards(prev => prev.map(oc =>
+      oc.cardId === cardId && oc.deckId === deckId ? { ...oc, quantity: qty } : oc
+    ));
+  }
+
+  function handleDeleteOrder(id: string) {
+    const order = orders.find(o => o.id === id);
+    if (!order) return;
+    if (order.status === "active" && deleteConfirmOrderId !== id) {
+      setDeleteConfirmOrderId(id);
+      return;
+    }
+    setOrders(prev => prev.filter(o => o.id !== id));
+    setDeleteConfirmOrderId(null);
+  }
+
+  function handleMarkReceived(orderId: string) {
+    const order = orders.find(o => o.id === orderId);
+    if (!order) return;
+
+    // Update order status
+    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: "received" as const } : o));
+
+    // Tag all order cards as "owned" (manuallyTagged so collection won't overwrite)
+    const cardsByDeck = new Map<string, string[]>();
+    for (const oc of order.cards) {
+      cardsByDeck.set(oc.deckId, [...(cardsByDeck.get(oc.deckId) ?? []), oc.cardId]);
+    }
+    for (const [deckId, cardIds] of cardsByDeck) {
+      dispatch({ type: "BULK_SET_SOURCE", payload: { deckId, cardIds, source: "owned" } });
+    }
+
+    // Merge into collection (Option A: quantity only, no set/CN)
+    const updatedCollection = mergeOrderCardsIntoCollection(order.cards, collection);
+    setCollection(updatedCollection);
+    setCollectionMeta(prev => prev
+      ? { ...prev, cardCount: Object.keys(updatedCollection).length }
+      : { fileName: "Order receipt", importedAt: Date.now(), cardCount: Object.keys(updatedCollection).length }
+    );
+    dispatch({ type: "APPLY_COLLECTION", payload: updatedCollection });
+  }
+
+  function handleMarkCancelled(orderId: string) {
+    const order = orders.find(o => o.id === orderId);
+    if (!order) return;
+
+    // Update order status
+    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: "cancelled" as const } : o));
+
+    // Unset source + manuallyTagged so collection can re-tag
+    const cardsByDeck = new Map<string, string[]>();
+    for (const oc of order.cards) {
+      cardsByDeck.set(oc.deckId, [...(cardsByDeck.get(oc.deckId) ?? []), oc.cardId]);
+    }
+    for (const [deckId, cardIds] of cardsByDeck) {
+      dispatch({ type: "UNSET_CARD_SOURCES", payload: { deckId, cardIds } });
+    }
+
+    // Re-apply collection now that manuallyTagged is cleared
+    if (Object.keys(collection).length > 0) {
+      dispatch({ type: "APPLY_COLLECTION", payload: collection });
+    }
+
+    // Add deck notifications so user knows which cards to review
+    const label = orderLabel(order);
+    for (const [deckId, cardIds] of cardsByDeck) {
+      const notification: DeckNotification = {
+        id: `${orderId}_${deckId}`,
+        type: "order_cancelled",
+        orderId,
+        orderLabel: label,
+        affectedCardIds: cardIds,
+        createdAt: Date.now(),
+      };
+      dispatch({ type: "ADD_NOTIFICATION", payload: { deckId, notification } });
+    }
+  }
+
+  function handleDismissNotification(deckId: string, notificationId: string) {
+    dispatch({ type: "DISMISS_NOTIFICATION", payload: { deckId, notificationId } });
+    setNotificationFilterIds(null);
+  }
+
   // ── Archidekt import ───────────────────────────────────────────────────────
   function getArchidektId(url: string): string | null {
     const match = url.match(/archidekt\.com\/decks\/(\d+)/i);
@@ -527,10 +685,11 @@ function AppInner() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [editMenuOpen]);
 
-  // Reset edit/select modes when the active deck changes
+  // Reset edit/select modes and notification filter when the active deck changes
   useEffect(() => {
     setEditMode(false);
     setSelectMode(false);
+    setNotificationFilterIds(null);
   }, [activeDeckId]);
 
   // ── Feedback menu ──────────────────────────────────────────────────────────
@@ -567,6 +726,15 @@ function AppInner() {
           >
             <span className="nav-label-short">Collection</span>
             <span className="nav-label-full">My Collection</span>
+          </button>
+          <button
+            className={`nav-btn${view === "orders" ? " active" : ""}`}
+            onClick={() => setView("orders")}
+          >
+            Orders
+            {orders.filter(o => o.status === "active").length > 0 && (
+              <span className="nav-badge">{orders.filter(o => o.status === "active").length}</span>
+            )}
           </button>
         </nav>
         <div className="feedback-menu-container" ref={feedbackMenuRef}>
@@ -964,6 +1132,34 @@ function AppInner() {
                     onRemap={handleRemap}
                     onDismiss={handleDismiss}
                   />
+
+                  {/* Deck notifications (e.g. order cancellation) */}
+                  {(activeDeck.notifications ?? []).map(notification => (
+                    <div key={notification.id} className="deck-notification-banner">
+                      <div className="deck-notification-content">
+                        <span className="deck-notification-icon">⚠️</span>
+                        <div className="deck-notification-text">
+                          <strong>{notification.orderLabel}</strong> was cancelled.{" "}
+                          {notification.affectedCardIds.length} card{notification.affectedCardIds.length !== 1 ? "s" : ""} have been untagged — review and retag as needed.
+                        </div>
+                      </div>
+                      <div className="deck-notification-actions">
+                        {notificationFilterIds ? (
+                          <button className="btn btn-ghost btn-sm" onClick={() => setNotificationFilterIds(null)}>
+                            Show all
+                          </button>
+                        ) : (
+                          <button className="btn btn-secondary btn-sm" onClick={() => setNotificationFilterIds(notification.affectedCardIds)}>
+                            Show cards
+                          </button>
+                        )}
+                        <button className="btn btn-ghost btn-sm" onClick={() => handleDismissNotification(activeDeck.id, notification.id)}>
+                          Dismiss
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+
                   <Checklist
                     deck={activeDeck}
                     editMode={editMode}
@@ -974,6 +1170,7 @@ function AppInner() {
                     onRemoveCard={handleRemoveCard}
                     onUpdateQuantity={handleUpdateQuantity}
                     onAddCard={handleAddCard}
+                    filterCardIds={notificationFilterIds ?? undefined}
                   />
                 </>
               ) : (
@@ -1277,6 +1474,249 @@ function AppInner() {
             )}
           </section>
         )}
+        {/* ── Orders tab ─────────────────────────────────────────────────── */}
+        {view === "orders" && (
+          <section className="orders-panel">
+            <div className="orders-header">
+              <h2>Orders</h2>
+              <button className="btn btn-primary btn-sm" onClick={() => { setShowCreateOrder(v => !v); setOrderCardSearch(""); }}>
+                {showCreateOrder ? "✕ Cancel" : "+ New Order"}
+              </button>
+            </div>
+
+            {/* ── Create order form ──────────────────────────────────────── */}
+            {showCreateOrder && (
+              <div className="order-form">
+                <h3 className="order-form-title">New Order</h3>
+                <div className="order-form-grid">
+                  <label className="order-form-label">
+                    Vendor <span className="order-form-required">*</span>
+                    <input
+                      className="deck-name-input"
+                      placeholder="e.g. TCGPlayer, Card Kingdom"
+                      value={orderVendor}
+                      onChange={e => setOrderVendor(e.target.value)}
+                    />
+                  </label>
+                  <label className="order-form-label">
+                    Tracking number
+                    <div className="order-tracking-row">
+                      <input
+                        className="deck-name-input"
+                        placeholder="Optional"
+                        value={orderTracking}
+                        onChange={e => setOrderTracking(e.target.value)}
+                      />
+                      {detectedCarrier && detectedCarrier !== "other" && (
+                        <span className="order-carrier-badge">{CARRIER_NAMES[detectedCarrier]} detected</span>
+                      )}
+                    </div>
+                  </label>
+                  <label className="order-form-label">
+                    Order date
+                    <input className="deck-name-input" type="date" value={orderDate} onChange={e => setOrderDate(e.target.value)} />
+                  </label>
+                  <label className="order-form-label">
+                    Expected arrival
+                    <input className="deck-name-input" type="date" value={orderExpected} onChange={e => setOrderExpected(e.target.value)} />
+                  </label>
+                </div>
+                <label className="order-form-label">
+                  Notes
+                  <textarea
+                    className="import-textarea order-notes-textarea"
+                    placeholder="Optional notes"
+                    value={orderNotes}
+                    onChange={e => setOrderNotes(e.target.value)}
+                    rows={2}
+                  />
+                </label>
+
+                {/* Card picker */}
+                <div className="order-card-picker">
+                  <div className="order-card-picker-label">
+                    Cards in this order <span className="order-form-required">*</span>
+                  </div>
+                  {state.decks.length === 0 ? (
+                    <p className="order-card-picker-hint">Import a deck first to add cards to orders.</p>
+                  ) : (
+                    <>
+                      <div className="order-card-search-wrap">
+                        <input
+                          className="deck-name-input"
+                          placeholder="Search cards across your decks…"
+                          value={orderCardSearch}
+                          onChange={e => setOrderCardSearch(e.target.value)}
+                        />
+                        {orderCardResults.length > 0 && (
+                          <ul className="order-card-results">
+                            {orderCardResults.map(r => (
+                              <li key={`${r.deckId}-${r.cardId}`} className="order-card-result-item">
+                                <button
+                                  className="order-card-result-btn"
+                                  onClick={() => handleAddOrderCard(r.deckId, r.deckName, r.cardId, r.cardName, 1)}
+                                >
+                                  <span className="order-card-result-name">{r.cardName}</span>
+                                  <span className="order-card-result-deck">{r.deckName} · {r.maxQty}×</span>
+                                </button>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+
+                      {orderCards.length > 0 && (
+                        <ul className="order-card-list">
+                          {orderCards.map(oc => {
+                            const deck = state.decks.find(d => d.id === oc.deckId);
+                            const maxQty = deck?.cards.find(c => c.id === oc.cardId)?.quantity ?? oc.quantity;
+                            return (
+                              <li key={`${oc.deckId}-${oc.cardId}`} className="order-card-item">
+                                <span className="order-card-item-name">{oc.cardName}</span>
+                                <span className="order-card-item-deck">{deck?.name ?? "Unknown deck"}</span>
+                                <input
+                                  type="number"
+                                  className="order-card-qty-input"
+                                  value={oc.quantity}
+                                  min={1}
+                                  max={maxQty}
+                                  onChange={e => handleUpdateOrderCardQty(oc.cardId, oc.deckId, parseInt(e.target.value) || 1)}
+                                />
+                                <span className="order-card-qty-max">/ {maxQty}</span>
+                                <button className="order-card-remove" onClick={() => handleRemoveOrderCard(oc.cardId, oc.deckId)} title="Remove">×</button>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      )}
+                      {orderCards.length === 0 && (
+                        <p className="order-card-picker-hint">Search above to add cards from your decks.</p>
+                      )}
+                    </>
+                  )}
+                </div>
+
+                <div className="order-form-actions">
+                  <button
+                    className="btn btn-primary"
+                    onClick={handleCreateOrder}
+                    disabled={!orderVendor.trim() || orderCards.length === 0}
+                  >
+                    Create Order
+                  </button>
+                  <button className="btn btn-ghost btn-sm" onClick={() => setShowCreateOrder(false)}>Cancel</button>
+                </div>
+              </div>
+            )}
+
+            {/* ── Order list ─────────────────────────────────────────────── */}
+            {orders.length === 0 && !showCreateOrder ? (
+              <div className="orders-empty">
+                <p>No orders yet.</p>
+                <p className="orders-empty-hint">
+                  Create an order to track cards you've bought — mark it received when they arrive to automatically tag them as Owned and update your collection.
+                </p>
+              </div>
+            ) : (
+              <ul className="order-list">
+                {orders.map(order => {
+                  const isExpanded = expandedOrderId === order.id;
+                  const isConfirmingDelete = deleteConfirmOrderId === order.id;
+                  const cardsByDeck = order.cards.reduce<Record<string, { deckName: string; cards: OrderCard[] }>>((acc, oc) => {
+                    const deck = state.decks.find(d => d.id === oc.deckId);
+                    if (!acc[oc.deckId]) acc[oc.deckId] = { deckName: deck?.name ?? "Deleted deck", cards: [] };
+                    acc[oc.deckId].cards.push(oc);
+                    return acc;
+                  }, {});
+
+                  return (
+                    <li key={order.id} className={`order-item order-item-${order.status}`}>
+                      <div className="order-item-header">
+                        <button
+                          className="order-item-expand"
+                          onClick={() => setExpandedOrderId(isExpanded ? null : order.id)}
+                        >
+                          <span className="order-item-vendor">{order.vendor}</span>
+                          <span className={`order-status-badge order-status-${order.status}`}>
+                            {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                          </span>
+                          <span className="order-item-card-count">{order.cards.length} card{order.cards.length !== 1 ? "s" : ""}</span>
+                          <span className="order-item-chevron">{isExpanded ? "▴" : "▾"}</span>
+                        </button>
+
+                        <div className="order-item-meta">
+                          {order.trackingNumber && (
+                            <a
+                              className="order-tracking-link"
+                              href={getTrackingUrl(order.trackingNumber, order.carrier ?? "other")}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title={`Track with ${order.carrier ? CARRIER_NAMES[order.carrier] : "carrier"}`}
+                            >
+                              {CARRIER_NAMES[order.carrier ?? "other"]} ↗
+                            </a>
+                          )}
+                          {order.orderDate && (
+                            <span className="order-date">Ordered {new Date(order.orderDate).toLocaleDateString()}</span>
+                          )}
+                          {order.expectedArrival && order.status === "active" && (
+                            <span className="order-expected">Expected {new Date(order.expectedArrival).toLocaleDateString()}</span>
+                          )}
+                        </div>
+                      </div>
+
+                      {isExpanded && (
+                        <div className="order-item-detail">
+                          {order.notes && <p className="order-notes">{order.notes}</p>}
+                          <div className="order-cards-by-deck">
+                            {Object.values(cardsByDeck).map(({ deckName, cards }) => (
+                              <div key={deckName} className="order-deck-group">
+                                <div className="order-deck-group-name">{deckName}</div>
+                                <ul className="order-deck-card-list">
+                                  {cards.map(oc => (
+                                    <li key={oc.cardId} className="order-deck-card-item">
+                                      <span>{oc.quantity}× {oc.cardName}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* Lifecycle actions */}
+                          <div className="order-item-actions">
+                            {order.status === "active" && (
+                              <>
+                                <button className="btn btn-primary btn-sm" onClick={() => handleMarkReceived(order.id)}>
+                                  ✓ Mark Received
+                                </button>
+                                <button className="btn btn-secondary btn-sm" onClick={() => handleMarkCancelled(order.id)}>
+                                  Cancel Order
+                                </button>
+                              </>
+                            )}
+                            {isConfirmingDelete ? (
+                              <>
+                                <span className="order-delete-confirm-text">This order is still active — delete anyway?</span>
+                                <button className="btn btn-ghost btn-sm order-delete-confirm-btn" onClick={() => handleDeleteOrder(order.id)}>Yes, delete</button>
+                                <button className="btn btn-ghost btn-sm" onClick={() => setDeleteConfirmOrderId(null)}>Keep</button>
+                              </>
+                            ) : (
+                              <button className="btn btn-ghost btn-sm order-delete-btn" onClick={() => handleDeleteOrder(order.id)}>
+                                Delete
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </section>
+        )}
+
       </main>
     </div>
   );
