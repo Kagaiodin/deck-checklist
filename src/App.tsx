@@ -40,6 +40,7 @@ function AppInner() {
   const [collectionPage, setCollectionPage] = useState(0);
   const [expandedCollectionKey, setExpandedCollectionKey] = useState<string | null>(null);
   const [scrollToCollectionKey, setScrollToCollectionKey] = useState<string | null>(null);
+  const collectionListRef = useRef<HTMLUListElement>(null);
   const [bulkEditOpen, setBulkEditOpen] = useState(false);
   const [bulkEditText, setBulkEditText] = useState("");
   const [bulkEditMode, setBulkEditMode] = useState<"merge" | "replace">("merge");
@@ -98,6 +99,12 @@ function AppInner() {
       setScrollToCollectionKey(null);
     }
   }, [scrollToCollectionKey, collectionPageRows]);
+
+  // Scroll the list back to its top when the page changes (but not on letter-jump — that handles its own scroll)
+  useEffect(() => {
+    if (scrollToCollectionKey) return;
+    collectionListRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [collectionPageSafe]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function getCommittedInfo(name: string): { total: number; deckCount: number } {
     let total = 0;
@@ -1145,7 +1152,13 @@ function AppInner() {
                   </button>
                 </div>
 
-                <ul className="collection-list">
+                {collectionFiltered.length === 0 && collectionSearch && (
+                  <p className="collection-empty-search">
+                    No cards found matching "<strong>{collectionSearch}</strong>"
+                  </p>
+                )}
+
+                <ul className="collection-list" ref={collectionListRef}>
                   {collectionPageRows.map(({ name, printings, total }) => {
                     const isExpanded = expandedCollectionKey === name;
                     const committed = isExpanded ? getCommittedInfo(name) : null;

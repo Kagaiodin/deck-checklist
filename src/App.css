@@ -1072,6 +1072,7 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
   background: var(--surface); border: 1px dashed var(--border); border-radius: var(--radius);
 }
 .collection-empty-hint { font-size: 13px; margin-top: 8px; max-width: 480px; margin-left: auto; margin-right: auto; }
+.collection-empty-search { font-size: 13px; color: var(--text-muted); padding: 16px 0; text-align: center; }
 
 .collection-controls {
   display: flex; gap: 8px; align-items: center; margin-bottom: 10px;
