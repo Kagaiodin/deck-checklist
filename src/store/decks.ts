@@ -1,4 +1,5 @@
-import type { Deck } from "../types/index";
+import type { Deck, Collection } from "../types/index";
+import { applyCollectionToCards } from "../utils/csvParser";
 import { useReducer, createContext, useContext, createElement } from "react";
 import type { Dispatch, ReactNode } from "react";
 
@@ -16,7 +17,8 @@ type DeckAction =
   | { type: "BULK_SET_SOURCE"; payload: { deckId: string; cardIds: string[]; source: import("../types/index").AcquisitionSource | undefined } }
   | { type: "REMOVE_CARD"; payload: { deckId: string; cardId: string } }
   | { type: "UPDATE_CARD_QUANTITY"; payload: { deckId: string; cardId: string; quantity: number } }
-  | { type: "ADD_CARD"; payload: { deckId: string; card: import("../types/index").Card } };
+  | { type: "ADD_CARD"; payload: { deckId: string; card: import("../types/index").Card } }
+  | { type: "APPLY_COLLECTION"; payload: Collection };
 
 function deckReducer(state: DeckState, action: DeckAction): DeckState {
   switch (action.type) {
@@ -60,7 +62,9 @@ function deckReducer(state: DeckState, action: DeckAction): DeckState {
             ? {
                 ...d,
                 cards: d.cards.map(c =>
-                  c.id === action.payload.cardId ? { ...c, source: action.payload.source } : c
+                  c.id === action.payload.cardId
+                    ? { ...c, source: action.payload.source, manuallyTagged: true }
+                    : c
                 )
               }
             : d
@@ -74,11 +78,21 @@ function deckReducer(state: DeckState, action: DeckAction): DeckState {
             ? {
                 ...d,
                 cards: d.cards.map(c =>
-                  action.payload.cardIds.includes(c.id) ? { ...c, source: action.payload.source } : c
+                  action.payload.cardIds.includes(c.id)
+                    ? { ...c, source: action.payload.source, manuallyTagged: true }
+                    : c
                 )
               }
             : d
         )
+      };
+    case "APPLY_COLLECTION":
+      return {
+        ...state,
+        decks: state.decks.map(d => ({
+          ...d,
+          cards: applyCollectionToCards(d.cards, action.payload)
+        }))
       };
     case "REMOVE_CARD":
       return {

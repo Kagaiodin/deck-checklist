@@ -30,6 +30,23 @@ export interface Card {
   source?: AcquisitionSource;
   set?: string;
   rarity?: "common" | "uncommon" | "rare" | "mythic" | "special" | "bonus";
+  manuallyTagged?: boolean;
+}
+
+export interface CollectionPrinting {
+  quantity: number;
+  set?: string;
+  collectorNumber?: string;
+  foil?: boolean;
+}
+
+// Collection: lowercased card name → list of printings (one entry per set/printing/foil combo)
+export type Collection = Record<string, CollectionPrinting[]>;
+
+export interface CollectionMeta {
+  fileName: string;
+  importedAt: number;
+  cardCount: number;
 }
 
 export interface Deck {
