@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Virtuoso, type VirtuosoHandle } from "react-virtuoso";
+import "./CollectionPage.css";
 import type { Collection, CollectionMeta, CollectionPrinting, Deck } from "../../types/index";
 import type { CollectionFilterKey, CommittedInfo, EditingPrinting } from "../../types/collection";
 import { useLocalStorage } from "../../hooks/useLocalStorage";
