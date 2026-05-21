@@ -1207,51 +1207,49 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
   font-size: 10px; opacity: .7; font-variant-numeric: tabular-nums;
 }
 
-.collection-pagination {
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 10px; margin-bottom: 8px;
-}
-.collection-pagination-bottom { margin-top: 10px; margin-bottom: 0; }
-.collection-page-info {
-  font-size: 13px; color: var(--text-muted); white-space: nowrap;
-}
-.collection-page-total { color: var(--text-muted); }
-
-.collection-alpha-strip {
-  display: flex; flex-wrap: wrap; gap: 2px;
-  margin-bottom: 8px;
-}
-.collection-alpha-btn {
-  width: 26px; height: 26px;
-  border-radius: 4px; border: 1px solid var(--border);
-  background: transparent; color: var(--text-muted);
-  font-size: 11px; font-weight: 600; cursor: pointer;
-  transition: background 0.1s, color 0.1s, border-color 0.1s;
-  padding: 0; line-height: 1;
-}
-.collection-alpha-btn:hover:not(:disabled) {
-  background: rgba(108,92,231,.15); color: var(--text); border-color: var(--accent);
-}
-.collection-alpha-btn.active {
-  background: var(--accent); color: #fff; border-color: var(--accent);
-}
-.collection-alpha-btn.empty {
-  opacity: 0.2; cursor: default;
+/* ── Card count line (replaces pagination) ─────────────────────── */
+.collection-count-line {
+  font-size: 12px; color: var(--text-muted);
+  margin: 0 0 4px; padding: 0 2px;
 }
 
-.collection-list {
-  list-style: none; display: flex; flex-direction: column;
-  border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden;
+/* ── Virtual list + alpha rail wrapper ─────────────────────────── */
+.collection-list-wrap {
+  display: grid; grid-template-columns: 1fr 18px; gap: 4px;
+  align-items: start;
 }
+.collection-vlist {
+  border: 1px solid var(--border); border-radius: var(--radius);
+  scrollbar-width: thin; scrollbar-color: var(--border) transparent;
+}
+.collection-vlist::-webkit-scrollbar { width: 4px; }
+.collection-vlist::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* ── Vertical alpha rail ────────────────────────────────────────── */
+.alpha-rail {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 4px 0; gap: 0; user-select: none; touch-action: none;
+  cursor: pointer;
+}
+.alpha-rail-item {
+  font-size: 9px; font-weight: 600; color: var(--text-muted);
+  line-height: 1; padding: 1px 2px; border-radius: 2px;
+  opacity: .45; transition: color .08s, opacity .08s;
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  min-height: 0;
+}
+.alpha-rail-item.active  { color: var(--accent-light); opacity: 1; font-weight: 700; }
+.alpha-rail-item:not(.empty):hover { opacity: 1; color: var(--text); }
+.alpha-rail-item.empty   { opacity: .15; pointer-events: none; }
 
 .collection-row {
-  display: flex; flex-direction: column;
+  display: flex; flex-direction: column; height: 100%;
   border-bottom: 1px solid var(--border); background: var(--surface);
   font-size: 13px;
 }
-.collection-row:last-child { border-bottom: none; }
-.collection-row:nth-child(even) { background: var(--surface-2); }
-.collection-row.expanded { background: rgba(108,92,231,.06); }
+/* Even/odd via data-index injected by react-window wrapper div */
+.collection-vlist > div > div:nth-child(even) .collection-row { background: var(--surface-2); }
+.collection-row.expanded { background: rgba(108,92,231,.06) !important; }
 
 .collection-row-summary {
   display: flex; align-items: center; justify-content: space-between;

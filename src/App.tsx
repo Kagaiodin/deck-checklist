@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import "./App.css";
+import { VariableSizeList, type ListChildComponentProps } from "react-window";
 import { DeckProvider, useDecks } from "./store/decks";
 import { parseDecklist } from "./utils/parser";
 import { validateDecklist } from "./utils/validator";
@@ -8,8 +9,123 @@ import { useLocalStorage } from "./hooks/useLocalStorage";
 import { Checklist } from "./components/Checklist";
 import { ErrorQueue } from "./components/ErrorQueue";
 import { ProgressTracker } from "./components/ProgressTracker";
-import type { Deck, ErrorQueueItem, AcquisitionSource, Collection, CollectionMeta } from "./types/index";
+import type { Deck, ErrorQueueItem, AcquisitionSource, Collection, CollectionMeta, CollectionPrinting } from "./types/index";
 import { parseCollectionCSV, applyCollectionToCards } from "./utils/csvParser";
+
+// ── Collection virtual-list row ────────────────────────────────────────────
+// Defined outside AppInner so react-window gets a stable component reference.
+
+interface CRowData {
+  rows: Array<{ name: string; printings: CollectionPrinting[]; total: number }>;
+  expandedKey: string | null;
+  editingPrinting: { key: string; idx: number; qty: string; set: string; cn: string; foil: boolean } | null;
+  hasDeckContext: boolean;
+  toggleExpand: (name: string) => void;
+  onDecrement:  (name: string) => void;
+  onIncrement:  (name: string) => void;
+  onRemove:     (name: string) => void;
+  onStartEdit:  (ep: { key: string; idx: number; qty: string; set: string; cn: string; foil: boolean }) => void;
+  onCommitEdit: () => void;
+  onCancelEdit: () => void;
+  onEditField:  (ep: { key: string; idx: number; qty: string; set: string; cn: string; foil: boolean }) => void;
+  getCommitted: (name: string) => { total: number; deckCount: number };
+}
+
+function CollectionRowComponent({ index, style, data }: ListChildComponentProps<CRowData>) {
+  const { name, printings, total } = data.rows[index];
+  const isExpanded = data.expandedKey === name;
+  const committed  = data.getCommitted(name);
+  const displayName = name.replace(/(?:^|\s|-)\S/g, c => c.toUpperCase());
+  const ep = data.editingPrinting;
+
+  return (
+    <div style={style}>
+      <div data-collection-key={name} className={`collection-row${isExpanded ? " expanded" : ""}`}>
+        <div className="collection-row-summary">
+          <button
+            className="collection-row-expand"
+            onClick={() => data.toggleExpand(name)}
+          >
+            <span className="collection-card-name">{displayName}</span>
+            {committed.total > 0 && data.hasDeckContext && (
+              <span className="collection-deck-chip">
+                in {committed.deckCount} deck{committed.deckCount !== 1 ? "s" : ""}
+              </span>
+            )}
+            <span className="collection-expand-chevron">{isExpanded ? "▴" : "▾"}</span>
+          </button>
+          <div className="collection-row-controls">
+            <button className="collection-qty-btn" onClick={() => data.onDecrement(name)} aria-label="Remove one">−</button>
+            <span className="collection-card-qty">{total}×</span>
+            <button className="collection-qty-btn" onClick={() => data.onIncrement(name)} aria-label="Add one">+</button>
+          </div>
+        </div>
+        {isExpanded && (
+          <div className="collection-row-detail">
+            <ul className="collection-printings">
+              {printings.map((p, i) => {
+                const isEditingThis = ep?.key === name && ep?.idx === i;
+                return (
+                  <li key={i} className={`collection-printing${isEditingThis ? " editing" : ""}`}>
+                    {isEditingThis && ep ? (
+                      <>
+                        <input type="number" min="0" className="collection-printing-input collection-printing-qty-input"
+                          value={ep.qty} autoFocus
+                          onChange={e => data.onEditField({ ...ep, qty: e.target.value })}
+                          onKeyDown={e => { if (e.key === "Enter") data.onCommitEdit(); if (e.key === "Escape") data.onCancelEdit(); }}
+                        />
+                        <span>×</span>
+                        <input type="text" className="collection-printing-input collection-printing-set-input"
+                          value={ep.set} placeholder="Set"
+                          onChange={e => data.onEditField({ ...ep, set: e.target.value })}
+                          onKeyDown={e => { if (e.key === "Enter") data.onCommitEdit(); if (e.key === "Escape") data.onCancelEdit(); }}
+                        />
+                        <input type="text" className="collection-printing-input collection-printing-cn-input"
+                          value={ep.cn} placeholder="#CN"
+                          onChange={e => data.onEditField({ ...ep, cn: e.target.value })}
+                          onKeyDown={e => { if (e.key === "Enter") data.onCommitEdit(); if (e.key === "Escape") data.onCancelEdit(); }}
+                        />
+                        <label className="collection-printing-foil-label">
+                          <input type="checkbox" checked={ep.foil} onChange={e => data.onEditField({ ...ep, foil: e.target.checked })} />
+                          Foil
+                        </label>
+                        <button className="collection-printing-save" onClick={data.onCommitEdit} aria-label="Save">✓</button>
+                        <button className="collection-printing-cancel" onClick={data.onCancelEdit} aria-label="Cancel">✕</button>
+                      </>
+                    ) : (
+                      <button className="collection-printing-display"
+                        onClick={() => data.onStartEdit({ key: name, idx: i, qty: String(p.quantity), set: p.set ?? "", cn: p.collectorNumber ?? "", foil: p.foil ?? false })}
+                      >
+                        <span className="collection-printing-qty">{p.quantity}×</span>
+                        <span className="collection-printing-set">
+                          {p.set ?? "Unknown set"}{p.collectorNumber ? ` #${p.collectorNumber}` : ""}
+                        </span>
+                        {p.foil && <span className="collection-printing-foil">✦ Foil</span>}
+                        <span className="collection-printing-edit-hint">Edit</span>
+                      </button>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+            {data.hasDeckContext && (
+              <p className="collection-committed">
+                {committed.total > 0
+                  ? `${committed.total} committed across ${committed.deckCount} deck${committed.deckCount !== 1 ? "s" : ""}`
+                  : "Not in any deck"}
+              </p>
+            )}
+            <div className="collection-detail-footer">
+              <button className="btn btn-ghost btn-sm collection-remove-all-btn" onClick={() => data.onRemove(name)}>
+                Remove all copies
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 function AppInner() {
   const { state, dispatch } = useDecks();
@@ -40,10 +156,10 @@ function AppInner() {
   const [collectionFilter, setCollectionFilter] = useState<"all" | "in-deck" | "free" | "foils" | "duplicates">("all");
   const [sortOpen, setSortOpen] = useState(false);
   const sortRef = useRef<HTMLDivElement>(null);
-  const [collectionPage, setCollectionPage] = useState(0);
   const [expandedCollectionKey, setExpandedCollectionKey] = useState<string | null>(null);
-  const [scrollToCollectionKey, setScrollToCollectionKey] = useState<string | null>(null);
-  const collectionListRef = useRef<HTMLUListElement>(null);
+  const collectionListRef = useRef<VariableSizeList<CRowData>>(null);
+  const alphaRailRef = useRef<HTMLDivElement>(null);
+  const [firstVisibleIdx, setFirstVisibleIdx] = useState(0);
   const [bulkEditOpen, setBulkEditOpen] = useState(false);
   const [bulkEditText, setBulkEditText] = useState("");
   const [bulkEditMode, setBulkEditMode] = useState<"merge" | "replace">("merge");
@@ -55,7 +171,10 @@ function AppInner() {
     key: string; idx: number; qty: string; set: string; cn: string; foil: boolean;
   } | null>(null);
 
-  const COLLECTION_PAGE_SIZE = 100;
+  // ── Virtual list constants ─────────────────────────────────────────────────
+  const ITEM_HEIGHT_COLLAPSED  = 41;
+  const ITEM_HEIGHT_DETAIL_BASE = 148; // detail padding + committed + footer
+  const ITEM_HEIGHT_PER_PRINTING = 30;
 
   function getCommittedInfo(name: string): { total: number; deckCount: number } {
     let total = 0;
@@ -100,44 +219,40 @@ function AppInner() {
   };
   const inDecksCount = pillCounts["in-deck"];
 
-  const collectionPageCount = Math.max(1, Math.ceil(collectionPillFiltered.length / COLLECTION_PAGE_SIZE));
-  const collectionPageSafe = Math.min(collectionPage, collectionPageCount - 1);
-  const collectionPageRows = collectionPillFiltered.slice(
-    collectionPageSafe * COLLECTION_PAGE_SIZE,
-    (collectionPageSafe + 1) * COLLECTION_PAGE_SIZE
-  );
-
-  // Letter → page index and first card name, only meaningful for alphabetical sorts
+  // Letter → first index in collectionPillFiltered (for alpha rail jumps)
   const alphaSort = collectionSort === "name-asc" || collectionSort === "name-desc";
-  const letterPageMap = new Map<string, number>();
-  const letterFirstKeyMap = new Map<string, string>(); // letter → first card name on that page
+  const letterIndexMap = new Map<string, number>();
   if (alphaSort) {
     collectionPillFiltered.forEach(({ name }, idx) => {
       const letter = name[0]?.toUpperCase();
-      if (letter && !letterPageMap.has(letter)) {
-        letterPageMap.set(letter, Math.floor(idx / COLLECTION_PAGE_SIZE));
-        letterFirstKeyMap.set(letter, name);
-      }
+      if (letter && !letterIndexMap.has(letter)) letterIndexMap.set(letter, idx);
     });
   }
-  // Which letter is active (first letter of the first card on the current page)
-  const activeAlphaLetter = collectionPageRows[0]?.name[0]?.toUpperCase() ?? null;
+  const activeAlphaLetter = collectionPillFiltered[firstVisibleIdx]?.name[0]?.toUpperCase() ?? null;
 
-  // After a letter jump, scroll to the target card once the new page renders
+  // Reset list scroll + size cache when filter/search/sort changes
   useEffect(() => {
-    if (!scrollToCollectionKey) return;
-    const el = document.querySelector(`[data-collection-key="${CSS.escape(scrollToCollectionKey)}"]`);
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
-      setScrollToCollectionKey(null);
+    collectionListRef.current?.scrollToItem(0);
+    collectionListRef.current?.resetAfterIndex(0);
+    setFirstVisibleIdx(0);
+  }, [collectionFilter, collectionSearch, collectionSort]);
+
+  // Resize cache when an item is expanded/collapsed
+  useEffect(() => {
+    if (!collectionListRef.current) return;
+    const idx = collectionPillFiltered.findIndex(r => r.name === expandedCollectionKey);
+    if (idx >= 0) {
+      collectionListRef.current.resetAfterIndex(idx);
+      collectionListRef.current.scrollToItem(idx, "smart");
+    } else {
+      collectionListRef.current.resetAfterIndex(0);
     }
-  }, [scrollToCollectionKey, collectionPageRows]);
+  }, [expandedCollectionKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Scroll the list back to its top when the page changes (but not on letter-jump — that handles its own scroll)
+  // Resize cache when editing state changes (editing row is taller)
   useEffect(() => {
-    if (scrollToCollectionKey) return;
-    collectionListRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, [collectionPageSafe]); // eslint-disable-line react-hooks/exhaustive-deps
+    collectionListRef.current?.resetAfterIndex(0);
+  }, [editingPrinting]);
 
   const activeDeck = state.decks.find(d => d.id === activeDeckId) ?? null;
   const errors = activeDeckId ? (allErrors[activeDeckId] ?? []) : [];
@@ -579,6 +694,57 @@ function AppInner() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [feedbackOpen]);
+
+  // ── Virtual list helpers ───────────────────────────────────────────────────
+  const getItemSize = useCallback((index: number): number => {
+    const item = collectionPillFiltered[index];
+    if (!item) return ITEM_HEIGHT_COLLAPSED;
+    if (expandedCollectionKey !== item.name) return ITEM_HEIGHT_COLLAPSED;
+    return ITEM_HEIGHT_COLLAPSED + ITEM_HEIGHT_DETAIL_BASE + item.printings.length * ITEM_HEIGHT_PER_PRINTING;
+  }, [collectionPillFiltered, expandedCollectionKey]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function jumpToLetter(letter: string) {
+    const idx = letterIndexMap.get(letter);
+    if (idx !== undefined) collectionListRef.current?.scrollToItem(idx, "start");
+  }
+
+  function handleAlphaPointer(e: React.PointerEvent<HTMLDivElement>) {
+    if (e.buttons === 0 && e.type === "pointermove") return;
+    const rail = alphaRailRef.current;
+    if (!rail) return;
+    const rect = rail.getBoundingClientRect();
+    const pct  = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
+    const letter = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[Math.min(25, Math.floor(pct * 26))];
+    if (letter) jumpToLetter(letter);
+  }
+
+  const cbToggleExpand   = useCallback((name: string) => setExpandedCollectionKey(k => k === name ? null : name), []);
+  const cbDecrement      = useCallback(handleCollectionDecrement, [collection, collectionMeta]); // eslint-disable-line react-hooks/exhaustive-deps
+  const cbIncrement      = useCallback(handleCollectionIncrement, [collection, collectionMeta]); // eslint-disable-line react-hooks/exhaustive-deps
+  const cbRemove         = useCallback(handleCollectionRemove,    [collection, collectionMeta]); // eslint-disable-line react-hooks/exhaustive-deps
+  const cbStartEdit      = useCallback((ep: typeof editingPrinting) => setEditingPrinting(ep), []);
+  const cbCommitEdit     = useCallback(commitPrintingEdit, [editingPrinting]); // eslint-disable-line react-hooks/exhaustive-deps
+  const cbCancelEdit     = useCallback(() => setEditingPrinting(null), []);
+  const cbEditField      = useCallback((ep: typeof editingPrinting) => setEditingPrinting(ep), []);
+  const cbGetCommitted   = useCallback(getCommittedInfo, [state.decks]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const listHeight = Math.min(600, Math.max(240, collectionPillFiltered.length * ITEM_HEIGHT_COLLAPSED));
+
+  const rowData: CRowData = {
+    rows:            collectionPillFiltered,
+    expandedKey:     expandedCollectionKey,
+    editingPrinting: editingPrinting,
+    hasDeckContext:  state.decks.length > 0,
+    toggleExpand:    cbToggleExpand,
+    onDecrement:     cbDecrement,
+    onIncrement:     cbIncrement,
+    onRemove:        cbRemove,
+    onStartEdit:     cbStartEdit,
+    onCommitEdit:    cbCommitEdit,
+    onCancelEdit:    cbCancelEdit,
+    onEditField:     cbEditField,
+    getCommitted:    cbGetCommitted,
+  };
 
   // ── Bulk edit live preview ─────────────────────────────────────────────────
   const bulkPreview = (() => {
@@ -1233,7 +1399,7 @@ function AppInner() {
                       className="deck-name-input collection-search search-with-sort"
                       placeholder="Search cards…"
                       value={collectionSearch}
-                      onChange={e => { setCollectionSearch(e.target.value); setCollectionPage(0); }}
+                      onChange={e => setCollectionSearch(e.target.value)}
                     />
                     <button
                       className={`sort-inline-btn${sortOpen ? " active" : ""}`}
@@ -1248,7 +1414,7 @@ function AppInner() {
                           <button
                             key={opt.value}
                             className={`sort-option${collectionSort === opt.value ? " active" : ""}`}
-                            onClick={() => { setCollectionSort(opt.value); setCollectionPage(0); setSortOpen(false); }}
+                            onClick={() => { setCollectionSort(opt.value); setSortOpen(false); }}
                           >
                             {opt.label}
                           </button>
@@ -1269,7 +1435,7 @@ function AppInner() {
                       <button
                         key={f}
                         className={`filter-pill${collectionFilter === f ? " active" : ""}`}
-                        onClick={() => { setCollectionFilter(f); setCollectionPage(0); }}
+                        onClick={() => setCollectionFilter(f)}
                       >
                         {labels[f]}
                         {count > 0 && <span className="filter-pill-count">{count.toLocaleString()}</span>}
@@ -1278,188 +1444,52 @@ function AppInner() {
                   })}
                 </div>
 
-                {alphaSort && (
-                  <div className="collection-alpha-strip">
-                    {"ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").map(letter => {
-                      const page = letterPageMap.get(letter);
-                      const isActive = letter === activeAlphaLetter;
-                      return (
-                        <button
-                          key={letter}
-                          className={`collection-alpha-btn${isActive ? " active" : ""}${page === undefined ? " empty" : ""}`}
-                          onClick={() => {
-                            if (page === undefined) return;
-                            const firstKey = letterFirstKeyMap.get(letter);
-                            setCollectionPage(page);
-                            if (firstKey) setScrollToCollectionKey(firstKey);
-                          }}
-                          disabled={page === undefined}
-                        >
-                          {letter}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-
-                <div className="collection-pagination">
-                  <button
-                    className="btn btn-secondary btn-sm"
-                    onClick={() => setCollectionPage(p => Math.max(0, p - 1))}
-                    disabled={collectionPageSafe === 0}
-                  >
-                    ← Prev
-                  </button>
-                  <span className="collection-page-info">
-                    Page {collectionPageSafe + 1} of {collectionPageCount}
-                    <span className="collection-page-total"> · {collectionPillFiltered.length.toLocaleString()} cards</span>
-                  </span>
-                  <button
-                    className="btn btn-secondary btn-sm"
-                    onClick={() => setCollectionPage(p => Math.min(collectionPageCount - 1, p + 1))}
-                    disabled={collectionPageSafe >= collectionPageCount - 1}
-                  >
-                    Next →
-                  </button>
-                </div>
+                {/* Card count line (replaces pagination) */}
+                <p className="collection-count-line">
+                  {collectionPillFiltered.length.toLocaleString()} card{collectionPillFiltered.length !== 1 ? "s" : ""}
+                  {collectionFilter !== "all" || collectionSearch ? ` · ${pillCounts.all.toLocaleString()} total` : ""}
+                </p>
 
                 {collectionPillFiltered.length === 0 && (collectionSearch || collectionFilter !== "all") && (
                   <p className="collection-empty-search">
-                    No cards{collectionSearch ? <> matching "<strong>{collectionSearch}</strong>"</> : ""}{collectionFilter !== "all" ? ` in the "${collectionFilter}" filter` : ""}
+                    No cards{collectionSearch ? <> matching "<strong>{collectionSearch}</strong>"</> : ""}{collectionFilter !== "all" ? ` in "${collectionFilter}"` : ""}
                   </p>
                 )}
 
-                <ul className="collection-list" ref={collectionListRef}>
-                  {collectionPageRows.map(({ name, printings, total }) => {
-                    const isExpanded = expandedCollectionKey === name;
-                    // Always compute so we can show deck chip on the collapsed row
-                    const committed = getCommittedInfo(name);
-                    // Proper display name: title-case the stored lowercase key
-                    // TODO: store original casing on import for correct MTG proper nouns
-                    const displayName = name.replace(/(?:^|\s|-)\S/g, c => c.toUpperCase());
-                    return (
-                      <li key={name} data-collection-key={name} className={`collection-row${isExpanded ? " expanded" : ""}`}>
-                        <div className="collection-row-summary">
-                          <button
-                            className="collection-row-expand"
-                            onClick={() => setExpandedCollectionKey(isExpanded ? null : name)}
-                          >
-                            <span className="collection-card-name">{displayName}</span>
-                            {committed.total > 0 && state.decks.length > 0 && (
-                              <span className="collection-deck-chip">
-                                in {committed.deckCount} deck{committed.deckCount !== 1 ? "s" : ""}
-                              </span>
-                            )}
-                            <span className="collection-expand-chevron">{isExpanded ? "▴" : "▾"}</span>
-                          </button>
-                          <div className="collection-row-controls">
-                            <button className="collection-qty-btn" onClick={() => handleCollectionDecrement(name)} aria-label="Remove one">−</button>
-                            <span className="collection-card-qty">{total}×</span>
-                            <button className="collection-qty-btn" onClick={() => handleCollectionIncrement(name)} aria-label="Add one">+</button>
-                          </div>
-                        </div>
-                        {isExpanded && (
-                          <div className="collection-row-detail">
-                            <ul className="collection-printings">
-                              {printings.map((p, i) => {
-                                const isEditingThis = editingPrinting?.key === name && editingPrinting?.idx === i;
-                                return (
-                                  <li key={i} className={`collection-printing${isEditingThis ? " editing" : ""}`}>
-                                    {isEditingThis ? (
-                                      <>
-                                        <input
-                                          type="number" min="0"
-                                          className="collection-printing-input collection-printing-qty-input"
-                                          value={editingPrinting.qty}
-                                          onChange={e => setEditingPrinting({ ...editingPrinting, qty: e.target.value })}
-                                          onKeyDown={e => { if (e.key === "Enter") commitPrintingEdit(); if (e.key === "Escape") setEditingPrinting(null); }}
-                                          autoFocus
-                                        />
-                                        <span>×</span>
-                                        <input
-                                          type="text"
-                                          className="collection-printing-input collection-printing-set-input"
-                                          value={editingPrinting.set}
-                                          placeholder="Set"
-                                          onChange={e => setEditingPrinting({ ...editingPrinting, set: e.target.value })}
-                                          onKeyDown={e => { if (e.key === "Enter") commitPrintingEdit(); if (e.key === "Escape") setEditingPrinting(null); }}
-                                        />
-                                        <input
-                                          type="text"
-                                          className="collection-printing-input collection-printing-cn-input"
-                                          value={editingPrinting.cn}
-                                          placeholder="#CN"
-                                          onChange={e => setEditingPrinting({ ...editingPrinting, cn: e.target.value })}
-                                          onKeyDown={e => { if (e.key === "Enter") commitPrintingEdit(); if (e.key === "Escape") setEditingPrinting(null); }}
-                                        />
-                                        <label className="collection-printing-foil-label">
-                                          <input type="checkbox" checked={editingPrinting.foil} onChange={e => setEditingPrinting({ ...editingPrinting, foil: e.target.checked })} />
-                                          Foil
-                                        </label>
-                                        <button className="collection-printing-save" onClick={commitPrintingEdit} aria-label="Save">✓</button>
-                                        <button className="collection-printing-cancel" onClick={() => setEditingPrinting(null)} aria-label="Cancel">✕</button>
-                                      </>
-                                    ) : (
-                                      <button
-                                        className="collection-printing-display"
-                                        onClick={() => setEditingPrinting({ key: name, idx: i, qty: String(p.quantity), set: p.set ?? "", cn: p.collectorNumber ?? "", foil: p.foil ?? false })}
-                                      >
-                                        <span className="collection-printing-qty">{p.quantity}×</span>
-                                        <span className="collection-printing-set">
-                                          {p.set ?? "Unknown set"}
-                                          {p.collectorNumber ? ` #${p.collectorNumber}` : ""}
-                                        </span>
-                                        {p.foil && <span className="collection-printing-foil">✦ Foil</span>}
-                                        <span className="collection-printing-edit-hint">Edit</span>
-                                      </button>
-                                    )}
-                                  </li>
-                                );
-                              })}
-                            </ul>
-                            {committed && state.decks.length > 0 && (
-                              <p className="collection-committed">
-                                {committed.total > 0
-                                  ? `${committed.total} committed across ${committed.deckCount} deck${committed.deckCount !== 1 ? "s" : ""}`
-                                  : "Not in any deck"}
-                              </p>
-                            )}
-                            <div className="collection-detail-footer">
-                              <button
-                                className="btn btn-ghost btn-sm collection-remove-all-btn"
-                                onClick={() => handleCollectionRemove(name)}
-                              >
-                                Remove all copies
-                              </button>
-                            </div>
-                          </div>
-                        )}
-                      </li>
-                    );
-                  })}
-                </ul>
+                {/* Virtual list + vertical alpha rail */}
+                <div className="collection-list-wrap">
+                  <VariableSizeList<CRowData>
+                    ref={collectionListRef}
+                    height={listHeight}
+                    itemCount={collectionPillFiltered.length}
+                    itemSize={getItemSize}
+                    width="100%"
+                    itemData={rowData}
+                    className="collection-vlist"
+                    onItemsRendered={({ visibleStartIndex }) => setFirstVisibleIdx(visibleStartIndex)}
+                    overscanCount={4}
+                  >
+                    {CollectionRowComponent}
+                  </VariableSizeList>
 
-                {collectionPageCount > 1 && (
-                  <div className="collection-pagination collection-pagination-bottom">
-                    <button
-                      className="btn btn-secondary btn-sm"
-                      onClick={() => setCollectionPage(p => Math.max(0, p - 1))}
-                      disabled={collectionPageSafe === 0}
+                  {alphaSort && collectionPillFiltered.length > 10 && (
+                    <div
+                      className="alpha-rail"
+                      ref={alphaRailRef}
+                      onPointerDown={handleAlphaPointer}
+                      onPointerMove={handleAlphaPointer}
                     >
-                      ← Prev
-                    </button>
-                    <span className="collection-page-info">
-                      Page {collectionPageSafe + 1} of {collectionPageCount}
-                    </span>
-                    <button
-                      className="btn btn-secondary btn-sm"
-                      onClick={() => setCollectionPage(p => Math.min(collectionPageCount - 1, p + 1))}
-                      disabled={collectionPageSafe >= collectionPageCount - 1}
-                    >
-                      Next →
-                    </button>
-                  </div>
-                )}
+                      {"ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").map(letter => (
+                        <span
+                          key={letter}
+                          className={`alpha-rail-item${!letterIndexMap.has(letter) ? " empty" : ""}${letter === activeAlphaLetter ? " active" : ""}`}
+                        >
+                          {letter}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </>
             )}
           </section>
