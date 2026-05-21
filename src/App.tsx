@@ -37,6 +37,9 @@ function AppInner() {
   const [collectionError, setCollectionError] = useState<string | null>(null);
   const [collectionSearch, setCollectionSearch] = useState("");
   const [collectionSort, setCollectionSort] = useState<"name-asc" | "name-desc" | "qty-desc" | "qty-asc">("name-asc");
+  const [collectionFilter, setCollectionFilter] = useState<"all" | "in-deck" | "free" | "foils" | "duplicates">("all");
+  const [sortOpen, setSortOpen] = useState(false);
+  const sortRef = useRef<HTMLDivElement>(null);
   const [collectionPage, setCollectionPage] = useState(0);
   const [expandedCollectionKey, setExpandedCollectionKey] = useState<string | null>(null);
   const [scrollToCollectionKey, setScrollToCollectionKey] = useState<string | null>(null);
@@ -54,6 +57,16 @@ function AppInner() {
 
   const COLLECTION_PAGE_SIZE = 100;
 
+  function getCommittedInfo(name: string): { total: number; deckCount: number } {
+    let total = 0;
+    let deckCount = 0;
+    for (const deck of state.decks) {
+      const card = deck.cards.find(c => c.name.toLowerCase() === name);
+      if (card) { total += card.quantity; deckCount++; }
+    }
+    return { total, deckCount };
+  }
+
   const collectionFiltered = Object.entries(collection)
     .filter(([name]) => name.includes(collectionSearch.toLowerCase()))
     .map(([name, rawPrintings]) => {
@@ -67,9 +80,29 @@ function AppInner() {
       if (collectionSort === "qty-desc")  return b.total - a.total || a.name.localeCompare(b.name);
       return a.total - b.total || a.name.localeCompare(b.name); // qty-asc
     });
-  const collectionPageCount = Math.max(1, Math.ceil(collectionFiltered.length / COLLECTION_PAGE_SIZE));
+  // ── Pill filter ──────────────────────────────────────────────────────────
+  const deckCardNames = new Set(state.decks.flatMap(d => d.cards.map(c => c.name.toLowerCase())));
+  const collectionPillFiltered = collectionFilter === "all"
+    ? collectionFiltered
+    : collectionFiltered.filter(({ name, printings, total }) => {
+        if (collectionFilter === "in-deck") return deckCardNames.has(name);
+        if (collectionFilter === "free") { const c = getCommittedInfo(name); return total - c.total > 0; }
+        if (collectionFilter === "foils") return printings.some(p => p.foil);
+        if (collectionFilter === "duplicates") return total > 4;
+        return true;
+      });
+  const pillCounts = {
+    all: collectionFiltered.length,
+    "in-deck": collectionFiltered.filter(({ name }) => deckCardNames.has(name)).length,
+    free: collectionFiltered.filter(({ name, total }) => { const c = getCommittedInfo(name); return total - c.total > 0; }).length,
+    foils: collectionFiltered.filter(({ printings }) => printings.some(p => p.foil)).length,
+    duplicates: collectionFiltered.filter(({ total }) => total > 4).length,
+  };
+  const inDecksCount = pillCounts["in-deck"];
+
+  const collectionPageCount = Math.max(1, Math.ceil(collectionPillFiltered.length / COLLECTION_PAGE_SIZE));
   const collectionPageSafe = Math.min(collectionPage, collectionPageCount - 1);
-  const collectionPageRows = collectionFiltered.slice(
+  const collectionPageRows = collectionPillFiltered.slice(
     collectionPageSafe * COLLECTION_PAGE_SIZE,
     (collectionPageSafe + 1) * COLLECTION_PAGE_SIZE
   );
@@ -79,7 +112,7 @@ function AppInner() {
   const letterPageMap = new Map<string, number>();
   const letterFirstKeyMap = new Map<string, string>(); // letter → first card name on that page
   if (alphaSort) {
-    collectionFiltered.forEach(({ name }, idx) => {
+    collectionPillFiltered.forEach(({ name }, idx) => {
       const letter = name[0]?.toUpperCase();
       if (letter && !letterPageMap.has(letter)) {
         letterPageMap.set(letter, Math.floor(idx / COLLECTION_PAGE_SIZE));
@@ -105,16 +138,6 @@ function AppInner() {
     if (scrollToCollectionKey) return;
     collectionListRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [collectionPageSafe]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  function getCommittedInfo(name: string): { total: number; deckCount: number } {
-    let total = 0;
-    let deckCount = 0;
-    for (const deck of state.decks) {
-      const card = deck.cards.find(c => c.name.toLowerCase() === name);
-      if (card) { total += card.quantity; deckCount++; }
-    }
-    return { total, deckCount };
-  }
 
   const activeDeck = state.decks.find(d => d.id === activeDeckId) ?? null;
   const errors = activeDeckId ? (allErrors[activeDeckId] ?? []) : [];
@@ -497,6 +520,16 @@ function AppInner() {
     setTimeout(() => setSentVendor(null), 2500);
   }
 
+  // ── Sort popover ───────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!sortOpen) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (sortRef.current && !sortRef.current.contains(e.target as Node)) setSortOpen(false);
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [sortOpen]);
+
   // ── Actions menu ───────────────────────────────────────────────────────────
   const [actionsOpen, setActionsOpen] = useState(false);
   const actionsMenuRef = useRef<HTMLDivElement>(null);
@@ -546,6 +579,34 @@ function AppInner() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [feedbackOpen]);
+
+  // ── Bulk edit live preview ─────────────────────────────────────────────────
+  const bulkPreview = (() => {
+    if (!bulkEditOpen || !bulkEditText.trim()) return null;
+    try {
+      const parsed = parseDecklist(bulkEditText);
+      if (parsed.length === 0) return null;
+      let added = 0, updated = 0, removed = 0;
+      for (const { name } of parsed) {
+        const key = name.toLowerCase();
+        if (collection[key]) updated++; else added++;
+      }
+      if (bulkEditMode === "replace") {
+        const pasteKeys = new Set(parsed.map(({ name }) => name.toLowerCase()));
+        removed = Object.keys(collection).filter(k => !pasteKeys.has(k)).length;
+      }
+      return { added, updated, removed };
+    } catch { return null; }
+  })();
+
+  // ── Sort label ─────────────────────────────────────────────────────────────
+  const SORT_OPTIONS = [
+    { value: "name-asc" as const, label: "Name A→Z" },
+    { value: "name-desc" as const, label: "Name Z→A" },
+    { value: "qty-desc" as const, label: "Qty ↓" },
+    { value: "qty-asc" as const, label: "Qty ↑" },
+  ];
+  const currentSortLabel = SORT_OPTIONS.find(o => o.value === collectionSort)?.label ?? "Sort";
 
   return (
     <div className="app">
@@ -995,10 +1056,9 @@ function AppInner() {
             name,
             printings: Array.isArray(raw) ? raw : [],
           }));
-          const totalCards  = collectionEntries.reduce((s, { printings }) => s + printings.reduce((ps, p) => ps + p.quantity, 0), 0);
-          const foilTotal   = collectionEntries.reduce((s, { printings }) => s + printings.filter(p => p.foil).reduce((ps, p) => ps + p.quantity, 0), 0);
-          const deckCardNames = new Set(state.decks.flatMap(d => d.cards.map(c => c.name.toLowerCase())));
-          const inDecksCount = collectionEntries.filter(({ name }) => deckCardNames.has(name)).length;
+          const totalCards = collectionEntries.reduce((s, { printings }) => s + printings.reduce((ps, p) => ps + p.quantity, 0), 0);
+          const foilTotal  = collectionEntries.reduce((s, { printings }) => s + printings.filter(p => p.foil).reduce((ps, p) => ps + p.quantity, 0), 0);
+          // inDecksCount is computed at component level via pillCounts
 
           return (
           <section className="collection-panel">
@@ -1073,44 +1133,85 @@ function AppInner() {
 
             {bulkEditOpen && (
               <div className="collection-bulk-panel">
-                <p className="collection-bulk-hint">
-                  Paste cards in decklist format (<code>4 Lightning Bolt</code>). Listed cards have their quantities set; unlisted cards are unchanged unless Replace mode is selected.
-                </p>
-                <div className="collection-bulk-mode">
-                  <label>
-                    <input type="radio" name="bulk-mode" value="merge" checked={bulkEditMode === "merge"} onChange={() => setBulkEditMode("merge")} />
-                    {" "}Merge
-                  </label>
-                  <label>
-                    <input type="radio" name="bulk-mode" value="replace" checked={bulkEditMode === "replace"} onChange={() => setBulkEditMode("replace")} />
-                    {" "}Replace all
-                  </label>
+                {/* Mode tabs */}
+                <div className="bulk-tabs">
+                  <button
+                    className={`bulk-tab${bulkEditMode === "merge" ? " active" : ""}`}
+                    onClick={() => setBulkEditMode("merge")}
+                  >
+                    <span>Add to collection</span>
+                    <span className="bulk-tab-sub">unlisted unchanged</span>
+                  </button>
+                  <button
+                    className={`bulk-tab danger${bulkEditMode === "replace" ? " active" : ""}`}
+                    onClick={() => setBulkEditMode("replace")}
+                  >
+                    <span>Replace all</span>
+                    <span className="bulk-tab-sub">unlisted removed</span>
+                  </button>
                 </div>
+
                 <textarea
-                  className="import-textarea"
+                  className="import-textarea bulk-textarea"
                   value={bulkEditText}
                   onChange={e => setBulkEditText(e.target.value)}
                   placeholder={"4 Lightning Bolt\n2x Snapcaster Mage\n1 Black Lotus"}
-                  rows={6}
+                  rows={7}
                 />
+
+                {/* Live preview */}
+                {bulkPreview && (
+                  <div className="bulk-preview">
+                    <span className="bulk-preview-lbl">Preview</span>
+                    <span className="bulk-preview-counts">
+                      {bulkPreview.added > 0 && <span className="bulk-preview-new">+{bulkPreview.added} new</span>}
+                      {bulkPreview.added > 0 && bulkPreview.updated > 0 && <span className="bulk-preview-sep"> · </span>}
+                      {bulkPreview.updated > 0 && <span className="bulk-preview-set">{bulkPreview.updated} set</span>}
+                      {bulkPreview.removed > 0 && <span className="bulk-preview-sep"> · </span>}
+                      {bulkPreview.removed > 0 && <span className="bulk-preview-removed">{bulkPreview.removed} removed</span>}
+                    </span>
+                  </div>
+                )}
+
+                {/* Replace warning */}
+                {bulkEditMode === "replace" && Object.keys(collection).length > 0 && (
+                  <div className="bulk-warn">
+                    <span className="bulk-warn-ico">⚠</span>
+                    <div>
+                      <strong>This will remove {(Object.keys(collection).length - (bulkPreview?.updated ?? 0)).toLocaleString()} cards</strong>
+                      <p>Everything not in your paste will be deleted and owned-tags cleared across all decks.</p>
+                    </div>
+                  </div>
+                )}
+
                 {bulkEditError && <p className="import-error">{bulkEditError}</p>}
+
                 <div className="collection-bulk-actions">
                   <button className="btn btn-primary btn-sm" onClick={handleBulkEdit} disabled={!bulkEditText.trim()}>
                     Apply
                   </button>
-                  {collectionMeta && !clearConfirming && (
-                    <button className="btn btn-ghost btn-sm collection-clear-btn" onClick={() => setClearConfirming(true)}>
-                      Clear collection
-                    </button>
-                  )}
-                  {clearConfirming && (
-                    <>
-                      <span className="collection-clear-confirm-text">Remove all {collectionMeta?.cardCount.toLocaleString()} cards?</span>
-                      <button className="btn btn-ghost btn-sm collection-clear-btn" onClick={() => { handleClearCollection(); setBulkEditOpen(false); }}>Yes, clear</button>
-                      <button className="btn btn-ghost btn-sm" onClick={() => setClearConfirming(false)}>Cancel</button>
-                    </>
-                  )}
+                  <button className="btn btn-ghost btn-sm" onClick={() => { setBulkEditOpen(false); setBulkEditText(""); setBulkEditError(null); }}>
+                    Cancel
+                  </button>
                 </div>
+
+                {/* Danger zone */}
+                {collectionMeta && (
+                  <div className="bulk-danger-zone">
+                    <span className="bulk-danger-label">Danger zone</span>
+                    {!clearConfirming ? (
+                      <button className="btn btn-ghost btn-sm bulk-clear-btn" onClick={() => setClearConfirming(true)}>
+                        Clear entire collection
+                      </button>
+                    ) : (
+                      <div className="bulk-clear-confirm">
+                        <span>Remove all {collectionMeta.cardCount.toLocaleString()} cards?</span>
+                        <button className="btn btn-ghost btn-sm bulk-clear-btn" onClick={() => { handleClearCollection(); setBulkEditOpen(false); }}>Yes, clear</button>
+                        <button className="btn btn-ghost btn-sm" onClick={() => setClearConfirming(false)}>Cancel</button>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
@@ -1126,22 +1227,55 @@ function AppInner() {
             {collectionMeta && (
               <>
                 <div className="collection-controls">
-                  <input
-                    className="deck-name-input collection-search"
-                    placeholder="Search cards…"
-                    value={collectionSearch}
-                    onChange={e => { setCollectionSearch(e.target.value); setCollectionPage(0); }}
-                  />
-                  <select
-                    className="collection-sort-select"
-                    value={collectionSort}
-                    onChange={e => { setCollectionSort(e.target.value as typeof collectionSort); setCollectionPage(0); }}
-                  >
-                    <option value="name-asc">Name A→Z</option>
-                    <option value="name-desc">Name Z→A</option>
-                    <option value="qty-desc">Quantity ↓</option>
-                    <option value="qty-asc">Quantity ↑</option>
-                  </select>
+                  <div className="search-sort-wrap" ref={sortRef}>
+                    <span className="search-icon" aria-hidden>⌕</span>
+                    <input
+                      className="deck-name-input collection-search search-with-sort"
+                      placeholder="Search cards…"
+                      value={collectionSearch}
+                      onChange={e => { setCollectionSearch(e.target.value); setCollectionPage(0); }}
+                    />
+                    <button
+                      className={`sort-inline-btn${sortOpen ? " active" : ""}`}
+                      onClick={() => setSortOpen(v => !v)}
+                      title="Sort"
+                    >
+                      {currentSortLabel} ▾
+                    </button>
+                    {sortOpen && (
+                      <div className="sort-popover">
+                        {SORT_OPTIONS.map(opt => (
+                          <button
+                            key={opt.value}
+                            className={`sort-option${collectionSort === opt.value ? " active" : ""}`}
+                            onClick={() => { setCollectionSort(opt.value); setCollectionPage(0); setSortOpen(false); }}
+                          >
+                            {opt.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Filter pills */}
+                <div className="filter-pills">
+                  {(["all", "in-deck", "free", "foils", "duplicates"] as const).map(f => {
+                    const labels: Record<typeof f, string> = {
+                      all: "All", "in-deck": "In a deck", free: "Free", foils: "Foils", duplicates: "Duplicates",
+                    };
+                    const count = pillCounts[f];
+                    return (
+                      <button
+                        key={f}
+                        className={`filter-pill${collectionFilter === f ? " active" : ""}`}
+                        onClick={() => { setCollectionFilter(f); setCollectionPage(0); }}
+                      >
+                        {labels[f]}
+                        {count > 0 && <span className="filter-pill-count">{count.toLocaleString()}</span>}
+                      </button>
+                    );
+                  })}
                 </div>
 
                 {alphaSort && (
@@ -1178,7 +1312,7 @@ function AppInner() {
                   </button>
                   <span className="collection-page-info">
                     Page {collectionPageSafe + 1} of {collectionPageCount}
-                    <span className="collection-page-total"> · {collectionFiltered.length.toLocaleString()} cards</span>
+                    <span className="collection-page-total"> · {collectionPillFiltered.length.toLocaleString()} cards</span>
                   </span>
                   <button
                     className="btn btn-secondary btn-sm"
@@ -1189,9 +1323,9 @@ function AppInner() {
                   </button>
                 </div>
 
-                {collectionFiltered.length === 0 && collectionSearch && (
+                {collectionPillFiltered.length === 0 && (collectionSearch || collectionFilter !== "all") && (
                   <p className="collection-empty-search">
-                    No cards found matching "<strong>{collectionSearch}</strong>"
+                    No cards{collectionSearch ? <> matching "<strong>{collectionSearch}</strong>"</> : ""}{collectionFilter !== "all" ? ` in the "${collectionFilter}" filter` : ""}
                   </p>
                 )}
 
