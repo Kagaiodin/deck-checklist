@@ -13,7 +13,6 @@ interface PillCounts {
   "in-deck": number;
   free: number;
   foils: number;
-  duplicates: number;
 }
 
 interface UseCollectionFilterResult {
@@ -33,17 +32,15 @@ export function useCollectionFilter(
   getCommittedInfo: (name: string) => CommittedInfo,
 ): UseCollectionFilterResult {
   return useMemo(() => {
-    const inDeckPred  = ({ name }: Entry) => deckCardNames.has(name);
-    const freePred    = ({ name, total }: Entry) => total - getCommittedInfo(name).total > 0;
-    const foilsPred   = ({ printings }: Entry) => printings.some(p => p.foil);
-    const dupPred     = ({ total }: Entry) => total > 4;
+    const inDeckPred = ({ name }: Entry) => deckCardNames.has(name);
+    const freePred   = ({ name, total }: Entry) => total - getCommittedInfo(name).total > 0;
+    const foilsPred  = ({ printings }: Entry) => printings.some(p => p.foil);
 
     const predicates: Record<CollectionFilterKey, (e: Entry) => boolean> = {
-      all:         () => true,
-      "in-deck":   inDeckPred,
-      free:        freePred,
-      foils:       foilsPred,
-      duplicates:  dupPred,
+      all:       () => true,
+      "in-deck": inDeckPred,
+      free:      freePred,
+      foils:     foilsPred,
     };
 
     const collectionPillFiltered =
@@ -52,11 +49,10 @@ export function useCollectionFilter(
         : collectionFiltered.filter(predicates[collectionFilter]);
 
     const pillCounts: PillCounts = {
-      all:        collectionFiltered.length,
-      "in-deck":  collectionFiltered.filter(inDeckPred).length,
-      free:       collectionFiltered.filter(freePred).length,
-      foils:      collectionFiltered.filter(foilsPred).length,
-      duplicates: collectionFiltered.filter(dupPred).length,
+      all:       collectionFiltered.length,
+      "in-deck": collectionFiltered.filter(inDeckPred).length,
+      free:      collectionFiltered.filter(freePred).length,
+      foils:     collectionFiltered.filter(foilsPred).length,
     };
 
     return {

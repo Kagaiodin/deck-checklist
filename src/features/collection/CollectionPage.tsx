@@ -26,8 +26,7 @@ interface CRowData {
   editingPrinting: EditingPrinting | null;
   hasDeckContext:  boolean;
   toggleExpand:    (name: string) => void;
-  onDecrement:     (name: string) => void;
-  onIncrement:     (name: string) => void;
+  onAddCopy:       (name: string) => void;
   onRemove:        (name: string) => void;
   onStartEdit:     (ep: EditingPrinting) => void;
   onCommitEdit:    () => void;
@@ -52,8 +51,7 @@ function CollectionRowItem(
       hasDeckContext={data.hasDeckContext}
       editingPrinting={data.editingPrinting}
       onToggleExpand={data.toggleExpand}
-      onDecrement={data.onDecrement}
-      onIncrement={data.onIncrement}
+      onAddCopy={data.onAddCopy}
       onRemove={data.onRemove}
       onStartEdit={data.onStartEdit}
       onEditField={data.onEditField}
@@ -265,23 +263,21 @@ export function CollectionPage({ decks, onCollectionChange }: CollectionPageProp
   const cbToggleExpand = useCallback(
     (name: string) => setExpandedKey(k => k === name ? null : name), [],
   );
-  const cbDecrement    = useCallback(handleDecrement,       [collection, collectionMeta]); // eslint-disable-line react-hooks/exhaustive-deps
-  const cbIncrement    = useCallback(handleIncrement,       [collection, collectionMeta]); // eslint-disable-line react-hooks/exhaustive-deps
+  const cbAddCopy      = useCallback(handleIncrement,       [collection, collectionMeta]); // eslint-disable-line react-hooks/exhaustive-deps
   const cbRemove       = useCallback(handleRemove,          [collection, collectionMeta]); // eslint-disable-line react-hooks/exhaustive-deps
   const cbStartEdit    = useCallback((ep: EditingPrinting) => setEditingPrinting(ep), []);
   const cbCommitEdit   = useCallback(commitPrintingEdit,    [editingPrinting]);            // eslint-disable-line react-hooks/exhaustive-deps
   const cbCancelEdit   = useCallback(() => setEditingPrinting(null), []);
   const cbEditField    = useCallback((ep: EditingPrinting) => setEditingPrinting(ep), []);
 
-  const listHeight = Math.min(600, Math.max(240, collectionPillFiltered.length * 41));
+  const listHeight = Math.min(600, Math.max(240, collectionPillFiltered.length * 56));
 
   const rowData: CRowData = {
     expandedKey:     expandedKey,
     editingPrinting: editingPrinting,
     hasDeckContext:  decks.length > 0,
     toggleExpand:    cbToggleExpand,
-    onDecrement:     cbDecrement,
-    onIncrement:     cbIncrement,
+    onAddCopy:       cbAddCopy,
     onRemove:        cbRemove,
     onStartEdit:     cbStartEdit,
     onCommitEdit:    cbCommitEdit,
@@ -385,6 +381,7 @@ export function CollectionPage({ decks, onCollectionChange }: CollectionPageProp
             collectionFilter={collectionFilter}
             onFilterChange={setCollectionFilter}
             pillCounts={pillCounts}
+            uniqueCards={uniqueCards}
           />
 
           <p className="collection-count-line">

@@ -3,14 +3,13 @@ import type { CollectionSortKey, CollectionFilterKey } from "../../../types/coll
 import { SortPopover, SORT_OPTIONS } from "./SortPopover";
 
 const FILTER_LABELS: Record<CollectionFilterKey, string> = {
-  all:         "All",
-  "in-deck":   "In a deck",
-  free:        "Free",
-  foils:       "Foils",
-  duplicates:  "Duplicates",
+  all:       "All",
+  "in-deck": "In a deck",
+  free:      "Free",
+  foils:     "Foils",
 };
 
-const FILTER_KEYS: CollectionFilterKey[] = ["all", "in-deck", "free", "foils", "duplicates"];
+const FILTER_KEYS: CollectionFilterKey[] = ["all", "in-deck", "free", "foils"];
 
 interface CollectionControlsProps {
   collectionSearch: string;
@@ -22,6 +21,7 @@ interface CollectionControlsProps {
   collectionFilter: CollectionFilterKey;
   onFilterChange: (key: CollectionFilterKey) => void;
   pillCounts: Record<CollectionFilterKey, number>;
+  uniqueCards: number;
 }
 
 export function CollectionControls({
@@ -34,6 +34,7 @@ export function CollectionControls({
   collectionFilter,
   onFilterChange,
   pillCounts,
+  uniqueCards,
 }: CollectionControlsProps) {
   const sortRef = useRef<HTMLDivElement>(null);
   const currentSortLabel = SORT_OPTIONS.find(o => o.value === collectionSort)?.label ?? "Sort";
@@ -56,7 +57,7 @@ export function CollectionControls({
           <span className="search-icon" aria-hidden>⌕</span>
           <input
             className="deck-name-input collection-search search-with-sort"
-            placeholder="Search cards…"
+            placeholder={`Search ${uniqueCards.toLocaleString()} cards…`}
             value={collectionSearch}
             onChange={e => onSearchChange(e.target.value)}
           />
