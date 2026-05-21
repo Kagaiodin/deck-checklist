@@ -157,7 +157,8 @@ function AppInner() {
   const [sortOpen, setSortOpen] = useState(false);
   const sortRef = useRef<HTMLDivElement>(null);
   const [expandedCollectionKey, setExpandedCollectionKey] = useState<string | null>(null);
-  const collectionListRef = useRef<VariableSizeList<CRowData>>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const collectionListRef = useRef<VariableSizeList<any>>(null);
   const alphaRailRef = useRef<HTMLDivElement>(null);
   const [firstVisibleIdx, setFirstVisibleIdx] = useState(0);
   const [bulkEditOpen, setBulkEditOpen] = useState(false);
@@ -1458,7 +1459,7 @@ function AppInner() {
 
                 {/* Virtual list + vertical alpha rail */}
                 <div className="collection-list-wrap">
-                  <VariableSizeList<CRowData>
+                  <VariableSizeList
                     ref={collectionListRef}
                     height={listHeight}
                     itemCount={collectionPillFiltered.length}
