@@ -2,6 +2,18 @@ import { useState, useRef, useEffect } from "react";
 import type { Card, Deck, AcquisitionSource } from "../types/index";
 import { ACQUISITION_SOURCES } from "../types/index";
 
+const SEGMENT_SOURCES: Array<{ key: AcquisitionSource | "untagged"; color: string; label: string }> = [
+  { key: "owned",           color: "#4ade80", label: "Owned" },
+  { key: "ordered",         color: "#60a5fa", label: "Ordered" },
+  { key: "proxy",           color: "#c084fc", label: "Proxy" },
+  { key: "in_another_deck", color: "#facc15", label: "In another deck" },
+  { key: "need_to_buy",     color: "#f87171", label: "Need to buy" },
+  { key: "borrowed",        color: "#fb923c", label: "Borrowed" },
+  { key: "in_binder",       color: "#2dd4bf", label: "In binder" },
+  { key: "in_storage",      color: "#94a3b8", label: "In storage" },
+  { key: "untagged",        color: "transparent", label: "Untagged" },
+];
+
 interface Props {
   deck: Deck;
   editMode: boolean;
@@ -274,6 +286,8 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
   const [qtyDraft, setQtyDraft] = useState("");
   const [displayOpen, setDisplayOpen] = useState(false);
   const displayMenuRef = useRef<HTMLDivElement>(null);
+  const [groupPickerOpen, setGroupPickerOpen] = useState(false);
+  const groupPickerRef = useRef<HTMLDivElement>(null);
 
   const query = search.trim();
 
@@ -360,6 +374,24 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
     return () => document.removeEventListener("mousedown", handleClick);
   }, [displayOpen]);
 
+  useEffect(() => {
+    if (!groupPickerOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (groupPickerRef.current && !groupPickerRef.current.contains(e.target as Node)) {
+        setGroupPickerOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [groupPickerOpen]);
+
+  // Source breakdown for segmented progress bar
+  const sourceBreakdown = new Map<string, number>();
+  for (const card of deck.cards) {
+    const key = card.source ?? "untagged";
+    sourceBreakdown.set(key, (sourceBreakdown.get(key) ?? 0) + card.quantity);
+  }
+
   const activeFilterCount = [
     groupBy !== "none",
     filterSource !== "",
@@ -383,22 +415,51 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
   return (
     <div className={`checklist${editMode ? " edit-mode" : ""}`}>
       <div className="checklist-header">
-        <div className="checklist-stats">
-          <span>
-            {acquiredCards} / {totalCards} fetched
-            <span className="stats-items-note"> · {totalItems} unique cards</span>
-          </span>
-          <div className="progress-bar-track">
-            <div
-              className="progress-bar-fill"
-              style={{
-                width: totalCards > 0 ? `${(acquiredCards / totalCards) * 100}%` : "0%",
-                backgroundPosition: totalCards > 0 ? `${100 - (acquiredCards / totalCards) * 100}% center` : "100% center"
-              }}
-            />
+        {/* ── Segmented progress strip ── */}
+        <div className="progress-strip">
+          <div className="progress-strip-top">
+            <span className="progress-strip-count">
+              {acquiredCards} <span className="progress-strip-total">/ {totalCards} fetched</span>
+              <span className="stats-items-note"> · {totalItems} unique</span>
+            </span>
+            <span className="progress-strip-pct">{totalCards > 0 ? Math.round((acquiredCards / totalCards) * 100) : 0}%</span>
+          </div>
+          <div className="progress-seg-track">
+            {SEGMENT_SOURCES.map(({ key, color }) => {
+              const qty = sourceBreakdown.get(key) ?? 0;
+              if (qty === 0 || totalCards === 0) return null;
+              const width = (qty / totalCards) * 100;
+              const label = key === "untagged" ? "Untagged" : (ACQUISITION_SOURCES.find(s => s.value === key)?.label ?? key);
+              return (
+                <div
+                  key={key}
+                  className={`progress-seg${key === "untagged" ? " seg-untagged" : ""}`}
+                  style={{ width: `${width}%`, background: key === "untagged" ? undefined : color }}
+                  title={`${qty} ${label}`}
+                />
+              );
+            })}
+          </div>
+          <div className="progress-legend">
+            {SEGMENT_SOURCES.map(({ key, color, label }) => {
+              const qty = sourceBreakdown.get(key) ?? 0;
+              if (qty === 0) return null;
+              const isActive = filterSource === key;
+              return (
+                <button
+                  key={key}
+                  className={`progress-chip${isActive ? " active" : ""}`}
+                  onClick={() => setFilterSource(isActive ? "" : key as AcquisitionSource | "untagged")}
+                >
+                  <span className={`progress-chip-dot${key === "untagged" ? " dot-untagged" : ""}`} style={key !== "untagged" ? { background: color } : undefined} />
+                  {qty} {label.toLowerCase()}
+                </button>
+              );
+            })}
           </div>
         </div>
 
+        {/* ── Search row ── */}
         <div className="checklist-search">
           <input
             className="search-input"
@@ -409,107 +470,140 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
           />
         </div>
 
-        <div className="checklist-controls">
-          <div className="display-menu-container" ref={displayMenuRef}>
+        {/* ── Inline filter pills ── */}
+        <div className="filter-pills-row">
+          {/* Missing only toggle */}
+          <button
+            className={`filter-pill${showMissingOnly ? " active" : ""}`}
+            onClick={() => setShowMissingOnly(v => !v)}
+          >
+            Missing only
+          </button>
+
+          {/* Group by */}
+          <div className="group-pill-wrap" ref={groupPickerRef}>
             <button
-              className={`btn btn-secondary btn-sm${displayOpen ? " active" : ""}`}
+              className={`filter-pill filter-pill-group${groupPickerOpen ? " open" : ""}${groupBy !== "none" ? " active" : ""}`}
+              onClick={() => setGroupPickerOpen(v => !v)}
+            >
+              Group{groupBy !== "none" ? `: ${groupBy.charAt(0).toUpperCase()}${groupBy.slice(1)}` : ""} ▾
+            </button>
+            {groupPickerOpen && (
+              <div className="group-picker-dropdown">
+                {(["none", "color", "type", "source"] as GroupBy[]).map(g => (
+                  <button
+                    key={g}
+                    className={`group-picker-item${groupBy === g ? " active" : ""}`}
+                    onClick={() => { setGroupBy(g); setGroupPickerOpen(false); }}
+                  >
+                    {g === "none" ? "None" : `${g.charAt(0).toUpperCase()}${g.slice(1)}`}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Active source filter pill */}
+          {filterSource && (
+            <button
+              className="filter-pill active filter-pill-dismissable"
+              onClick={() => setFilterSource("")}
+            >
+              {filterSource === "untagged" ? "Untagged" : (ACQUISITION_SOURCES.find(s => s.value === filterSource)?.label ?? filterSource)} ✕
+            </button>
+          )}
+
+          {/* Active type filter pills */}
+          {[...filterType].map(t => (
+            <button
+              key={t}
+              className="filter-pill active filter-pill-dismissable"
+              onClick={() => setFilterType(prev => { const next = new Set(prev); next.delete(t); return next; })}
+            >
+              {t} ✕
+            </button>
+          ))}
+
+          {/* More filters ▾ */}
+          <div className="more-filters-wrap" ref={displayMenuRef}>
+            <button
+              className={`filter-pill${displayOpen ? " open" : ""}${filterType.size > 0 ? " active" : ""}`}
               onClick={() => setDisplayOpen(v => !v)}
             >
-              Display {activeFilterCount > 0 && <span className="display-filter-badge">{activeFilterCount}</span>} {displayOpen ? "▴" : "▾"}
+              {filterType.size > 0 ? `Filters (${filterType.size})` : "More ▾"}
             </button>
             {displayOpen && <div className="mobile-sheet-backdrop" onClick={() => setDisplayOpen(false)} />}
             {displayOpen && (
               <div className="display-menu-dropdown">
-                <div className="display-menu-section-label">Group &amp; sort</div>
+                <div className="display-menu-section-label">Card source</div>
                 <div className="display-menu-row">
-                  <span className="display-menu-row-label">Group by</span>
-                  <select value={groupBy} onChange={e => setGroupBy(e.target.value as GroupBy)} className="control-select">
-                    <option value="none">None</option>
-                    <option value="color">Color</option>
-                    <option value="type">Type</option>
-                    <option value="source">Source</option>
-                  </select>
-                </div>
-
-                <div className="display-menu-divider" />
-                <div className="display-menu-section-label">Filter</div>
-
-                <div className="display-menu-row">
-                  <span className="display-menu-row-label">Card source</span>
                   <select
                     value={filterSource}
-                    onChange={e => setFilterSource(e.target.value as AcquisitionSource | "untagged" | "")}
+                    onChange={e => { setFilterSource(e.target.value as AcquisitionSource | "untagged" | ""); setDisplayOpen(false); }}
                     className="control-select"
+                    style={{ width: "100%" }}
                   >
-                    <option value="">All</option>
+                    <option value="">All sources</option>
                     <option value="untagged">Untagged</option>
                     {ACQUISITION_SOURCES.map(s => (
                       <option key={s.value} value={s.value}>{s.label}</option>
                     ))}
                   </select>
                 </div>
-
                 {availableTypes.length > 0 && (
-                  <div className="display-menu-row display-menu-row-wrap">
-                    <span className="display-menu-row-label">Type</span>
-                    <div className="type-filter-pills">
-                      {availableTypes.map(t => (
-                        <button
-                          key={t}
-                          className={`type-pill${filterType.has(t) ? " active" : ""}`}
-                          onClick={() => setFilterType(prev => {
-                            const next = new Set(prev);
-                            next.has(t) ? next.delete(t) : next.add(t);
-                            return next;
-                          })}
-                        >
-                          {t}
-                        </button>
-                      ))}
+                  <>
+                    <div className="display-menu-divider" />
+                    <div className="display-menu-section-label">Card type</div>
+                    <div className="display-menu-row display-menu-row-wrap">
+                      <div className="type-filter-pills">
+                        {availableTypes.map(t => (
+                          <button
+                            key={t}
+                            className={`type-pill${filterType.has(t) ? " active" : ""}`}
+                            onClick={() => setFilterType(prev => {
+                              const next = new Set(prev);
+                              next.has(t) ? next.delete(t) : next.add(t);
+                              return next;
+                            })}
+                          >
+                            {t}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  </>
                 )}
-
-                <div className="display-menu-row">
-                  <span className="display-menu-row-label">Color</span>
-                  <div className="color-filter-pills">
-                    {COLOR_FILTERS.map(cf => (
-                      <button
-                        key={cf.value}
-                        className={`color-pill color-pill-${cf.value}${filterColor.has(cf.value) ? " active" : ""}`}
-                        title={cf.title}
-                        onClick={() => setFilterColor(prev => {
-                          const next = new Set(prev);
-                          next.has(cf.value) ? next.delete(cf.value) : next.add(cf.value);
-                          return next;
-                        })}
-                      >
-                        {cf.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="display-menu-row">
-                  <label className="display-menu-toggle">
-                    <input type="checkbox" checked={showMissingOnly} onChange={e => setShowMissingOnly(e.target.checked)} />
-                    Missing only
-                  </label>
-                </div>
-
                 {activeFilterCount > 0 && (
                   <>
                     <div className="display-menu-divider" />
                     <button
                       className="display-menu-clear"
-                      onClick={() => { setGroupBy("none"); setFilterSource(""); setFilterColor(new Set()); setFilterType(new Set()); setShowMissingOnly(false); }}
+                      onClick={() => { setGroupBy("none"); setFilterSource(""); setFilterColor(new Set()); setFilterType(new Set()); setShowMissingOnly(false); setDisplayOpen(false); }}
                     >
-                      Clear all
+                      Clear all filters
                     </button>
                   </>
                 )}
               </div>
             )}
+          </div>
+
+          {/* Color filter pills — inline */}
+          <div className="color-filter-pills">
+            {COLOR_FILTERS.map(cf => (
+              <button
+                key={cf.value}
+                className={`color-pill color-pill-${cf.value}${filterColor.has(cf.value) ? " active" : ""}`}
+                title={cf.title}
+                onClick={() => setFilterColor(prev => {
+                  const next = new Set(prev);
+                  next.has(cf.value) ? next.delete(cf.value) : next.add(cf.value);
+                  return next;
+                })}
+              >
+                {cf.label}
+              </button>
+            ))}
           </div>
         </div>
 

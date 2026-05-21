@@ -10,6 +10,7 @@ import { ErrorQueue } from "./components/ErrorQueue";
 import { ProgressTracker } from "./components/ProgressTracker";
 import type { Deck, ErrorQueueItem, AcquisitionSource, Collection, CollectionMeta } from "./types/index";
 import { parseCollectionCSV, applyCollectionToCards } from "./utils/csvParser";
+import { getDeckColorIdentity, formatRelativeDate, getDeckDomain } from "./utils/deckUtils";
 
 function AppInner() {
   const { state, dispatch } = useDecks();
@@ -30,6 +31,8 @@ function AppInner() {
   const [archidektError, setArchidektError] = useState<string | null>(null);
   const [showFormats, setShowFormats] = useState(false);
   const [deckPickerOpen, setDeckPickerOpen] = useState(false);
+  const [sidebarSearch, setSidebarSearch] = useState("");
+  const [deletingDeckId, setDeletingDeckId] = useState<string | null>(null);
 
   // ── Collection state ───────────────────────────────────────────────────────
   const [collection, setCollection] = useLocalStorage<Collection>("mtg-checklist-collection-v2", {});
@@ -547,6 +550,10 @@ function AppInner() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [feedbackOpen]);
 
+  const filteredDecks = sidebarSearch.trim()
+    ? state.decks.filter(d => d.name.toLowerCase().includes(sidebarSearch.toLowerCase()))
+    : state.decks;
+
   return (
     <div className="app">
       <header className="app-header">
@@ -624,8 +631,11 @@ function AppInner() {
                     {state.decks.length === 0 ? (
                       <li className="deck-picker-empty">No decks yet — import one to get started.</li>
                     ) : state.decks.map(deck => {
-                      const acquiredCards = deck.cards.filter(c => c.acquired).reduce((s, c) => s + c.quantity, 0);
                       const totalCards = deck.cards.reduce((s, c) => s + c.quantity, 0);
+                      const acquiredCards = deck.cards.filter(c => c.acquired).reduce((s, c) => s + c.quantity, 0);
+                      const pct = totalCards > 0 ? Math.round((acquiredCards / totalCards) * 100) : 0;
+                      const isComplete = totalCards > 0 && acquiredCards === totalCards;
+                      const colors = getDeckColorIdentity(deck);
                       return (
                         <li
                           key={deck.id}
@@ -635,25 +645,25 @@ function AppInner() {
                           <div className="deck-item-info">
                             <div className="deck-item-top">
                               <span className="deck-item-name">{deck.name}</span>
-                              <span className="deck-item-progress">{acquiredCards}/{totalCards}</span>
+                              <span className={`deck-item-pct${isComplete ? " complete" : ""}`}>{isComplete ? "✓" : `${pct}%`}</span>
+                            </div>
+                            <div className="deck-item-meta">
+                              {colors.length > 0 && (
+                                <span className="deck-color-dots">
+                                  {colors.map(c => <span key={c} className={`deck-color-dot clr-${c.toLowerCase()}`} />)}
+                                </span>
+                              )}
+                              <span className="deck-item-card-count">{totalCards} cards</span>
                             </div>
                             <div className="deck-item-bar-track">
-                              <div
-                                className="deck-item-bar-fill"
-                                style={{
-                                  width: totalCards > 0 ? `${(acquiredCards / totalCards) * 100}%` : "0%",
-                                  backgroundPosition: totalCards > 0 ? `${100 - (acquiredCards / totalCards) * 100}% center` : "100% center"
-                                }}
-                              />
+                              <div className={`deck-item-bar-fill${isComplete ? " complete" : ""}`} style={{ width: `${pct}%` }} />
                             </div>
                           </div>
                           <button
                             className="deck-delete-btn"
                             onClick={e => { e.stopPropagation(); handleDeleteDeck(deck.id); }}
                             title="Delete deck"
-                          >
-                            ×
-                          </button>
+                          >×</button>
                         </li>
                       );
                     })}
@@ -673,54 +683,80 @@ function AppInner() {
 
             <aside className={`deck-sidebar${sidebarOpen ? "" : " sidebar-collapsed"}`}>
               <div className="sidebar-header">
-                <h2>Decks</h2>
-                <button className="btn btn-primary btn-sm" onClick={() => setShowImport(v => !v)}>
-                  {showImport ? "✕ Cancel" : "+ Import"}
-                </button>
-                <button
-                  className="sidebar-toggle"
-                  onClick={() => setSidebarOpen(o => !o)}
-                  aria-label={sidebarOpen ? "Hide deck list" : "Show deck list"}
-                >
-                  {sidebarOpen ? "▲ Hide" : "▼ Show"}
-                </button>
+                <div className="sidebar-header-top">
+                  <h2>Decks <span className="sidebar-deck-count">· {state.decks.length}</span></h2>
+                  <div className="sidebar-header-btns">
+                    <button className="btn btn-primary btn-sm" onClick={() => setShowImport(v => !v)}>
+                      {showImport ? "✕" : "+ New"}
+                    </button>
+                    <button
+                      className="sidebar-toggle"
+                      onClick={() => setSidebarOpen(o => !o)}
+                      aria-label={sidebarOpen ? "Hide deck list" : "Show deck list"}
+                    >
+                      {sidebarOpen ? "▲" : "▼"}
+                    </button>
+                  </div>
+                </div>
+                {sidebarOpen && state.decks.length > 1 && (
+                  <input
+                    className="sidebar-search"
+                    placeholder="Filter decks…"
+                    value={sidebarSearch}
+                    onChange={e => setSidebarSearch(e.target.value)}
+                  />
+                )}
               </div>
               {sidebarOpen && (
                 state.decks.length === 0 ? (
                   <p className="empty-state">No decks yet. Import one to get started.</p>
+                ) : filteredDecks.length === 0 ? (
+                  <p className="empty-state">No decks match "{sidebarSearch}".</p>
                 ) : (
                   <ul className="deck-list">
-                    {state.decks.map(deck => {
-                      const acquiredCards = deck.cards.filter(c => c.acquired).reduce((s, c) => s + c.quantity, 0);
+                    {filteredDecks.map(deck => {
                       const totalCards = deck.cards.reduce((s, c) => s + c.quantity, 0);
+                      const acquiredCards = deck.cards.filter(c => c.acquired).reduce((s, c) => s + c.quantity, 0);
+                      const pct = totalCards > 0 ? Math.round((acquiredCards / totalCards) * 100) : 0;
+                      const isComplete = totalCards > 0 && acquiredCards === totalCards;
+                      const colors = getDeckColorIdentity(deck);
+                      const isDeleting = deletingDeckId === deck.id;
                       return (
                         <li
                           key={deck.id}
-                          className={`deck-item${activeDeckId === deck.id ? " active" : ""}`}
-                          onClick={() => { setActiveDeckId(deck.id); if (window.innerWidth < 768) setSidebarOpen(false); }}
+                          className={`deck-item${activeDeckId === deck.id ? " active" : ""}${isDeleting ? " confirming-delete" : ""}`}
+                          onClick={() => { if (!isDeleting) { setActiveDeckId(deck.id); if (window.innerWidth < 768) setSidebarOpen(false); } }}
                         >
                           <div className="deck-item-info">
                             <div className="deck-item-top">
                               <span className="deck-item-name">{deck.name}</span>
-                              <span className="deck-item-progress">{acquiredCards}/{totalCards}</span>
+                              <span className={`deck-item-pct${isComplete ? " complete" : ""}`}>{isComplete ? "✓" : `${pct}%`}</span>
+                            </div>
+                            <div className="deck-item-meta">
+                              {colors.length > 0 && (
+                                <span className="deck-color-dots">
+                                  {colors.map(c => <span key={c} className={`deck-color-dot clr-${c.toLowerCase()}`} />)}
+                                </span>
+                              )}
+                              <span className="deck-item-card-count">{totalCards} cards</span>
                             </div>
                             <div className="deck-item-bar-track">
-                              <div
-                                className="deck-item-bar-fill"
-                                style={{
-                                  width: totalCards > 0 ? `${(acquiredCards / totalCards) * 100}%` : "0%",
-                                  backgroundPosition: totalCards > 0 ? `${100 - (acquiredCards / totalCards) * 100}% center` : "100% center"
-                                }}
-                              />
+                              <div className={`deck-item-bar-fill${isComplete ? " complete" : ""}`} style={{ width: `${pct}%` }} />
                             </div>
                           </div>
-                          <button
-                            className="deck-delete-btn"
-                            onClick={e => { e.stopPropagation(); handleDeleteDeck(deck.id); }}
-                            title="Delete deck"
-                          >
-                            ×
-                          </button>
+                          {isDeleting ? (
+                            <div className="deck-delete-confirm" onClick={e => e.stopPropagation()}>
+                              <span className="deck-delete-confirm-label">Delete?</span>
+                              <button className="deck-delete-yes" onClick={() => { handleDeleteDeck(deck.id); setDeletingDeckId(null); }}>Yes</button>
+                              <button className="deck-delete-no" onClick={() => setDeletingDeckId(null)}>No</button>
+                            </div>
+                          ) : (
+                            <button
+                              className="deck-delete-btn"
+                              onClick={e => { e.stopPropagation(); setDeletingDeckId(deck.id); }}
+                              title="Delete deck"
+                            >×</button>
+                          )}
                         </li>
                       );
                     })}
@@ -861,109 +897,126 @@ function AppInner() {
                           autoFocus
                         />
                         <button type="submit" className="btn btn-primary btn-sm">Save</button>
+                        <button type="button" className="btn btn-ghost btn-sm" onClick={() => setRenamingDeckId(null)}>Cancel</button>
                       </form>
                     ) : (
-                      <h2 className="deck-content-title" onClick={() => startRename(activeDeck)}>
-                        {activeDeck.name}
-                        <span className="rename-hint">✎</span>
-                      </h2>
-                    )}
-                    <div className="deck-header-actions">
-                      {activeDeck.url && (
-                        <a
-                          href={activeDeck.url.startsWith("http") ? activeDeck.url : `https://${activeDeck.url}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="btn btn-secondary btn-sm"
-                        >
-                          View deck ↗
-                        </a>
-                      )}
-                      <div className="actions-menu-container" ref={actionsMenuRef}>
-                        <button
-                          className={`btn btn-secondary btn-sm${actionsOpen ? " active" : ""}`}
-                          onClick={() => setActionsOpen(o => !o)}
-                        >
-                          Actions ▾
-                        </button>
-                        {actionsOpen && (
-                          <div className="actions-dropdown">
-                            {/* Export missing */}
-                            <div className="actions-section-label">Missing cards</div>
-                            <button className="actions-item" onClick={() => { handleExportMissing(); setActionsOpen(false); }}>
-                              Export missing list
-                            </button>
-
-                            {/* Proxy export */}
-                            {proxyCards.length > 0 && (
-                              <>
-                                <div className="actions-divider" />
-                                <div className="actions-section-label">🖨 {proxyTotal} proxy card{proxyTotal !== 1 ? "s" : ""}</div>
-                                <button className="actions-item" onClick={handleProxyCopy}>
-                                  {copied ? "✓ Copied!" : "Copy proxy list"}
-                                  <span className="actions-item-hint">for proxxied.com</span>
-                                </button>
-                                <button className="actions-item" onClick={() => { handleProxyDownload(); setActionsOpen(false); }}>
-                                  Download .txt
-                                </button>
-                              </>
-                            )}
-
-                            {/* Send to vendor */}
-                            {toBuyCards.length > 0 && (
-                              <>
-                                <div className="actions-divider" />
-                                <div className="actions-section-label">🛒 {toBuyTotal} card{toBuyTotal !== 1 ? "s" : ""} to buy</div>
-                                {VENDORS.map((v, i) => (
-                                  <button key={v.label} className="actions-item" onClick={() => handleSendToVendor(i)}>
-                                    {sentVendor === v.label ? "✓ Done!" : `Send to ${v.label}`}
-                                    <span className="actions-item-hint">{v.prefill ? "Opens pre-filled" : "Paste when tab opens"}</span>
+                      <>
+                        <div className="deck-title-row">
+                          <div className="deck-title-wrap">
+                            <h2 className="deck-content-title">{activeDeck.name}</h2>
+                            <button className="rename-btn" onClick={() => startRename(activeDeck)}>Rename</button>
+                          </div>
+                          <div className="deck-header-actions">
+                            <div className="actions-menu-container" ref={actionsMenuRef}>
+                              <button
+                                className={`btn btn-secondary btn-sm${actionsOpen ? " active" : ""}`}
+                                onClick={() => setActionsOpen(o => !o)}
+                              >
+                                Export ▾
+                              </button>
+                              {actionsOpen && (
+                                <div className="actions-dropdown">
+                                  <div className="actions-section-label">Missing cards</div>
+                                  <button className="actions-item" onClick={() => { handleExportMissing(); setActionsOpen(false); }}>
+                                    Export missing list
                                   </button>
-                                ))}
-                              </>
+                                  {proxyCards.length > 0 && (
+                                    <>
+                                      <div className="actions-divider" />
+                                      <div className="actions-section-label">🖨 {proxyTotal} proxy card{proxyTotal !== 1 ? "s" : ""}</div>
+                                      <button className="actions-item" onClick={handleProxyCopy}>
+                                        {copied ? "✓ Copied!" : "Copy proxy list"}
+                                        <span className="actions-item-hint">for proxxied.com</span>
+                                      </button>
+                                      <button className="actions-item" onClick={() => { handleProxyDownload(); setActionsOpen(false); }}>
+                                        Download .txt
+                                      </button>
+                                    </>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                            {(editMode || selectMode) ? (
+                              <button
+                                className="btn btn-primary btn-sm"
+                                onClick={() => { setEditMode(false); setSelectMode(false); }}
+                              >
+                                Done
+                              </button>
+                            ) : (
+                              <div className="edit-menu-container" ref={editMenuRef}>
+                                <button
+                                  className={`btn btn-secondary btn-sm${editMenuOpen ? " active" : ""}`}
+                                  onClick={() => setEditMenuOpen(v => !v)}
+                                >
+                                  Edit {editMenuOpen ? "▴" : "▾"}
+                                </button>
+                                {editMenuOpen && (
+                                  <div className="edit-menu-dropdown">
+                                    <button className="edit-menu-item" onClick={() => { setEditMenuOpen(false); setSelectMode(true); }}>
+                                      Bulk tag
+                                      <span className="edit-menu-item-hint">Select cards and set a source tag</span>
+                                    </button>
+                                    <div className="edit-menu-divider" />
+                                    <button className="edit-menu-item" onClick={() => { setEditMenuOpen(false); setEditMode(true); }}>
+                                      Edit deck
+                                      <span className="edit-menu-item-hint">Add, remove, or adjust quantities</span>
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
                             )}
                           </div>
-                        )}
-                      </div>
-
-                      {/* Edit menu */}
-                      {(editMode || selectMode) ? (
-                        <button
-                          className="btn btn-primary btn-sm"
-                          onClick={() => { setEditMode(false); setSelectMode(false); }}
-                        >
-                          Done
-                        </button>
-                      ) : (
-                        <div className="edit-menu-container" ref={editMenuRef}>
-                          <button
-                            className={`btn btn-secondary btn-sm${editMenuOpen ? " active" : ""}`}
-                            onClick={() => setEditMenuOpen(v => !v)}
-                          >
-                            Edit {editMenuOpen ? "▴" : "▾"}
-                          </button>
-                          {editMenuOpen && (
-                            <div className="edit-menu-dropdown">
-                              <button className="edit-menu-item" onClick={() => { setEditMenuOpen(false); setSelectMode(true); }}>
-                                Bulk tag
-                                <span className="edit-menu-item-hint">Select cards and set a source tag</span>
-                              </button>
-                              <div className="edit-menu-divider" />
-                              <button className="edit-menu-item" onClick={() => { setEditMenuOpen(false); setEditMode(true); }}>
-                                Edit deck
-                                <span className="edit-menu-item-hint">Add, remove, or adjust quantities</span>
-                              </button>
-                            </div>
+                        </div>
+                        <div className="deck-meta-line">
+                          {(() => {
+                            const colors = getDeckColorIdentity(activeDeck);
+                            return colors.length > 0 ? (
+                              <span className="deck-meta-colors">
+                                {colors.map(c => <span key={c} className={`deck-meta-color clr-${c.toLowerCase()}`} />)}
+                              </span>
+                            ) : null;
+                          })()}
+                          <span className="deck-meta-stat">{activeDeck.cards.reduce((s, c) => s + c.quantity, 0)} cards</span>
+                          <span className="deck-meta-sep">·</span>
+                          <span className="deck-meta-stat">imported {formatRelativeDate(activeDeck.createdAt)}</span>
+                          {activeDeck.url && (
+                            <>
+                              <span className="deck-meta-sep">·</span>
+                              <a
+                                href={activeDeck.url.startsWith("http") ? activeDeck.url : `https://${activeDeck.url}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="deck-meta-link"
+                              >
+                                {getDeckDomain(activeDeck.url)} ↗
+                              </a>
+                            </>
                           )}
                         </div>
-                      )}
-                    </div>
+                      </>
+                    )}
                   </div>
                   <ErrorQueue
                     errors={errors}
                     onRemap={handleRemap}
                     onDismiss={handleDismiss}
                   />
+                  {toBuyCards.length > 0 && (
+                    <div className="buy-cta">
+                      <div className="buy-cta-info">
+                        <span className="buy-cta-title"><strong>{toBuyTotal}</strong> card{toBuyTotal !== 1 ? "s" : ""} to buy</span>
+                        <span className="buy-cta-sub">Opens pre-filled or copies list to clipboard</span>
+                      </div>
+                      <div className="buy-cta-vendors">
+                        {VENDORS.map((v, i) => (
+                          <button key={v.label} className="buy-cta-btn" onClick={() => handleSendToVendor(i)}>
+                            {sentVendor === v.label ? "✓" : v.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   <Checklist
                     deck={activeDeck}
                     editMode={editMode}

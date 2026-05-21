@@ -290,9 +290,12 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 }
 
 .sidebar-header {
-  display: flex; align-items: center; justify-content: space-between;
+  display: flex; flex-direction: column; gap: 8px;
   margin-bottom: 12px;
 }
+.sidebar-header-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.sidebar-header-btns { display: flex; align-items: center; gap: 6px; }
+.sidebar-deck-count { font-weight: 400; color: var(--text-muted); }
 .deck-sidebar h2 { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 0; }
 
 .sidebar-toggle {
@@ -333,9 +336,9 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 .deck-item-bar-fill {
   height: 100%; border-radius: 2px;
   background: linear-gradient(90deg, #4c3dbf 0%, #6c5ce7 50%, #a78bfa 100%);
-  background-size: 200% 100%;
-  transition: width 0.3s ease, background-position 0.3s ease;
+  transition: width 0.3s ease;
 }
+.deck-item-bar-fill.complete { background: #4ade80; }
 .deck-delete-btn {
   background: none; border: none; color: var(--text-muted); cursor: pointer;
   font-size: 16px; line-height: 1; padding: 0 2px; opacity: 0;
@@ -350,15 +353,23 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 .deck-content { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
 
 .deck-content-header {
-  display: flex; align-items: flex-start; justify-content: space-between;
-  gap: 8px; flex-wrap: wrap;
+  display: flex; flex-direction: column; gap: 6px;
 }
+.deck-title-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;
+}
+.deck-title-wrap { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .deck-header-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; flex-shrink: 0; }
 .deck-content-title {
-  font-size: 18px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px;
+  font-size: 18px; font-weight: 600; display: flex; align-items: center; gap: 8px;
 }
-.deck-content-title:hover .rename-hint { opacity: 1; }
-.rename-hint { font-size: 14px; color: var(--text-muted); opacity: 0; transition: opacity 0.15s; }
+.rename-btn {
+  background: none; border: none; cursor: pointer;
+  font-size: 11px; color: var(--text-muted); padding: 3px 7px;
+  border-radius: 4px; border: 1px solid transparent;
+  font-family: inherit; white-space: nowrap; transition: color 0.12s, border-color 0.12s;
+}
+.rename-btn:hover { color: var(--accent-light); border-color: var(--border); background: var(--surface-2); }
 
 .rename-form { display: flex; gap: 8px; align-items: center; flex: 1; }
 .rename-input {
@@ -1278,4 +1289,169 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
   font-size: 12px; color: var(--text-muted);
   padding-top: 6px; border-top: 1px solid var(--border);
   margin: 0;
+}
+
+/* ─── Sidebar search ────────────────────────────────────────────────────────── */
+.sidebar-search {
+  width: 100%; padding: 6px 9px; border-radius: 5px;
+  background: var(--surface-2); border: 1px solid var(--border);
+  color: var(--text); font-size: 12px; font-family: inherit;
+}
+.sidebar-search:focus { outline: none; border-color: var(--accent); }
+.sidebar-search::placeholder { color: var(--text-muted); }
+
+/* ─── Sidebar deck item — new fields ───────────────────────────────────────── */
+.deck-item-pct { font-size: 10px; color: var(--text-muted); flex-shrink: 0; font-variant-numeric: tabular-nums; font-weight: 600; }
+.deck-item-pct.complete { color: #4ade80; }
+.deck-item-meta { display: flex; align-items: center; gap: 6px; margin-top: 2px; }
+.deck-item-card-count { font-size: 10px; color: var(--text-muted); }
+
+/* Color dots — sidebar & deck header */
+.deck-color-dots { display: inline-flex; gap: 2px; align-items: center; }
+.deck-color-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  border: 1px solid rgba(0,0,0,.35); display: inline-block; flex-shrink: 0;
+}
+.clr-w { background: #e8e4d0; }
+.clr-u { background: #1a56a0; }
+.clr-b { background: #4a3f5c; border-color: #6b5e7e; }
+.clr-r { background: #c0392b; }
+.clr-g { background: #1a6b3a; }
+
+/* Delete confirm inline */
+.deck-item.confirming-delete { background: rgba(224,83,83,.08); }
+.deck-delete-confirm {
+  display: flex; align-items: center; gap: 5px; flex-shrink: 0;
+}
+.deck-delete-confirm-label { font-size: 10px; color: var(--danger); font-weight: 600; white-space: nowrap; }
+.deck-delete-yes {
+  background: var(--danger); color: #fff; border: none; cursor: pointer;
+  font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 4px;
+  font-family: inherit;
+}
+.deck-delete-yes:hover { opacity: 0.85; }
+.deck-delete-no {
+  background: none; border: 1px solid var(--border); color: var(--text-muted); cursor: pointer;
+  font-size: 10px; padding: 2px 7px; border-radius: 4px; font-family: inherit;
+}
+.deck-delete-no:hover { color: var(--text); }
+
+/* ─── Deck header — metadata line ──────────────────────────────────────────── */
+.deck-meta-line {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  font-size: 11px; color: var(--text-muted);
+}
+.deck-meta-colors { display: inline-flex; gap: 2px; align-items: center; }
+.deck-meta-color {
+  width: 10px; height: 10px; border-radius: 50%;
+  border: 1px solid rgba(0,0,0,.35); display: inline-block; flex-shrink: 0;
+}
+.deck-meta-sep { color: var(--border); }
+.deck-meta-stat { color: var(--text-muted); }
+.deck-meta-link { color: var(--accent-light); text-decoration: none; }
+.deck-meta-link:hover { text-decoration: underline; }
+
+/* ─── Buy CTA banner ────────────────────────────────────────────────────────── */
+.buy-cta {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 10px 14px; border-radius: var(--radius);
+  background: rgba(248,113,113,.06); border: 1px solid rgba(248,113,113,.25);
+}
+.buy-cta-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.buy-cta-title { font-size: 13px; color: var(--text); }
+.buy-cta-sub { font-size: 11px; color: var(--text-muted); }
+.buy-cta-vendors { display: flex; gap: 6px; flex-wrap: wrap; flex-shrink: 0; }
+.buy-cta-btn {
+  background: #f87171; color: #1a0505; border: none; cursor: pointer;
+  padding: 5px 11px; border-radius: 5px; font-size: 11px; font-weight: 600;
+  font-family: inherit; white-space: nowrap; transition: opacity 0.12s;
+}
+.buy-cta-btn:hover { opacity: 0.85; }
+
+/* ─── Segmented progress strip ──────────────────────────────────────────────── */
+.progress-strip { display: flex; flex-direction: column; gap: 8px; }
+.progress-strip-top {
+  display: flex; align-items: baseline; justify-content: space-between;
+  font-size: 13px; color: var(--text-muted);
+}
+.progress-strip-count { font-size: 13px; color: var(--text); }
+.progress-strip-total { font-size: 12px; color: var(--text-muted); font-weight: 400; }
+.progress-strip-pct { font-size: 12px; color: var(--accent-light); font-weight: 600; }
+
+.progress-seg-track {
+  display: flex; height: 6px; border-radius: 3px; overflow: hidden;
+  background: var(--surface-2);
+}
+.progress-seg { height: 100%; transition: width 0.3s ease; }
+.progress-seg.seg-untagged {
+  background: transparent !important;
+  border-left: 1px dashed var(--text-muted);
+  opacity: 0.4;
+}
+
+.progress-legend { display: flex; flex-wrap: wrap; gap: 4px 6px; }
+.progress-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 8px; border-radius: 999px; border: 1px solid var(--border);
+  background: var(--surface-2); color: var(--text-muted);
+  font-size: 10px; cursor: pointer; font-family: inherit;
+  transition: border-color 0.12s, color 0.12s, background 0.12s;
+}
+.progress-chip:hover { border-color: var(--accent); color: var(--text); }
+.progress-chip.active { background: rgba(108,92,231,.12); border-color: var(--accent); color: var(--text); }
+.progress-chip-dot {
+  width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+}
+.progress-chip-dot.dot-untagged {
+  background: transparent; border: 1px dashed var(--text-muted);
+}
+
+/* ─── Inline filter pills ───────────────────────────────────────────────────── */
+.filter-pills-row {
+  display: flex; align-items: center; gap: 5px; flex-wrap: wrap;
+}
+.filter-pill {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 4px 9px; border-radius: 999px; border: 1px solid var(--border);
+  background: var(--surface); color: var(--text-muted);
+  font-size: 11px; font-weight: 500; cursor: pointer; font-family: inherit;
+  white-space: nowrap; transition: border-color 0.12s, color 0.12s, background 0.12s;
+}
+.filter-pill:hover { color: var(--text); border-color: var(--accent); }
+.filter-pill.active { background: rgba(108,92,231,.12); border-color: var(--accent); color: var(--accent-light); }
+.filter-pill.open { border-color: var(--accent); color: var(--text); }
+.filter-pill-dismissable { cursor: pointer; }
+.filter-pill-group { background: var(--surface-2); }
+
+/* Group by sub-picker */
+.group-pill-wrap { position: relative; }
+.group-picker-dropdown {
+  position: absolute; left: 0; top: calc(100% + 5px); z-index: 200;
+  min-width: 120px; background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: var(--radius); box-shadow: 0 4px 16px rgba(0,0,0,.45);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.group-picker-item {
+  padding: 8px 12px; font-size: 12px; text-align: left;
+  background: none; border: none; color: var(--text-muted); cursor: pointer;
+  font-family: inherit; transition: background 0.1s, color 0.1s;
+}
+.group-picker-item:hover { background: rgba(255,255,255,.06); color: var(--text); }
+.group-picker-item.active { color: var(--accent-light); font-weight: 600; }
+
+/* More filters wrapper */
+.more-filters-wrap { position: relative; }
+
+/* Mobile: make filter pills scroll horizontally rather than wrapping messily */
+@media (max-width: 639px) {
+  .filter-pills-row { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 2px; -webkit-overflow-scrolling: touch; }
+  .filter-pills-row::-webkit-scrollbar { display: none; }
+  .buy-cta { flex-direction: column; align-items: flex-start; }
+  .buy-cta-vendors { width: 100%; }
+  .buy-cta-btn { flex: 1; text-align: center; justify-content: center; }
+}
+
+/* Desktop sidebar toggle stays compact */
+@media (min-width: 768px) {
+  .sidebar-toggle { display: inline-flex; }
 }
