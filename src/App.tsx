@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import "./App.css";
-import { VariableSizeList, type ListChildComponentProps } from "react-window";
+import { Virtuoso, type VirtuosoHandle } from "react-virtuoso";
 import { DeckProvider, useDecks } from "./store/decks";
 import { parseDecklist } from "./utils/parser";
 import { validateDecklist } from "./utils/validator";
@@ -16,7 +16,6 @@ import { parseCollectionCSV, applyCollectionToCards } from "./utils/csvParser";
 // Defined outside AppInner so react-window gets a stable component reference.
 
 interface CRowData {
-  rows: Array<{ name: string; printings: CollectionPrinting[]; total: number }>;
   expandedKey: string | null;
   editingPrinting: { key: string; idx: number; qty: string; set: string; cn: string; foil: boolean } | null;
   hasDeckContext: boolean;
@@ -31,16 +30,19 @@ interface CRowData {
   getCommitted: (name: string) => { total: number; deckCount: number };
 }
 
-function CollectionRowComponent({ index, style, data }: ListChildComponentProps<CRowData>) {
-  const { name, printings, total } = data.rows[index];
+function CollectionRowComponent(
+  _index: number,
+  item: { name: string; printings: CollectionPrinting[]; total: number },
+  data: CRowData
+) {
+  const { name, printings, total } = item;
   const isExpanded = data.expandedKey === name;
   const committed  = data.getCommitted(name);
   const displayName = name.replace(/(?:^|\s|-)\S/g, c => c.toUpperCase());
   const ep = data.editingPrinting;
 
   return (
-    <div style={style}>
-      <div data-collection-key={name} className={`collection-row${isExpanded ? " expanded" : ""}`}>
+    <div data-collection-key={name} className={`collection-row${isExpanded ? " expanded" : ""}`}>
         <div className="collection-row-summary">
           <button
             className="collection-row-expand"
@@ -123,7 +125,6 @@ function CollectionRowComponent({ index, style, data }: ListChildComponentProps<
           </div>
         )}
       </div>
-    </div>
   );
 }
 
@@ -157,8 +158,7 @@ function AppInner() {
   const [sortOpen, setSortOpen] = useState(false);
   const sortRef = useRef<HTMLDivElement>(null);
   const [expandedCollectionKey, setExpandedCollectionKey] = useState<string | null>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const collectionListRef = useRef<VariableSizeList<any>>(null);
+  const collectionListRef = useRef<VirtuosoHandle>(null);
   const alphaRailRef = useRef<HTMLDivElement>(null);
   const [firstVisibleIdx, setFirstVisibleIdx] = useState(0);
   const [bulkEditOpen, setBulkEditOpen] = useState(false);
@@ -171,11 +171,6 @@ function AppInner() {
   const [editingPrinting, setEditingPrinting] = useState<{
     key: string; idx: number; qty: string; set: string; cn: string; foil: boolean;
   } | null>(null);
-
-  // ── Virtual list constants ─────────────────────────────────────────────────
-  const ITEM_HEIGHT_COLLAPSED  = 41;
-  const ITEM_HEIGHT_DETAIL_BASE = 148; // detail padding + committed + footer
-  const ITEM_HEIGHT_PER_PRINTING = 30;
 
   function getCommittedInfo(name: string): { total: number; deckCount: number } {
     let total = 0;
@@ -231,29 +226,11 @@ function AppInner() {
   }
   const activeAlphaLetter = collectionPillFiltered[firstVisibleIdx]?.name[0]?.toUpperCase() ?? null;
 
-  // Reset list scroll + size cache when filter/search/sort changes
+  // Scroll to top when filter/search/sort changes
   useEffect(() => {
-    collectionListRef.current?.scrollToItem(0);
-    collectionListRef.current?.resetAfterIndex(0);
+    collectionListRef.current?.scrollToIndex(0);
     setFirstVisibleIdx(0);
   }, [collectionFilter, collectionSearch, collectionSort]);
-
-  // Resize cache when an item is expanded/collapsed
-  useEffect(() => {
-    if (!collectionListRef.current) return;
-    const idx = collectionPillFiltered.findIndex(r => r.name === expandedCollectionKey);
-    if (idx >= 0) {
-      collectionListRef.current.resetAfterIndex(idx);
-      collectionListRef.current.scrollToItem(idx, "smart");
-    } else {
-      collectionListRef.current.resetAfterIndex(0);
-    }
-  }, [expandedCollectionKey]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Resize cache when editing state changes (editing row is taller)
-  useEffect(() => {
-    collectionListRef.current?.resetAfterIndex(0);
-  }, [editingPrinting]);
 
   const activeDeck = state.decks.find(d => d.id === activeDeckId) ?? null;
   const errors = activeDeckId ? (allErrors[activeDeckId] ?? []) : [];
@@ -697,16 +674,9 @@ function AppInner() {
   }, [feedbackOpen]);
 
   // ── Virtual list helpers ───────────────────────────────────────────────────
-  const getItemSize = useCallback((index: number): number => {
-    const item = collectionPillFiltered[index];
-    if (!item) return ITEM_HEIGHT_COLLAPSED;
-    if (expandedCollectionKey !== item.name) return ITEM_HEIGHT_COLLAPSED;
-    return ITEM_HEIGHT_COLLAPSED + ITEM_HEIGHT_DETAIL_BASE + item.printings.length * ITEM_HEIGHT_PER_PRINTING;
-  }, [collectionPillFiltered, expandedCollectionKey]); // eslint-disable-line react-hooks/exhaustive-deps
-
   function jumpToLetter(letter: string) {
     const idx = letterIndexMap.get(letter);
-    if (idx !== undefined) collectionListRef.current?.scrollToItem(idx, "start");
+    if (idx !== undefined) collectionListRef.current?.scrollToIndex({ index: idx, behavior: "auto" });
   }
 
   function handleAlphaPointer(e: React.PointerEvent<HTMLDivElement>) {
@@ -729,10 +699,9 @@ function AppInner() {
   const cbEditField      = useCallback((ep: typeof editingPrinting) => setEditingPrinting(ep), []);
   const cbGetCommitted   = useCallback(getCommittedInfo, [state.decks]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const listHeight = Math.min(600, Math.max(240, collectionPillFiltered.length * ITEM_HEIGHT_COLLAPSED));
+  const listHeight = Math.min(600, Math.max(240, collectionPillFiltered.length * 41));
 
   const rowData: CRowData = {
-    rows:            collectionPillFiltered,
     expandedKey:     expandedCollectionKey,
     editingPrinting: editingPrinting,
     hasDeckContext:  state.decks.length > 0,
@@ -1459,19 +1428,16 @@ function AppInner() {
 
                 {/* Virtual list + vertical alpha rail */}
                 <div className="collection-list-wrap">
-                  <VariableSizeList
+                  <Virtuoso
                     ref={collectionListRef}
-                    height={listHeight}
-                    itemCount={collectionPillFiltered.length}
-                    itemSize={getItemSize}
-                    width="100%"
-                    itemData={rowData}
+                    style={{ height: listHeight }}
+                    data={collectionPillFiltered}
+                    context={rowData}
+                    itemContent={CollectionRowComponent}
+                    rangeChanged={({ startIndex }) => setFirstVisibleIdx(startIndex)}
                     className="collection-vlist"
-                    onItemsRendered={({ visibleStartIndex }) => setFirstVisibleIdx(visibleStartIndex)}
-                    overscanCount={4}
-                  >
-                    {CollectionRowComponent}
-                  </VariableSizeList>
+                    overscan={4}
+                  />
 
                   {alphaSort && collectionPillFiltered.length > 10 && (
                     <div
