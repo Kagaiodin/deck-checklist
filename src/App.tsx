@@ -1329,7 +1329,8 @@ function AppInner() {
               </>
             )}
           </section>
-        )}
+        );
+      })()}
       </main>
     </div>
   );
