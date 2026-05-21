@@ -276,7 +276,7 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
   const [filterSource, setFilterSource] = useState<AcquisitionSource | "untagged" | "">("");
   const [filterColor, setFilterColor] = useState<Set<string>>(new Set());
   const [filterType, setFilterType] = useState<Set<string>>(new Set());
-  const [sortBy, setSortBy] = useState<"none" | "name-asc" | "name-desc" | "qty-asc" | "qty-desc">("none");
+  const [sortBy, setSortBy] = useState<"none" | "name-asc" | "name-desc" | "qty-asc" | "qty-desc">("name-asc");
   const [sortOpen, setSortOpen] = useState(false);
   const sortPickerRef = useRef<HTMLDivElement>(null);
 
@@ -420,14 +420,14 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
     typeBreakdown.set(t, (typeBreakdown.get(t) ?? 0) + card.quantity);
   }
 
-  const SORT_OPTIONS: { value: typeof sortBy; label: string }[] = [
-    { value: "none",      label: "Default" },
-    { value: "name-asc",  label: "Name A → Z" },
-    { value: "name-desc", label: "Name Z → A" },
-    { value: "qty-desc",  label: "Quantity ↓" },
-    { value: "qty-asc",   label: "Quantity ↑" },
+  const SORT_OPTIONS: { value: typeof sortBy; label: string; shortLabel: string }[] = [
+    { value: "name-asc",  label: "Name A → Z", shortLabel: "Name ↑" },
+    { value: "name-desc", label: "Name Z → A", shortLabel: "Name ↓" },
+    { value: "qty-desc",  label: "Qty ↓",      shortLabel: "Qty ↓"  },
+    { value: "qty-asc",   label: "Qty ↑",      shortLabel: "Qty ↑"  },
+    { value: "none",      label: "Default",     shortLabel: "Sort"   },
   ];
-  const sortLabel = sortBy === "none" ? "Sort" : (SORT_OPTIONS.find(o => o.value === sortBy)?.label ?? "Sort");
+  const sortLabel = SORT_OPTIONS.find(o => o.value === sortBy)?.shortLabel ?? "Sort";
 
   const activeFilterCount = [
     groupBy !== "none",
@@ -456,8 +456,8 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
         <div className="progress-strip">
           <div className="progress-strip-top">
             <span className="progress-strip-count">
-              {acquiredCards} <span className="progress-strip-total">/ {totalCards} fetched</span>
-              <span className="stats-items-note"> · {totalItems} unique</span>
+              <span className="progress-strip-num">{acquiredCards}</span>
+              <span className="progress-strip-total"> / {totalCards} fetched</span>
             </span>
             <span className="progress-strip-pct">{totalCards > 0 ? Math.round((acquiredCards / totalCards) * 100) : 0}%</span>
           </div>
@@ -525,6 +525,7 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
                 ))}
               </div>
             )}
+
           </div>
         </div>
 
@@ -648,23 +649,24 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
             )}
           </div>
 
-          {/* Color filter pills — inline */}
-          <div className="color-filter-pills">
-            {COLOR_FILTERS.map(cf => (
-              <button
-                key={cf.value}
-                className={`color-pill color-pill-${cf.value}${filterColor.has(cf.value) ? " active" : ""}`}
-                title={cf.title}
-                onClick={() => setFilterColor(prev => {
-                  const next = new Set(prev);
-                  next.has(cf.value) ? next.delete(cf.value) : next.add(cf.value);
-                  return next;
-                })}
-              >
-                {cf.label}
-              </button>
-            ))}
-          </div>
+        </div>
+
+        {/* ── Color filter row (own line so it never wraps into the pills) ── */}
+        <div className="color-filter-row">
+          {COLOR_FILTERS.map(cf => (
+            <button
+              key={cf.value}
+              className={`color-pill color-pill-${cf.value}${filterColor.has(cf.value) ? " active" : ""}`}
+              title={cf.title}
+              onClick={() => setFilterColor(prev => {
+                const next = new Set(prev);
+                next.has(cf.value) ? next.delete(cf.value) : next.add(cf.value);
+                return next;
+              })}
+            >
+              {cf.label}
+            </button>
+          ))}
         </div>
 
         {/* Edit mode banner + add card */}
@@ -703,7 +705,10 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
         <div key={groupName} className="card-group">
           {groupBy !== "none" && (
             <h3 className="group-title">
-              {groupName} <span className="group-count">({cards.length})</span>
+              {groupName.toUpperCase()}
+              <span className="group-count">
+                {cards.reduce((s, c) => s + c.quantity, 0)}
+              </span>
             </h3>
           )}
           <ul className="card-list">

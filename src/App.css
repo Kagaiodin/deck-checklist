@@ -441,8 +441,6 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 .checklist { display: flex; flex-direction: column; gap: 16px; }
 
 .checklist-header {
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--radius); padding: 14px 16px;
   display: flex; flex-direction: column; gap: 10px;
 }
 .checklist-stats { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--text-muted); }
@@ -477,8 +475,13 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 }
 
 .card-group { display: flex; flex-direction: column; gap: 4px; }
-.group-title { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted); padding: 4px 0; }
-.group-count { font-weight: 400; }
+.group-title {
+  font-size: 11px; font-weight: 700; letter-spacing: .08em; color: var(--text-muted);
+  padding: 8px 0 4px; display: flex; align-items: baseline; gap: 6px;
+}
+.group-count {
+  font-size: 12px; font-weight: 400; color: var(--text-muted); letter-spacing: 0;
+}
 
 .card-list { list-style: none; display: flex; flex-direction: column; gap: 4px; }
 .card-row {
@@ -791,7 +794,9 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
   padding: 0 4px; margin: 0 1px;
 }
 
-/* ─── Color filter pills ────────────────────────────────────────────────────── */
+/* ─── Color filter row (own line below filter pills) ───────────────────────── */
+.color-filter-row { display: flex; gap: 5px; align-items: center; }
+/* Legacy alias kept for any remaining references */
 .color-filter-pills { display: flex; gap: 4px; }
 
 .color-pill {
@@ -1068,7 +1073,7 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
   .decks-layout { gap: 40px; }
 
   /* Checklist header */
-  .checklist-header { padding: 18px 20px; gap: 14px; }
+  .checklist-header { gap: 12px; }
   .search-input { padding: 10px 14px; font-size: 14px; }
 
   /* Buttons */
@@ -1344,17 +1349,25 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 .buy-cta-btn:hover { opacity: 0.85; }
 
 /* ─── Segmented progress strip ──────────────────────────────────────────────── */
-.progress-strip { display: flex; flex-direction: column; gap: 8px; }
+.progress-strip {
+  display: flex; flex-direction: column; gap: 10px;
+  padding: 12px 14px; border-radius: var(--radius);
+  background: var(--surface); border: 1px solid var(--border);
+}
 .progress-strip-top {
   display: flex; align-items: baseline; justify-content: space-between;
-  font-size: 13px; color: var(--text-muted);
+  gap: 8px;
 }
-.progress-strip-count { font-size: 13px; color: var(--text); }
-.progress-strip-total { font-size: 12px; color: var(--text-muted); font-weight: 400; }
-.progress-strip-pct { font-size: 12px; color: var(--accent-light); font-weight: 600; }
+.progress-strip-count { display: flex; align-items: baseline; gap: 4px; }
+.progress-strip-num {
+  font-size: 28px; font-weight: 700; color: var(--text); line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.progress-strip-total { font-size: 13px; color: var(--text-muted); font-weight: 400; }
+.progress-strip-pct { font-size: 14px; color: var(--accent-light); font-weight: 700; flex-shrink: 0; }
 
 .progress-seg-track {
-  display: flex; height: 6px; border-radius: 3px; overflow: hidden;
+  display: flex; height: 8px; border-radius: 4px; overflow: hidden;
   background: var(--surface-2);
 }
 .progress-seg { height: 100%; transition: width 0.3s ease; }
