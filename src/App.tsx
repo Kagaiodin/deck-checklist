@@ -18,6 +18,7 @@ function AppInner() {
   const [importText, setImportText] = useState("");
   const [deckName, setDeckName] = useState("");
   const [deckUrl, setDeckUrl] = useState("");
+  const [deckFormat, setDeckFormat] = useState("");
   const [allErrors, setAllErrors] = useLocalStorage<Record<string, ErrorQueueItem[]>>("mtg-checklist-errors", {});
   const [validating, setValidating] = useState(false);
   const [progress, setProgress] = useState<ValidationProgress>({ total: 0, validated: 0 });
@@ -33,6 +34,8 @@ function AppInner() {
   const [deckPickerOpen, setDeckPickerOpen] = useState(false);
   const [sidebarSearch, setSidebarSearch] = useState("");
   const [deletingDeckId, setDeletingDeckId] = useState<string | null>(null);
+  const [editingFormatId, setEditingFormatId] = useState<string | null>(null);
+  const [formatDraft, setFormatDraft] = useState("");
 
   // ── Collection state ───────────────────────────────────────────────────────
   const [collection, setCollection] = useLocalStorage<Collection>("mtg-checklist-collection-v2", {});
@@ -157,6 +160,7 @@ function AppInner() {
         id,
         name,
         url: deckUrl.trim() || undefined,
+        format: deckFormat.trim() || undefined,
         cards: taggedCards,
         createdAt: Date.now()
       };
@@ -167,6 +171,7 @@ function AppInner() {
       setImportText("");
       setDeckName("");
       setDeckUrl("");
+      setDeckFormat("");
       setShowImport(false);
     } catch (e) {
       setImportError(e instanceof Error ? e.message : "Validation failed. Please try again.");
@@ -426,6 +431,19 @@ function AppInner() {
       dispatch({ type: "RENAME_DECK", payload: { id: renamingDeckId, name: renameValue.trim() } });
     }
     setRenamingDeckId(null);
+  }
+
+  function startEditFormat(deck: Deck) {
+    setEditingFormatId(deck.id);
+    setFormatDraft(deck.format ?? "");
+  }
+
+  function commitFormat() {
+    if (editingFormatId !== null) {
+      const trimmed = formatDraft.trim() || undefined;
+      dispatch({ type: "SET_DECK_FORMAT", payload: { id: editingFormatId, format: trimmed } });
+    }
+    setEditingFormatId(null);
   }
 
   function handleExportMissing() {
@@ -700,7 +718,7 @@ function AppInner() {
                     </button>
                   </div>
                 </div>
-                {sidebarOpen && state.decks.length > 1 && (
+                {sidebarOpen && (
                   <input
                     className="sidebar-search"
                     placeholder="Filter decks…"
@@ -732,7 +750,9 @@ function AppInner() {
                           <div className="deck-item-info">
                             <div className="deck-item-top">
                               <span className="deck-item-name">{deck.name}</span>
-                              <span className={`deck-item-pct${isComplete ? " complete" : ""}`}>{isComplete ? "✓" : `${pct}%`}</span>
+                              <span className={`deck-item-pct${isComplete ? " complete" : ""}`}>
+                                {isComplete ? "✓ 100%" : `${pct}%`}
+                              </span>
                             </div>
                             <div className="deck-item-meta">
                               {colors.length > 0 && (
@@ -740,7 +760,8 @@ function AppInner() {
                                   {colors.map(c => <span key={c} className={`deck-color-dot clr-${c.toLowerCase()}`} />)}
                                 </span>
                               )}
-                              <span className="deck-item-card-count">{totalCards} cards</span>
+                              {deck.format && <span className="deck-format-pill">{deck.format.toUpperCase()}</span>}
+                              <span className="deck-item-card-count">· {totalCards} cards</span>
                             </div>
                             <div className="deck-item-bar-track">
                               <div className={`deck-item-bar-fill${isComplete ? " complete" : ""}`} style={{ width: `${pct}%` }} />
@@ -807,13 +828,22 @@ function AppInner() {
                       </div>
                     )}
                   </div>
-                  <input
-                    className="deck-name-input"
-                    placeholder="Deck name (optional)"
-                    value={deckName}
-                    onChange={e => setDeckName(e.target.value)}
-                    disabled={validating}
-                  />
+                  <div className="import-name-row">
+                    <input
+                      className="deck-name-input"
+                      placeholder="Deck name (optional)"
+                      value={deckName}
+                      onChange={e => setDeckName(e.target.value)}
+                      disabled={validating}
+                    />
+                    <input
+                      className="deck-name-input deck-format-input"
+                      placeholder="Format (e.g. Modern)"
+                      value={deckFormat}
+                      onChange={e => setDeckFormat(e.target.value)}
+                      disabled={validating}
+                    />
+                  </div>
                   <div className="url-field-row">
                     <input
                       className="deck-name-input"
@@ -975,6 +1005,30 @@ function AppInner() {
                               </span>
                             ) : null;
                           })()}
+                          {editingFormatId === activeDeck.id ? (
+                            <form
+                              className="format-edit-form"
+                              onSubmit={e => { e.preventDefault(); commitFormat(); }}
+                            >
+                              <input
+                                className="format-edit-input"
+                                value={formatDraft}
+                                onChange={e => setFormatDraft(e.target.value)}
+                                onBlur={commitFormat}
+                                placeholder="Format…"
+                                autoFocus
+                              />
+                            </form>
+                          ) : (
+                            <button
+                              className={`deck-format-meta${activeDeck.format ? " has-format" : ""}`}
+                              onClick={() => startEditFormat(activeDeck)}
+                              title="Click to set format"
+                            >
+                              {activeDeck.format ? activeDeck.format.toUpperCase() : "+ format"}
+                            </button>
+                          )}
+                          <span className="deck-meta-sep">·</span>
                           <span className="deck-meta-stat">{activeDeck.cards.reduce((s, c) => s + c.quantity, 0)} cards</span>
                           <span className="deck-meta-sep">·</span>
                           <span className="deck-meta-stat">imported {formatRelativeDate(activeDeck.createdAt)}</span>
