@@ -276,6 +276,9 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
   const [filterSource, setFilterSource] = useState<AcquisitionSource | "untagged" | "">("");
   const [filterColor, setFilterColor] = useState<Set<string>>(new Set());
   const [filterType, setFilterType] = useState<Set<string>>(new Set());
+  const [sortBy, setSortBy] = useState<"none" | "name-asc" | "name-desc" | "qty-asc" | "qty-desc">("none");
+  const [sortOpen, setSortOpen] = useState(false);
+  const sortPickerRef = useRef<HTMLDivElement>(null);
 
   // Derive available types from this deck's cards (in MAIN_TYPES order)
   const availableTypes = MAIN_TYPES.filter(t => deck.cards.some(c => extractMainType(c.type) === t));
@@ -307,7 +310,14 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
         return c.color.includes(fc);
       });
     })
-    .filter(c => filterType.size === 0 || filterType.has(extractMainType(c.type)));
+    .filter(c => filterType.size === 0 || filterType.has(extractMainType(c.type)))
+    .sort((a, b) => {
+      if (sortBy === "name-asc")  return a.name.localeCompare(b.name);
+      if (sortBy === "name-desc") return b.name.localeCompare(a.name);
+      if (sortBy === "qty-desc")  return b.quantity - a.quantity || a.name.localeCompare(b.name);
+      if (sortBy === "qty-asc")   return a.quantity - b.quantity || a.name.localeCompare(b.name);
+      return 0;
+    });
 
   const groups = groupCards(visibleCards, groupBy);
 
@@ -385,12 +395,39 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
     return () => document.removeEventListener("mousedown", handleClick);
   }, [groupPickerOpen]);
 
-  // Source breakdown for segmented progress bar
+  useEffect(() => {
+    if (!sortOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (sortPickerRef.current && !sortPickerRef.current.contains(e.target as Node)) {
+        setSortOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [sortOpen]);
+
+  // Source breakdown for segmented progress bar + pill counts
   const sourceBreakdown = new Map<string, number>();
   for (const card of deck.cards) {
     const key = card.source ?? "untagged";
     sourceBreakdown.set(key, (sourceBreakdown.get(key) ?? 0) + card.quantity);
   }
+
+  // Type breakdown for pill counts
+  const typeBreakdown = new Map<string, number>();
+  for (const card of deck.cards) {
+    const t = extractMainType(card.type);
+    typeBreakdown.set(t, (typeBreakdown.get(t) ?? 0) + card.quantity);
+  }
+
+  const SORT_OPTIONS: { value: typeof sortBy; label: string }[] = [
+    { value: "none",      label: "Default" },
+    { value: "name-asc",  label: "Name A → Z" },
+    { value: "name-desc", label: "Name Z → A" },
+    { value: "qty-desc",  label: "Quantity ↓" },
+    { value: "qty-asc",   label: "Quantity ↑" },
+  ];
+  const sortLabel = sortBy === "none" ? "Sort" : (SORT_OPTIONS.find(o => o.value === sortBy)?.label ?? "Sort");
 
   const activeFilterCount = [
     groupBy !== "none",
@@ -468,15 +505,37 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
+          <div className="sort-pill-wrap" ref={sortPickerRef}>
+            <button
+              className={`filter-pill sort-pill${sortOpen ? " open" : ""}${sortBy !== "none" ? " active" : ""}`}
+              onClick={() => setSortOpen(v => !v)}
+            >
+              {sortLabel} ▾
+            </button>
+            {sortOpen && (
+              <div className="sort-picker-dropdown">
+                {SORT_OPTIONS.map(opt => (
+                  <button
+                    key={opt.value}
+                    className={`sort-picker-item${sortBy === opt.value ? " active" : ""}`}
+                    onClick={() => { setSortBy(opt.value); setSortOpen(false); }}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* ── Inline filter pills ── */}
         <div className="filter-pills-row">
           {/* Missing only toggle */}
           <button
-            className={`filter-pill${showMissingOnly ? " active" : ""}`}
+            className={`filter-pill filter-pill-checkbox${showMissingOnly ? " active" : ""}`}
             onClick={() => setShowMissingOnly(v => !v)}
           >
+            <span className={`pill-checkbox${showMissingOnly ? " checked" : ""}`} />
             Missing only
           </button>
 
@@ -509,7 +568,8 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
               className="filter-pill active filter-pill-dismissable"
               onClick={() => setFilterSource("")}
             >
-              {filterSource === "untagged" ? "Untagged" : (ACQUISITION_SOURCES.find(s => s.value === filterSource)?.label ?? filterSource)} ✕
+              {filterSource === "untagged" ? "Untagged" : (ACQUISITION_SOURCES.find(s => s.value === filterSource)?.label ?? filterSource)}
+              {" "}<span className="filter-pill-count">{sourceBreakdown.get(filterSource) ?? 0}</span> ✕
             </button>
           )}
 
@@ -520,7 +580,7 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
               className="filter-pill active filter-pill-dismissable"
               onClick={() => setFilterType(prev => { const next = new Set(prev); next.delete(t); return next; })}
             >
-              {t} ✕
+              {t} <span className="filter-pill-count">{typeBreakdown.get(t) ?? 0}</span> ✕
             </button>
           ))}
 

@@ -448,7 +448,8 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 .checklist-stats { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--text-muted); }
 .stats-items-note { font-size: 12px; opacity: 0.7; }
 
-.checklist-search { width: 100%; }
+.checklist-search { width: 100%; display: flex; align-items: center; gap: 6px; }
+.checklist-search .search-input { flex: 1; min-width: 0; }
 .search-input {
   width: 100%; padding: 8px 12px; border-radius: var(--radius);
   background: var(--surface-2); border: 1px solid var(--border);
@@ -813,33 +814,8 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 .color-pill-colorless { background: #6b7280; color: #e5e7eb; }
 .color-pill-multi { background: linear-gradient(135deg, #c0392b 0%, #d4a017 50%, #1a6b3a 100%); color: #fff; }
 
-/* ─── Edit menu (Bulk tag / Edit deck dropdown) ─────────────────────────────── */
-.edit-menu-container { position: relative; }
+/* (edit-menu-dropdown removed — Bulk tag and Edit are now top-level buttons) */
 
-.edit-menu-dropdown {
-  position: absolute; right: 0; top: calc(100% + 6px); z-index: 200;
-  min-width: 200px;
-  background: var(--surface-2); border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: 0 4px 20px rgba(0,0,0,.5);
-  display: flex; flex-direction: column; overflow: hidden;
-}
-
-.edit-menu-item {
-  display: flex; flex-direction: column; align-items: flex-start;
-  padding: 8px 14px; gap: 2px;
-  background: none; border: none; cursor: pointer;
-  color: var(--text); font-size: 13px; text-align: left;
-  transition: background 0.1s;
-  width: 100%;
-}
-.edit-menu-item:hover { background: rgba(255,255,255,.06); }
-
-.edit-menu-item-hint {
-  font-size: 11px; color: var(--text-muted);
-}
-
-.edit-menu-divider { height: 1px; background: var(--border); }
 
 /* ─── Mobile bottom sheet backdrop ─────────────────────────────────────────── */
 /* Hidden on desktop — only active when bottom-sheet dropdowns are open         */
@@ -1360,7 +1336,6 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 .buy-cta-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .buy-cta-title { font-size: 13px; color: var(--text); }
 .buy-cta-sub { font-size: 11px; color: var(--text-muted); }
-.buy-cta-vendors { display: flex; gap: 6px; flex-wrap: wrap; flex-shrink: 0; }
 .buy-cta-btn {
   background: #f87171; color: #1a0505; border: none; cursor: pointer;
   padding: 5px 11px; border-radius: 5px; font-size: 11px; font-weight: 600;
@@ -1447,8 +1422,62 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
   .filter-pills-row { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 2px; -webkit-overflow-scrolling: touch; }
   .filter-pills-row::-webkit-scrollbar { display: none; }
   .buy-cta { flex-direction: column; align-items: flex-start; }
-  .buy-cta-vendors { width: 100%; }
-  .buy-cta-btn { flex: 1; text-align: center; justify-content: center; }
+  .buy-cta-action { width: 100%; }
+  .buy-cta-btn { width: 100%; text-align: center; justify-content: center; }
+}
+
+/* ─── Buy CTA — single button + vendor dropdown ─────────────────────────────── */
+.buy-cta-action { position: relative; flex-shrink: 0; }
+.buy-vendor-dropdown {
+  position: absolute; right: 0; top: calc(100% + 6px); z-index: 300;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgba(0,0,0,.5); min-width: 200px;
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.buy-vendor-item {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
+  padding: 9px 14px; background: none; border: none; cursor: pointer;
+  color: var(--text); font-family: inherit; font-size: 13px; text-align: left;
+  transition: background 0.1s;
+}
+.buy-vendor-item:hover { background: rgba(255,255,255,.06); }
+.buy-vendor-name { font-weight: 500; }
+.buy-vendor-hint { font-size: 10px; color: var(--text-muted); }
+
+/* ─── Sort pill + dropdown ──────────────────────────────────────────────────── */
+.sort-pill-wrap { position: relative; flex-shrink: 0; }
+.sort-pill { white-space: nowrap; }
+.sort-picker-dropdown {
+  position: absolute; right: 0; top: calc(100% + 5px); z-index: 200;
+  min-width: 150px; background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: var(--radius); box-shadow: 0 4px 16px rgba(0,0,0,.45);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.sort-picker-item {
+  padding: 8px 12px; font-size: 12px; text-align: left;
+  background: none; border: none; color: var(--text-muted); cursor: pointer;
+  font-family: inherit; transition: background 0.1s, color 0.1s;
+}
+.sort-picker-item:hover { background: rgba(255,255,255,.06); color: var(--text); }
+.sort-picker-item.active { color: var(--accent-light); font-weight: 600; }
+
+/* ─── Missing only pill — checkbox visual ───────────────────────────────────── */
+.pill-checkbox {
+  width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0;
+  border: 1.5px solid currentColor; display: inline-flex;
+  align-items: center; justify-content: center; position: relative;
+}
+.pill-checkbox.checked::after {
+  content: '✓'; position: absolute; font-size: 8px; line-height: 1;
+  top: 50%; left: 50%; transform: translate(-50%, -50%);
+  font-weight: 700;
+}
+
+/* ─── Active filter pill count badge ────────────────────────────────────────── */
+.filter-pill-count {
+  background: rgba(255,255,255,.12); border-radius: 999px;
+  padding: 0 4px; font-size: 10px; font-variant-numeric: tabular-nums;
+  min-width: 16px; text-align: center; line-height: 14px; display: inline-block;
 }
 
 /* Desktop sidebar toggle stays compact */

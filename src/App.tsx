@@ -486,6 +486,20 @@ function AppInner() {
   const toBuyCards = activeDeck?.cards.filter(c => c.source === "need_to_buy") ?? [];
   const toBuyTotal = toBuyCards.reduce((s, c) => s + c.quantity, 0);
 
+  // Buy CTA dropdown
+  const [buyOpen, setBuyOpen] = useState(false);
+  const buyMenuRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!buyOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (buyMenuRef.current && !buyMenuRef.current.contains(e.target as Node)) {
+        setBuyOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [buyOpen]);
+
   async function handleSendToVendor(idx: number) {
     const list = toBuyCards.map(c => `${c.quantity} ${c.name}`).join("\n");
     const vendor = VENDORS[idx];
@@ -514,21 +528,9 @@ function AppInner() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [actionsOpen]);
 
-  // ── Edit menu ──────────────────────────────────────────────────────────────
+  // ── Edit / Select mode ─────────────────────────────────────────────────────
   const [editMode, setEditMode] = useState(false);
   const [selectMode, setSelectMode] = useState(false);
-  const [editMenuOpen, setEditMenuOpen] = useState(false);
-  const editMenuRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!editMenuOpen) return;
-    function handleClickOutside(e: MouseEvent) {
-      if (editMenuRef.current && !editMenuRef.current.contains(e.target as Node)) {
-        setEditMenuOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [editMenuOpen]);
 
   // Reset edit/select modes when the active deck changes
   useEffect(() => {
@@ -907,6 +909,7 @@ function AppInner() {
                             <button className="rename-btn" onClick={() => startRename(activeDeck)}>Rename</button>
                           </div>
                           <div className="deck-header-actions">
+                            {/* Export dropdown */}
                             <div className="actions-menu-container" ref={actionsMenuRef}>
                               <button
                                 className={`btn btn-secondary btn-sm${actionsOpen ? " active" : ""}`}
@@ -936,6 +939,8 @@ function AppInner() {
                                 </div>
                               )}
                             </div>
+
+                            {/* Bulk tag / Edit / Done */}
                             {(editMode || selectMode) ? (
                               <button
                                 className="btn btn-primary btn-sm"
@@ -944,27 +949,20 @@ function AppInner() {
                                 Done
                               </button>
                             ) : (
-                              <div className="edit-menu-container" ref={editMenuRef}>
+                              <>
                                 <button
-                                  className={`btn btn-secondary btn-sm${editMenuOpen ? " active" : ""}`}
-                                  onClick={() => setEditMenuOpen(v => !v)}
+                                  className="btn btn-secondary btn-sm"
+                                  onClick={() => setSelectMode(true)}
                                 >
-                                  Edit {editMenuOpen ? "▴" : "▾"}
+                                  Bulk tag
                                 </button>
-                                {editMenuOpen && (
-                                  <div className="edit-menu-dropdown">
-                                    <button className="edit-menu-item" onClick={() => { setEditMenuOpen(false); setSelectMode(true); }}>
-                                      Bulk tag
-                                      <span className="edit-menu-item-hint">Select cards and set a source tag</span>
-                                    </button>
-                                    <div className="edit-menu-divider" />
-                                    <button className="edit-menu-item" onClick={() => { setEditMenuOpen(false); setEditMode(true); }}>
-                                      Edit deck
-                                      <span className="edit-menu-item-hint">Add, remove, or adjust quantities</span>
-                                    </button>
-                                  </div>
-                                )}
-                              </div>
+                                <button
+                                  className="btn btn-secondary btn-sm"
+                                  onClick={() => setEditMode(true)}
+                                >
+                                  Edit
+                                </button>
+                              </>
                             )}
                           </div>
                         </div>
@@ -1006,14 +1004,26 @@ function AppInner() {
                     <div className="buy-cta">
                       <div className="buy-cta-info">
                         <span className="buy-cta-title"><strong>{toBuyTotal}</strong> card{toBuyTotal !== 1 ? "s" : ""} to buy</span>
-                        <span className="buy-cta-sub">Opens pre-filled or copies list to clipboard</span>
+                        <span className="buy-cta-sub">Opens pre-filled cart or copies list to clipboard</span>
                       </div>
-                      <div className="buy-cta-vendors">
-                        {VENDORS.map((v, i) => (
-                          <button key={v.label} className="buy-cta-btn" onClick={() => handleSendToVendor(i)}>
-                            {sentVendor === v.label ? "✓" : v.label}
-                          </button>
-                        ))}
+                      <div className="buy-cta-action" ref={buyMenuRef}>
+                        <button className="buy-cta-btn" onClick={() => setBuyOpen(o => !o)}>
+                          Buy {toBuyTotal} {buyOpen ? "▴" : "▾"}
+                        </button>
+                        {buyOpen && (
+                          <div className="buy-vendor-dropdown">
+                            {VENDORS.map((v, i) => (
+                              <button
+                                key={v.label}
+                                className="buy-vendor-item"
+                                onClick={() => { handleSendToVendor(i); setBuyOpen(false); }}
+                              >
+                                <span className="buy-vendor-name">{sentVendor === v.label ? `✓ ${v.label}` : v.label}</span>
+                                <span className="buy-vendor-hint">{v.prefill ? "Pre-fills cart" : "Copies to clipboard"}</span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
