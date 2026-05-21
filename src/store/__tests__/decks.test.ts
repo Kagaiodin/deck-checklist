@@ -392,3 +392,4 @@ describe("DISMISS_NOTIFICATION", () => {
     expect(state.decks[0].notifications).toHaveLength(1);
   });
 });
+

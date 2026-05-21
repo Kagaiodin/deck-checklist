@@ -237,3 +237,4 @@ describe("mergeOrderCardsIntoCollection", () => {
     expect(collection["lightning bolt"][0].quantity).toBe(2); // original unchanged
   });
 });
+
