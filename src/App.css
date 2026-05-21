@@ -1114,6 +1114,29 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
   border-radius: var(--radius); padding: 8px 12px;
 }
 
+/* ── Stats strip ───────────────────────────────────────────────── */
+.collection-stats-strip {
+  display: flex; gap: 0; flex-wrap: wrap;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); overflow: hidden;
+}
+.collection-stat {
+  flex: 1; min-width: 80px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 10px 14px; gap: 2px;
+  border-right: 1px solid var(--border);
+}
+.collection-stat:last-child { border-right: none; }
+.collection-stat-num {
+  font-size: 20px; font-weight: 700; line-height: 1; color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.collection-stat-lbl {
+  font-size: 11px; color: var(--text-muted); text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.collection-stat-accent { color: var(--accent); }
+
 .collection-empty {
   text-align: center; padding: 40px 24px; color: var(--text-muted);
   background: var(--surface); border: 1px dashed var(--border); border-radius: var(--radius);
@@ -1204,7 +1227,13 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
   color: var(--text-muted); font-size: 14px; border-radius: 4px; line-height: 1;
 }
 .collection-remove-btn:hover { color: #e53e3e; background: rgba(229,62,62,.1); }
-.collection-card-name { text-transform: capitalize; }
+.collection-card-name { }
+.collection-deck-chip {
+  flex-shrink: 0;
+  font-size: 10px; font-weight: 600; padding: 1px 6px;
+  border-radius: 10px; background: rgba(108,92,231,.14);
+  color: var(--accent); white-space: nowrap;
+}
 .collection-card-qty { color: var(--text-muted); font-size: 12px; font-variant-numeric: tabular-nums; }
 .collection-expand-chevron { font-size: 10px; color: var(--text-muted); flex-shrink: 0; }
 
@@ -1278,4 +1307,17 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
   font-size: 12px; color: var(--text-muted);
   padding-top: 6px; border-top: 1px solid var(--border);
   margin: 0;
+}
+
+.collection-detail-footer {
+  display: flex; justify-content: flex-end;
+  padding-top: 10px; margin-top: 4px;
+  border-top: 1px solid var(--border);
+}
+.collection-remove-all-btn {
+  font-size: 12px; color: var(--text-muted);
+}
+.collection-remove-all-btn:hover {
+  color: var(--danger, #e53e3e);
+  background: rgba(229,62,62,.08);
 }

@@ -989,7 +989,18 @@ function AppInner() {
         )}
 
         {/* ── Collection tab ─────────────────────────────────────────────── */}
-        {view === "collection" && (
+        {view === "collection" && (() => {
+          // ── Collection-level rollups ──────────────────────────────────────
+          const collectionEntries = Object.entries(collection).map(([name, raw]) => ({
+            name,
+            printings: Array.isArray(raw) ? raw : [],
+          }));
+          const totalCards  = collectionEntries.reduce((s, { printings }) => s + printings.reduce((ps, p) => ps + p.quantity, 0), 0);
+          const foilTotal   = collectionEntries.reduce((s, { printings }) => s + printings.filter(p => p.foil).reduce((ps, p) => ps + p.quantity, 0), 0);
+          const deckCardNames = new Set(state.decks.flatMap(d => d.cards.map(c => c.name.toLowerCase())));
+          const inDecksCount = collectionEntries.filter(({ name }) => deckCardNames.has(name)).length;
+
+          return (
           <section className="collection-panel">
             <div className="collection-header">
               <h2>My Collection</h2>
@@ -1005,7 +1016,7 @@ function AppInner() {
                   className="btn btn-secondary btn-sm"
                   onClick={() => csvReplaceInputRef.current?.click()}
                 >
-                  Upload CSV
+                  {collectionMeta ? "Replace CSV" : "Upload CSV"}
                 </button>
                 <button
                   className={`btn btn-secondary btn-sm${bulkEditOpen ? " active" : ""}`}
@@ -1016,9 +1027,35 @@ function AppInner() {
               </div>
             </div>
 
+            {/* Stats strip */}
+            {collectionMeta && totalCards > 0 && (
+              <div className="collection-stats-strip">
+                <div className="collection-stat">
+                  <span className="collection-stat-num">{totalCards.toLocaleString()}</span>
+                  <span className="collection-stat-lbl">Total cards</span>
+                </div>
+                <div className="collection-stat">
+                  <span className="collection-stat-num">{collectionMeta.cardCount.toLocaleString()}</span>
+                  <span className="collection-stat-lbl">Unique</span>
+                </div>
+                {state.decks.length > 0 && (
+                  <div className="collection-stat">
+                    <span className="collection-stat-num collection-stat-accent">{inDecksCount.toLocaleString()}</span>
+                    <span className="collection-stat-lbl">In a deck</span>
+                  </div>
+                )}
+                {foilTotal > 0 && (
+                  <div className="collection-stat">
+                    <span className="collection-stat-num">✦ {foilTotal.toLocaleString()}</span>
+                    <span className="collection-stat-lbl">Foils</span>
+                  </div>
+                )}
+              </div>
+            )}
+
             {collectionMeta && (
               <p className="collection-meta">
-                {collectionMeta.fileName} · {collectionMeta.cardCount.toLocaleString()} unique cards · imported {new Date(collectionMeta.importedAt).toLocaleDateString()}
+                {collectionMeta.fileName} · imported {new Date(collectionMeta.importedAt).toLocaleDateString()}
               </p>
             )}
 
@@ -1161,7 +1198,11 @@ function AppInner() {
                 <ul className="collection-list" ref={collectionListRef}>
                   {collectionPageRows.map(({ name, printings, total }) => {
                     const isExpanded = expandedCollectionKey === name;
-                    const committed = isExpanded ? getCommittedInfo(name) : null;
+                    // Always compute so we can show deck chip on the collapsed row
+                    const committed = getCommittedInfo(name);
+                    // Proper display name: title-case the stored lowercase key
+                    // TODO: store original casing on import for correct MTG proper nouns
+                    const displayName = name.replace(/(?:^|\s|-)\S/g, c => c.toUpperCase());
                     return (
                       <li key={name} data-collection-key={name} className={`collection-row${isExpanded ? " expanded" : ""}`}>
                         <div className="collection-row-summary">
@@ -1169,14 +1210,18 @@ function AppInner() {
                             className="collection-row-expand"
                             onClick={() => setExpandedCollectionKey(isExpanded ? null : name)}
                           >
-                            <span className="collection-card-name">{name}</span>
+                            <span className="collection-card-name">{displayName}</span>
+                            {committed.total > 0 && state.decks.length > 0 && (
+                              <span className="collection-deck-chip">
+                                in {committed.deckCount} deck{committed.deckCount !== 1 ? "s" : ""}
+                              </span>
+                            )}
                             <span className="collection-expand-chevron">{isExpanded ? "▴" : "▾"}</span>
                           </button>
                           <div className="collection-row-controls">
                             <button className="collection-qty-btn" onClick={() => handleCollectionDecrement(name)} aria-label="Remove one">−</button>
                             <span className="collection-card-qty">{total}×</span>
                             <button className="collection-qty-btn" onClick={() => handleCollectionIncrement(name)} aria-label="Add one">+</button>
-                            <button className="collection-remove-btn" onClick={() => handleCollectionRemove(name)} aria-label="Remove card">×</button>
                           </div>
                         </div>
                         {isExpanded && (
@@ -1245,6 +1290,14 @@ function AppInner() {
                                   : "Not in any deck"}
                               </p>
                             )}
+                            <div className="collection-detail-footer">
+                              <button
+                                className="btn btn-ghost btn-sm collection-remove-all-btn"
+                                onClick={() => handleCollectionRemove(name)}
+                              >
+                                Remove all copies
+                              </button>
+                            </div>
                           </div>
                         )}
                       </li>
