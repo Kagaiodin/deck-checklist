@@ -100,7 +100,8 @@ export function parseCollectionCSV(raw: string): Collection {
     const set             = setIdx       >= 0 ? (fields[setIdx]       ?? "").trim().toUpperCase() || undefined : undefined;
     const collectorNumber = collectorIdx >= 0 ? (fields[collectorIdx] ?? "").trim() || undefined : undefined;
     const foilRaw         = foilIdx      >= 0 ? (fields[foilIdx]      ?? "").trim().toLowerCase() : "";
-    const foil            = foilRaw === "true" || foilRaw === "yes" || foilRaw === "1" ? true : undefined;
+    const foil            = foilRaw === "true" || foilRaw === "yes" || foilRaw === "1"
+                         || foilRaw === "foil" || foilRaw === "etched" ? true : undefined;
 
     // Merge rows with identical printing key (same set + collector + foil)
     const existing = collection[key] ?? [];
