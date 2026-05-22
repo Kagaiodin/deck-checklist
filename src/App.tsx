@@ -12,6 +12,7 @@ import type { Deck, ErrorQueueItem, AcquisitionSource, Collection, CollectionMet
 import { applyCollectionToCards, mergeOrderCardsIntoCollection } from "./utils/csvParser";
 import { detectCarrier, getTrackingUrl, CARRIER_NAMES } from "./utils/carrier";
 import { CollectionPage } from "./features/collection/CollectionPage";
+import { getDeckColorIdentity, formatRelativeDate, getDeckDomain } from "./utils/deckUtils";
 
 // ── Order row helpers ──────────────────────────────────────────────────────────
 
@@ -57,6 +58,7 @@ function AppInner() {
   const [importText, setImportText] = useState("");
   const [deckName, setDeckName] = useState("");
   const [deckUrl, setDeckUrl] = useState("");
+  const [deckFormat, setDeckFormat] = useState("");
   const [allErrors, setAllErrors] = useLocalStorage<Record<string, ErrorQueueItem[]>>("mtg-checklist-errors", {});
   const [validating, setValidating] = useState(false);
   const [progress, setProgress] = useState<ValidationProgress>({ total: 0, validated: 0 });
@@ -70,6 +72,10 @@ function AppInner() {
   const [archidektError, setArchidektError] = useState<string | null>(null);
   const [showFormats, setShowFormats] = useState(false);
   const [deckPickerOpen, setDeckPickerOpen] = useState(false);
+  const [sidebarSearch, setSidebarSearch] = useState("");
+  const [deletingDeckId, setDeletingDeckId] = useState<string | null>(null);
+  const [editingFormatId, setEditingFormatId] = useState<string | null>(null);
+  const [formatDraft, setFormatDraft] = useState("");
 
   // ── Collection state ──────────────────────────────────────────────────────
   // CollectionPage owns all UI; AppInner holds writable refs so order handlers
@@ -169,6 +175,7 @@ function AppInner() {
         id,
         name,
         url: deckUrl.trim() || undefined,
+        format: deckFormat.trim() || undefined,
         cards: taggedCards,
         createdAt: Date.now()
       };
@@ -179,6 +186,7 @@ function AppInner() {
       setImportText("");
       setDeckName("");
       setDeckUrl("");
+      setDeckFormat("");
       setShowImport(false);
     } catch (e) {
       setImportError(e instanceof Error ? e.message : "Validation failed. Please try again.");
@@ -453,6 +461,19 @@ function AppInner() {
     setRenamingDeckId(null);
   }
 
+  function startEditFormat(deck: Deck) {
+    setEditingFormatId(deck.id);
+    setFormatDraft(deck.format ?? "");
+  }
+
+  function commitFormat() {
+    if (editingFormatId !== null) {
+      const trimmed = formatDraft.trim() || undefined;
+      dispatch({ type: "SET_DECK_FORMAT", payload: { id: editingFormatId, format: trimmed } });
+    }
+    setEditingFormatId(null);
+  }
+
   function handleExportMissing() {
     if (!activeDeck) return;
     const missing = activeDeck.cards
@@ -511,6 +532,20 @@ function AppInner() {
   const toBuyCards = activeDeck?.cards.filter(c => c.source === "need_to_buy") ?? [];
   const toBuyTotal = toBuyCards.reduce((s, c) => s + c.quantity, 0);
 
+  // Buy CTA dropdown
+  const [buyOpen, setBuyOpen] = useState(false);
+  const buyMenuRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!buyOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (buyMenuRef.current && !buyMenuRef.current.contains(e.target as Node)) {
+        setBuyOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [buyOpen]);
+
   async function handleSendToVendor(idx: number) {
     const list = toBuyCards.map(c => `${c.quantity} ${c.name}`).join("\n");
     const vendor = VENDORS[idx];
@@ -539,21 +574,9 @@ function AppInner() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [actionsOpen]);
 
-  // ── Edit menu ──────────────────────────────────────────────────────────────
+  // ── Edit / Select mode ─────────────────────────────────────────────────────
   const [editMode, setEditMode] = useState(false);
   const [selectMode, setSelectMode] = useState(false);
-  const [editMenuOpen, setEditMenuOpen] = useState(false);
-  const editMenuRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!editMenuOpen) return;
-    function handleClickOutside(e: MouseEvent) {
-      if (editMenuRef.current && !editMenuRef.current.contains(e.target as Node)) {
-        setEditMenuOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [editMenuOpen]);
 
   // Reset edit/select modes and notification filter when the active deck changes
   useEffect(() => {
@@ -580,6 +603,10 @@ function AppInner() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [feedbackOpen]);
+
+  const filteredDecks = sidebarSearch.trim()
+    ? state.decks.filter(d => d.name.toLowerCase().includes(sidebarSearch.toLowerCase()))
+    : state.decks;
 
   return (
     <div className="app">
@@ -667,8 +694,11 @@ function AppInner() {
                     {state.decks.length === 0 ? (
                       <li className="deck-picker-empty">No decks yet — import one to get started.</li>
                     ) : state.decks.map(deck => {
-                      const acquiredCards = deck.cards.filter(c => c.acquired).reduce((s, c) => s + c.quantity, 0);
                       const totalCards = deck.cards.reduce((s, c) => s + c.quantity, 0);
+                      const acquiredCards = deck.cards.filter(c => c.acquired).reduce((s, c) => s + c.quantity, 0);
+                      const pct = totalCards > 0 ? Math.round((acquiredCards / totalCards) * 100) : 0;
+                      const isComplete = totalCards > 0 && acquiredCards === totalCards;
+                      const colors = getDeckColorIdentity(deck);
                       return (
                         <li
                           key={deck.id}
@@ -678,25 +708,25 @@ function AppInner() {
                           <div className="deck-item-info">
                             <div className="deck-item-top">
                               <span className="deck-item-name">{deck.name}</span>
-                              <span className="deck-item-progress">{acquiredCards}/{totalCards}</span>
+                              <span className={`deck-item-pct${isComplete ? " complete" : ""}`}>{isComplete ? "✓" : `${pct}%`}</span>
+                            </div>
+                            <div className="deck-item-meta">
+                              {colors.length > 0 && (
+                                <span className="deck-color-dots">
+                                  {colors.map(c => <span key={c} className={`deck-color-dot clr-${c.toLowerCase()}`} />)}
+                                </span>
+                              )}
+                              <span className="deck-item-card-count">{totalCards} cards</span>
                             </div>
                             <div className="deck-item-bar-track">
-                              <div
-                                className="deck-item-bar-fill"
-                                style={{
-                                  width: totalCards > 0 ? `${(acquiredCards / totalCards) * 100}%` : "0%",
-                                  backgroundPosition: totalCards > 0 ? `${100 - (acquiredCards / totalCards) * 100}% center` : "100% center"
-                                }}
-                              />
+                              <div className={`deck-item-bar-fill${isComplete ? " complete" : ""}`} style={{ width: `${pct}%` }} />
                             </div>
                           </div>
                           <button
                             className="deck-delete-btn"
                             onClick={e => { e.stopPropagation(); handleDeleteDeck(deck.id); }}
                             title="Delete deck"
-                          >
-                            ×
-                          </button>
+                          >×</button>
                         </li>
                       );
                     })}
@@ -716,54 +746,83 @@ function AppInner() {
 
             <aside className={`deck-sidebar${sidebarOpen ? "" : " sidebar-collapsed"}`}>
               <div className="sidebar-header">
-                <h2>Decks</h2>
-                <button className="btn btn-primary btn-sm" onClick={() => setShowImport(v => !v)}>
-                  {showImport ? "✕ Cancel" : "+ Import"}
-                </button>
-                <button
-                  className="sidebar-toggle"
-                  onClick={() => setSidebarOpen(o => !o)}
-                  aria-label={sidebarOpen ? "Hide deck list" : "Show deck list"}
-                >
-                  {sidebarOpen ? "▲ Hide" : "▼ Show"}
-                </button>
+                <div className="sidebar-header-top">
+                  <h2>Decks <span className="sidebar-deck-count">· {state.decks.length}</span></h2>
+                  <div className="sidebar-header-btns">
+                    <button className="btn btn-primary btn-sm" onClick={() => setShowImport(v => !v)}>
+                      {showImport ? "✕" : "+ New"}
+                    </button>
+                    <button
+                      className="sidebar-toggle"
+                      onClick={() => setSidebarOpen(o => !o)}
+                      aria-label={sidebarOpen ? "Hide deck list" : "Show deck list"}
+                    >
+                      {sidebarOpen ? "▲" : "▼"}
+                    </button>
+                  </div>
+                </div>
+                {sidebarOpen && (
+                  <input
+                    className="sidebar-search"
+                    placeholder="Filter decks…"
+                    value={sidebarSearch}
+                    onChange={e => setSidebarSearch(e.target.value)}
+                  />
+                )}
               </div>
               {sidebarOpen && (
                 state.decks.length === 0 ? (
                   <p className="empty-state">No decks yet. Import one to get started.</p>
+                ) : filteredDecks.length === 0 ? (
+                  <p className="empty-state">No decks match "{sidebarSearch}".</p>
                 ) : (
                   <ul className="deck-list">
-                    {state.decks.map(deck => {
-                      const acquiredCards = deck.cards.filter(c => c.acquired).reduce((s, c) => s + c.quantity, 0);
+                    {filteredDecks.map(deck => {
                       const totalCards = deck.cards.reduce((s, c) => s + c.quantity, 0);
+                      const acquiredCards = deck.cards.filter(c => c.acquired).reduce((s, c) => s + c.quantity, 0);
+                      const pct = totalCards > 0 ? Math.round((acquiredCards / totalCards) * 100) : 0;
+                      const isComplete = totalCards > 0 && acquiredCards === totalCards;
+                      const colors = getDeckColorIdentity(deck);
+                      const isDeleting = deletingDeckId === deck.id;
                       return (
                         <li
                           key={deck.id}
-                          className={`deck-item${activeDeckId === deck.id ? " active" : ""}`}
-                          onClick={() => { setActiveDeckId(deck.id); if (window.innerWidth < 768) setSidebarOpen(false); }}
+                          className={`deck-item${activeDeckId === deck.id ? " active" : ""}${isDeleting ? " confirming-delete" : ""}`}
+                          onClick={() => { if (!isDeleting) { setActiveDeckId(deck.id); if (window.innerWidth < 768) setSidebarOpen(false); } }}
                         >
                           <div className="deck-item-info">
                             <div className="deck-item-top">
                               <span className="deck-item-name">{deck.name}</span>
-                              <span className="deck-item-progress">{acquiredCards}/{totalCards}</span>
+                              <span className={`deck-item-pct${isComplete ? " complete" : ""}`}>
+                                {isComplete ? "✓ 100%" : `${pct}%`}
+                              </span>
+                            </div>
+                            <div className="deck-item-meta">
+                              {colors.length > 0 && (
+                                <span className="deck-color-dots">
+                                  {colors.map(c => <span key={c} className={`deck-color-dot clr-${c.toLowerCase()}`} />)}
+                                </span>
+                              )}
+                              {deck.format && <span className="deck-format-pill">{deck.format.toUpperCase()}</span>}
+                              <span className="deck-item-card-count">· {totalCards} cards</span>
                             </div>
                             <div className="deck-item-bar-track">
-                              <div
-                                className="deck-item-bar-fill"
-                                style={{
-                                  width: totalCards > 0 ? `${(acquiredCards / totalCards) * 100}%` : "0%",
-                                  backgroundPosition: totalCards > 0 ? `${100 - (acquiredCards / totalCards) * 100}% center` : "100% center"
-                                }}
-                              />
+                              <div className={`deck-item-bar-fill${isComplete ? " complete" : ""}`} style={{ width: `${pct}%` }} />
                             </div>
                           </div>
-                          <button
-                            className="deck-delete-btn"
-                            onClick={e => { e.stopPropagation(); handleDeleteDeck(deck.id); }}
-                            title="Delete deck"
-                          >
-                            ×
-                          </button>
+                          {isDeleting ? (
+                            <div className="deck-delete-confirm" onClick={e => e.stopPropagation()}>
+                              <span className="deck-delete-confirm-label">Delete?</span>
+                              <button className="deck-delete-yes" onClick={() => { handleDeleteDeck(deck.id); setDeletingDeckId(null); }}>Yes</button>
+                              <button className="deck-delete-no" onClick={() => setDeletingDeckId(null)}>No</button>
+                            </div>
+                          ) : (
+                            <button
+                              className="deck-delete-btn"
+                              onClick={e => { e.stopPropagation(); setDeletingDeckId(deck.id); }}
+                              title="Delete deck"
+                            >×</button>
+                          )}
                         </li>
                       );
                     })}
@@ -812,13 +871,22 @@ function AppInner() {
                       </div>
                     )}
                   </div>
-                  <input
-                    className="deck-name-input"
-                    placeholder="Deck name (optional)"
-                    value={deckName}
-                    onChange={e => setDeckName(e.target.value)}
-                    disabled={validating}
-                  />
+                  <div className="import-name-row">
+                    <input
+                      className="deck-name-input"
+                      placeholder="Deck name (optional)"
+                      value={deckName}
+                      onChange={e => setDeckName(e.target.value)}
+                      disabled={validating}
+                    />
+                    <input
+                      className="deck-name-input deck-format-input"
+                      placeholder="Format (e.g. Modern)"
+                      value={deckFormat}
+                      onChange={e => setDeckFormat(e.target.value)}
+                      disabled={validating}
+                    />
+                  </div>
                   <div className="url-field-row">
                     <input
                       className="deck-name-input"
@@ -904,103 +972,125 @@ function AppInner() {
                           autoFocus
                         />
                         <button type="submit" className="btn btn-primary btn-sm">Save</button>
+                        <button type="button" className="btn btn-ghost btn-sm" onClick={() => setRenamingDeckId(null)}>Cancel</button>
                       </form>
                     ) : (
-                      <h2 className="deck-content-title" onClick={() => startRename(activeDeck)}>
-                        {activeDeck.name}
-                        <span className="rename-hint">✎</span>
-                      </h2>
-                    )}
-                    <div className="deck-header-actions">
-                      {activeDeck.url && (
-                        <a
-                          href={activeDeck.url.startsWith("http") ? activeDeck.url : `https://${activeDeck.url}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="btn btn-secondary btn-sm"
-                        >
-                          View deck ↗
-                        </a>
-                      )}
-                      <div className="actions-menu-container" ref={actionsMenuRef}>
-                        <button
-                          className={`btn btn-secondary btn-sm${actionsOpen ? " active" : ""}`}
-                          onClick={() => setActionsOpen(o => !o)}
-                        >
-                          Actions ▾
-                        </button>
-                        {actionsOpen && (
-                          <div className="actions-dropdown">
-                            {/* Export missing */}
-                            <div className="actions-section-label">Missing cards</div>
-                            <button className="actions-item" onClick={() => { handleExportMissing(); setActionsOpen(false); }}>
-                              Export missing list
-                            </button>
-
-                            {/* Proxy export */}
-                            {proxyCards.length > 0 && (
-                              <>
-                                <div className="actions-divider" />
-                                <div className="actions-section-label">🖨 {proxyTotal} proxy card{proxyTotal !== 1 ? "s" : ""}</div>
-                                <button className="actions-item" onClick={handleProxyCopy}>
-                                  {copied ? "✓ Copied!" : "Copy proxy list"}
-                                  <span className="actions-item-hint">for proxxied.com</span>
-                                </button>
-                                <button className="actions-item" onClick={() => { handleProxyDownload(); setActionsOpen(false); }}>
-                                  Download .txt
-                                </button>
-                              </>
-                            )}
-
-                            {/* Send to vendor */}
-                            {toBuyCards.length > 0 && (
-                              <>
-                                <div className="actions-divider" />
-                                <div className="actions-section-label">🛒 {toBuyTotal} card{toBuyTotal !== 1 ? "s" : ""} to buy</div>
-                                {VENDORS.map((v, i) => (
-                                  <button key={v.label} className="actions-item" onClick={() => handleSendToVendor(i)}>
-                                    {sentVendor === v.label ? "✓ Done!" : `Send to ${v.label}`}
-                                    <span className="actions-item-hint">{v.prefill ? "Opens pre-filled" : "Paste when tab opens"}</span>
+                      <>
+                        <div className="deck-title-row">
+                          <div className="deck-title-wrap">
+                            <h2 className="deck-content-title">{activeDeck.name}</h2>
+                            <button className="rename-btn" onClick={() => startRename(activeDeck)}>Rename</button>
+                          </div>
+                          <div className="deck-header-actions">
+                            {/* Export dropdown */}
+                            <div className="actions-menu-container" ref={actionsMenuRef}>
+                              <button
+                                className={`btn btn-secondary btn-sm${actionsOpen ? " active" : ""}`}
+                                onClick={() => setActionsOpen(o => !o)}
+                              >
+                                Export ▾
+                              </button>
+                              {actionsOpen && (
+                                <div className="actions-dropdown">
+                                  <div className="actions-section-label">Missing cards</div>
+                                  <button className="actions-item" onClick={() => { handleExportMissing(); setActionsOpen(false); }}>
+                                    Export missing list
                                   </button>
-                                ))}
+                                  {proxyCards.length > 0 && (
+                                    <>
+                                      <div className="actions-divider" />
+                                      <div className="actions-section-label">🖨 {proxyTotal} proxy card{proxyTotal !== 1 ? "s" : ""}</div>
+                                      <button className="actions-item" onClick={handleProxyCopy}>
+                                        {copied ? "✓ Copied!" : "Copy proxy list"}
+                                        <span className="actions-item-hint">for proxxied.com</span>
+                                      </button>
+                                      <button className="actions-item" onClick={() => { handleProxyDownload(); setActionsOpen(false); }}>
+                                        Download .txt
+                                      </button>
+                                    </>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Bulk tag / Edit / Done */}
+                            {(editMode || selectMode) ? (
+                              <button
+                                className="btn btn-primary btn-sm"
+                                onClick={() => { setEditMode(false); setSelectMode(false); }}
+                              >
+                                Done
+                              </button>
+                            ) : (
+                              <>
+                                <button
+                                  className="btn btn-secondary btn-sm"
+                                  onClick={() => setSelectMode(true)}
+                                >
+                                  Bulk tag
+                                </button>
+                                <button
+                                  className="btn btn-secondary btn-sm"
+                                  onClick={() => setEditMode(true)}
+                                >
+                                  Edit
+                                </button>
                               </>
                             )}
                           </div>
-                        )}
-                      </div>
-
-                      {/* Edit menu */}
-                      {(editMode || selectMode) ? (
-                        <button
-                          className="btn btn-primary btn-sm"
-                          onClick={() => { setEditMode(false); setSelectMode(false); }}
-                        >
-                          Done
-                        </button>
-                      ) : (
-                        <div className="edit-menu-container" ref={editMenuRef}>
-                          <button
-                            className={`btn btn-secondary btn-sm${editMenuOpen ? " active" : ""}`}
-                            onClick={() => setEditMenuOpen(v => !v)}
-                          >
-                            Edit {editMenuOpen ? "▴" : "▾"}
-                          </button>
-                          {editMenuOpen && (
-                            <div className="edit-menu-dropdown">
-                              <button className="edit-menu-item" onClick={() => { setEditMenuOpen(false); setSelectMode(true); }}>
-                                Bulk tag
-                                <span className="edit-menu-item-hint">Select cards and set a source tag</span>
-                              </button>
-                              <div className="edit-menu-divider" />
-                              <button className="edit-menu-item" onClick={() => { setEditMenuOpen(false); setEditMode(true); }}>
-                                Edit deck
-                                <span className="edit-menu-item-hint">Add, remove, or adjust quantities</span>
-                              </button>
-                            </div>
+                        </div>
+                        <div className="deck-meta-line">
+                          {(() => {
+                            const colors = getDeckColorIdentity(activeDeck);
+                            return colors.length > 0 ? (
+                              <span className="deck-meta-colors">
+                                {colors.map(c => <span key={c} className={`deck-meta-color clr-${c.toLowerCase()}`} />)}
+                              </span>
+                            ) : null;
+                          })()}
+                          {editingFormatId === activeDeck.id ? (
+                            <form
+                              className="format-edit-form"
+                              onSubmit={e => { e.preventDefault(); commitFormat(); }}
+                            >
+                              <input
+                                className="format-edit-input"
+                                value={formatDraft}
+                                onChange={e => setFormatDraft(e.target.value)}
+                                onBlur={commitFormat}
+                                placeholder="Format…"
+                                autoFocus
+                              />
+                            </form>
+                          ) : (
+                            <button
+                              className={`deck-format-meta${activeDeck.format ? " has-format" : ""}`}
+                              onClick={() => startEditFormat(activeDeck)}
+                              title="Click to set format"
+                            >
+                              {activeDeck.format ? activeDeck.format.toUpperCase() : "+ format"}
+                            </button>
+                          )}
+                          <span className="deck-meta-sep">·</span>
+                          <span className="deck-meta-stat">{activeDeck.cards.reduce((s, c) => s + c.quantity, 0)} cards</span>
+                          <span className="deck-meta-sep">·</span>
+                          <span className="deck-meta-stat">imported {formatRelativeDate(activeDeck.createdAt)}</span>
+                          {activeDeck.url && (
+                            <>
+                              <span className="deck-meta-sep">·</span>
+                              <a
+                                href={activeDeck.url.startsWith("http") ? activeDeck.url : `https://${activeDeck.url}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="deck-meta-link"
+                              >
+                                {getDeckDomain(activeDeck.url)} ↗
+                              </a>
+                            </>
                           )}
                         </div>
-                      )}
-                    </div>
+                      </>
+                    )}
                   </div>
                   <ErrorQueue
                     errors={errors}
@@ -1035,6 +1125,33 @@ function AppInner() {
                     </div>
                   ))}
 
+                  {toBuyCards.length > 0 && (
+                    <div className="buy-cta">
+                      <div className="buy-cta-info">
+                        <span className="buy-cta-title"><strong>{toBuyTotal}</strong> card{toBuyTotal !== 1 ? "s" : ""} to buy</span>
+                        <span className="buy-cta-sub">Opens pre-filled cart or copies list to clipboard</span>
+                      </div>
+                      <div className="buy-cta-action" ref={buyMenuRef}>
+                        <button className="buy-cta-btn" onClick={() => setBuyOpen(o => !o)}>
+                          Buy {toBuyTotal} {buyOpen ? "▴" : "▾"}
+                        </button>
+                        {buyOpen && (
+                          <div className="buy-vendor-dropdown">
+                            {VENDORS.map((v, i) => (
+                              <button
+                                key={v.label}
+                                className="buy-vendor-item"
+                                onClick={() => { handleSendToVendor(i); setBuyOpen(false); }}
+                              >
+                                <span className="buy-vendor-name">{sentVendor === v.label ? `✓ ${v.label}` : v.label}</span>
+                                <span className="buy-vendor-hint">{v.prefill ? "Pre-fills cart" : "Copies to clipboard"}</span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                   <Checklist
                     deck={activeDeck}
                     editMode={editMode}
