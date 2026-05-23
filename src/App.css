@@ -1469,6 +1469,15 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 @media (max-width: 639px) {
   .filter-pills-row { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 2px; -webkit-overflow-scrolling: touch; }
   .filter-pills-row::-webkit-scrollbar { display: none; }
+  /* Group picker: escape the overflow-x scroll container via fixed positioning */
+  .group-picker-dropdown {
+    position: fixed;
+    left: 16px; right: 16px;
+    top: auto;
+    bottom: max(16px, env(safe-area-inset-bottom, 16px));
+    min-width: unset;
+    z-index: 400;
+  }
   .buy-cta { flex-direction: column; align-items: flex-start; }
   .buy-cta-action { width: 100%; }
   .buy-cta-btn { width: 100%; text-align: center; justify-content: center; }

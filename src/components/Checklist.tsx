@@ -570,17 +570,20 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
               Group{groupBy !== "none" ? `: ${groupBy.charAt(0).toUpperCase()}${groupBy.slice(1)}` : ""} ▾
             </button>
             {groupPickerOpen && (
-              <div className="group-picker-dropdown">
-                {(["none", "color", "type", "source"] as GroupBy[]).map(g => (
-                  <button
-                    key={g}
-                    className={`group-picker-item${groupBy === g ? " active" : ""}`}
-                    onClick={() => { setGroupBy(g); setGroupPickerOpen(false); }}
-                  >
-                    {g === "none" ? "None" : `${g.charAt(0).toUpperCase()}${g.slice(1)}`}
-                  </button>
-                ))}
-              </div>
+              <>
+                <div className="mobile-sheet-backdrop" onClick={() => setGroupPickerOpen(false)} />
+                <div className="group-picker-dropdown">
+                  {(["none", "color", "type", "source"] as GroupBy[]).map(g => (
+                    <button
+                      key={g}
+                      className={`group-picker-item${groupBy === g ? " active" : ""}`}
+                      onClick={() => { setGroupBy(g); setGroupPickerOpen(false); }}
+                    >
+                      {g === "none" ? "None" : `${g.charAt(0).toUpperCase()}${g.slice(1)}`}
+                    </button>
+                  ))}
+                </div>
+              </>
             )}
           </div>
 
