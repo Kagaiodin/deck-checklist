@@ -187,11 +187,27 @@
 .collection-vlist > div > div:nth-child(even) .collection-row { background: var(--surface-2); }
 .collection-row.expanded { background: rgba(108,92,231,.06) !important; }
 
-/* Amber left-border accent for "free" cards (not in any deck) */
-.collection-row.row-free::before {
-  content: ""; position: absolute; left: 0; top: 0; bottom: 0;
-  width: 3px; background: #f59e0b; border-radius: 0 2px 2px 0;
+/* Left-edge rarity stripe (also used for amber "free" fallback).
+   Rendered as a child <div class="collection-row-stripe"> so it doesn't
+   conflict with ::before usage elsewhere on .collection-row. */
+.collection-row-stripe {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  border-radius: 0 2px 2px 0;
+  pointer-events: none;
 }
+
+/* Rarity colors — match .card-rarity-* values in App.css */
+.collection-row-stripe[data-rarity="common"]   { background: var(--text-muted); }
+.collection-row-stripe[data-rarity="uncommon"] { background: #7cb9e8; }
+.collection-row-stripe[data-rarity="rare"]     { background: #d4a017; }
+.collection-row-stripe[data-rarity="mythic"]   { background: #e8721a; }
+.collection-row-stripe[data-rarity="special"],
+.collection-row-stripe[data-rarity="bonus"]    { background: #c084fc; }
+
+/* Amber free fallback — shown only when rarity is unknown */
+.collection-row-stripe[data-rarity="free"]     { background: #f59e0b; }
 
 /* Summary button — full-width, two-column layout */
 .collection-row-summary {

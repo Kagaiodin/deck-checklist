@@ -1,4 +1,4 @@
-import type { CollectionPrinting } from "../../../types/index";
+import type { Card, CollectionPrinting } from "../../../types/index";
 import type { CommittedInfo, EditingPrinting } from "../../../types/collection";
 import { CollectionRowDetail } from "./CollectionRowDetail";
 
@@ -6,6 +6,7 @@ interface CollectionRowProps {
   name: string;
   printings: CollectionPrinting[];
   total: number;
+  rarity?: Card["rarity"];
   isExpanded: boolean;
   committed: CommittedInfo;
   hasDeckContext: boolean;
@@ -28,6 +29,7 @@ export function CollectionRow({
   name,
   printings,
   total,
+  rarity,
   isExpanded,
   committed,
   hasDeckContext,
@@ -46,6 +48,9 @@ export function CollectionRow({
   const isFree = hasDeckContext && committed.total === 0;
   // "partially free" = some committed, some not — show "N free" on the right
   const isPartiallyFree = hasDeckContext && committed.total > 0 && freeCount > 0;
+
+  // Stripe: rarity wins over free when known; amber free is fallback.
+  const stripeRarity: string | null = rarity ?? (isFree ? "free" : null);
 
   // Build the subtitle: "N printings [· +N foil] [· in N decks | · free]"
   const subtitleParts: string[] = [
@@ -69,6 +74,11 @@ export function CollectionRow({
         isFree     ? "row-free" : "",
       ].filter(Boolean).join(" ")}
     >
+      {/* Rarity / free left-edge stripe */}
+      {stripeRarity && (
+        <div className="collection-row-stripe" data-rarity={stripeRarity} />
+      )}
+
       <button
         className="collection-row-summary"
         onClick={() => onToggleExpand(name)}
