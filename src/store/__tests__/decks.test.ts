@@ -295,3 +295,101 @@ describe("ADD_CARD", () => {
     expect(state.decks[1].cards).toHaveLength(0);
   });
 });
+
+// ── UNSET_CARD_SOURCES ────────────────────────────────────────────────────────
+
+describe("UNSET_CARD_SOURCES", () => {
+  it("clears source and manuallyTagged on the specified cards", () => {
+    const cards = [
+      makeCard({ id: "c1", name: "Lightning Bolt", source: "ordered", manuallyTagged: true }),
+      makeCard({ id: "c2", name: "Lava Spike", source: "owned", manuallyTagged: true }),
+    ];
+    const initial = { decks: [makeDeck({ id: "d1", name: "Burn", cards })] };
+    const state = deckReducer(initial, {
+      type: "UNSET_CARD_SOURCES",
+      payload: { deckId: "d1", cardIds: ["c1"] },
+    });
+    expect(state.decks[0].cards[0].source).toBeUndefined();
+    expect(state.decks[0].cards[0].manuallyTagged).toBe(false);
+    // c2 untouched
+    expect(state.decks[0].cards[1].source).toBe("owned");
+    expect(state.decks[0].cards[1].manuallyTagged).toBe(true);
+  });
+
+  it("does not affect other decks", () => {
+    const initial = {
+      decks: [
+        makeDeck({ id: "d1", name: "Burn", cards: [makeCard({ id: "c1", name: "Lightning Bolt", source: "ordered", manuallyTagged: true })] }),
+        makeDeck({ id: "d2", name: "Storm", cards: [makeCard({ id: "c2", name: "Dark Ritual",   source: "ordered", manuallyTagged: true })] }),
+      ],
+    };
+    const state = deckReducer(initial, {
+      type: "UNSET_CARD_SOURCES",
+      payload: { deckId: "d1", cardIds: ["c1"] },
+    });
+    expect(state.decks[1].cards[0].source).toBe("ordered"); // d2 untouched
+  });
+});
+
+// ── ADD_NOTIFICATION ──────────────────────────────────────────────────────────
+
+describe("ADD_NOTIFICATION", () => {
+  it("appends a notification to the target deck", () => {
+    const initial = { decks: [makeDeck({ id: "d1", name: "Burn" })] };
+    const notification = {
+      id: "n1",
+      type: "order_cancelled" as const,
+      orderId: "order1",
+      orderLabel: "TCGPlayer — May 15",
+      affectedCardIds: ["c1", "c2"],
+      createdAt: Date.now(),
+    };
+    const state = deckReducer(initial, {
+      type: "ADD_NOTIFICATION",
+      payload: { deckId: "d1", notification },
+    });
+    expect(state.decks[0].notifications).toHaveLength(1);
+    expect(state.decks[0].notifications![0].id).toBe("n1");
+  });
+
+  it("appends to existing notifications", () => {
+    const existing = { id: "n0", type: "order_cancelled" as const, orderId: "o0", orderLabel: "Old", affectedCardIds: [], createdAt: 0 };
+    const initial = { decks: [makeDeck({ id: "d1", name: "Burn", notifications: [existing] })] };
+    const state = deckReducer(initial, {
+      type: "ADD_NOTIFICATION",
+      payload: { deckId: "d1", notification: { id: "n1", type: "order_cancelled", orderId: "o1", orderLabel: "New", affectedCardIds: [], createdAt: 1 } },
+    });
+    expect(state.decks[0].notifications).toHaveLength(2);
+  });
+});
+
+// ── DISMISS_NOTIFICATION ──────────────────────────────────────────────────────
+
+describe("DISMISS_NOTIFICATION", () => {
+  it("removes the notification with the given id", () => {
+    const notifications = [
+      { id: "n1", type: "order_cancelled" as const, orderId: "o1", orderLabel: "A", affectedCardIds: [], createdAt: 0 },
+      { id: "n2", type: "order_cancelled" as const, orderId: "o2", orderLabel: "B", affectedCardIds: [], createdAt: 1 },
+    ];
+    const initial = { decks: [makeDeck({ id: "d1", name: "Burn", notifications })] };
+    const state = deckReducer(initial, {
+      type: "DISMISS_NOTIFICATION",
+      payload: { deckId: "d1", notificationId: "n1" },
+    });
+    expect(state.decks[0].notifications).toHaveLength(1);
+    expect(state.decks[0].notifications![0].id).toBe("n2");
+  });
+
+  it("is a no-op when the notification id does not exist", () => {
+    const notifications = [
+      { id: "n1", type: "order_cancelled" as const, orderId: "o1", orderLabel: "A", affectedCardIds: [], createdAt: 0 },
+    ];
+    const initial = { decks: [makeDeck({ id: "d1", name: "Burn", notifications })] };
+    const state = deckReducer(initial, {
+      type: "DISMISS_NOTIFICATION",
+      payload: { deckId: "d1", notificationId: "nope" },
+    });
+    expect(state.decks[0].notifications).toHaveLength(1);
+  });
+});
+

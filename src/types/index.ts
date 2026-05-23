@@ -49,16 +49,51 @@ export interface CollectionMeta {
   cardCount: number;
 }
 
+export interface DeckNotification {
+  id: string;
+  type: "order_cancelled";
+  orderId: string;
+  orderLabel: string;
+  affectedCardIds: string[];
+  createdAt: number;
+}
+
 export interface Deck {
   id: string;
   name: string;
   url?: string;
   cards: Card[];
   createdAt: number;
+  notifications?: DeckNotification[];
 }
 
 export interface ErrorQueueItem {
   originalName: string;
   searchName: string;
   resolved: boolean;
+}
+
+// ── Orders ────────────────────────────────────────────────────────────────────
+
+export type Carrier = "ups" | "usps" | "fedex" | "dhl" | "other";
+export type OrderStatus = "active" | "received" | "cancelled";
+
+export interface OrderCard {
+  deckId?: string;   // undefined = freeform card not tied to any deck
+  cardId?: string;   // undefined = freeform card not tied to any deck
+  cardName: string;  // denormalized for display without deck lookup
+  quantity: number;
+}
+
+export interface Order {
+  id: string;
+  createdAt: number;
+  vendor: string;
+  trackingNumber?: string;
+  carrier?: Carrier;
+  orderDate?: number;
+  expectedArrival?: number;
+  notes?: string;
+  status: OrderStatus;
+  cards: OrderCard[];
 }
