@@ -5,6 +5,164 @@
  * Imported by CollectionPage.tsx.
  */
 
+/* ── Collection quick-add form ──────────────────────────────────── */
+
+/* Header button active ring */
+.btn-primary.active {
+  box-shadow: 0 0 0 2px var(--accent-light);
+}
+
+/* Form container — entrance animation */
+.collection-quick-add {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  animation: qa-enter 180ms ease-out both;
+}
+
+@keyframes qa-enter {
+  from { opacity: 0; max-height: 0; overflow: hidden; }
+  to   { opacity: 1; max-height: 120px; }
+}
+
+.collection-quick-add-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.collection-quick-add-name-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 160px;
+}
+
+.collection-quick-add-input {
+  width: 100%;
+  margin: 0 !important;
+}
+
+/* Success flash — applied via JS className toggle */
+.collection-quick-add-input.success-flash {
+  border-color: var(--good);
+  transition: border-color 0.6s ease;
+}
+
+/* Autocomplete dropdown */
+.collection-quick-add-suggestions {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 50;
+  list-style: none;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgba(0,0,0,.4);
+  overflow: hidden;
+}
+
+.collection-quick-add-suggestion {
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+}
+.collection-quick-add-suggestion:last-child { border-bottom: none; }
+.collection-quick-add-suggestion:hover,
+.collection-quick-add-suggestion.highlighted {
+  background: rgba(108,92,231,.1);
+  color: var(--text);
+}
+
+/* Qty stepper */
+.collection-quick-add-qty-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.collection-quick-add-step {
+  width: 26px;
+  height: 26px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: 16px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-family: inherit;
+  transition: color .12s, border-color .12s;
+}
+.collection-quick-add-step:hover:not(:disabled) {
+  color: var(--text);
+  border-color: var(--accent);
+}
+.collection-quick-add-step:disabled { opacity: .35; cursor: default; }
+
+.collection-quick-add-qty {
+  font-size: 14px;
+  font-weight: 600;
+  min-width: 20px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Foil label */
+.collection-quick-add-foil {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  color: var(--text-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.collection-quick-add-foil input { cursor: pointer; accent-color: var(--accent); }
+.collection-quick-add-foil.checked { color: var(--accent-light); }
+
+/* Action buttons */
+.collection-quick-add-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* Error / warning — warn NOT danger; user can still submit */
+.collection-quick-add-error {
+  font-size: 12px;
+  color: var(--warn);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* Mobile overrides */
+@media (max-width: 639px) {
+  .collection-quick-add { padding: 10px 12px; }
+  .collection-quick-add-name-wrap { flex: 0 0 100%; min-width: 0; }
+  .collection-quick-add-input { min-height: 44px; }
+  .collection-quick-add-step { width: 36px; height: 36px; }
+  .collection-quick-add-foil { min-height: 44px; align-items: center; }
+  .collection-quick-add-actions {
+    margin-left: auto;
+    flex-direction: row-reverse; /* Add on far right, thumb-reachable */
+  }
+}
+
 /* ── Page shell ─────────────────────────────────────────────────── */
 .collection-panel {
   width: 100%; max-width: 760px; margin: 0 auto;
