@@ -8,9 +8,49 @@ import { useLocalStorage } from "./hooks/useLocalStorage";
 import { Checklist } from "./components/Checklist";
 import { ErrorQueue } from "./components/ErrorQueue";
 import { ProgressTracker } from "./components/ProgressTracker";
-import type { Deck, ErrorQueueItem, AcquisitionSource, Collection, CollectionMeta } from "./types/index";
-import { parseCollectionCSV, applyCollectionToCards } from "./utils/csvParser";
+import type { Deck, ErrorQueueItem, AcquisitionSource, Collection, Order, OrderCard, DeckNotification, Carrier } from "./types/index";
+import { applyCollectionToCards, mergeOrderCardsIntoCollection } from "./utils/csvParser";
+import { detectCarrier, getTrackingUrl, CARRIER_NAMES } from "./utils/carrier";
 import { getDeckColorIdentity, formatRelativeDate, getDeckDomain } from "./utils/deckUtils";
+import { CollectionPage } from "./features/collection/CollectionPage";
+
+// ── Order row helpers ──────────────────────────────────────────────────────────
+
+function formatShortDate(ts: number): string {
+  return new Date(ts).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+function formatEtaMain(ts: number): string {
+  const now = new Date();
+  const eta = new Date(ts);
+  const daysOut = Math.ceil((eta.getTime() - now.getTime()) / (24 * 60 * 60 * 1000));
+  if (daysOut === 0) return "Arrives today";
+  if (daysOut === 1) return "Arrives tomorrow";
+  if (daysOut <= 6) {
+    const weekday = eta.toLocaleDateString(undefined, { weekday: "long" });
+    return `Arrives ${weekday} · in ${daysOut} days`;
+  }
+  const md = eta.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  return `Arrives ${md} · in ${daysOut} days`;
+}
+
+function isUrgent(expectedArrival: number): boolean {
+  const days = (expectedArrival - Date.now()) / (24 * 60 * 60 * 1000);
+  return days >= 0 && days <= 1;
+}
+
+function daysOverdue(expectedArrival: number): number {
+  return Math.ceil((Date.now() - expectedArrival) / (24 * 60 * 60 * 1000));
+}
+
+function totalCardQuantity(o: Order): number {
+  return o.cards.reduce((sum, c) => sum + c.quantity, 0);
+}
+
+function affectedDeckCount(o: Order): number {
+  const deckIds = new Set(o.cards.map(c => c.deckId).filter(Boolean));
+  return deckIds.size;
+}
 
 function AppInner() {
   const { state, dispatch } = useDecks();
@@ -23,7 +63,7 @@ function AppInner() {
   const [validating, setValidating] = useState(false);
   const [progress, setProgress] = useState<ValidationProgress>({ total: 0, validated: 0 });
   const [importError, setImportError] = useState<string | null>(null);
-  const [view, setView] = useState<"decks" | "collection">("decks");
+  const [view, setView] = useState<"decks" | "collection" | "orders">("decks");
   const [showImport, setShowImport] = useState(false);
   const [renamingDeckId, setRenamingDeckId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
@@ -37,90 +77,63 @@ function AppInner() {
   const [editingFormatId, setEditingFormatId] = useState<string | null>(null);
   const [formatDraft, setFormatDraft] = useState("");
 
-  // ── Collection state ───────────────────────────────────────────────────────
+  // ── Collection (read-only, for auto-tagging on deck import) ──────────────
+  // CollectionPage owns all writes; AppInner only reads to tag newly imported cards.
   const [collection, setCollection] = useLocalStorage<Collection>("mtg-checklist-collection-v2", {});
-  const [collectionMeta, setCollectionMeta] = useLocalStorage<CollectionMeta | null>("mtg-checklist-collection-meta-v2", null);
-  const [collectionError, setCollectionError] = useState<string | null>(null);
-  const [collectionSearch, setCollectionSearch] = useState("");
-  const [collectionSort, setCollectionSort] = useState<"name-asc" | "name-desc" | "qty-desc" | "qty-asc">("name-asc");
-  const [collectionPage, setCollectionPage] = useState(0);
-  const [expandedCollectionKey, setExpandedCollectionKey] = useState<string | null>(null);
-  const [scrollToCollectionKey, setScrollToCollectionKey] = useState<string | null>(null);
-  const collectionListRef = useRef<HTMLUListElement>(null);
-  const [bulkEditOpen, setBulkEditOpen] = useState(false);
-  const [bulkEditText, setBulkEditText] = useState("");
-  const [bulkEditMode, setBulkEditMode] = useState<"merge" | "replace">("merge");
-  const [bulkEditError, setBulkEditError] = useState<string | null>(null);
-  const [clearConfirming, setClearConfirming] = useState(false);
-  const [pendingCsvFile, setPendingCsvFile] = useState<File | null>(null);
-  const csvReplaceInputRef = useRef<HTMLInputElement>(null);
-  const [editingPrinting, setEditingPrinting] = useState<{
-    key: string; idx: number; qty: string; set: string; cn: string; foil: boolean;
-  } | null>(null);
 
-  const COLLECTION_PAGE_SIZE = 100;
+  // ── Orders state ──────────────────────────────────────────────────────────
+  const [orders, setOrders] = useLocalStorage<Order[]>("mtg-checklist-orders-v1", []);
+  const [recentVendors, setRecentVendors] = useLocalStorage<string[]>("mtg-checklist-vendor-history", []);
+  const [showCreateOrder, setShowCreateOrder] = useState(false);
+  const [orderVendor, setOrderVendor] = useState("");
+  const [orderTracking, setOrderTracking] = useState("");
+  const [orderDate, setOrderDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [orderExpected, setOrderExpected] = useState(() => {
+    const d = new Date(); d.setDate(d.getDate() + 5); return d.toISOString().split("T")[0];
+  });
+  const [orderNotes, setOrderNotes] = useState("");
+  const [orderCards, setOrderCards] = useState<OrderCard[]>([]);
+  const [orderCardSearch, setOrderCardSearch] = useState("");
+  const [orderCarrier, setOrderCarrier] = useState<Carrier | "">("");
+  const [carrierManuallySet, setCarrierManuallySet] = useState(false);
+  const [orderFilter, setOrderFilter] = useState<"active" | "received" | "cancelled" | "all">("active");
+  const [showNotes, setShowNotes] = useState(false);
+  const [showShipping, setShowShipping] = useState(false);
+  const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
+  const [deleteConfirmOrderId, setDeleteConfirmOrderId] = useState<string | null>(null);
+  const [notificationFilterIds, setNotificationFilterIds] = useState<string[] | null>(null);
 
-  const collectionFiltered = Object.entries(collection)
-    .filter(([name]) => name.includes(collectionSearch.toLowerCase()))
-    .map(([name, rawPrintings]) => {
-      // Guard against stale localStorage data in old flat number format
-      const printings = Array.isArray(rawPrintings) ? rawPrintings : [];
-      return { name, printings, total: printings.reduce((s, p) => s + p.quantity, 0) };
-    })
+  // Auto-detect carrier from tracking number, unless user has overridden it (B-3)
+  useEffect(() => {
+    if (!carrierManuallySet && orderTracking.trim()) {
+      setOrderCarrier(detectCarrier(orderTracking));
+    } else if (!orderTracking.trim()) {
+      setOrderCarrier("");
+      setCarrierManuallySet(false);
+    }
+  }, [orderTracking, carrierManuallySet]);
+
+  // Cards across all decks matching the search term (exclude already-added)
+  const orderCardResults = orderCardSearch.trim().length >= 2
+    ? state.decks.flatMap(deck =>
+        deck.cards
+          .filter(c => c.name.toLowerCase().includes(orderCardSearch.toLowerCase()))
+          .filter(c => !orderCards.some(oc => oc.cardId === c.id && oc.deckId === deck.id))
+          .map(c => ({ deckId: deck.id, deckName: deck.name, cardId: c.id, cardName: c.name, maxQty: c.quantity }))
+      ).slice(0, 12)
+    : [];
+
+  // Filtered + sorted order list (overdue first within active)
+  const filteredOrders = orders
+    .filter(o => orderFilter === "all" || o.status === orderFilter)
     .sort((a, b) => {
-      if (collectionSort === "name-asc")  return a.name.localeCompare(b.name);
-      if (collectionSort === "name-desc") return b.name.localeCompare(a.name);
-      if (collectionSort === "qty-desc")  return b.total - a.total || a.name.localeCompare(b.name);
-      return a.total - b.total || a.name.localeCompare(b.name); // qty-asc
-    });
-  const collectionPageCount = Math.max(1, Math.ceil(collectionFiltered.length / COLLECTION_PAGE_SIZE));
-  const collectionPageSafe = Math.min(collectionPage, collectionPageCount - 1);
-  const collectionPageRows = collectionFiltered.slice(
-    collectionPageSafe * COLLECTION_PAGE_SIZE,
-    (collectionPageSafe + 1) * COLLECTION_PAGE_SIZE
-  );
-
-  // Letter → page index and first card name, only meaningful for alphabetical sorts
-  const alphaSort = collectionSort === "name-asc" || collectionSort === "name-desc";
-  const letterPageMap = new Map<string, number>();
-  const letterFirstKeyMap = new Map<string, string>(); // letter → first card name on that page
-  if (alphaSort) {
-    collectionFiltered.forEach(({ name }, idx) => {
-      const letter = name[0]?.toUpperCase();
-      if (letter && !letterPageMap.has(letter)) {
-        letterPageMap.set(letter, Math.floor(idx / COLLECTION_PAGE_SIZE));
-        letterFirstKeyMap.set(letter, name);
+      if (orderFilter === "active") {
+        const aDate = a.expectedArrival ?? Infinity;
+        const bDate = b.expectedArrival ?? Infinity;
+        return aDate - bDate;
       }
+      return b.createdAt - a.createdAt;
     });
-  }
-  // Which letter is active (first letter of the first card on the current page)
-  const activeAlphaLetter = collectionPageRows[0]?.name[0]?.toUpperCase() ?? null;
-
-  // After a letter jump, scroll to the target card once the new page renders
-  useEffect(() => {
-    if (!scrollToCollectionKey) return;
-    const el = document.querySelector(`[data-collection-key="${CSS.escape(scrollToCollectionKey)}"]`);
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
-      setScrollToCollectionKey(null);
-    }
-  }, [scrollToCollectionKey, collectionPageRows]);
-
-  // Scroll the list back to its top when the page changes (but not on letter-jump — that handles its own scroll)
-  useEffect(() => {
-    if (scrollToCollectionKey) return;
-    collectionListRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, [collectionPageSafe]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  function getCommittedInfo(name: string): { total: number; deckCount: number } {
-    let total = 0;
-    let deckCount = 0;
-    for (const deck of state.decks) {
-      const card = deck.cards.find(c => c.name.toLowerCase() === name);
-      if (card) { total += card.quantity; deckCount++; }
-    }
-    return { total, deckCount };
-  }
 
   const activeDeck = state.decks.find(d => d.id === activeDeckId) ?? null;
   const errors = activeDeckId ? (allErrors[activeDeckId] ?? []) : [];
@@ -254,137 +267,150 @@ function AppInner() {
     );
   }
 
-  // ── Collection handlers ────────────────────────────────────────────────────
-  function importCollectionFile(file: File) {
-    setCollectionError(null);
-    const reader = new FileReader();
-    reader.onload = ev => {
-      try {
-        const raw = ev.target?.result as string ?? "";
-        const parsed = parseCollectionCSV(raw);
-        const cardCount = Object.keys(parsed).length;
-        setCollection(parsed);
-        setCollectionMeta({ fileName: file.name, importedAt: Date.now(), cardCount });
-        dispatch({ type: "APPLY_COLLECTION", payload: parsed });
-      } catch (err) {
-        setCollectionError(err instanceof Error ? err.message : "Failed to parse CSV.");
-      }
-      if (csvReplaceInputRef.current) csvReplaceInputRef.current.value = "";
+  // ── Order handlers ────────────────────────────────────────────────────────
+  function orderLabel(order: Order): string {
+    const d = order.orderDate
+      ? new Date(order.orderDate).toLocaleDateString("en-US", { month: "long", day: "numeric" })
+      : "";
+    return d ? `${order.vendor} — ${d}` : order.vendor;
+  }
+
+  function handleCreateOrder() {
+    if (!orderVendor.trim() || orderCards.length === 0) return;
+    const newOrder: Order = {
+      id: crypto.randomUUID(),
+      createdAt: Date.now(),
+      vendor: orderVendor.trim(),
+      trackingNumber: orderTracking.trim() || undefined,
+      carrier: orderTracking.trim() ? (orderCarrier || detectCarrier(orderTracking)) : undefined,
+      orderDate: orderDate ? new Date(orderDate).getTime() : undefined,
+      expectedArrival: orderExpected ? new Date(orderExpected).getTime() : undefined,
+      notes: orderNotes.trim() || undefined,
+      status: "active",
+      cards: orderCards,
     };
-    reader.readAsText(file);
+    setOrders(prev => [newOrder, ...prev]);
+    // Update recent vendors (dedup, most-recent-first, cap at 6)
+    const trimmedVendor = orderVendor.trim();
+    setRecentVendors(prev => {
+      const next = [trimmedVendor, ...prev.filter(v => v.toLowerCase() !== trimmedVendor.toLowerCase())];
+      return next.slice(0, 6);
+    });
+    setShowCreateOrder(false);
+    setShowNotes(false);
+    setShowShipping(false);
+    setOrderVendor("");
+    setOrderTracking("");
+    setOrderCarrier("");
+    setCarrierManuallySet(false);
+    setOrderDate(new Date().toISOString().split("T")[0]);
+    setOrderExpected(() => { const d = new Date(); d.setDate(d.getDate() + 5); return d.toISOString().split("T")[0]; });
+    setOrderNotes("");
+    setOrderCards([]);
+    setOrderCardSearch("");
   }
 
-  function handleCollectionUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    // First upload — no confirmation needed
-    if (!collectionMeta) { importCollectionFile(file); return; }
-    // Re-upload — store the pending file and show confirmation inline
-    setPendingCsvFile(file);
-    e.target.value = "";
+  function handleAddOrderCard(deckId: string, deckName: string, cardId: string, cardName: string, qty: number) {
+    setOrderCards(prev => {
+      const existing = prev.find(oc => oc.cardId === cardId && oc.deckId === deckId);
+      if (existing) return prev;
+      return [...prev, { deckId, cardId, cardName, quantity: qty }];
+    });
+    setOrderCardSearch("");
+    void deckName; // used in UI display only
   }
 
-  function handleClearCollection() {
-    setCollection({});
-    setCollectionMeta(null);
-    setCollectionError(null);
-    setClearConfirming(false);
-    dispatch({ type: "APPLY_COLLECTION", payload: {} });
+  function handleRemoveOrderCard(cardName: string, deckId?: string) {
+    setOrderCards(prev => prev.filter(oc => !(oc.cardName === cardName && oc.deckId === deckId)));
   }
 
-  function handleCollectionIncrement(key: string) {
-    const updated = { ...collection };
-    const printings = Array.isArray(updated[key]) ? [...updated[key]] : [];
-    const gi = printings.findIndex(p => !p.set && !p.collectorNumber && !p.foil);
-    if (gi >= 0) {
-      printings[gi] = { ...printings[gi], quantity: printings[gi].quantity + 1 };
-    } else {
-      printings.push({ quantity: 1 });
-    }
-    updated[key] = printings;
-    setCollection(updated);
-    if (collectionMeta) setCollectionMeta({ ...collectionMeta, cardCount: Object.keys(updated).length });
-    dispatch({ type: "APPLY_COLLECTION", payload: updated });
+  function handleUpdateOrderCardQty(cardName: string, deckId: string | undefined, qty: number) {
+    if (qty <= 0) { handleRemoveOrderCard(cardName, deckId); return; }
+    setOrderCards(prev => prev.map(oc =>
+      oc.cardName === cardName && oc.deckId === deckId ? { ...oc, quantity: qty } : oc
+    ));
   }
 
-  function handleCollectionDecrement(key: string) {
-    const updated = { ...collection };
-    const printings = Array.isArray(updated[key]) ? [...updated[key]] : [];
-    const gi = printings.findIndex(p => !p.set && !p.collectorNumber && !p.foil);
-    const ti = gi >= 0 ? gi : printings.length - 1;
-    if (ti < 0) return;
-    const next = printings[ti].quantity > 1
-      ? printings.map((p, i) => i === ti ? { ...p, quantity: p.quantity - 1 } : p)
-      : printings.filter((_, i) => i !== ti);
-    if (next.length === 0) {
-      delete updated[key];
-    } else {
-      updated[key] = next;
-    }
-    setCollection(updated);
-    if (collectionMeta) setCollectionMeta({ ...collectionMeta, cardCount: Object.keys(updated).length });
-    dispatch({ type: "APPLY_COLLECTION", payload: updated });
-  }
-
-  function handleCollectionRemove(key: string) {
-    const updated = { ...collection };
-    delete updated[key];
-    setCollection(updated);
-    if (collectionMeta) setCollectionMeta({ ...collectionMeta, cardCount: Object.keys(updated).length });
-    dispatch({ type: "APPLY_COLLECTION", payload: updated });
-  }
-
-  function handleUpdatePrinting(key: string, idx: number, qty: number, set: string, cn: string, foil: boolean) {
-    const updated = { ...collection };
-    const printings = Array.isArray(updated[key]) ? [...updated[key]] : [];
-    if (qty <= 0) {
-      const next = printings.filter((_, i) => i !== idx);
-      if (next.length === 0) { delete updated[key]; } else { updated[key] = next; }
-    } else {
-      printings[idx] = { quantity: qty, set: set.trim().toUpperCase() || undefined, collectorNumber: cn.trim() || undefined, foil: foil || undefined };
-      updated[key] = printings;
-    }
-    setCollection(updated);
-    if (collectionMeta) setCollectionMeta({ ...collectionMeta, cardCount: Object.keys(updated).length });
-    dispatch({ type: "APPLY_COLLECTION", payload: updated });
-  }
-
-  function commitPrintingEdit() {
-    if (!editingPrinting) return;
-    const qty = parseInt(editingPrinting.qty, 10);
-    handleUpdatePrinting(editingPrinting.key, editingPrinting.idx, isNaN(qty) ? 0 : qty, editingPrinting.set, editingPrinting.cn, editingPrinting.foil);
-    setEditingPrinting(null);
-  }
-
-  function handleBulkEdit() {
-    setBulkEditError(null);
-    const parsed = parseDecklist(bulkEditText);
-    if (parsed.length === 0) {
-      setBulkEditError("No valid card lines found. Use the format: 4 Lightning Bolt");
+  function handleDeleteOrder(id: string) {
+    const order = orders.find(o => o.id === id);
+    if (!order) return;
+    if (order.status === "active" && deleteConfirmOrderId !== id) {
+      setDeleteConfirmOrderId(id);
       return;
     }
-    const base: Collection = bulkEditMode === "replace" ? {} : { ...collection };
-    for (const { count, name } of parsed) {
-      const key = name.toLowerCase();
-      if (count === 0) { delete base[key]; continue; }
-      const existing = Array.isArray(base[key]) ? base[key] : [];
-      const gi = existing.findIndex(p => !p.set && !p.collectorNumber && !p.foil);
-      if (gi >= 0) {
-        base[key] = existing.map((p, i) => i === gi ? { ...p, quantity: count } : p);
-      } else {
-        base[key] = [...existing, { quantity: count }];
+    setOrders(prev => prev.filter(o => o.id !== id));
+    setDeleteConfirmOrderId(null);
+  }
+
+  function handleMarkReceived(orderId: string) {
+    const order = orders.find(o => o.id === orderId);
+    if (!order) return;
+
+    // Update order status
+    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: "received" as const } : o));
+
+    // Tag deck-linked cards as "owned" (manuallyTagged so collection won't overwrite)
+    const cardsByDeck = new Map<string, string[]>();
+    for (const oc of order.cards) {
+      if (oc.deckId && oc.cardId) {
+        cardsByDeck.set(oc.deckId, [...(cardsByDeck.get(oc.deckId) ?? []), oc.cardId]);
       }
     }
-    const cardCount = Object.keys(base).length;
-    setCollection(base);
-    setCollectionMeta({
-      fileName: collectionMeta?.fileName ?? "Manual edit",
-      importedAt: collectionMeta?.importedAt ?? Date.now(),
-      cardCount,
-    });
-    dispatch({ type: "APPLY_COLLECTION", payload: base });
-    setBulkEditText("");
-    setBulkEditOpen(false);
+    for (const [deckId, cardIds] of cardsByDeck) {
+      dispatch({ type: "BULK_SET_SOURCE", payload: { deckId, cardIds, source: "owned" } });
+    }
+
+    // Merge into collection (Option A: quantity only, no set/CN)
+    const updatedCollection = mergeOrderCardsIntoCollection(order.cards, collection);
+    setCollection(updatedCollection);
+    setCollectionMeta(prev => prev
+      ? { ...prev, cardCount: Object.keys(updatedCollection).length }
+      : { fileName: "Order receipt", importedAt: Date.now(), cardCount: Object.keys(updatedCollection).length }
+    );
+    dispatch({ type: "APPLY_COLLECTION", payload: updatedCollection });
+  }
+
+  function handleMarkCancelled(orderId: string) {
+    const order = orders.find(o => o.id === orderId);
+    if (!order) return;
+
+    // Update order status
+    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: "cancelled" as const } : o));
+
+    // Unset source + manuallyTagged on deck-linked cards so collection can re-tag
+    const cardsByDeck = new Map<string, string[]>();
+    for (const oc of order.cards) {
+      if (oc.deckId && oc.cardId) {
+        cardsByDeck.set(oc.deckId, [...(cardsByDeck.get(oc.deckId) ?? []), oc.cardId]);
+      }
+    }
+    for (const [deckId, cardIds] of cardsByDeck) {
+      dispatch({ type: "UNSET_CARD_SOURCES", payload: { deckId, cardIds } });
+    }
+
+    // Re-apply collection now that manuallyTagged is cleared
+    if (Object.keys(collection).length > 0) {
+      dispatch({ type: "APPLY_COLLECTION", payload: collection });
+    }
+
+    // Add deck notifications so user knows which cards to review
+    const label = orderLabel(order);
+    for (const [deckId, cardIds] of cardsByDeck) {
+      const notification: DeckNotification = {
+        id: `${orderId}_${deckId}`,
+        type: "order_cancelled",
+        orderId,
+        orderLabel: label,
+        affectedCardIds: cardIds,
+        createdAt: Date.now(),
+      };
+      dispatch({ type: "ADD_NOTIFICATION", payload: { deckId, notification } });
+    }
+  }
+
+  function handleDismissNotification(deckId: string, notificationId: string) {
+    dispatch({ type: "DISMISS_NOTIFICATION", payload: { deckId, notificationId } });
+    setNotificationFilterIds(null);
   }
 
   // ── Archidekt import ───────────────────────────────────────────────────────
@@ -550,11 +576,17 @@ function AppInner() {
   const [editMode, setEditMode] = useState(false);
   const [selectMode, setSelectMode] = useState(false);
 
-  // Reset edit/select modes when the active deck changes
+  // Reset edit/select modes and notification filter when the active deck changes
   useEffect(() => {
     setEditMode(false);
     setSelectMode(false);
+    setNotificationFilterIds(null);
   }, [activeDeckId]);
+
+  // Reset notes expansion whenever the order form closes
+  useEffect(() => {
+    if (!showCreateOrder) { setShowNotes(false); setShowShipping(false); }
+  }, [showCreateOrder]);
 
   // ── Feedback menu ──────────────────────────────────────────────────────────
   const [feedbackOpen, setFeedbackOpen] = useState(false);
@@ -594,6 +626,15 @@ function AppInner() {
           >
             <span className="nav-label-short">Collection</span>
             <span className="nav-label-full">My Collection</span>
+          </button>
+          <button
+            className={`nav-btn${view === "orders" ? " active" : ""}`}
+            onClick={() => setView("orders")}
+          >
+            Orders
+            {orders.filter(o => o.status === "active").length > 0 && (
+              <span className="nav-badge">{orders.filter(o => o.status === "active").length}</span>
+            )}
           </button>
         </nav>
         <div className="feedback-menu-container" ref={feedbackMenuRef}>
@@ -1081,6 +1122,33 @@ function AppInner() {
                       </div>
                     </div>
                   )}
+
+                  {/* Deck notifications (e.g. order cancellation) */}
+                  {(activeDeck.notifications ?? []).map(notification => (
+                    <div key={notification.id} className="deck-notification-banner">
+                      <div className="deck-notification-content">
+                        <span className="deck-notification-icon">⚠️</span>
+                        <div className="deck-notification-text">
+                          <strong>{notification.orderLabel}</strong> was cancelled.{" "}
+                          {notification.affectedCardIds.length} card{notification.affectedCardIds.length !== 1 ? "s" : ""} have been untagged — review and retag as needed.
+                        </div>
+                      </div>
+                      <div className="deck-notification-actions">
+                        {notificationFilterIds ? (
+                          <button className="btn btn-ghost btn-sm" onClick={() => setNotificationFilterIds(null)}>
+                            Show all
+                          </button>
+                        ) : (
+                          <button className="btn btn-secondary btn-sm" onClick={() => setNotificationFilterIds(notification.affectedCardIds)}>
+                            Show cards
+                          </button>
+                        )}
+                        <button className="btn btn-ghost btn-sm" onClick={() => handleDismissNotification(activeDeck.id, notification.id)}>
+                          Dismiss
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                   <Checklist
                     deck={activeDeck}
                     editMode={editMode}
@@ -1091,6 +1159,7 @@ function AppInner() {
                     onRemoveCard={handleRemoveCard}
                     onUpdateQuantity={handleUpdateQuantity}
                     onAddCard={handleAddCard}
+                    filterCardIds={notificationFilterIds ?? undefined}
                   />
                 </>
               ) : (
@@ -1107,293 +1176,444 @@ function AppInner() {
 
         {/* ── Collection tab ─────────────────────────────────────────────── */}
         {view === "collection" && (
-          <section className="collection-panel">
-            <div className="collection-header">
-              <h2>My Collection</h2>
-              <div className="collection-header-actions">
-                <input
-                  ref={csvReplaceInputRef}
-                  type="file"
-                  accept=".csv"
-                  className="file-upload-input"
-                  onChange={handleCollectionUpload}
-                />
-                <button
-                  className="btn btn-secondary btn-sm"
-                  onClick={() => csvReplaceInputRef.current?.click()}
-                >
-                  Upload CSV
-                </button>
-                <button
-                  className={`btn btn-secondary btn-sm${bulkEditOpen ? " active" : ""}`}
-                  onClick={() => setBulkEditOpen(v => !v)}
-                >
-                  Bulk edit
-                </button>
-              </div>
+          <CollectionPage
+            decks={state.decks}
+            onCollectionChange={updated => dispatch({ type: "APPLY_COLLECTION", payload: updated })}
+          />
+        )}
+        {/* ── Orders tab ─────────────────────────────────────────────────── */}
+        {view === "orders" && (
+          <section className="orders-panel">
+            <div className="orders-header">
+              <h2>Orders</h2>
+              <button className="btn btn-primary btn-sm" onClick={() => { setShowCreateOrder(v => !v); setOrderCardSearch(""); }}>
+                {showCreateOrder ? "Close" : "+ New order"}
+              </button>
             </div>
 
-            {collectionMeta && (
-              <p className="collection-meta">
-                {collectionMeta.fileName} · {collectionMeta.cardCount.toLocaleString()} unique cards · imported {new Date(collectionMeta.importedAt).toLocaleDateString()}
-              </p>
-            )}
+            {/* ── Part B: Create order form ───────────────────────────────── */}
+            {showCreateOrder && (() => {
+              const pickedTotal = orderCards.reduce((s, oc) => s + oc.quantity, 0);
+              const pickedGroups = orderCards.reduce<Record<string, OrderCard[]>>((acc, oc) => {
+                const key = oc.deckId ?? "__freeform__";
+                (acc[key] ??= []).push(oc);
+                return acc;
+              }, {});
 
-            {collectionError && <p className="import-error">{collectionError}</p>}
+              return (
+                <div className="order-form">
+                  <h3 className="order-form-title">New order</h3>
 
-            {pendingCsvFile && (
-              <div className="collection-confirm-banner">
-                <span>Replace <strong>{collectionMeta?.cardCount.toLocaleString()} cards</strong> with <strong>{pendingCsvFile.name}</strong>?</span>
-                <div className="collection-confirm-actions">
-                  <button className="btn btn-primary btn-sm" onClick={() => { importCollectionFile(pendingCsvFile); setPendingCsvFile(null); }}>Replace</button>
-                  <button className="btn btn-ghost btn-sm" onClick={() => setPendingCsvFile(null)}>Cancel</button>
-                </div>
-              </div>
-            )}
+                  {/* ① Cards — primary, at the top (B-2) */}
+                  <div className="order-form-section">
+                    <div className="form-label-row">
+                      <span className="form-label">Cards <span className="form-label-req">required</span></span>
+                      <span className="form-help">Search your decks or type any card name.</span>
+                    </div>
 
-            {bulkEditOpen && (
-              <div className="collection-bulk-panel">
-                <p className="collection-bulk-hint">
-                  Paste cards in decklist format (<code>4 Lightning Bolt</code>). Listed cards have their quantities set; unlisted cards are unchanged unless Replace mode is selected.
-                </p>
-                <div className="collection-bulk-mode">
-                  <label>
-                    <input type="radio" name="bulk-mode" value="merge" checked={bulkEditMode === "merge"} onChange={() => setBulkEditMode("merge")} />
-                    {" "}Merge
-                  </label>
-                  <label>
-                    <input type="radio" name="bulk-mode" value="replace" checked={bulkEditMode === "replace"} onChange={() => setBulkEditMode("replace")} />
-                    {" "}Replace all
-                  </label>
-                </div>
-                <textarea
-                  className="import-textarea"
-                  value={bulkEditText}
-                  onChange={e => setBulkEditText(e.target.value)}
-                  placeholder={"4 Lightning Bolt\n2x Snapcaster Mage\n1 Black Lotus"}
-                  rows={6}
-                />
-                {bulkEditError && <p className="import-error">{bulkEditError}</p>}
-                <div className="collection-bulk-actions">
-                  <button className="btn btn-primary btn-sm" onClick={handleBulkEdit} disabled={!bulkEditText.trim()}>
-                    Apply
-                  </button>
-                  {collectionMeta && !clearConfirming && (
-                    <button className="btn btn-ghost btn-sm collection-clear-btn" onClick={() => setClearConfirming(true)}>
-                      Clear collection
-                    </button>
-                  )}
-                  {clearConfirming && (
-                    <>
-                      <span className="collection-clear-confirm-text">Remove all {collectionMeta?.cardCount.toLocaleString()} cards?</span>
-                      <button className="btn btn-ghost btn-sm collection-clear-btn" onClick={() => { handleClearCollection(); setBulkEditOpen(false); }}>Yes, clear</button>
-                      <button className="btn btn-ghost btn-sm" onClick={() => setClearConfirming(false)}>Cancel</button>
-                    </>
-                  )}
-                </div>
-              </div>
-            )}
+                    {/* Combobox */}
+                    <div className="card-combobox">
+                      <input
+                        className="deck-name-input combobox-input"
+                        placeholder="e.g. Lightning Bolt, or any card name…"
+                        value={orderCardSearch}
+                        onChange={e => setOrderCardSearch(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === "Enter" && orderCardSearch.trim() && orderCardResults.length === 0) {
+                            const name = orderCardSearch.trim();
+                            setOrderCards(prev => {
+                              const ex = prev.find(c => !c.deckId && c.cardName.toLowerCase() === name.toLowerCase());
+                              if (ex) return prev.map(c => c === ex ? { ...c, quantity: c.quantity + 1 } : c);
+                              return [...prev, { cardName: name, quantity: 1 }];
+                            });
+                            setOrderCardSearch("");
+                          }
+                        }}
+                      />
+                      <span className="combobox-mode">search</span>
+                    </div>
 
-            {!collectionMeta && !collectionError && (
-              <div className="collection-empty">
-                <p>No collection uploaded yet.</p>
-                <p className="collection-empty-hint">
-                  Export your collection from Moxfield (Account → Collection → Export) or any other supported app and upload the CSV above. Cards you own will be automatically tagged across all your decks.
-                </p>
-              </div>
-            )}
-
-            {collectionMeta && (
-              <>
-                <div className="collection-controls">
-                  <input
-                    className="deck-name-input collection-search"
-                    placeholder="Search cards…"
-                    value={collectionSearch}
-                    onChange={e => { setCollectionSearch(e.target.value); setCollectionPage(0); }}
-                  />
-                  <select
-                    className="collection-sort-select"
-                    value={collectionSort}
-                    onChange={e => { setCollectionSort(e.target.value as typeof collectionSort); setCollectionPage(0); }}
-                  >
-                    <option value="name-asc">Name A→Z</option>
-                    <option value="name-desc">Name Z→A</option>
-                    <option value="qty-desc">Quantity ↓</option>
-                    <option value="qty-asc">Quantity ↑</option>
-                  </select>
-                </div>
-
-                {alphaSort && (
-                  <div className="collection-alpha-strip">
-                    {"ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").map(letter => {
-                      const page = letterPageMap.get(letter);
-                      const isActive = letter === activeAlphaLetter;
-                      return (
-                        <button
-                          key={letter}
-                          className={`collection-alpha-btn${isActive ? " active" : ""}${page === undefined ? " empty" : ""}`}
-                          onClick={() => {
-                            if (page === undefined) return;
-                            const firstKey = letterFirstKeyMap.get(letter);
-                            setCollectionPage(page);
-                            if (firstKey) setScrollToCollectionKey(firstKey);
-                          }}
-                          disabled={page === undefined}
-                        >
-                          {letter}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-
-                <div className="collection-pagination">
-                  <button
-                    className="btn btn-secondary btn-sm"
-                    onClick={() => setCollectionPage(p => Math.max(0, p - 1))}
-                    disabled={collectionPageSafe === 0}
-                  >
-                    ← Prev
-                  </button>
-                  <span className="collection-page-info">
-                    Page {collectionPageSafe + 1} of {collectionPageCount}
-                    <span className="collection-page-total"> · {collectionFiltered.length.toLocaleString()} cards</span>
-                  </span>
-                  <button
-                    className="btn btn-secondary btn-sm"
-                    onClick={() => setCollectionPage(p => Math.min(collectionPageCount - 1, p + 1))}
-                    disabled={collectionPageSafe >= collectionPageCount - 1}
-                  >
-                    Next →
-                  </button>
-                </div>
-
-                {collectionFiltered.length === 0 && collectionSearch && (
-                  <p className="collection-empty-search">
-                    No cards found matching "<strong>{collectionSearch}</strong>"
-                  </p>
-                )}
-
-                <ul className="collection-list" ref={collectionListRef}>
-                  {collectionPageRows.map(({ name, printings, total }) => {
-                    const isExpanded = expandedCollectionKey === name;
-                    const committed = isExpanded ? getCommittedInfo(name) : null;
-                    return (
-                      <li key={name} data-collection-key={name} className={`collection-row${isExpanded ? " expanded" : ""}`}>
-                        <div className="collection-row-summary">
-                          <button
-                            className="collection-row-expand"
-                            onClick={() => setExpandedCollectionKey(isExpanded ? null : name)}
-                          >
-                            <span className="collection-card-name">{name}</span>
-                            <span className="collection-expand-chevron">{isExpanded ? "▴" : "▾"}</span>
+                    {orderCardSearch.trim().length >= 2 && (
+                      <ul className="combobox-results">
+                        {orderCardResults.map(r => (
+                          <li key={`${r.deckId}-${r.cardId}`} className="combobox-result">
+                            <button type="button" className="combobox-result-btn"
+                              onClick={() => handleAddOrderCard(r.deckId, r.deckName, r.cardId, r.cardName, 1)}>
+                              <span className="result-name">{r.cardName}</span>
+                              <span className="result-deck">{r.deckName} · {r.maxQty}× needed</span>
+                              <span className="result-qty-pill">+1</span>
+                            </button>
+                          </li>
+                        ))}
+                        <li className="combobox-result combobox-result-freeform">
+                          <button type="button" className="combobox-result-btn"
+                            onClick={() => {
+                              const name = orderCardSearch.trim();
+                              setOrderCards(prev => {
+                                const ex = prev.find(c => !c.deckId && c.cardName.toLowerCase() === name.toLowerCase());
+                                if (ex) return prev.map(c => c === ex ? { ...c, quantity: c.quantity + 1 } : c);
+                                return [...prev, { cardName: name, quantity: 1 }];
+                              });
+                              setOrderCardSearch("");
+                            }}>
+                            <span className="result-name">Add "<b>{orderCardSearch.trim()}</b>" as a freeform card</span>
+                            <span className="result-qty-pill">+1</span>
                           </button>
-                          <div className="collection-row-controls">
-                            <button className="collection-qty-btn" onClick={() => handleCollectionDecrement(name)} aria-label="Remove one">−</button>
-                            <span className="collection-card-qty">{total}×</span>
-                            <button className="collection-qty-btn" onClick={() => handleCollectionIncrement(name)} aria-label="Add one">+</button>
-                            <button className="collection-remove-btn" onClick={() => handleCollectionRemove(name)} aria-label="Remove card">×</button>
-                          </div>
-                        </div>
-                        {isExpanded && (
-                          <div className="collection-row-detail">
-                            <ul className="collection-printings">
-                              {printings.map((p, i) => {
-                                const isEditingThis = editingPrinting?.key === name && editingPrinting?.idx === i;
+                        </li>
+                      </ul>
+                    )}
+
+                    {/* Picked cards — grouped by deck */}
+                    {orderCards.length > 0 && (
+                      <div className="picked-list">
+                        {Object.entries(pickedGroups).map(([key, cards]) => {
+                          const isFreeform = key === "__freeform__";
+                          const deck = isFreeform ? null : state.decks.find(d => d.id === key);
+                          const groupName = isFreeform ? "Not in a deck" : (deck?.name ?? "Unknown deck");
+                          const groupCount = cards.reduce((s, c) => s + c.quantity, 0);
+                          return (
+                            <div key={key} className="picked-group">
+                              <div className="picked-group-head">
+                                <span className={`picked-group-dot${isFreeform ? " freeform" : ""}`} />
+                                <span className="picked-group-name">{groupName}</span>
+                                <span className="picked-group-count">{groupCount} card{groupCount !== 1 ? "s" : ""}</span>
+                              </div>
+                              {cards.map(oc => {
+                                const d = oc.deckId ? state.decks.find(x => x.id === oc.deckId) : undefined;
+                                const maxQty = oc.cardId ? (d?.cards.find(c => c.id === oc.cardId)?.quantity ?? oc.quantity) : 999;
                                 return (
-                                  <li key={i} className={`collection-printing${isEditingThis ? " editing" : ""}`}>
-                                    {isEditingThis ? (
-                                      <>
-                                        <input
-                                          type="number" min="0"
-                                          className="collection-printing-input collection-printing-qty-input"
-                                          value={editingPrinting.qty}
-                                          onChange={e => setEditingPrinting({ ...editingPrinting, qty: e.target.value })}
-                                          onKeyDown={e => { if (e.key === "Enter") commitPrintingEdit(); if (e.key === "Escape") setEditingPrinting(null); }}
-                                          autoFocus
-                                        />
-                                        <span>×</span>
-                                        <input
-                                          type="text"
-                                          className="collection-printing-input collection-printing-set-input"
-                                          value={editingPrinting.set}
-                                          placeholder="Set"
-                                          onChange={e => setEditingPrinting({ ...editingPrinting, set: e.target.value })}
-                                          onKeyDown={e => { if (e.key === "Enter") commitPrintingEdit(); if (e.key === "Escape") setEditingPrinting(null); }}
-                                        />
-                                        <input
-                                          type="text"
-                                          className="collection-printing-input collection-printing-cn-input"
-                                          value={editingPrinting.cn}
-                                          placeholder="#CN"
-                                          onChange={e => setEditingPrinting({ ...editingPrinting, cn: e.target.value })}
-                                          onKeyDown={e => { if (e.key === "Enter") commitPrintingEdit(); if (e.key === "Escape") setEditingPrinting(null); }}
-                                        />
-                                        <label className="collection-printing-foil-label">
-                                          <input type="checkbox" checked={editingPrinting.foil} onChange={e => setEditingPrinting({ ...editingPrinting, foil: e.target.checked })} />
-                                          Foil
-                                        </label>
-                                        <button className="collection-printing-save" onClick={commitPrintingEdit} aria-label="Save">✓</button>
-                                        <button className="collection-printing-cancel" onClick={() => setEditingPrinting(null)} aria-label="Cancel">✕</button>
-                                      </>
-                                    ) : (
-                                      <button
-                                        className="collection-printing-display"
-                                        onClick={() => setEditingPrinting({ key: name, idx: i, qty: String(p.quantity), set: p.set ?? "", cn: p.collectorNumber ?? "", foil: p.foil ?? false })}
-                                      >
-                                        <span className="collection-printing-qty">{p.quantity}×</span>
-                                        <span className="collection-printing-set">
-                                          {p.set ?? "Unknown set"}
-                                          {p.collectorNumber ? ` #${p.collectorNumber}` : ""}
-                                        </span>
-                                        {p.foil && <span className="collection-printing-foil">✦ Foil</span>}
-                                        <span className="collection-printing-edit-hint">Edit</span>
-                                      </button>
-                                    )}
-                                  </li>
+                                  <div key={`${oc.deckId ?? "free"}-${oc.cardName}`} className="picked-row">
+                                    <span className="picked-row-name">{oc.cardName}</span>
+                                    <div className="picked-row-stepper">
+                                      <button type="button" className="step-btn"
+                                        onClick={() => handleUpdateOrderCardQty(oc.cardName, oc.deckId, Math.max(1, oc.quantity - 1))}>−</button>
+                                      <span className="step-val">{oc.quantity}</span>
+                                      <button type="button" className="step-btn"
+                                        onClick={() => handleUpdateOrderCardQty(oc.cardName, oc.deckId, oc.quantity + 1)}
+                                        disabled={oc.quantity >= maxQty}>+</button>
+                                    </div>
+                                    <button type="button" className="picked-row-remove"
+                                      onClick={() => handleRemoveOrderCard(oc.cardName, oc.deckId)}>×</button>
+                                  </div>
                                 );
                               })}
-                            </ul>
-                            {committed && state.decks.length > 0 && (
-                              <p className="collection-committed">
-                                {committed.total > 0
-                                  ? `${committed.total} committed across ${committed.deckCount} deck${committed.deckCount !== 1 ? "s" : ""}`
-                                  : "Not in any deck"}
-                              </p>
-                            )}
-                          </div>
-                        )}
-                      </li>
-                    );
-                  })}
-                </ul>
-
-                {collectionPageCount > 1 && (
-                  <div className="collection-pagination collection-pagination-bottom">
-                    <button
-                      className="btn btn-secondary btn-sm"
-                      onClick={() => setCollectionPage(p => Math.max(0, p - 1))}
-                      disabled={collectionPageSafe === 0}
-                    >
-                      ← Prev
-                    </button>
-                    <span className="collection-page-info">
-                      Page {collectionPageSafe + 1} of {collectionPageCount}
-                    </span>
-                    <button
-                      className="btn btn-secondary btn-sm"
-                      onClick={() => setCollectionPage(p => Math.min(collectionPageCount - 1, p + 1))}
-                      disabled={collectionPageSafe >= collectionPageCount - 1}
-                    >
-                      Next →
-                    </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
-                )}
-              </>
-            )}
+
+                  {/* ② Vendor — required (B-1) */}
+                  <div className="order-form-section">
+                    <span className="form-label">Vendor <span className="form-label-req">required</span></span>
+                    <input
+                      className="deck-name-input"
+                      placeholder="Pick one or type your own"
+                      value={orderVendor}
+                      onChange={e => setOrderVendor(e.target.value)}
+                    />
+                    {recentVendors.length > 0 && (
+                      <div className="vendor-chips">
+                        {recentVendors.map(v => (
+                          <button key={v} type="button"
+                            className={`vendor-chip${orderVendor === v ? " active" : ""}`}
+                            onClick={() => setOrderVendor(v)}>{v}</button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* ③ Shipping & tracking — collapsible (B-1, B-3) */}
+                  {!showShipping ? (
+                    <button type="button" className="form-collapser" onClick={() => setShowShipping(true)}>
+                      <span><span className="collapser-add">+</span> Shipping &amp; tracking</span>
+                      <span className="form-collapser-hint">
+                        {orderCarrier && orderCarrier !== "other" ? CARRIER_NAMES[orderCarrier as Carrier] : ""}
+                        {orderExpected ? ` · arrives ${formatShortDate(new Date(orderExpected).getTime())}` : ""}
+                      </span>
+                    </button>
+                  ) : (
+                    <div className="order-form-section order-form-shipping">
+                      <div className="form-grid-2">
+                        <label className="form-field">
+                          <span className="form-label">Order date</span>
+                          <input className="deck-name-input" type="date" value={orderDate} onChange={e => setOrderDate(e.target.value)} />
+                        </label>
+                        <label className="form-field">
+                          <span className="form-label">Expected arrival</span>
+                          <input className="deck-name-input" type="date" value={orderExpected} onChange={e => setOrderExpected(e.target.value)} />
+                        </label>
+                      </div>
+                      <label className="form-field">
+                        <span className="form-label">Tracking number</span>
+                        <input
+                          className="deck-name-input"
+                          placeholder="Optional"
+                          value={orderTracking}
+                          onChange={e => setOrderTracking(e.target.value)}
+                        />
+                      </label>
+                      {orderTracking.trim() && (
+                        <label className="form-field">
+                          <span className="form-label">Carrier</span>
+                          <select
+                            className="deck-name-input"
+                            value={orderCarrier || "other"}
+                            onChange={e => { setOrderCarrier(e.target.value as Carrier); setCarrierManuallySet(true); }}
+                          >
+                            {(Object.keys(CARRIER_NAMES) as Carrier[]).map(c => (
+                              <option key={c} value={c}>{CARRIER_NAMES[c]}</option>
+                            ))}
+                          </select>
+                        </label>
+                      )}
+                    </div>
+                  )}
+
+                  {/* ④ Notes — collapsible (B-1) */}
+                  {!showNotes ? (
+                    <button type="button" className="form-collapser" onClick={() => setShowNotes(true)}>
+                      <span><span className="collapser-add">+</span> Notes</span>
+                    </button>
+                  ) : (
+                    <label className="form-field">
+                      <span className="form-label">Notes</span>
+                      <textarea
+                        className="deck-name-input order-notes-textarea"
+                        style={{ fontFamily: "inherit" }}
+                        placeholder="Optional notes"
+                        value={orderNotes}
+                        onChange={e => setOrderNotes(e.target.value)}
+                        rows={2}
+                        autoFocus
+                      />
+                    </label>
+                  )}
+
+                  {/* ⑤ Submit (B-4) */}
+                  <div className="order-form-actions">
+                    <button
+                      className="btn btn-primary"
+                      onClick={handleCreateOrder}
+                      disabled={!orderVendor.trim() || orderCards.length === 0}
+                    >
+                      Create order{pickedTotal > 0 ? ` · ${pickedTotal} card${pickedTotal !== 1 ? "s" : ""}` : ""}
+                    </button>
+                    <button className="btn btn-ghost btn-sm" onClick={() => setShowCreateOrder(false)}>Discard</button>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* ── Part A: Order list ──────────────────────────────────────── */}
+            {(() => {
+              const now = Date.now();
+              const annotatedOrders = orders.map(o => ({
+                ...o,
+                isLate: o.status === "active" && o.expectedArrival != null && o.expectedArrival < now,
+              }));
+              const orderCounts = {
+                active:    annotatedOrders.filter(o => o.status === "active").length,
+                received:  annotatedOrders.filter(o => o.status === "received").length,
+                cancelled: annotatedOrders.filter(o => o.status === "cancelled").length,
+                all:       annotatedOrders.length,
+              };
+              const filtered = orderFilter === "all"
+                ? annotatedOrders
+                : annotatedOrders.filter(o => o.status === orderFilter);
+              const sortedOrders = orderFilter === "active"
+                ? [...filtered].sort((a, b) => {
+                    if (a.isLate !== b.isLate) return a.isLate ? -1 : 1;
+                    return (a.expectedArrival ?? Infinity) - (b.expectedArrival ?? Infinity);
+                  })
+                : filtered;
+
+              if (orders.length === 0 && !showCreateOrder) {
+                return (
+                  <div className="orders-empty">
+                    <p>No orders yet.</p>
+                    <p className="orders-empty-hint">
+                      Create an order to track cards you've bought — mark it received when they arrive to automatically tag them as Owned and update your collection.
+                    </p>
+                  </div>
+                );
+              }
+              if (orders.length === 0) return null;
+
+              return (
+                <>
+                  {/* A-1: Filter tabs */}
+                  <div className="order-filter-tabs">
+                    {(["active", "received", "cancelled", "all"] as const).map(f => (
+                      <button key={f}
+                        className={`order-filter-tab${orderFilter === f ? " active" : ""}`}
+                        onClick={() => setOrderFilter(f)}>
+                        {f.charAt(0).toUpperCase() + f.slice(1)}
+                        {f !== "all" && <span className="count">{orderCounts[f]}</span>}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* A-1: Per-filter empty states */}
+                  {sortedOrders.length === 0 ? (
+                    <div className="orders-empty">
+                      {orderFilter === "active"    && <p>No active orders.</p>}
+                      {orderFilter === "received"  && <p>No received orders yet.</p>}
+                      {orderFilter === "cancelled" && <p>No cancelled orders.</p>}
+                    </div>
+                  ) : (
+                    <ul className="order-list">
+                      {sortedOrders.map(order => {
+                        const isExpanded = expandedOrderId === order.id;
+                        const isConfirmingDelete = deleteConfirmOrderId === order.id;
+                        const effectiveStatus = order.isLate ? "late" : order.status;
+                        const cardsByDeck = order.cards.reduce<Record<string, { deckName: string; cards: OrderCard[] }>>((acc, oc) => {
+                          const groupKey = oc.deckId ?? "__freeform__";
+                          const deck = oc.deckId ? state.decks.find(d => d.id === oc.deckId) : undefined;
+                          const deckName = oc.deckId ? (deck?.name ?? "Deleted deck") : "No deck";
+                          if (!acc[groupKey]) acc[groupKey] = { deckName, cards: [] };
+                          acc[groupKey].cards.push(oc);
+                          return acc;
+                        }, {});
+
+                        return (
+                          <li key={order.id} className={`order-row order-row-${effectiveStatus}`}>
+                            {/* A-2: CSS-grid stripe */}
+                            <span className="order-row-stripe" />
+
+                            <div className="order-row-body">
+                              {/* ── Active / Late layout ── */}
+                              {(order.status === "active") && (<>
+                                <div className="order-row-top">
+                                  <span className="order-row-vendor">{order.vendor}</span>
+                                  <span className="order-row-cards">{totalCardQuantity(order)} card{totalCardQuantity(order) !== 1 ? "s" : ""}</span>
+                                  <span className={`order-status-badge order-status-${effectiveStatus}`}>
+                                    {order.isLate ? "Late" : "Active"}
+                                  </span>
+                                </div>
+
+                                {order.expectedArrival && (
+                                  <div className="order-row-eta">
+                                    <span className={`order-row-eta-main${order.isLate ? " late" : isUrgent(order.expectedArrival) ? " urgent" : ""}`}>
+                                      {order.isLate
+                                        ? `⚠ ${daysOverdue(order.expectedArrival)} day${daysOverdue(order.expectedArrival) !== 1 ? "s" : ""} overdue`
+                                        : formatEtaMain(order.expectedArrival)}
+                                    </span>
+                                    <span className="order-row-eta-sub">
+                                      {order.orderDate && `Ordered ${formatShortDate(order.orderDate)} · `}
+                                      Expected {formatShortDate(order.expectedArrival)}
+                                    </span>
+                                  </div>
+                                )}
+
+                                {order.trackingNumber && (
+                                  <div className="order-row-meta">
+                                    <a className="order-tracking-link"
+                                      href={getTrackingUrl(order.trackingNumber, order.carrier ?? "other")}
+                                      target="_blank" rel="noopener noreferrer">
+                                      <span className="carrier-tag">{CARRIER_NAMES[order.carrier ?? "other"]}</span>
+                                      <span className="tn-tail">···{order.trackingNumber.slice(-4)}</span>
+                                      <span>↗</span>
+                                    </a>
+                                  </div>
+                                )}
+
+                                {/* A-2/A-3: Primary actions + Details toggle */}
+                                <div className="order-row-actions">
+                                  <button className="btn btn-primary btn-sm"
+                                    onClick={() => handleMarkReceived(order.id)}>✓ Mark received</button>
+                                  <button className="btn btn-quiet btn-sm"
+                                    onClick={() => handleMarkCancelled(order.id)}>Cancel order</button>
+                                  <button className="btn btn-quiet btn-sm"
+                                    onClick={() => setExpandedOrderId(isExpanded ? null : order.id)}>
+                                    Details {isExpanded ? "▴" : "▾"}
+                                  </button>
+                                </div>
+                              </>)}
+
+                              {/* ── Received layout ── */}
+                              {order.status === "received" && (<>
+                                <div className="order-row-top">
+                                  <span className="order-row-vendor muted">
+                                    {order.vendor} · {formatShortDate(order.createdAt)}
+                                  </span>
+                                  <span className="order-status-badge order-status-received">Received</span>
+                                  <button className="btn btn-quiet btn-sm"
+                                    onClick={() => setExpandedOrderId(isExpanded ? null : order.id)}>
+                                    {isExpanded ? "▴" : "▾"}
+                                  </button>
+                                </div>
+                                <div className="order-row-received-summary">
+                                  ✓ {totalCardQuantity(order)} card{totalCardQuantity(order) !== 1 ? "s" : ""} merged into collection
+                                  {affectedDeckCount(order) > 0 && ` · ${affectedDeckCount(order)} deck${affectedDeckCount(order) !== 1 ? "s" : ""} updated`}
+                                </div>
+                              </>)}
+
+                              {/* ── Cancelled layout ── */}
+                              {order.status === "cancelled" && (<>
+                                <div className="order-row-top">
+                                  <span className="order-row-vendor muted">
+                                    {order.vendor} · {formatShortDate(order.createdAt)}
+                                  </span>
+                                  <span className="order-status-badge order-status-cancelled">Cancelled</span>
+                                  <button className="btn btn-quiet btn-sm"
+                                    onClick={() => setExpandedOrderId(isExpanded ? null : order.id)}>
+                                    {isExpanded ? "▴" : "▾"}
+                                  </button>
+                                </div>
+                                <div className="order-row-impact">
+                                  ↺ {totalCardQuantity(order)} card{totalCardQuantity(order) !== 1 ? "s" : ""} untagged
+                                  {affectedDeckCount(order) > 0 && ` across ${affectedDeckCount(order)} deck${affectedDeckCount(order) !== 1 ? "s" : ""}`}
+                                </div>
+                              </>)}
+                            </div>
+
+                            {/* A-3: Details panel (notes + per-deck breakdown + delete) */}
+                            {isExpanded && (
+                              <div className="order-row-detail">
+                                {order.notes && <p className="order-notes">{order.notes}</p>}
+                                <div className="order-cards-by-deck">
+                                  {Object.values(cardsByDeck).map(({ deckName, cards }) => (
+                                    <div key={deckName} className="order-deck-group">
+                                      <div className="order-deck-group-name">{deckName}</div>
+                                      <ul className="order-deck-card-list">
+                                        {cards.map(oc => (
+                                          <li key={`${oc.cardId ?? oc.cardName}`} className="order-deck-card-item">
+                                            {oc.quantity}× {oc.cardName}
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  ))}
+                                </div>
+                                <div className="order-row-detail-actions">
+                                  {isConfirmingDelete ? (
+                                    <>
+                                      <span className="order-delete-confirm-text">Delete this order anyway?</span>
+                                      <button className="btn btn-ghost btn-sm order-delete-confirm-btn"
+                                        onClick={() => handleDeleteOrder(order.id)}>Yes, delete</button>
+                                      <button className="btn btn-ghost btn-sm"
+                                        onClick={() => setDeleteConfirmOrderId(null)}>Keep</button>
+                                    </>
+                                  ) : (
+                                    <button className="btn btn-ghost btn-sm order-delete-btn"
+                                      onClick={() => setDeleteConfirmOrderId(order.id)}>Delete</button>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </>
+              );
+            })()}
           </section>
         )}
+
       </main>
     </div>
   );

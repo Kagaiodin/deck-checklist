@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseCollectionCSV, applyCollectionToCards } from "../csvParser";
+import { parseCollectionCSV, applyCollectionToCards, mergeOrderCardsIntoCollection } from "../csvParser";
 
 // ── parseCollectionCSV ────────────────────────────────────────────────────────
 
@@ -173,3 +173,68 @@ describe("applyCollectionToCards", () => {
     expect(cards[0].source).toBeUndefined(); // original unchanged
   });
 });
+
+// ── mergeOrderCardsIntoCollection ─────────────────────────────────────────────
+
+describe("mergeOrderCardsIntoCollection", () => {
+  it("adds a new generic entry when the card is not in the collection", () => {
+    const result = mergeOrderCardsIntoCollection(
+      [{ deckId: "d1", cardId: "c1", cardName: "Lightning Bolt", quantity: 4 }],
+      {}
+    );
+    expect(result["lightning bolt"]).toEqual([{ quantity: 4 }]);
+  });
+
+  it("increments an existing generic printing entry (no set/CN/foil)", () => {
+    const collection = { "lightning bolt": [{ quantity: 2 }] };
+    const result = mergeOrderCardsIntoCollection(
+      [{ deckId: "d1", cardId: "c1", cardName: "Lightning Bolt", quantity: 3 }],
+      collection
+    );
+    expect(result["lightning bolt"]).toHaveLength(1);
+    expect(result["lightning bolt"][0].quantity).toBe(5);
+  });
+
+  it("adds a generic entry alongside existing set-specific printings", () => {
+    const collection = { "sol ring": [{ quantity: 1, set: "CMR", collectorNumber: "419" }] };
+    const result = mergeOrderCardsIntoCollection(
+      [{ deckId: "d1", cardId: "c1", cardName: "Sol Ring", quantity: 1 }],
+      collection
+    );
+    // original set printing preserved, new generic entry added
+    expect(result["sol ring"]).toHaveLength(2);
+    const generic = result["sol ring"].find(p => !p.set);
+    expect(generic?.quantity).toBe(1);
+  });
+
+  it("handles multiple order cards at once", () => {
+    const result = mergeOrderCardsIntoCollection(
+      [
+        { deckId: "d1", cardId: "c1", cardName: "Lightning Bolt", quantity: 4 },
+        { deckId: "d1", cardId: "c2", cardName: "Counterspell", quantity: 2 },
+      ],
+      {}
+    );
+    expect(result["lightning bolt"][0].quantity).toBe(4);
+    expect(result["counterspell"][0].quantity).toBe(2);
+  });
+
+  it("works for freeform cards with no deckId or cardId", () => {
+    // Freeform order cards (not tied to any deck) have no deckId/cardId
+    const result = mergeOrderCardsIntoCollection(
+      [{ cardName: "Black Lotus", quantity: 1 }],
+      {}
+    );
+    expect(result["black lotus"]).toEqual([{ quantity: 1 }]);
+  });
+
+  it("does not mutate the original collection", () => {
+    const collection = { "lightning bolt": [{ quantity: 2 }] };
+    mergeOrderCardsIntoCollection(
+      [{ deckId: "d1", cardId: "c1", cardName: "Lightning Bolt", quantity: 3 }],
+      collection
+    );
+    expect(collection["lightning bolt"][0].quantity).toBe(2); // original unchanged
+  });
+});
+
