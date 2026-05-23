@@ -11,6 +11,7 @@ type DeckAction =
   | { type: "ADD_DECK"; payload: Deck }
   | { type: "DELETE_DECK"; payload: string }
   | { type: "RENAME_DECK"; payload: { id: string; name: string } }
+  | { type: "SET_DECK_FORMAT"; payload: { id: string; format: string | undefined } }
   | { type: "SET_CARDS"; payload: { deckId: string; cards: Deck["cards"] } }
   | { type: "TOGGLE_ACQUIRED"; payload: { deckId: string; cardId: string } }
   | { type: "SET_CARD_SOURCE"; payload: { deckId: string; cardId: string; source: import("../types/index").AcquisitionSource | undefined } }
@@ -35,6 +36,13 @@ export function deckReducer(state: DeckState, action: DeckAction): DeckState {
         ...state,
         decks: state.decks.map(d =>
           d.id === action.payload.id ? { ...d, name: action.payload.name } : d
+        )
+      };
+    case "SET_DECK_FORMAT":
+      return {
+        ...state,
+        decks: state.decks.map(d =>
+          d.id === action.payload.id ? { ...d, format: action.payload.format } : d
         )
       };
     case "SET_CARDS":

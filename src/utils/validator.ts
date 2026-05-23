@@ -53,11 +53,35 @@ async function fetchBatch(
   return res.json() as Promise<ScryfallCollectionResponse>;
 }
 
+/**
+ * Picks the color array to store on a Card.
+ * - Dual-face cards: use the front face's colors (falls back to color_identity).
+ * - Land cards: use color_identity so that e.g. Godless Shrine → ["W","B"].
+ * - Everything else: use the card's own colors (falls back to color_identity).
+ *
+ * Exported for unit testing.
+ */
+export function pickCardColors(
+  typeLine: string,
+  colors: string[] | undefined,
+  colorIdentity: string[],
+  dual: boolean,
+  frontFaceColors: string[] | undefined
+): string[] {
+  if (dual) return frontFaceColors ?? colorIdentity;
+  if (typeLine.includes("Land")) return colorIdentity;
+  return colors ?? colorIdentity;
+}
+
 function scryfallCardToCard(sc: ScryfallCard, quantity: number): Card {
   const dual = isDualFace(sc.card_faces);
-  const colors = dual
-    ? (sc.card_faces![0].colors ?? sc.color_identity)
-    : (sc.colors ?? sc.color_identity);
+  const colors = pickCardColors(
+    sc.type_line,
+    sc.colors,
+    sc.color_identity,
+    dual,
+    dual ? sc.card_faces![0].colors : undefined
+  );
   const typeLineSrc = dual ? (sc.card_faces![0].type_line ?? sc.type_line) : sc.type_line;
   const type = typeLineSrc.split("—")[0].trim();
 

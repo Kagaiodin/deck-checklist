@@ -62,6 +62,7 @@ export interface Deck {
   id: string;
   name: string;
   url?: string;
+  format?: string;
   cards: Card[];
   createdAt: number;
   notifications?: DeckNotification[];
