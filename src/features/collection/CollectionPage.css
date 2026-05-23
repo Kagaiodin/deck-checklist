@@ -22,6 +22,9 @@
   border: 1px solid var(--border);
   border-radius: var(--radius);
   animation: qa-enter 180ms ease-out both;
+  /* Lift above the controls/search row that follows in the DOM */
+  position: relative;
+  z-index: 10;
 }
 
 @keyframes qa-enter {
