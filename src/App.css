@@ -1007,6 +1007,50 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 .empty-state { color: var(--text-muted); font-size: 13px; padding: 16px 0; }
 .empty-state.centered { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 48px 0; }
 
+/* ─── New-deck source tagging coachmark ─────────────────────────────────── */
+.deck-coachmark {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  background: rgba(108, 92, 231, 0.08);
+  border: 1px solid rgba(108, 92, 231, 0.22);
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+.deck-coachmark-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+.deck-coachmark-text {
+  flex: 1;
+  min-width: 0;
+}
+.deck-coachmark-text strong {
+  color: var(--text);
+  font-weight: 600;
+}
+.deck-coachmark-dismiss {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  line-height: 1;
+  opacity: 0.6;
+  transition: opacity 0.15s;
+  font-family: inherit;
+}
+.deck-coachmark-dismiss:hover {
+  opacity: 1;
+}
+
 /* ─── Large screen (1024px+) ────────────────────────────────────────────────── */
 @media (min-width: 1024px) {
   /* Header */

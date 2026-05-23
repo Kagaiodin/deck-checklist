@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import type { Card, Deck, AcquisitionSource } from "../types/index";
+import { useLocalStorage } from "../hooks/useLocalStorage";
 import { ACQUISITION_SOURCES } from "../types/index";
 
 const SEGMENT_SOURCES: Array<{ key: AcquisitionSource | "untagged"; color: string; label: string }> = [
@@ -294,6 +295,17 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
   const [groupPickerOpen, setGroupPickerOpen] = useState(false);
   const groupPickerRef = useRef<HTMLDivElement>(null);
 
+  // Coachmark dismissal — persisted per deck ID
+  const [dismissedDeckIds, setDismissedDeckIds] = useLocalStorage<string[]>(
+    "fetchlist-coachmark-dismissed-decks",
+    []
+  );
+  function dismissCoachmark() {
+    setDismissedDeckIds(prev =>
+      prev.includes(deck.id) ? prev : [...prev, deck.id]
+    );
+  }
+
   const query = search.trim();
 
   const visibleCards = deck.cards
@@ -327,6 +339,13 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
   const totalCards = deck.cards.reduce((sum, c) => sum + c.quantity, 0);
   const totalItems = deck.cards.length;
   const acquiredCards = deck.cards.filter(c => c.acquired).reduce((sum, c) => sum + c.quantity, 0);
+
+  const untaggedCount = deck.cards.filter(c => !c.source).length;
+  const showCoachmark =
+    deck.cards.length > 0 &&
+    acquiredCards === 0 &&
+    untaggedCount === deck.cards.length &&
+    !dismissedDeckIds.includes(deck.id);
 
   const visibleIds = visibleCards.map(c => c.id);
   const allSelected = visibleIds.length > 0 && visibleIds.every(id => selectedIds.has(id));
@@ -703,6 +722,24 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
           </div>
         )}
       </div>
+
+      {/* ── New-deck source tagging coachmark ── */}
+      {showCoachmark && (
+        <div className="deck-coachmark" role="status" aria-live="polite">
+          <span className="deck-coachmark-icon">🏷</span>
+          <span className="deck-coachmark-text">
+            Tap a card's row to tag it — <strong>Owned</strong>, <strong>Ordered</strong>,{" "}
+            <strong>Proxy</strong>, or <strong>Need to buy</strong>.
+          </span>
+          <button
+            className="deck-coachmark-dismiss"
+            aria-label="Dismiss tip"
+            onClick={dismissCoachmark}
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {groups.map(([groupName, cards]) => (
         <div key={groupName} className="card-group">
