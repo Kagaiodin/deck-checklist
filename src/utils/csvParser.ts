@@ -1,4 +1,4 @@
-import type { Collection } from "../types/index";
+import type { Collection, OrderCard } from "../types/index";
 import { getFrontFaceName } from "./dualface";
 
 // ── Column alias lists ────────────────────────────────────────────────────────
@@ -117,6 +117,28 @@ export function parseCollectionCSV(raw: string): Collection {
   }
 
   return collection;
+}
+
+// ── Merge order receipt into collection ──────────────────────────────────────
+// Called when an order is marked Received (Option A: quantity-only, no set/CN).
+// Finds a generic printing entry (no set/CN/foil) and increments it, or creates one.
+export function mergeOrderCardsIntoCollection(
+  orderCards: OrderCard[],
+  collection: Collection
+): Collection {
+  const updated: Collection = { ...collection };
+  for (const { cardName, quantity } of orderCards) {
+    const key = cardName.toLowerCase();
+    const existing = Array.isArray(updated[key]) ? [...updated[key]] : [];
+    const genericIdx = existing.findIndex(p => !p.set && !p.collectorNumber && !p.foil);
+    if (genericIdx >= 0) {
+      existing[genericIdx] = { ...existing[genericIdx], quantity: existing[genericIdx].quantity + quantity };
+    } else {
+      existing.push({ quantity });
+    }
+    updated[key] = existing;
+  }
+  return updated;
 }
 
 // ── Apply collection to a list of cards ──────────────────────────────────────

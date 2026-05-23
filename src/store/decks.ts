@@ -1,4 +1,4 @@
-import type { Deck, Collection } from "../types/index";
+import type { Deck, Collection, DeckNotification } from "../types/index";
 import { applyCollectionToCards } from "../utils/csvParser";
 import { useReducer, createContext, useContext, createElement } from "react";
 import type { Dispatch, ReactNode } from "react";
@@ -18,8 +18,12 @@ type DeckAction =
   | { type: "REMOVE_CARD"; payload: { deckId: string; cardId: string } }
   | { type: "UPDATE_CARD_QUANTITY"; payload: { deckId: string; cardId: string; quantity: number } }
   | { type: "ADD_CARD"; payload: { deckId: string; card: import("../types/index").Card } }
-  | { type: "APPLY_COLLECTION"; payload: Collection };
+  | { type: "APPLY_COLLECTION"; payload: Collection }
+  | { type: "UNSET_CARD_SOURCES"; payload: { deckId: string; cardIds: string[] } }
+  | { type: "ADD_NOTIFICATION"; payload: { deckId: string; notification: DeckNotification } }
+  | { type: "DISMISS_NOTIFICATION"; payload: { deckId: string; notificationId: string } };
 
+// Exported for unit testing
 export function deckReducer(state: DeckState, action: DeckAction): DeckState {
   switch (action.type) {
     case "ADD_DECK":
@@ -123,6 +127,41 @@ export function deckReducer(state: DeckState, action: DeckAction): DeckState {
         decks: state.decks.map(d =>
           d.id === action.payload.deckId
             ? { ...d, cards: [...d.cards, action.payload.card] }
+            : d
+        )
+      };
+    case "UNSET_CARD_SOURCES":
+      // Clears source AND manuallyTagged so collection can re-tag these cards
+      return {
+        ...state,
+        decks: state.decks.map(d =>
+          d.id === action.payload.deckId
+            ? {
+                ...d,
+                cards: d.cards.map(c =>
+                  action.payload.cardIds.includes(c.id)
+                    ? { ...c, source: undefined, manuallyTagged: false }
+                    : c
+                )
+              }
+            : d
+        )
+      };
+    case "ADD_NOTIFICATION":
+      return {
+        ...state,
+        decks: state.decks.map(d =>
+          d.id === action.payload.deckId
+            ? { ...d, notifications: [...(d.notifications ?? []), action.payload.notification] }
+            : d
+        )
+      };
+    case "DISMISS_NOTIFICATION":
+      return {
+        ...state,
+        decks: state.decks.map(d =>
+          d.id === action.payload.deckId
+            ? { ...d, notifications: (d.notifications ?? []).filter(n => n.id !== action.payload.notificationId) }
             : d
         )
       };

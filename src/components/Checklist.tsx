@@ -12,6 +12,8 @@ interface Props {
   onRemoveCard: (cardId: string) => void;
   onUpdateQuantity: (cardId: string, quantity: number) => void;
   onAddCard: (name: string) => Promise<{ success: boolean; error?: string }>;
+  /** When set, only cards whose IDs are in this array are shown (used by notification "Show cards"). */
+  filterCardIds?: string[];
 }
 
 type GroupBy = "none" | "color" | "type" | "source";
@@ -257,7 +259,7 @@ function AddCardRow({ onAdd }: { onAdd: (name: string) => Promise<{ success: boo
 }
 
 // ─── Main Checklist component ─────────────────────────────────────────────────
-export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetSource, onBulkSetSource, onRemoveCard, onUpdateQuantity, onAddCard }: Props) {
+export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetSource, onBulkSetSource, onRemoveCard, onUpdateQuantity, onAddCard, filterCardIds }: Props) {
   const [groupBy, setGroupBy] = useState<GroupBy>("none");
   const [showMissingOnly, setShowMissingOnly] = useState(false);
   const [search, setSearch] = useState("");
@@ -278,6 +280,7 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
   const query = search.trim();
 
   const visibleCards = deck.cards
+    .filter(c => !filterCardIds || filterCardIds.includes(c.id))
     .filter(c => !showMissingOnly || !c.acquired)
     .filter(c => !query || matchesSearch(c, query))
     .filter(c => {
