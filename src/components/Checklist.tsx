@@ -337,7 +337,6 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
   const groups = groupCards(visibleCards, groupBy);
 
   const totalCards = deck.cards.reduce((sum, c) => sum + c.quantity, 0);
-  const totalItems = deck.cards.length;
   const acquiredCards = deck.cards.filter(c => c.acquired).reduce((sum, c) => sum + c.quantity, 0);
 
   const untaggedCount = deck.cards.filter(c => !c.source).length;

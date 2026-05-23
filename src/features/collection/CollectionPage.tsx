@@ -206,20 +206,6 @@ export function CollectionPage({ decks, onCollectionChange }: CollectionPageProp
     mutateCollection(updated);
   }
 
-  function handleDecrement(key: string) {
-    const updated = { ...collection };
-    const printings = Array.isArray(updated[key]) ? [...updated[key]] : [];
-    const gi = printings.findIndex(p => !p.set && !p.collectorNumber && !p.foil);
-    const ti = gi >= 0 ? gi : printings.length - 1;
-    if (ti < 0) return;
-    const next =
-      printings[ti].quantity > 1
-        ? printings.map((p, i) => i === ti ? { ...p, quantity: p.quantity - 1 } : p)
-        : printings.filter((_, i) => i !== ti);
-    if (next.length === 0) { delete updated[key]; } else { updated[key] = next; }
-    mutateCollection(updated);
-  }
-
   function handleRemove(key: string) {
     const updated = { ...collection };
     delete updated[key];
@@ -329,7 +315,7 @@ export function CollectionPage({ decks, onCollectionChange }: CollectionPageProp
         inDecksCount={inDecksCount}
         hasDeckContext={decks.length > 0}
         onUploadClick={() => csvInputRef.current?.click()}
-        onBulkEditClick={() => setBulkEditOpen(v => !v)}
+        onBulkEditClick={() => setBulkEditOpen(!bulkEditOpen)}
         bulkEditOpen={bulkEditOpen}
       />
 

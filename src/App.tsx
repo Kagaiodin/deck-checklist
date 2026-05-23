@@ -8,7 +8,7 @@ import { useLocalStorage } from "./hooks/useLocalStorage";
 import { Checklist } from "./components/Checklist";
 import { ErrorQueue } from "./components/ErrorQueue";
 import { ProgressTracker } from "./components/ProgressTracker";
-import type { Deck, ErrorQueueItem, AcquisitionSource, Collection, Order, OrderCard, DeckNotification, Carrier } from "./types/index";
+import type { Deck, ErrorQueueItem, AcquisitionSource, Collection, CollectionMeta, Order, OrderCard, DeckNotification, Carrier } from "./types/index";
 import { applyCollectionToCards, mergeOrderCardsIntoCollection } from "./utils/csvParser";
 import { detectCarrier, getTrackingUrl, CARRIER_NAMES } from "./utils/carrier";
 import { getDeckColorIdentity, formatRelativeDate, getDeckDomain } from "./utils/deckUtils";
@@ -78,8 +78,9 @@ function AppInner() {
   const [formatDraft, setFormatDraft] = useState("");
 
   // ── Collection (read-only, for auto-tagging on deck import) ──────────────
-  // CollectionPage owns all writes; AppInner only reads to tag newly imported cards.
+  // CollectionPage owns all writes; AppInner only reads + writes when receiving orders.
   const [collection, setCollection] = useLocalStorage<Collection>("mtg-checklist-collection-v2", {});
+  const [, setCollectionMeta] = useLocalStorage<CollectionMeta | null>("mtg-checklist-collection-meta-v2", null);
 
   // ── Orders state ──────────────────────────────────────────────────────────
   const [orders, setOrders] = useLocalStorage<Order[]>("mtg-checklist-orders-v1", []);
@@ -123,17 +124,6 @@ function AppInner() {
       ).slice(0, 12)
     : [];
 
-  // Filtered + sorted order list (overdue first within active)
-  const filteredOrders = orders
-    .filter(o => orderFilter === "all" || o.status === orderFilter)
-    .sort((a, b) => {
-      if (orderFilter === "active") {
-        const aDate = a.expectedArrival ?? Infinity;
-        const bDate = b.expectedArrival ?? Infinity;
-        return aDate - bDate;
-      }
-      return b.createdAt - a.createdAt;
-    });
 
   const activeDeck = state.decks.find(d => d.id === activeDeckId) ?? null;
   const errors = activeDeckId ? (allErrors[activeDeckId] ?? []) : [];
