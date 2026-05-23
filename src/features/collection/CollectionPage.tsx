@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Virtuoso, type VirtuosoHandle } from "react-virtuoso";
 import "./CollectionPage.css";
-import type { Collection, CollectionMeta, CollectionPrinting, Deck } from "../../types/index";
+import type { Card, Collection, CollectionMeta, CollectionPrinting, Deck } from "../../types/index";
 import type { CollectionFilterKey, CommittedInfo, EditingPrinting } from "../../types/collection";
 import { useLocalStorage } from "../../hooks/useLocalStorage";
 import { parseCollectionCSV } from "../../utils/csvParser";
@@ -25,6 +25,7 @@ interface CRowData {
   expandedKey:     string | null;
   editingPrinting: EditingPrinting | null;
   hasDeckContext:  boolean;
+  rarityMap:       Record<string, Card["rarity"] | undefined>;
   toggleExpand:    (name: string) => void;
   onAddCopy:       (name: string) => void;
   onRemove:        (name: string) => void;
@@ -46,6 +47,7 @@ function CollectionRowItem(
       name={name}
       printings={printings}
       total={total}
+      rarity={data.rarityMap[name]}
       isExpanded={data.expandedKey === name}
       committed={data.getCommitted(name)}
       hasDeckContext={data.hasDeckContext}
@@ -94,6 +96,26 @@ export function CollectionPage({ decks, onCollectionChange }: CollectionPageProp
 
   // ── Derived / hook values ──────────────────────────────────────────────────
   const getCommittedInfo = useCommittedInfo(decks);
+
+  // Derive highest rarity per card name from loaded decks.
+  // CollectionPrinting has no rarity field — deck cards do (from Scryfall).
+  const RARITY_RANK: Record<string, number> = {
+    common: 0, uncommon: 1, rare: 2, mythic: 3, special: 4, bonus: 4,
+  };
+  const rarityMap = useMemo(() => {
+    const map: Record<string, Card["rarity"]> = {};
+    for (const deck of decks) {
+      for (const card of deck.cards) {
+        if (!card.rarity) continue;
+        const key = card.name.toLowerCase();
+        const current = map[key];
+        if (!current || RARITY_RANK[card.rarity] > RARITY_RANK[current]) {
+          map[key] = card.rarity;
+        }
+      }
+    }
+    return map;
+  }, [decks]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { totalCards, uniqueCards, foilTotal, inDecksCount } =
     useCollectionStats(collection, getCommittedInfo);
@@ -276,6 +298,7 @@ export function CollectionPage({ decks, onCollectionChange }: CollectionPageProp
     expandedKey:     expandedKey,
     editingPrinting: editingPrinting,
     hasDeckContext:  decks.length > 0,
+    rarityMap,
     toggleExpand:    cbToggleExpand,
     onAddCopy:       cbAddCopy,
     onRemove:        cbRemove,
