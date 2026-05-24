@@ -1,0 +1,176 @@
+/*
+ * ProfileExportImport.css
+ * Styles for the profile export/import feature:
+ *   - .sidebar-footer       (the Export / Import button row)
+ *   - .profile-import-panel (inline import panel below the footer)
+ *   - .toast-container      (toast notification system — shared by all future features)
+ * Imported by ProfileExportImport.tsx.
+ */
+
+/* ── Wrapper — escapes the sidebar's 16px padding on 3 sides ────────────── */
+.profile-export-import {
+  margin: 0 -16px -16px;
+  flex-shrink: 0;
+}
+/* Panel-only variant (mobile sheet): no negative margins, no footer row */
+.profile-export-import-panel-only {
+  flex-shrink: 0;
+}
+
+/* ── Sidebar footer ─────────────────────────────────────────────────────── */
+.sidebar-footer {
+  border-top: 1px solid var(--border);
+  padding: 8px 16px;
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.sidebar-footer .btn {
+  flex: 1;
+  justify-content: center;
+  font-size: 12px;
+}
+.sidebar-footer .btn-ghost.active {
+  background: rgba(255, 255, 255, .06);
+  color: var(--text);
+}
+
+/* ── Import panel ────────────────────────────────────────────────────────── */
+.profile-import-panel {
+  border-top: 1px solid var(--border);
+  padding: 12px 16px;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.profile-import-panel-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--text-muted);
+}
+.profile-import-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+.profile-import-hint code {
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+}
+
+/* Replace toggle row */
+.profile-replace-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  transition: background .15s, border-color .15s;
+}
+.profile-replace-row.is-destructive {
+  background: rgba(224, 83, 83, .06);
+  border-color: rgba(224, 83, 83, .4);
+}
+.profile-replace-row input[type="checkbox"] {
+  accent-color: var(--accent);
+  margin-top: 2px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.profile-replace-label {
+  font-size: 12px;
+  color: var(--text);
+  line-height: 1.4;
+  cursor: pointer;
+}
+.profile-replace-label small {
+  display: block;
+  color: var(--text-muted);
+  margin-top: 2px;
+  font-size: 11px;
+}
+.is-destructive .profile-replace-label small {
+  color: var(--danger);
+}
+
+/* Inline error (reuse existing .import-error colour but different layout) */
+.import-error-inline {
+  font-size: 12px;
+  color: var(--danger);
+  background: rgba(224, 83, 83, .07);
+  border: 1px solid rgba(224, 83, 83, .22);
+  border-radius: 6px;
+  padding: 8px 10px;
+  line-height: 1.5;
+}
+
+.profile-import-actions {
+  display: flex;
+  gap: 6px;
+}
+
+/* ── Toast system (generic — reuse for future features) ─────────────────── */
+.toast-container {
+  position: fixed;
+  top: calc(56px + 12px);
+  right: 16px;
+  z-index: 500;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+.toast {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .45);
+  padding: 11px 14px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 240px;
+  max-width: 340px;
+  border-left: 3px solid var(--success);
+  pointer-events: all;
+}
+.toast--warn    { border-left-color: #facc15; }
+.toast--neutral { border-left-color: var(--border); }
+.toast-body     { flex: 1; }
+.toast-title    { font-size: 13px; font-weight: 600; color: var(--text); }
+.toast-sub      { font-size: 12px; color: var(--text-muted); margin-top: 2px; line-height: 1.4; }
+.toast-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 16px;
+  line-height: 1;
+  padding: 0;
+  flex-shrink: 0;
+  transition: color .12s;
+}
+.toast-close:hover { color: var(--text); }
+
+/* Mobile: full-width strip below the header */
+@media (max-width: 639px) {
+  .toast-container {
+    top: 56px;
+    right: 0;
+    left: 0;
+  }
+  .toast {
+    max-width: 100%;
+    border-radius: 0;
+    border-left-width: 0;
+    border-top: 3px solid var(--success);
+  }
+  .toast--warn    { border-top-color: #facc15; }
+  .toast--neutral { border-top-color: var(--border); }
+}
