@@ -1,0 +1,244 @@
+/* ── Backdrop ────────────────────────────────────────────────────────────────── */
+.onboarding-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, .72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 300;
+  padding: 16px;
+}
+
+/* ── Modal ───────────────────────────────────────────────────────────────────── */
+.onboarding-modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .45);
+  width: 100%;
+  max-width: 480px;
+  padding: 28px 28px 24px;
+  position: relative;
+  animation: onboarding-enter .22s ease-out;
+}
+
+@keyframes onboarding-enter {
+  from { opacity: 0; transform: translateY(6px) scale(.98); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ── Close button ─────────────────────────────────────────────────────────────── */
+.onboarding-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .12s, color .12s;
+}
+.onboarding-close:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+/* ── Product icon ─────────────────────────────────────────────────────────────── */
+.onboarding-product-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius);
+  background: rgba(108, 92, 231, .14);
+  border: 1px solid rgba(108, 92, 231, .28);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-light);
+  margin-bottom: 16px;
+}
+
+/* ── Text ────────────────────────────────────────────────────────────────────── */
+.onboarding-headline {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.25;
+  margin-bottom: 8px;
+}
+
+.onboarding-body {
+  font-size: 14px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+
+/* ── Feature list ─────────────────────────────────────────────────────────────── */
+.onboarding-features {
+  background: var(--surface-2);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 22px;
+}
+
+.onboarding-feature {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.onboarding-feat-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.onboarding-feat-icon--green {
+  background: rgba(74, 222, 128, .14);
+  color: var(--good);
+}
+.onboarding-feat-icon--blue {
+  background: rgba(96, 165, 250, .14);
+  color: #60a5fa;
+}
+
+.onboarding-feat-text strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 1px;
+}
+.onboarding-feat-text span {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+/* ── CTA stack ───────────────────────────────────────────────────────────────── */
+.onboarding-cta {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.onboarding-btn-import {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 40px;
+  border-radius: var(--radius);
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s;
+}
+.onboarding-btn-import:hover {
+  background: var(--accent-hover);
+}
+
+.onboarding-btn-skip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 34px;
+  background: transparent;
+  border: none;
+  font-size: 13px;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: var(--radius);
+  transition: color .12s;
+}
+.onboarding-btn-skip:hover {
+  color: var(--text);
+}
+
+/* ── Mobile — bottom sheet ────────────────────────────────────────────────────── */
+@media (max-width: 639px) {
+  .onboarding-backdrop {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .onboarding-modal {
+    max-width: 100%;
+    border-radius: 16px 16px 0 0;
+    padding: 12px 18px calc(28px + env(safe-area-inset-bottom));
+    animation: onboarding-enter-sheet .22s ease-out;
+  }
+
+  @keyframes onboarding-enter-sheet {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  /* Drag handle */
+  .onboarding-modal::before {
+    content: "";
+    display: block;
+    width: 32px;
+    height: 3px;
+    background: var(--border);
+    border-radius: 99px;
+    margin: 0 auto 14px;
+  }
+
+  /* Close button becomes a circle on mobile */
+  .onboarding-close {
+    top: 10px;
+    right: 12px;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--surface-2);
+  }
+
+  /* Tighter headline on mobile */
+  .onboarding-headline {
+    font-size: 16px;
+    padding-right: 32px; /* clear the close btn */
+  }
+
+  /* Icon + headline side-by-side on mobile */
+  .onboarding-product-icon {
+    width: 34px;
+    height: 34px;
+    margin-bottom: 10px;
+  }
+
+  /* Stack buttons side-by-side on wider phones */
+  .onboarding-cta {
+    flex-direction: row;
+    gap: 6px;
+  }
+  .onboarding-btn-import {
+    flex: 1;
+    font-size: 13px;
+  }
+  .onboarding-btn-skip {
+    flex: 1;
+    height: 40px;
+    border: 1px solid var(--border);
+    font-size: 12px;
+  }
+}
