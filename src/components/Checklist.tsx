@@ -27,6 +27,15 @@ interface Props {
   onAddCard: (name: string) => Promise<{ success: boolean; error?: string }>;
   /** When set, only cards whose IDs are in this array are shown (used by notification "Show cards"). */
   filterCardIds?: string[];
+  // ── Buy CTA (inline filter pill + Shop dropdown) ─────────────────────────
+  /** Total card quantity flagged need_to_buy. 0 = hide the pill. */
+  toBuyTotal?: number;
+  /** Called when user picks a vendor from the Shop dropdown. */
+  onSendToVendor?: (vendorIndex: number) => void;
+  /** Vendor list passed through from App for the dropdown. */
+  vendors?: Array<{ label: string; prefill: boolean }>;
+  /** Label of the last-used vendor (shows checkmark). */
+  sentVendor?: string | null;
 }
 
 type GroupBy = "none" | "color" | "type" | "source";
@@ -272,7 +281,7 @@ function AddCardRow({ onAdd }: { onAdd: (name: string) => Promise<{ success: boo
 }
 
 // ─── Main Checklist component ─────────────────────────────────────────────────
-export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetSource, onBulkSetSource, onRemoveCard, onUpdateQuantity, onAddCard, filterCardIds }: Props) {
+export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetSource, onBulkSetSource, onRemoveCard, onUpdateQuantity, onAddCard, filterCardIds, toBuyTotal, onSendToVendor, vendors, sentVendor }: Props) {
   const [groupBy, setGroupBy] = useState<GroupBy>("none");
   const [showMissingOnly, setShowMissingOnly] = useState(false);
   const [search, setSearch] = useState("");
@@ -294,6 +303,20 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
   const displayMenuRef = useRef<HTMLDivElement>(null);
   const [groupPickerOpen, setGroupPickerOpen] = useState(false);
   const groupPickerRef = useRef<HTMLDivElement>(null);
+
+  // ── Shop dropdown (buy pill) ─────────────────────────────────────────────
+  const [shopOpen, setShopOpen] = useState(false);
+  const shopMenuRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!shopOpen) return;
+    function handler(e: MouseEvent) {
+      if (shopMenuRef.current && !shopMenuRef.current.contains(e.target as Node)) {
+        setShopOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [shopOpen]);
 
   // Coachmark dismissal — persisted per deck ID
   const [dismissedDeckIds, setDismissedDeckIds] = useLocalStorage<string[]>(
@@ -560,6 +583,46 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
             <span className={`pill-checkbox${showMissingOnly ? " checked" : ""}`} />
             Missing only
           </button>
+
+          {/* N to buy pill — only when there are cards flagged need_to_buy */}
+          {(toBuyTotal ?? 0) > 0 && (
+            <button
+              className={`filter-pill buy-pill${filterSource === "need_to_buy" ? " active" : ""}`}
+              onClick={() => setFilterSource(prev => prev === "need_to_buy" ? "" : "need_to_buy")}
+            >
+              {toBuyTotal} to buy
+            </button>
+          )}
+
+          {/* Shop ▾ — only visible when the buy filter is active */}
+          {filterSource === "need_to_buy" && vendors && vendors.length > 0 && (
+            <div className="shop-pill-wrap" ref={shopMenuRef}>
+              <button
+                className={`filter-pill shop-pill${shopOpen ? " open" : ""}`}
+                onClick={() => setShopOpen(v => !v)}
+              >
+                Shop {shopOpen ? "▴" : "▾"}
+              </button>
+              {shopOpen && (
+                <div className="buy-vendor-dropdown">
+                  {vendors.map((v, i) => (
+                    <button
+                      key={v.label}
+                      className="buy-vendor-item"
+                      onClick={() => { onSendToVendor?.(i); setShopOpen(false); }}
+                    >
+                      <span className="buy-vendor-name">
+                        {sentVendor === v.label ? `✓ ${v.label}` : v.label}
+                      </span>
+                      <span className="buy-vendor-hint">
+                        {v.prefill ? "Pre-fills cart" : "Copies to clipboard"}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Group by */}
           <div className="group-pill-wrap" ref={groupPickerRef}>
