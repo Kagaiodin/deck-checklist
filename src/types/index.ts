@@ -98,3 +98,16 @@ export interface Order {
   status: OrderStatus;
   cards: OrderCard[];
 }
+
+// ── Profile export envelope ───────────────────────────────────────────────────
+
+export interface ProfileExport {
+  version: 1;
+  exportedAt: string;              // ISO 8601
+  decks: Deck[];
+  errors: Record<string, ErrorQueueItem[]>;
+  collection: Collection;
+  collectionMeta: CollectionMeta | null;
+  orders: Order[];
+  vendorHistory: string[];
+}
