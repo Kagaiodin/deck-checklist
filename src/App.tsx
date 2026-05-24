@@ -520,19 +520,7 @@ function AppInner() {
   const toBuyCards = activeDeck?.cards.filter(c => c.source === "need_to_buy") ?? [];
   const toBuyTotal = toBuyCards.reduce((s, c) => s + c.quantity, 0);
 
-  // Buy CTA dropdown
-  const [buyOpen, setBuyOpen] = useState(false);
-  const buyMenuRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!buyOpen) return;
-    function handleClick(e: MouseEvent) {
-      if (buyMenuRef.current && !buyMenuRef.current.contains(e.target as Node)) {
-        setBuyOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [buyOpen]);
+  // buyOpen / buyMenuRef removed — Shop dropdown moved into Checklist filter-pills-row
 
   async function handleSendToVendor(idx: number) {
     const list = toBuyCards.map(c => `${c.quantity} ${c.name}`).join("\n");
@@ -1085,34 +1073,6 @@ function AppInner() {
                     onRemap={handleRemap}
                     onDismiss={handleDismiss}
                   />
-                  {toBuyCards.length > 0 && (
-                    <div className="buy-cta">
-                      <div className="buy-cta-info">
-                        <span className="buy-cta-title"><strong>{toBuyTotal}</strong> card{toBuyTotal !== 1 ? "s" : ""} to buy</span>
-                        <span className="buy-cta-sub">Opens pre-filled cart or copies list to clipboard</span>
-                      </div>
-                      <div className="buy-cta-action" ref={buyMenuRef}>
-                        <button className="buy-cta-btn" onClick={() => setBuyOpen(o => !o)}>
-                          Buy {toBuyTotal} {buyOpen ? "▴" : "▾"}
-                        </button>
-                        {buyOpen && (
-                          <div className="buy-vendor-dropdown">
-                            {VENDORS.map((v, i) => (
-                              <button
-                                key={v.label}
-                                className="buy-vendor-item"
-                                onClick={() => { handleSendToVendor(i); setBuyOpen(false); }}
-                              >
-                                <span className="buy-vendor-name">{sentVendor === v.label ? `✓ ${v.label}` : v.label}</span>
-                                <span className="buy-vendor-hint">{v.prefill ? "Pre-fills cart" : "Copies to clipboard"}</span>
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
                   {/* Deck notifications (e.g. order cancellation) */}
                   {(activeDeck.notifications ?? []).map(notification => (
                     <div key={notification.id} className="deck-notification-banner">
@@ -1150,6 +1110,10 @@ function AppInner() {
                     onUpdateQuantity={handleUpdateQuantity}
                     onAddCard={handleAddCard}
                     filterCardIds={notificationFilterIds ?? undefined}
+                    toBuyTotal={toBuyTotal}
+                    onSendToVendor={handleSendToVendor}
+                    vendors={VENDORS}
+                    sentVendor={sentVendor}
                   />
                 </>
               ) : (
