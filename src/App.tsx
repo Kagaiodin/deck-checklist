@@ -13,6 +13,7 @@ import { applyCollectionToCards, mergeOrderCardsIntoCollection } from "./utils/c
 import { detectCarrier, getTrackingUrl, CARRIER_NAMES } from "./utils/carrier";
 import { getDeckColorIdentity, formatRelativeDate, getDeckDomain } from "./utils/deckUtils";
 import { CollectionPage } from "./features/collection/CollectionPage";
+import { OnboardingModal } from "./features/onboarding/OnboardingModal";
 
 // ── Order row helpers ──────────────────────────────────────────────────────────
 
@@ -52,6 +53,8 @@ function affectedDeckCount(o: Order): number {
   return deckIds.size;
 }
 
+const ONBOARDING_KEY = "fetchlist:onboarding:dismissed";
+
 function AppInner() {
   const { state, dispatch } = useDecks();
   const [activeDeckId, setActiveDeckId] = useState<string | null>(null);
@@ -76,6 +79,19 @@ function AppInner() {
   const [deletingDeckId, setDeletingDeckId] = useState<string | null>(null);
   const [editingFormatId, setEditingFormatId] = useState<string | null>(null);
   const [formatDraft, setFormatDraft] = useState("");
+
+  // ── Onboarding modal ──────────────────────────────────────────────────────
+  const [onboardingDismissed, setOnboardingDismissed] = useLocalStorage<boolean>(ONBOARDING_KEY, false);
+  const showOnboarding = state.decks.length === 0 && !onboardingDismissed;
+
+  function dismissOnboarding() {
+    setOnboardingDismissed(true);
+  }
+
+  function handleOnboardingImport() {
+    setOnboardingDismissed(true);
+    setShowImport(true);
+  }
 
   // ── Collection (read-only, for auto-tagging on deck import) ──────────────
   // CollectionPage owns all writes; AppInner only reads + writes when receiving orders.
@@ -598,6 +614,13 @@ function AppInner() {
 
   return (
     <div className="app">
+      {/* ── First-run onboarding modal ────────────────────────────────────── */}
+      {showOnboarding && (
+        <OnboardingModal
+          onDismiss={dismissOnboarding}
+          onImportDeck={handleOnboardingImport}
+        />
+      )}
       <header className="app-header">
         <h1 className="app-title">
           <img src="/banner_temp_new.png" alt="Fetchlist" className="app-logo" />
