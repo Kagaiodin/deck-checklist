@@ -84,6 +84,20 @@ describe("parseCollectionCSV", () => {
     expect(result["odds, bodkins"]).toEqual([{ quantity: 1 }]);
   });
 
+  it("handles escaped double-quotes inside a quoted field", () => {
+    // RFC 4180: "" inside a quoted field is an escaped literal "
+    // CSV:  "He said ""hello""",1  →  field value: He said "hello"
+    const csv = `name,count\n"He said ""hello""",1`;
+    const result = parseCollectionCSV(csv);
+    expect(result['he said "hello"']).toEqual([{ quantity: 1 }]);
+  });
+
+  it("throws when two headers both match the same required column alias", () => {
+    // 'name' and 'card name' are both in NAME_ALIASES — ambiguous
+    const csv = "name,card name,count\nLightning Bolt,Lightning Bolt,1";
+    expect(() => parseCollectionCSV(csv)).toThrow(/more than one possible/i);
+  });
+
   it("throws when the required 'name' column is missing", () => {
     const csv = "count,edition\n1,LEA";
     expect(() => parseCollectionCSV(csv)).toThrow(/card name/i);

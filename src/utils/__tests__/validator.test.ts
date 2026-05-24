@@ -399,4 +399,48 @@ describe("validateDecklist", () => {
     expect(errors).toHaveLength(0);
     expect(vi.mocked(global.fetch)).not.toHaveBeenCalled();
   });
+
+  // ── Multi-batch rate-limit ─────────────────────────────────────────────────────
+  //
+  // When there are more than SCRYFALL_BATCH_SIZE (75) unique card names,
+  // validateDecklist inserts a 100 ms delay between batches (validator.ts:167).
+  // We use fake timers so the test doesn't actually wait 100 ms.
+
+  it("fires the rate-limit delay between batches when input exceeds SCRYFALL_BATCH_SIZE", async () => {
+    vi.useFakeTimers();
+    try {
+      // 76 unique cards → batch 1 (cards 0-74) + setTimeout + batch 2 (card 75)
+      const batch1 = Array.from({ length: 75 }, (_, i) =>
+        makeScryCard({ id: `c${i}`, name: `Card ${i}` })
+      );
+      const batch2 = [makeScryCard({ id: "c75", name: "Card 75" })];
+
+      vi.stubGlobal(
+        "fetch",
+        vi.fn()
+          .mockResolvedValueOnce({
+            ok: true,
+            json: async () => ({ data: batch1, not_found: [] }),
+          })
+          .mockResolvedValueOnce({
+            ok: true,
+            json: async () => ({ data: batch2, not_found: [] }),
+          })
+      );
+
+      const input = Array.from({ length: 76 }, (_, i) => ({ count: 1, name: `Card ${i}` }));
+      const promise = validateDecklist(input);
+
+      // Fire the inter-batch setTimeout (and flush all resulting microtasks)
+      await vi.runAllTimersAsync();
+
+      const { cards, errors } = await promise;
+
+      expect(vi.mocked(global.fetch)).toHaveBeenCalledTimes(2);
+      expect(cards).toHaveLength(76);
+      expect(errors).toHaveLength(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
