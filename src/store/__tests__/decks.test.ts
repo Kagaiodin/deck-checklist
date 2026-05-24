@@ -393,3 +393,70 @@ describe("DISMISS_NOTIFICATION", () => {
   });
 });
 
+// ── SET_DECK_FORMAT ───────────────────────────────────────────────────────────
+
+describe("SET_DECK_FORMAT", () => {
+  it("sets the format on the target deck", () => {
+    const initial = { decks: [makeDeck({ id: "d1", name: "Burn" })] };
+    const state = deckReducer(initial, {
+      type: "SET_DECK_FORMAT",
+      payload: { id: "d1", format: "Modern" },
+    });
+    expect(state.decks[0].format).toBe("Modern");
+  });
+
+  it("clears the format when payload is undefined", () => {
+    const initial = { decks: [makeDeck({ id: "d1", name: "Burn", format: "Modern" })] };
+    const state = deckReducer(initial, {
+      type: "SET_DECK_FORMAT",
+      payload: { id: "d1", format: undefined },
+    });
+    expect(state.decks[0].format).toBeUndefined();
+  });
+
+  it("does not affect other decks", () => {
+    const initial = {
+      decks: [
+        makeDeck({ id: "d1", name: "Burn" }),
+        makeDeck({ id: "d2", name: "Control", format: "Legacy" }),
+      ],
+    };
+    const state = deckReducer(initial, {
+      type: "SET_DECK_FORMAT",
+      payload: { id: "d1", format: "Modern" },
+    });
+    expect(state.decks[1].format).toBe("Legacy");
+  });
+});
+
+// ── SET_DECKS ─────────────────────────────────────────────────────────────────
+
+describe("SET_DECKS", () => {
+  it("replaces the entire deck list", () => {
+    const initial = {
+      decks: [makeDeck({ id: "d1", name: "Burn" }), makeDeck({ id: "d2", name: "Control" })],
+    };
+    const newDecks = [makeDeck({ id: "d3", name: "Storm" })];
+    const state = deckReducer(initial, { type: "SET_DECKS", payload: newDecks });
+    expect(state.decks).toHaveLength(1);
+    expect(state.decks[0].id).toBe("d3");
+  });
+
+  it("can set decks to an empty list", () => {
+    const initial = { decks: [makeDeck({ id: "d1", name: "Burn" })] };
+    const state = deckReducer(initial, { type: "SET_DECKS", payload: [] });
+    expect(state.decks).toHaveLength(0);
+  });
+});
+
+// ── default (unknown action) ──────────────────────────────────────────────────
+
+describe("default branch", () => {
+  it("returns state unchanged for an unknown action type", () => {
+    const initial = { decks: [makeDeck({ id: "d1", name: "Burn" })] };
+    // @ts-expect-error — intentionally sending an unknown action type
+    const state = deckReducer(initial, { type: "UNKNOWN_ACTION" });
+    expect(state).toBe(initial); // same reference — no copy made
+  });
+});
+
