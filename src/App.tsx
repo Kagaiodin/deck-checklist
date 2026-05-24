@@ -8,12 +8,14 @@ import { useLocalStorage } from "./hooks/useLocalStorage";
 import { Checklist } from "./components/Checklist";
 import { ErrorQueue } from "./components/ErrorQueue";
 import { ProgressTracker } from "./components/ProgressTracker";
-import type { Deck, ErrorQueueItem, AcquisitionSource, Collection, CollectionMeta, Order, OrderCard, DeckNotification, Carrier } from "./types/index";
+import type { Deck, ErrorQueueItem, AcquisitionSource, Collection, CollectionMeta, Order, OrderCard, DeckNotification, Carrier, ProfileExport } from "./types/index";
 import { applyCollectionToCards, mergeOrderCardsIntoCollection } from "./utils/csvParser";
 import { detectCarrier, getTrackingUrl, CARRIER_NAMES } from "./utils/carrier";
 import { getDeckColorIdentity, formatRelativeDate, getDeckDomain } from "./utils/deckUtils";
 import { CollectionPage } from "./features/collection/CollectionPage";
 import { OnboardingModal } from "./features/onboarding/OnboardingModal";
+import { ProfileExportImport } from "./features/profile/ProfileExportImport";
+import type { ToastInput } from "./features/profile/ProfileExportImport";
 
 // ── Order row helpers ──────────────────────────────────────────────────────────
 
@@ -96,7 +98,7 @@ function AppInner() {
   // ── Collection (read-only, for auto-tagging on deck import) ──────────────
   // CollectionPage owns all writes; AppInner only reads + writes when receiving orders.
   const [collection, setCollection] = useLocalStorage<Collection>("mtg-checklist-collection-v2", {});
-  const [, setCollectionMeta] = useLocalStorage<CollectionMeta | null>("mtg-checklist-collection-meta-v2", null);
+  const [collectionMeta, setCollectionMeta] = useLocalStorage<CollectionMeta | null>("mtg-checklist-collection-meta-v2", null);
 
   // ── Orders state ──────────────────────────────────────────────────────────
   const [orders, setOrders] = useLocalStorage<Order[]>("mtg-checklist-orders-v1", []);
@@ -119,6 +121,20 @@ function AppInner() {
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [deleteConfirmOrderId, setDeleteConfirmOrderId] = useState<string | null>(null);
   const [notificationFilterIds, setNotificationFilterIds] = useState<string[] | null>(null);
+
+  // ── Toast system ──────────────────────────────────────────────────────────
+  type Toast = { id: string } & ToastInput;
+  const [toasts, setToasts] = useState<Toast[]>([]);
+  function showToast(t: ToastInput) {
+    const id = Math.random().toString(36).slice(2);
+    setToasts(prev => [...prev, { ...t, id }]);
+    if (t.autoDismiss) {
+      setTimeout(() => setToasts(prev => prev.filter(x => x.id !== id)), t.autoDismiss);
+    }
+  }
+
+  // ── Profile export/import panel state (shared across sidebar + mobile sheet) ──
+  const [importPanelOpen, setImportPanelOpen] = useState(false);
 
   // Auto-detect carrier from tracking number, unless user has overridden it (B-3)
   useEffect(() => {
@@ -419,6 +435,63 @@ function AppInner() {
     setNotificationFilterIds(null);
   }
 
+  // ── Profile export / import ───────────────────────────────────────────────
+  function handleProfileImport(data: ProfileExport, replace: boolean) {
+    if (replace) {
+      // Replace mode — wipe all and restore from backup
+      dispatch({ type: "SET_DECKS", payload: data.decks ?? [] });
+      setAllErrors(data.errors ?? {});
+      setCollection(data.collection ?? {});
+      setCollectionMeta(data.collectionMeta ?? null);
+      setOrders(data.orders ?? []);
+      setRecentVendors((data.vendorHistory ?? []).slice(0, 50));
+      return { newDecks: (data.decks ?? []).length, newCards: Object.keys(data.collection ?? {}).length, newOrders: (data.orders ?? []).length };
+    }
+
+    // Merge mode — only add net-new items
+    const existingDeckIds = new Set(state.decks.map(d => d.id));
+    const newDecks = (data.decks ?? []).filter(d => !existingDeckIds.has(d.id));
+    for (const deck of newDecks) dispatch({ type: "ADD_DECK", payload: deck });
+
+    // Errors — adopt by deck id if not already present
+    const mergedErrors = { ...allErrors };
+    for (const [id, items] of Object.entries(data.errors ?? {})) {
+      if (!mergedErrors[id]) mergedErrors[id] = items;
+    }
+    setAllErrors(mergedErrors);
+
+    // Collection — union printings per card name, deduping by set+collectorNumber+foil
+    const mergedCollection = { ...collection };
+    let newCardKeyCount = 0;
+    for (const [name, printings] of Object.entries(data.collection ?? {})) {
+      const existing = mergedCollection[name] ?? [];
+      if (existing.length === 0) newCardKeyCount++;
+      const deduped = [...existing];
+      for (const p of printings) {
+        const isDup = deduped.some(
+          e => e.set === p.set && e.collectorNumber === p.collectorNumber && (e.foil ?? false) === (p.foil ?? false)
+        );
+        if (!isDup) deduped.push(p);
+      }
+      mergedCollection[name] = deduped;
+    }
+    setCollection(mergedCollection);
+
+    // CollectionMeta — adopt if local is null
+    if (!collectionMeta && data.collectionMeta) setCollectionMeta(data.collectionMeta);
+
+    // Orders — skip duplicates by id
+    const existingOrderIds = new Set(orders.map(o => o.id));
+    const newOrders = (data.orders ?? []).filter(o => !existingOrderIds.has(o.id));
+    setOrders([...orders, ...newOrders]);
+
+    // Vendor history — union, deduplicated, cap at 50
+    const mergedVendors = [...new Set([...recentVendors, ...(data.vendorHistory ?? [])])].slice(0, 50);
+    setRecentVendors(mergedVendors);
+
+    return { newDecks: newDecks.length, newCards: newCardKeyCount, newOrders: newOrders.length };
+  }
+
   // ── Archidekt import ───────────────────────────────────────────────────────
   function getArchidektId(url: string): string | null {
     const match = url.match(/archidekt\.com\/decks\/(\d+)/i);
@@ -536,19 +609,7 @@ function AppInner() {
   const toBuyCards = activeDeck?.cards.filter(c => c.source === "need_to_buy") ?? [];
   const toBuyTotal = toBuyCards.reduce((s, c) => s + c.quantity, 0);
 
-  // Buy CTA dropdown
-  const [buyOpen, setBuyOpen] = useState(false);
-  const buyMenuRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!buyOpen) return;
-    function handleClick(e: MouseEvent) {
-      if (buyMenuRef.current && !buyMenuRef.current.contains(e.target as Node)) {
-        setBuyOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [buyOpen]);
+  // buyOpen / buyMenuRef removed — Shop dropdown moved into Checklist filter-pills-row
 
   async function handleSendToVendor(idx: number) {
     const list = toBuyCards.map(c => `${c.quantity} ${c.name}`).join("\n");
@@ -621,6 +682,18 @@ function AppInner() {
           onImportDeck={handleOnboardingImport}
         />
       )}
+      {/* ── Toast container ───────────────────────────────────────────────── */}
+      <div className="toast-container">
+        {toasts.map(t => (
+          <div key={t.id} className={`toast${t.variant === "warn" ? " toast--warn" : t.variant === "neutral" ? " toast--neutral" : ""}`}>
+            <div className="toast-body">
+              <div className="toast-title">{t.title}</div>
+              {t.sub && <div className="toast-sub">{t.sub}</div>}
+            </div>
+            <button className="toast-close" onClick={() => setToasts(prev => prev.filter(x => x.id !== t.id))}>×</button>
+          </div>
+        ))}
+      </div>
       <header className="app-header">
         <h1 className="app-title">
           <img src="/banner_temp_new.png" alt="Fetchlist" className="app-logo" />
@@ -750,6 +823,41 @@ function AppInner() {
                     >
                       + Import Deck
                     </button>
+                    <div className="deck-picker-export-row">
+                      <button className="btn btn-ghost btn-sm" onClick={() => {
+                        // Export is fire-and-forget — no need to close the sheet
+                        const filename = `fetchlist-backup-${new Date().toISOString().slice(0, 10)}.json`;
+                        const payload: ProfileExport = {
+                          version: 1, exportedAt: new Date().toISOString(),
+                          decks: state.decks, errors: allErrors,
+                          collection, collectionMeta, orders, vendorHistory: recentVendors,
+                        };
+                        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+                        const url = URL.createObjectURL(blob);
+                        Object.assign(document.createElement("a"), { href: url, download: filename }).click();
+                        URL.revokeObjectURL(url);
+                        showToast({ title: "Profile exported", sub: filename, variant: "success", autoDismiss: 2000 });
+                      }}>↓ Export data</button>
+                      <button
+                        className={`btn btn-ghost btn-sm${importPanelOpen ? " active" : ""}`}
+                        onClick={() => setImportPanelOpen(v => !v)}
+                      >↑ Import data</button>
+                    </div>
+                    {importPanelOpen && (
+                      <ProfileExportImport
+                        decks={state.decks}
+                        allErrors={allErrors}
+                        collection={collection}
+                        collectionMeta={collectionMeta}
+                        orders={orders}
+                        vendorHistory={recentVendors}
+                        onImport={handleProfileImport}
+                        showToast={showToast}
+                        importPanelOpen={importPanelOpen}
+                        onToggleImportPanel={() => setImportPanelOpen(v => !v)}
+                        hideFooter={true}
+                      />
+                    )}
                   </div>
                 </div>
               </div>
@@ -783,9 +891,9 @@ function AppInner() {
               </div>
               {sidebarOpen && (
                 state.decks.length === 0 ? (
-                  <p className="empty-state">No decks yet. Import one to get started.</p>
+                  <p className="empty-state" style={{ flex: 1 }}>No decks yet. Import one to get started.</p>
                 ) : filteredDecks.length === 0 ? (
-                  <p className="empty-state">No decks match "{sidebarSearch}".</p>
+                  <p className="empty-state" style={{ flex: 1 }}>No decks match "{sidebarSearch}".</p>
                 ) : (
                   <ul className="deck-list">
                     {filteredDecks.map(deck => {
@@ -840,6 +948,19 @@ function AppInner() {
                   </ul>
                 )
               )}
+              {/* Profile export/import — always visible, outside the sidebarOpen guard */}
+              <ProfileExportImport
+                decks={state.decks}
+                allErrors={allErrors}
+                collection={collection}
+                collectionMeta={collectionMeta}
+                orders={orders}
+                vendorHistory={recentVendors}
+                onImport={handleProfileImport}
+                showToast={showToast}
+                importPanelOpen={importPanelOpen}
+                onToggleImportPanel={() => setImportPanelOpen(v => !v)}
+              />
             </aside>
 
             <div className="deck-content">
@@ -1108,34 +1229,6 @@ function AppInner() {
                     onRemap={handleRemap}
                     onDismiss={handleDismiss}
                   />
-                  {toBuyCards.length > 0 && (
-                    <div className="buy-cta">
-                      <div className="buy-cta-info">
-                        <span className="buy-cta-title"><strong>{toBuyTotal}</strong> card{toBuyTotal !== 1 ? "s" : ""} to buy</span>
-                        <span className="buy-cta-sub">Opens pre-filled cart or copies list to clipboard</span>
-                      </div>
-                      <div className="buy-cta-action" ref={buyMenuRef}>
-                        <button className="buy-cta-btn" onClick={() => setBuyOpen(o => !o)}>
-                          Buy {toBuyTotal} {buyOpen ? "▴" : "▾"}
-                        </button>
-                        {buyOpen && (
-                          <div className="buy-vendor-dropdown">
-                            {VENDORS.map((v, i) => (
-                              <button
-                                key={v.label}
-                                className="buy-vendor-item"
-                                onClick={() => { handleSendToVendor(i); setBuyOpen(false); }}
-                              >
-                                <span className="buy-vendor-name">{sentVendor === v.label ? `✓ ${v.label}` : v.label}</span>
-                                <span className="buy-vendor-hint">{v.prefill ? "Pre-fills cart" : "Copies to clipboard"}</span>
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
                   {/* Deck notifications (e.g. order cancellation) */}
                   {(activeDeck.notifications ?? []).map(notification => (
                     <div key={notification.id} className="deck-notification-banner">
@@ -1173,6 +1266,10 @@ function AppInner() {
                     onUpdateQuantity={handleUpdateQuantity}
                     onAddCard={handleAddCard}
                     filterCardIds={notificationFilterIds ?? undefined}
+                    toBuyTotal={toBuyTotal}
+                    onSendToVendor={handleSendToVendor}
+                    vendors={VENDORS}
+                    sentVendor={sentVendor}
                   />
                 </>
               ) : (
