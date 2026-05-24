@@ -14,6 +14,7 @@ import { useBulkEdit }         from "./hooks/useBulkEdit";
 
 import { CollectionHeader }   from "./components/CollectionHeader";
 import { CollectionControls } from "./components/CollectionControls";
+import { CollectionQuickAdd } from "./components/CollectionQuickAdd";
 import { AlphaRail }          from "./components/AlphaRail";
 import { CollectionRow }      from "./components/CollectionRow";
 import { BulkEditPanel }      from "./components/BulkEditPanel";
@@ -82,6 +83,7 @@ export function CollectionPage({ decks, onCollectionChange }: CollectionPageProp
   );
 
   // ── Local UI state ─────────────────────────────────────────────────────────
+  const [quickAddOpen,      setQuickAddOpen]       = useState(false);
   const [collectionError,   setCollectionError]   = useState<string | null>(null);
   const [collectionSearch,  setCollectionSearch]   = useState("");
   const [collectionFilter,  setCollectionFilter]   = useState<CollectionFilterKey>("all");
@@ -206,6 +208,29 @@ export function CollectionPage({ decks, onCollectionChange }: CollectionPageProp
     mutateCollection(updated);
   }
 
+  function handleQuickAdd(name: string, qty: number, foil: boolean) {
+    const key = name.toLowerCase();
+    const updated = { ...collection };
+    const printings = Array.isArray(updated[key]) ? [...updated[key]] : [];
+    const match = printings.findIndex(
+      p => !p.set && !p.collectorNumber && (p.foil ?? false) === foil
+    );
+    if (match >= 0) {
+      printings[match] = { ...printings[match], quantity: printings[match].quantity + qty };
+    } else {
+      printings.push({ quantity: qty, foil: foil || undefined });
+    }
+    updated[key] = printings;
+    if (!collectionMeta) {
+      setCollectionMeta({
+        fileName: "Manual entries",
+        importedAt: Date.now(),
+        cardCount: Object.keys(updated).length,
+      });
+    }
+    mutateCollection(updated);
+  }
+
   function handleRemove(key: string) {
     const updated = { ...collection };
     delete updated[key];
@@ -315,9 +340,18 @@ export function CollectionPage({ decks, onCollectionChange }: CollectionPageProp
         inDecksCount={inDecksCount}
         hasDeckContext={decks.length > 0}
         onUploadClick={() => csvInputRef.current?.click()}
+        onQuickAddClick={() => setQuickAddOpen(v => !v)}
+        quickAddOpen={quickAddOpen}
         onBulkEditClick={() => setBulkEditOpen(!bulkEditOpen)}
         bulkEditOpen={bulkEditOpen}
       />
+
+      {quickAddOpen && (
+        <CollectionQuickAdd
+          onAdd={handleQuickAdd}
+          onCancel={() => setQuickAddOpen(false)}
+        />
+      )}
 
       {collectionError && <p className="import-error">{collectionError}</p>}
 

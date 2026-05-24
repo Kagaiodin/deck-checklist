@@ -15,6 +15,8 @@ interface CollectionHeaderProps {
   inDecksCount: number;
   hasDeckContext: boolean;
   onUploadClick: () => void;
+  onQuickAddClick: () => void;
+  quickAddOpen: boolean;
   onBulkEditClick: () => void;
   bulkEditOpen: boolean;
 }
@@ -27,6 +29,8 @@ export function CollectionHeader({
   inDecksCount,
   hasDeckContext,
   onUploadClick,
+  onQuickAddClick,
+  quickAddOpen,
   onBulkEditClick,
   bulkEditOpen,
 }: CollectionHeaderProps) {
@@ -48,6 +52,12 @@ export function CollectionHeader({
               Upload CSV
             </button>
           )}
+          <button
+            className={`btn btn-primary btn-sm${quickAddOpen ? " active" : ""}`}
+            onClick={onQuickAddClick}
+          >
+            + Add card
+          </button>
           <button
             className={`btn btn-secondary btn-sm${bulkEditOpen ? " active" : ""}`}
             onClick={onBulkEditClick}
