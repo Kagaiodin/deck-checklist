@@ -22,7 +22,8 @@ type DeckAction =
   | { type: "APPLY_COLLECTION"; payload: Collection }
   | { type: "UNSET_CARD_SOURCES"; payload: { deckId: string; cardIds: string[] } }
   | { type: "ADD_NOTIFICATION"; payload: { deckId: string; notification: DeckNotification } }
-  | { type: "DISMISS_NOTIFICATION"; payload: { deckId: string; notificationId: string } };
+  | { type: "DISMISS_NOTIFICATION"; payload: { deckId: string; notificationId: string } }
+  | { type: "SET_DECKS"; payload: Deck[] };
 
 // Exported for unit testing
 export function deckReducer(state: DeckState, action: DeckAction): DeckState {
@@ -173,6 +174,8 @@ export function deckReducer(state: DeckState, action: DeckAction): DeckState {
             : d
         )
       };
+    case "SET_DECKS":
+      return { ...state, decks: action.payload };
     default:
       return state;
   }
