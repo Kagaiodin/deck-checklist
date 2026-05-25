@@ -134,7 +134,7 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 }
 
 .app-title { font-size: 18px; font-weight: 700; color: var(--accent); white-space: nowrap; line-height: 1; }
-.app-logo { height: 36px; width: auto; display: block; mix-blend-mode: lighten; }
+.app-logo { height: 36px; width: auto; }
 
 @media (min-width: 640px) {
   .app-logo { height: 42px; }
@@ -1684,11 +1684,6 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 .source-tag-in_binder    { background: var(--src-binder-bg);  color: var(--src-binder-fg);  }
 .source-tag-in_storage   { background: var(--src-storage-bg); color: var(--src-storage-fg); }
 
-/* ─── Light mode — logo inversion ───────────────────────────────────────────── */
-html[data-mode="light"] .app-logo {
-  mix-blend-mode: normal;
-  filter: brightness(0);
-}
 
 /* ─── ThemeToggle ────────────────────────────────────────────────────────────── */
 .theme-toggle {

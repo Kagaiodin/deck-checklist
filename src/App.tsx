@@ -16,6 +16,7 @@ import { CollectionPage } from "./features/collection/CollectionPage";
 import { OnboardingModal } from "./features/onboarding/OnboardingModal";
 import { ProfileExportImport } from "./features/profile/ProfileExportImport";
 import { ThemeToggle } from "./components/ThemeToggle";
+import { AppLogo } from "./components/AppLogo";
 import type { ToastInput } from "./features/profile/ProfileExportImport";
 
 // ── Order row helpers ──────────────────────────────────────────────────────────
@@ -697,7 +698,7 @@ function AppInner() {
       </div>
       <header className="app-header">
         <h1 className="app-title">
-          <img src="/banner_temp_new.png" alt="Fetchlist" className="app-logo" />
+          <AppLogo className="app-logo" />
         </h1>
         <nav className="app-nav">
           <button
