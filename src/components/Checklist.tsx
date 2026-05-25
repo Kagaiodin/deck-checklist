@@ -4,15 +4,15 @@ import { useLocalStorage } from "../hooks/useLocalStorage";
 import { ACQUISITION_SOURCES } from "../types/index";
 
 const SEGMENT_SOURCES: Array<{ key: AcquisitionSource | "untagged"; color: string; label: string }> = [
-  { key: "owned",           color: "#4ade80", label: "Owned" },
-  { key: "ordered",         color: "#60a5fa", label: "Ordered" },
-  { key: "proxy",           color: "#c084fc", label: "Proxy" },
-  { key: "in_another_deck", color: "#facc15", label: "In another deck" },
-  { key: "need_to_buy",     color: "#f87171", label: "Need to buy" },
-  { key: "borrowed",        color: "#fb923c", label: "Borrowed" },
-  { key: "in_binder",       color: "#2dd4bf", label: "In binder" },
-  { key: "in_storage",      color: "#94a3b8", label: "In storage" },
-  { key: "untagged",        color: "transparent", label: "Untagged" },
+  { key: "owned",           color: "var(--src-owned-fg)",   label: "Owned" },
+  { key: "ordered",         color: "var(--src-ordered-fg)", label: "Ordered" },
+  { key: "proxy",           color: "var(--src-proxy-fg)",   label: "Proxy" },
+  { key: "in_another_deck", color: "var(--src-deck-fg)",    label: "In another deck" },
+  { key: "need_to_buy",     color: "var(--src-buy-fg)",     label: "Need to buy" },
+  { key: "borrowed",        color: "var(--src-borrow-fg)",  label: "Borrowed" },
+  { key: "in_binder",       color: "var(--src-binder-fg)",  label: "In binder" },
+  { key: "in_storage",      color: "var(--src-storage-fg)", label: "In storage" },
+  { key: "untagged",        color: "transparent",           label: "Untagged" },
 ];
 
 interface Props {
@@ -68,16 +68,10 @@ function extractMainType(typeStr: string): string {
   return beforeDash;
 }
 
-const SOURCE_STYLES: Record<AcquisitionSource, { bg: string; color: string }> = {
-  owned:           { bg: "rgba(34,197,94,.18)",   color: "#4ade80" },
-  ordered:         { bg: "rgba(59,130,246,.18)",  color: "#60a5fa" },
-  proxy:           { bg: "rgba(168,85,247,.18)",  color: "#c084fc" },
-  in_another_deck: { bg: "rgba(234,179,8,.18)",   color: "#facc15" },
-  need_to_buy:     { bg: "rgba(239,68,68,.18)",   color: "#f87171" },
-  borrowed:        { bg: "rgba(249,115,22,.18)",  color: "#fb923c" },
-  in_binder:       { bg: "rgba(20,184,166,.18)",  color: "#2dd4bf" },
-  in_storage:      { bg: "rgba(148,163,184,.18)", color: "#94a3b8" },
-};
+// Source tag class names (colours live in CSS via --src-* tokens)
+function sourceTagClass(source: AcquisitionSource | undefined): string {
+  return source ? `source-tag-${source}` : "";
+}
 
 function sourceLabel(source: AcquisitionSource | undefined): string {
   if (!source) return "";
@@ -156,8 +150,7 @@ function SourcePicker({
       {ACQUISITION_SOURCES.map(s => (
         <button
           key={s.value}
-          className={`source-picker-item${current === s.value ? " active" : ""}`}
-          style={SOURCE_STYLES[s.value] as React.CSSProperties}
+          className={`source-picker-item source-tag-${s.value}${current === s.value ? " active" : ""}`}
           onClick={() => { onSelect(s.value); onClose(); }}
         >
           {s.label}
@@ -832,7 +825,6 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
 
             {cards.map(card => {
               const isSelected = selectedIds.has(card.id);
-              const style = card.source ? SOURCE_STYLES[card.source] : undefined;
               const isEditingQty = editingQtyId === card.id;
 
               return (
@@ -920,8 +912,7 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
                   {/* Source tag — visible in both modes */}
                   <div className="source-tag-wrapper" onClick={e => e.stopPropagation()}>
                     <button
-                      className={`source-tag${card.source ? " has-source" : ""}`}
-                      style={style ? { background: style.bg, color: style.color } as React.CSSProperties : undefined}
+                      className={`source-tag${card.source ? " has-source" : ""} ${sourceTagClass(card.source)}`}
                       onClick={() => setOpenPickerId(openPickerId === card.id ? null : card.id)}
                       title="Set acquisition source"
                     >

@@ -15,6 +15,7 @@ import { getDeckColorIdentity, formatRelativeDate, getDeckDomain } from "./utils
 import { CollectionPage } from "./features/collection/CollectionPage";
 import { OnboardingModal } from "./features/onboarding/OnboardingModal";
 import { ProfileExportImport } from "./features/profile/ProfileExportImport";
+import { ThemeToggle } from "./components/ThemeToggle";
 import type { ToastInput } from "./features/profile/ProfileExportImport";
 
 // ── Order row helpers ──────────────────────────────────────────────────────────
@@ -723,6 +724,7 @@ function AppInner() {
             )}
           </button>
         </nav>
+        <ThemeToggle />
         <div className="feedback-menu-container" ref={feedbackMenuRef}>
           <button
             className={`btn btn-secondary btn-sm feedback-btn${feedbackOpen ? " active" : ""}`}
