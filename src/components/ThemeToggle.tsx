@@ -1,10 +1,10 @@
 import { useTheme, type ThemeAccent } from "../hooks/useTheme";
 
-const ACCENTS: { id: ThemeAccent; color: string; label: string }[] = [
-  { id: "indigo",   color: "#6c5ce7", label: "Indigo"   },
-  { id: "sapphire", color: "#3b82f6", label: "Sapphire" },
-  { id: "emerald",  color: "#10b981", label: "Emerald"  },
-  { id: "ember",    color: "#f59e0b", label: "Ember"    },
+const ACCENTS: { id: ThemeAccent; darkColor: string; lightColor: string; label: string }[] = [
+  { id: "indigo",   darkColor: "#6c5ce7", lightColor: "#4f46e5", label: "Indigo"   },
+  { id: "sapphire", darkColor: "#3b82f6", lightColor: "#2563eb", label: "Sapphire" },
+  { id: "emerald",  darkColor: "#10b981", lightColor: "#059669", label: "Emerald"  },
+  { id: "ember",    darkColor: "#f59e0b", lightColor: "#b45309", label: "Ember"    },
 ];
 
 export function ThemeToggle() {
@@ -26,7 +26,7 @@ export function ThemeToggle() {
           <button
             key={a.id}
             className={`theme-accent-dot${accent === a.id ? " active" : ""}`}
-            style={{ background: a.color }}
+            style={{ background: mode === "light" ? a.lightColor : a.darkColor }}
             onClick={() => setAccent(a.id)}
             role="radio"
             aria-checked={accent === a.id}

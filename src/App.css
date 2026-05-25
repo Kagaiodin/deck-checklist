@@ -118,21 +118,25 @@ html[data-accent="ember"] {
 html[data-mode="light"][data-accent="indigo"] {
   --accent:       #4f46e5;
   --accent-hover: #6c5ce7;
+  --accent-light: #6c5ce7;
   --accent-deep:  #3730a3;
 }
 html[data-mode="light"][data-accent="sapphire"] {
   --accent:       #2563eb;
   --accent-hover: #3b82f6;
+  --accent-light: #3b82f6;
   --accent-deep:  #1d4ed8;
 }
 html[data-mode="light"][data-accent="emerald"] {
   --accent:       #059669;
   --accent-hover: #10b981;
+  --accent-light: #10b981;
   --accent-deep:  #047857;
 }
 html[data-mode="light"][data-accent="ember"] {
   --accent:       #b45309;
   --accent-hover: #d97706;
+  --accent-light: #d97706;
   --accent-deep:  #92400e;
 }
 
