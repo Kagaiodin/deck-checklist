@@ -111,6 +111,31 @@ html[data-accent="ember"] {
   --accent-deep:  #d97706;
 }
 
+/* ─── Light mode accent overrides — AA/AAA contrast on white surfaces ────────
+   Only --accent / --accent-hover / --accent-deep are darkened for legibility.
+   --accent-light is intentionally left at its original bright value so
+   gradients (progress bar, "list" wordmark) stay vivid.                       */
+html[data-mode="light"][data-accent="indigo"] {
+  --accent:       #4f46e5;
+  --accent-hover: #6c5ce7;
+  --accent-deep:  #3730a3;
+}
+html[data-mode="light"][data-accent="sapphire"] {
+  --accent:       #2563eb;
+  --accent-hover: #3b82f6;
+  --accent-deep:  #1d4ed8;
+}
+html[data-mode="light"][data-accent="emerald"] {
+  --accent:       #059669;
+  --accent-hover: #10b981;
+  --accent-deep:  #047857;
+}
+html[data-mode="light"][data-accent="ember"] {
+  --accent:       #b45309;
+  --accent-hover: #d97706;
+  --accent-deep:  #92400e;
+}
+
 /* ─── Theme transition ──────────────────────────────────────────────────────── */
 body, .app-header, .card-row, .deck-item, .source-tag, .card-rarity,
 .progress-bar-fill, .deck-item-bar-fill, .progress-seg {
