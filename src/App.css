@@ -1,5 +1,6 @@
 /* ─── Reset / base ─────────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { overflow-x: hidden; } /* catch-all: prevents root scroll container from forming */
 
 :root {
   /* Accent family */
@@ -150,7 +151,7 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 @media (min-width: 1024px) { body { font-size: 15px; } }
 
 /* ─── Layout ────────────────────────────────────────────────────────────────── */
-.app { display: flex; flex-direction: column; min-height: 100vh; }
+.app { display: flex; flex-direction: column; min-height: 100vh; overflow-x: clip; } /* clip: doesn't create scroll container, keeps position:fixed chrome working */
 
 .app-header {
   display: flex; align-items: center; justify-content: space-between;
@@ -245,6 +246,11 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
   padding: 5px 10px; border-radius: var(--radius); border: 1px solid var(--border);
   background: transparent; color: var(--text-muted); cursor: pointer; font-size: 12px;
   transition: color 0.15s, border-color 0.15s; white-space: nowrap;
+}
+@media (max-width: 479px) {
+  /* Recover ~24px across the nav so badge counter doesn't push past 390px viewport */
+  .nav-btn { padding: 5px 8px; font-size: 11px; }
+  .app-nav { gap: 4px; }
 }
 @media (min-width: 640px) {
   .nav-btn { padding: 6px 14px; font-size: 13px; }
@@ -1472,7 +1478,7 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 .order-row-cancelled { opacity: .75; }
 
 .order-row-body { padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
-.order-row-top  { display: flex; align-items: center; gap: 8px; }
+.order-row-top  { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .order-row-vendor {
   font-size: 14px; font-weight: 600; color: var(--text); flex: 1;
   min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
@@ -1495,7 +1501,7 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 .order-row-eta-main.late   { color: var(--danger); }
 .order-row-eta-sub { font-size: 11px; color: var(--text-muted); }
 
-.order-row-meta { display: flex; align-items: center; gap: 10px; }
+.order-row-meta { display: flex; align-items: center; gap: 10px; min-width: 0; }
 
 .order-tracking-link {
   display: inline-flex; align-items: center; gap: 4px;
@@ -1503,6 +1509,7 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
   border: 1px solid var(--border); padding: 3px 8px; border-radius: 6px;
   background: var(--surface-2); font-size: 11px;
   transition: border-color .12s;
+  max-width: 100%; overflow: hidden;
 }
 .order-tracking-link:hover { border-color: var(--accent); }
 .order-tracking-link .carrier-tag {
@@ -1511,6 +1518,7 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 }
 .order-tracking-link .tn-tail {
   font-family: ui-monospace, monospace; font-size: 10px; color: var(--text-muted);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 
 .order-row-actions { display: flex; gap: 6px; flex-wrap: wrap; }
