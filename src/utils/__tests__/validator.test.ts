@@ -114,7 +114,7 @@ function makeScryCard(
 function mockFetch(batchResponse: BatchResponse, fuzzyCard?: ScryfallCard | null) {
   vi.stubGlobal(
     "fetch",
-    vi.fn(async (url: string, opts?: RequestInit) => {
+    vi.fn(async (_url: string, opts?: RequestInit) => {
       if (opts?.method === "POST") {
         return { ok: true, json: async () => batchResponse };
       }
@@ -225,7 +225,7 @@ describe("validateDecklist", () => {
     expect(cards).toHaveLength(1);
     expect(cards[0].quantity).toBe(4);
     // Only one batch request issued
-    expect(vi.mocked(global.fetch)).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(globalThis.fetch)).toHaveBeenCalledTimes(1);
   });
 
   it("is case-insensitive when deduplicating names", async () => {
@@ -271,7 +271,7 @@ describe("validateDecklist", () => {
     const fuzzy = makeScryCard({ id: "fz1", name: "Counterspell", colors: ["U"] });
     vi.stubGlobal(
       "fetch",
-      vi.fn(async (url: string, opts?: RequestInit) => {
+      vi.fn(async (_url: string, opts?: RequestInit) => {
         if (opts?.method === "POST") {
           return {
             ok: true,
@@ -282,7 +282,7 @@ describe("validateDecklist", () => {
           };
         }
         // fuzzy: succeed for first call, fail for second
-        const callCount = vi.mocked(global.fetch).mock.calls.filter(c => (c[1] as RequestInit | undefined)?.method !== "POST").length;
+        const callCount = vi.mocked(globalThis.fetch).mock.calls.filter((c: unknown[]) => (c[1] as RequestInit | undefined)?.method !== "POST").length;
         if (callCount <= 1) return { ok: true, json: async () => fuzzy };
         return { ok: false, json: async () => ({ object: "error" }) };
       })
@@ -397,7 +397,7 @@ describe("validateDecklist", () => {
     const { cards, errors } = await validateDecklist([]);
     expect(cards).toHaveLength(0);
     expect(errors).toHaveLength(0);
-    expect(vi.mocked(global.fetch)).not.toHaveBeenCalled();
+    expect(vi.mocked(globalThis.fetch)).not.toHaveBeenCalled();
   });
 
   // ── Multi-batch rate-limit ─────────────────────────────────────────────────────
@@ -436,7 +436,7 @@ describe("validateDecklist", () => {
 
       const { cards, errors } = await promise;
 
-      expect(vi.mocked(global.fetch)).toHaveBeenCalledTimes(2);
+      expect(vi.mocked(globalThis.fetch)).toHaveBeenCalledTimes(2);
       expect(cards).toHaveLength(76);
       expect(errors).toHaveLength(0);
     } finally {
