@@ -35,3 +35,4 @@ decklist_sample.txt
 !.dev.vars.example
 .env*
 !.env.example
+coverage/

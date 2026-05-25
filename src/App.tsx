@@ -15,6 +15,8 @@ import { getDeckColorIdentity, formatRelativeDate, getDeckDomain } from "./utils
 import { CollectionPage } from "./features/collection/CollectionPage";
 import { OnboardingModal } from "./features/onboarding/OnboardingModal";
 import { ProfileExportImport } from "./features/profile/ProfileExportImport";
+import { ThemeToggle } from "./components/ThemeToggle";
+import { AppLogo } from "./components/AppLogo";
 import type { ToastInput } from "./features/profile/ProfileExportImport";
 
 // ── Order row helpers ──────────────────────────────────────────────────────────
@@ -696,7 +698,7 @@ function AppInner() {
       </div>
       <header className="app-header">
         <h1 className="app-title">
-          <img src="/banner_temp_new.png" alt="Fetchlist" className="app-logo" />
+          <AppLogo className="app-logo" />
         </h1>
         <nav className="app-nav">
           <button
@@ -723,6 +725,7 @@ function AppInner() {
             )}
           </button>
         </nav>
+        <ThemeToggle />
         <div className="feedback-menu-container" ref={feedbackMenuRef}>
           <button
             className={`btn btn-secondary btn-sm feedback-btn${feedbackOpen ? " active" : ""}`}
