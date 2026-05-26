@@ -18,6 +18,9 @@ import { ProfileExportImport } from "./features/profile/ProfileExportImport";
 import { ThemeToggle } from "./components/ThemeToggle";
 import { AppLogo } from "./components/AppLogo";
 import type { ToastInput } from "./features/profile/ProfileExportImport";
+import { BuyListSheet } from "./features/card-purchase/BuyListSheet";
+import { useBuyFlow } from "./features/card-purchase/useBuyFlow";
+import "./features/card-purchase/buy-flow.css";
 
 // ── Order row helpers ──────────────────────────────────────────────────────────
 
@@ -599,33 +602,17 @@ function AppInner() {
   const proxyCards = activeDeck?.cards.filter(c => c.source === "proxy") ?? [];
   const proxyTotal = proxyCards.reduce((s, c) => s + c.quantity, 0);
 
-  // ── Buy links ──────────────────────────────────────────────────────────────
-  // Manapool supports ?deck=base64list for direct prefill (no paste needed).
-  // TCGPlayer and Card Kingdom require manual paste, so we copy to clipboard.
-  const VENDORS = [
-    { label: "Manapool",     url: "https://manapool.com/add-deck",       prefill: true  },
-    { label: "TCGPlayer",    url: "https://www.tcgplayer.com/massentry", prefill: false },
-    { label: "Card Kingdom", url: "https://www.cardkingdom.com/builder", prefill: false },
-  ];
-  const [sentVendor, setSentVendor] = useState<string | null>(null);
+  // ── Buy flow ───────────────────────────────────────────────────────────────
   const toBuyCards = activeDeck?.cards.filter(c => c.source === "need_to_buy") ?? [];
   const toBuyTotal = toBuyCards.reduce((s, c) => s + c.quantity, 0);
 
-  // buyOpen / buyMenuRef removed — Shop dropdown moved into Checklist filter-pills-row
-
-  async function handleSendToVendor(idx: number) {
-    const list = toBuyCards.map(c => `${c.quantity} ${c.name}`).join("\n");
-    const vendor = VENDORS[idx];
-    if (vendor.prefill) {
-      const encoded = btoa(unescape(encodeURIComponent(list)));
-      window.open(`${vendor.url}?deck=${encoded}`, "_blank");
-    } else {
-      await navigator.clipboard.writeText(list);
-      window.open(vendor.url, "_blank");
-    }
-    setSentVendor(vendor.label);
-    setTimeout(() => setSentVendor(null), 2500);
-  }
+  const buyFlow = useBuyFlow({
+    toBuyCards,
+    deckId: activeDeckId,
+    onCreateOrder: (order) => setOrders(prev => [order, ...prev]),
+    onViewOrder: () => setView("orders"),
+    nextOrderId: () => crypto.randomUUID(),
+  });
 
   // ── Actions menu ───────────────────────────────────────────────────────────
   const [actionsOpen, setActionsOpen] = useState(false);
@@ -1148,7 +1135,7 @@ function AppInner() {
                               )}
                             </div>
 
-                            {/* Bulk tag / Edit / Done */}
+                            {/* Buy list / Bulk tag / Edit / Done */}
                             {(editMode || selectMode) ? (
                               <button
                                 className="btn btn-primary btn-sm"
@@ -1158,6 +1145,15 @@ function AppInner() {
                               </button>
                             ) : (
                               <>
+                                {toBuyTotal > 0 && (
+                                  <button
+                                    className="btn btn-primary btn-sm"
+                                    onClick={buyFlow.openBuySheet}
+                                  >
+                                    <span className="buy-btn-full">Buy list ({toBuyTotal}) →</span>
+                                    <span className="buy-btn-short">Buy ({toBuyTotal})</span>
+                                  </button>
+                                )}
                                 <button
                                   className="btn btn-secondary btn-sm"
                                   onClick={() => setSelectMode(true)}
@@ -1270,9 +1266,7 @@ function AppInner() {
                     onAddCard={handleAddCard}
                     filterCardIds={notificationFilterIds ?? undefined}
                     toBuyTotal={toBuyTotal}
-                    onSendToVendor={handleSendToVendor}
-                    vendors={VENDORS}
-                    sentVendor={sentVendor}
+                    onOpenBuySheet={buyFlow.openBuySheet}
                   />
                 </>
               ) : (
@@ -1728,6 +1722,27 @@ function AppInner() {
         )}
 
       </main>
+
+      {/* ── Buy list sheet ────────────────────────────────────────────────── */}
+      <BuyListSheet
+        isOpen={buyFlow.buySheetOpen}
+        cards={toBuyCards}
+        selectedVendorId={buyFlow.selectedVendorId}
+        vendorPickerOpen={buyFlow.vendorPickerOpen}
+        vendorLastUsed={buyFlow.getVendorLastUsedMap()}
+        sendState={buyFlow.sendState}
+        errorType={buyFlow.errorType}
+        sendUrl={buyFlow.sendUrl}
+        clipboardText={buyFlow.clipboardText}
+        createdOrderId={buyFlow.createdOrderId}
+        onClose={buyFlow.closeBuySheet}
+        onOpenVendorPicker={buyFlow.openVendorPicker}
+        onCloseVendorPicker={buyFlow.closeVendorPicker}
+        onConfirmVendor={buyFlow.confirmVendor}
+        onSend={(vendorId) => void buyFlow.handleSend(vendorId)}
+        onRetrySend={(vendorId) => { buyFlow.resetSendState(); void buyFlow.handleSend(vendorId); }}
+        onViewOrder={buyFlow.onViewOrder}
+      />
     </div>
   );
 }
