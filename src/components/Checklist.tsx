@@ -28,11 +28,6 @@ interface Props {
   onAddCard: (name: string) => Promise<{ success: boolean; error?: string }>;
   /** When set, only cards whose IDs are in this array are shown (used by notification "Show cards"). */
   filterCardIds?: string[];
-  // ── Buy bar ──────────────────────────────────────────────────────────────
-  /** Total card quantity flagged need_to_buy. 0 = hide the buy bar. */
-  toBuyTotal?: number;
-  /** Called when the user taps the buy bar or the need_to_buy progress chip. */
-  onOpenBuySheet?: () => void;
 }
 
 type GroupBy = "none" | "color" | "type" | "source";
@@ -271,7 +266,7 @@ function AddCardRow({ onAdd }: { onAdd: (name: string) => Promise<{ success: boo
 }
 
 // ─── Main Checklist component ─────────────────────────────────────────────────
-export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetSource, onBulkSetSource, onRemoveCard, onUpdateQuantity, onAddCard, filterCardIds, toBuyTotal, onOpenBuySheet }: Props) {
+export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetSource, onBulkSetSource, onRemoveCard, onUpdateQuantity, onAddCard, filterCardIds }: Props) {
   const [groupBy, setGroupBy] = useState<GroupBy>("none");
   const [showMissingOnly, setShowMissingOnly] = useState(false);
   const [search, setSearch] = useState("");

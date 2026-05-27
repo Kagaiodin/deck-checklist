@@ -1274,8 +1274,6 @@ function AppInner() {
                     onUpdateQuantity={handleUpdateQuantity}
                     onAddCard={handleAddCard}
                     filterCardIds={notificationFilterIds ?? undefined}
-                    toBuyTotal={toBuyTotal}
-                    onOpenBuySheet={buyFlow.openBuySheet}
                   />
                 </>
               ) : (
