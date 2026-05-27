@@ -38,9 +38,9 @@ function makeLocalStorageMock() {
 
 describe("useBuyFlow", () => {
   let createdOrders: Order[];
-  let onCreateOrder: ReturnType<typeof vi.fn>;
-  let onViewOrder: ReturnType<typeof vi.fn>;
-  let nextOrderId: ReturnType<typeof vi.fn>;
+  let onCreateOrder: (order: Order) => void;
+  let onViewOrder: () => void;
+  let nextOrderId: () => string;
   let localStorageMock: ReturnType<typeof makeLocalStorageMock>;
 
   const cards = [makeCard(), makeCard({ id: "card-2", name: "Sol Ring", quantity: 1 })];
@@ -143,7 +143,7 @@ describe("useBuyFlow", () => {
 
     // Tab was opened
     expect(mockOpen).toHaveBeenCalledOnce();
-    const [url, target] = mockOpen.mock.calls[0] as [string, string];
+    const [url, target] = mockOpen.mock.calls[0] as unknown as [string, string];
     expect(url).toContain("manapool.com/add-deck");
     expect(url).toContain("?deck=");
     expect(target).toBe("_blank");
@@ -214,7 +214,7 @@ describe("useBuyFlow", () => {
 
     // Clipboard was written with formatted list
     expect(writeText).toHaveBeenCalledOnce();
-    const written = writeText.mock.calls[0][0] as string;
+    const written = (writeText.mock.calls[0] as unknown as [string])[0];
     expect(written).toContain("4 Lightning Bolt");
     expect(written).toContain("1 Sol Ring");
 

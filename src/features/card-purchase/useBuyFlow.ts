@@ -109,6 +109,7 @@ export interface BuyFlowActions {
   handleSend: (vendorId: string) => Promise<void>;
   resetSendState: () => void;
   getVendorLastUsedMap: () => Record<string, number>;
+  onViewOrder: () => void;
 }
 
 // ── Hook ──────────────────────────────────────────────────────────────────────
