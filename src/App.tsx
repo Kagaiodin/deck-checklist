@@ -18,6 +18,9 @@ import { ProfileExportImport } from "./features/profile/ProfileExportImport";
 import { ThemeToggle } from "./components/ThemeToggle";
 import { AppLogo } from "./components/AppLogo";
 import type { ToastInput } from "./features/profile/ProfileExportImport";
+import { BuyListSheet } from "./features/card-purchase/BuyListSheet";
+import { useBuyFlow } from "./features/card-purchase/useBuyFlow";
+import "./features/card-purchase/buy-flow.css";
 
 // ── Order row helpers ──────────────────────────────────────────────────────────
 
@@ -599,33 +602,22 @@ function AppInner() {
   const proxyCards = activeDeck?.cards.filter(c => c.source === "proxy") ?? [];
   const proxyTotal = proxyCards.reduce((s, c) => s + c.quantity, 0);
 
-  // ── Buy links ──────────────────────────────────────────────────────────────
-  // Manapool supports ?deck=base64list for direct prefill (no paste needed).
-  // TCGPlayer and Card Kingdom require manual paste, so we copy to clipboard.
-  const VENDORS = [
-    { label: "Manapool",     url: "https://manapool.com/add-deck",       prefill: true  },
-    { label: "TCGPlayer",    url: "https://www.tcgplayer.com/massentry", prefill: false },
-    { label: "Card Kingdom", url: "https://www.cardkingdom.com/builder", prefill: false },
-  ];
-  const [sentVendor, setSentVendor] = useState<string | null>(null);
+  // ── Buy flow ───────────────────────────────────────────────────────────────
   const toBuyCards = activeDeck?.cards.filter(c => c.source === "need_to_buy") ?? [];
   const toBuyTotal = toBuyCards.reduce((s, c) => s + c.quantity, 0);
 
-  // buyOpen / buyMenuRef removed — Shop dropdown moved into Checklist filter-pills-row
-
-  async function handleSendToVendor(idx: number) {
-    const list = toBuyCards.map(c => `${c.quantity} ${c.name}`).join("\n");
-    const vendor = VENDORS[idx];
-    if (vendor.prefill) {
-      const encoded = btoa(unescape(encodeURIComponent(list)));
-      window.open(`${vendor.url}?deck=${encoded}`, "_blank");
-    } else {
-      await navigator.clipboard.writeText(list);
-      window.open(vendor.url, "_blank");
-    }
-    setSentVendor(vendor.label);
-    setTimeout(() => setSentVendor(null), 2500);
+  function switchView(v: "decks" | "collection" | "orders") {
+    setView(v);
+    window.scrollTo({ top: 0, behavior: "instant" });
   }
+
+  const buyFlow = useBuyFlow({
+    toBuyCards,
+    deckId: activeDeckId,
+    onCreateOrder: (order) => setOrders(prev => [order, ...prev]),
+    onViewOrder: () => switchView("orders"),
+    nextOrderId: () => crypto.randomUUID(),
+  });
 
   // ── Actions menu ───────────────────────────────────────────────────────────
   const [actionsOpen, setActionsOpen] = useState(false);
@@ -657,19 +649,18 @@ function AppInner() {
     if (!showCreateOrder) { setShowNotes(false); setShowShipping(false); }
   }, [showCreateOrder]);
 
-  // ── Feedback menu ──────────────────────────────────────────────────────────
-  const [feedbackOpen, setFeedbackOpen] = useState(false);
-  const feedbackMenuRef = useRef<HTMLDivElement>(null);
+  // ── Overflow menu (⋮) — ThemeToggle + feedback links ─────────────────────
+  const [overflowMenuOpen, setOverflowMenuOpen] = useState(false);
+  const overflowMenuRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (!feedbackOpen) return;
     function handleClickOutside(e: MouseEvent) {
-      if (feedbackMenuRef.current && !feedbackMenuRef.current.contains(e.target as Node)) {
-        setFeedbackOpen(false);
+      if (overflowMenuRef.current && !overflowMenuRef.current.contains(e.target as Node)) {
+        setOverflowMenuOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [feedbackOpen]);
+  }, []);
 
   const filteredDecks = sidebarSearch.trim()
     ? state.decks.filter(d => d.name.toLowerCase().includes(sidebarSearch.toLowerCase()))
@@ -703,21 +694,21 @@ function AppInner() {
         <nav className="app-nav">
           <button
             className={`nav-btn${view === "decks" ? " active" : ""}`}
-            onClick={() => setView("decks")}
+            onClick={() => switchView("decks")}
           >
             <span className="nav-label-short">Decks</span>
             <span className="nav-label-full">My Decks</span>
           </button>
           <button
             className={`nav-btn${view === "collection" ? " active" : ""}`}
-            onClick={() => setView("collection")}
+            onClick={() => switchView("collection")}
           >
             <span className="nav-label-short">Collection</span>
             <span className="nav-label-full">My Collection</span>
           </button>
           <button
             className={`nav-btn${view === "orders" ? " active" : ""}`}
-            onClick={() => setView("orders")}
+            onClick={() => switchView("orders")}
           >
             Orders
             {orders.filter(o => o.status === "active").length > 0 && (
@@ -725,43 +716,47 @@ function AppInner() {
             )}
           </button>
         </nav>
-        <div className="feedback-menu-container" ref={feedbackMenuRef}>
+        <div className="header-overflow-container" ref={overflowMenuRef}>
           <button
-            className={`btn btn-secondary btn-sm feedback-btn${feedbackOpen ? " active" : ""}`}
-            onClick={() => setFeedbackOpen(o => !o)}
-            title="Give feedback"
+            className="header-overflow-btn"
+            onClick={() => setOverflowMenuOpen(o => !o)}
+            aria-label="More options"
+            aria-expanded={overflowMenuOpen}
           >
-            <span className="feedback-label-full">Feedback</span>
-            <span className="feedback-label-short">?</span>
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor">
+              <circle cx="9" cy="3" r="1.5" />
+              <circle cx="9" cy="9" r="1.5" />
+              <circle cx="9" cy="15" r="1.5" />
+            </svg>
           </button>
-          {feedbackOpen && <div className="mobile-sheet-backdrop" onClick={() => setFeedbackOpen(false)} />}
-          {feedbackOpen && (
-            <div className="feedback-dropdown">
-              <div className="feedback-dropdown-label">Have something to share?</div>
+
+          {overflowMenuOpen && (
+            <div className="header-overflow-menu">
+              <div className="overflow-menu-section">
+                <ThemeToggle />
+              </div>
+              <div className="overflow-menu-divider" />
               <a
-                className="feedback-item"
+                className="overflow-menu-item"
                 href="https://github.com/Kagaiodin/deck-checklist/issues/new?template=bug_report.md"
                 target="_blank"
                 rel="noopener noreferrer"
-                onClick={() => setFeedbackOpen(false)}
+                onClick={() => setOverflowMenuOpen(false)}
               >
                 🐛 Report a bug
-                <span className="feedback-item-hint">Something not working right</span>
               </a>
               <a
-                className="feedback-item"
+                className="overflow-menu-item"
                 href="https://github.com/Kagaiodin/deck-checklist/issues/new?template=feature_request.md"
                 target="_blank"
                 rel="noopener noreferrer"
-                onClick={() => setFeedbackOpen(false)}
+                onClick={() => setOverflowMenuOpen(false)}
               >
                 ✨ Request a feature
-                <span className="feedback-item-hint">Suggest an idea or improvement</span>
               </a>
             </div>
           )}
         </div>
-        <ThemeToggle />
       </header>
 
       <main className="app-main">
@@ -910,7 +905,7 @@ function AppInner() {
                         <li
                           key={deck.id}
                           className={`deck-item${activeDeckId === deck.id ? " active" : ""}${isDeleting ? " confirming-delete" : ""}`}
-                          onClick={() => { if (!isDeleting) { setActiveDeckId(deck.id); if (window.innerWidth < 768) setSidebarOpen(false); } }}
+                          onClick={() => { if (!isDeleting) { setActiveDeckId(deck.id); if (window.innerWidth < 1024) setSidebarOpen(false); } }}
                         >
                           <div className="deck-item-info">
                             <div className="deck-item-top">
@@ -1148,7 +1143,7 @@ function AppInner() {
                               )}
                             </div>
 
-                            {/* Bulk tag / Edit / Done */}
+                            {/* Buy list / Bulk tag / Edit / Done */}
                             {(editMode || selectMode) ? (
                               <button
                                 className="btn btn-primary btn-sm"
@@ -1158,6 +1153,16 @@ function AppInner() {
                               </button>
                             ) : (
                               <>
+                                {toBuyTotal > 0 && (
+                                  <button
+                                    className="btn btn-secondary btn-sm buy-list-btn"
+                                    onClick={buyFlow.openBuySheet}
+                                  >
+                                    <span className="buy-btn-full">Buy list</span>
+                                    <span className="buy-btn-short">Buy</span>
+                                    <span className="buy-list-badge">{toBuyTotal}</span>
+                                  </button>
+                                )}
                                 <button
                                   className="btn btn-secondary btn-sm"
                                   onClick={() => setSelectMode(true)}
@@ -1270,9 +1275,7 @@ function AppInner() {
                     onAddCard={handleAddCard}
                     filterCardIds={notificationFilterIds ?? undefined}
                     toBuyTotal={toBuyTotal}
-                    onSendToVendor={handleSendToVendor}
-                    vendors={VENDORS}
-                    sentVendor={sentVendor}
+                    onOpenBuySheet={buyFlow.openBuySheet}
                   />
                 </>
               ) : (
@@ -1728,6 +1731,27 @@ function AppInner() {
         )}
 
       </main>
+
+      {/* ── Buy list sheet ────────────────────────────────────────────────── */}
+      <BuyListSheet
+        isOpen={buyFlow.buySheetOpen}
+        cards={toBuyCards}
+        selectedVendorId={buyFlow.selectedVendorId}
+        vendorPickerOpen={buyFlow.vendorPickerOpen}
+        vendorLastUsed={buyFlow.getVendorLastUsedMap()}
+        sendState={buyFlow.sendState}
+        errorType={buyFlow.errorType}
+        sendUrl={buyFlow.sendUrl}
+        clipboardText={buyFlow.clipboardText}
+        createdOrderId={buyFlow.createdOrderId}
+        onClose={buyFlow.closeBuySheet}
+        onOpenVendorPicker={buyFlow.openVendorPicker}
+        onCloseVendorPicker={buyFlow.closeVendorPicker}
+        onConfirmVendor={buyFlow.confirmVendor}
+        onSend={(vendorId) => void buyFlow.handleSend(vendorId)}
+        onRetrySend={(vendorId) => { buyFlow.resetSendState(); void buyFlow.handleSend(vendorId); }}
+        onViewOrder={buyFlow.onViewOrder}
+      />
     </div>
   );
 }

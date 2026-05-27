@@ -3,16 +3,17 @@ import type { Card, Deck, AcquisitionSource } from "../types/index";
 import { useLocalStorage } from "../hooks/useLocalStorage";
 import { ACQUISITION_SOURCES } from "../types/index";
 
-const SEGMENT_SOURCES: Array<{ key: AcquisitionSource | "untagged"; color: string; label: string }> = [
-  { key: "owned",           color: "var(--src-owned-fg)",   label: "Owned" },
-  { key: "ordered",         color: "var(--src-ordered-fg)", label: "Ordered" },
-  { key: "proxy",           color: "var(--src-proxy-fg)",   label: "Proxy" },
-  { key: "in_another_deck", color: "var(--src-deck-fg)",    label: "In another deck" },
-  { key: "need_to_buy",     color: "var(--src-buy-fg)",     label: "Need to buy" },
-  { key: "borrowed",        color: "var(--src-borrow-fg)",  label: "Borrowed" },
-  { key: "in_binder",       color: "var(--src-binder-fg)",  label: "In binder" },
-  { key: "in_storage",      color: "var(--src-storage-fg)", label: "In storage" },
-  { key: "untagged",        color: "transparent",           label: "Untagged" },
+
+const SEGMENT_SOURCES: Array<{ key: AcquisitionSource | "untagged"; color: string; bg: string; label: string }> = [
+  { key: "owned",           color: "var(--src-owned-fg)",   bg: "var(--src-owned-bg)",   label: "Owned" },
+  { key: "ordered",         color: "var(--src-ordered-fg)", bg: "var(--src-ordered-bg)", label: "Ordered" },
+  { key: "proxy",           color: "var(--src-proxy-fg)",   bg: "var(--src-proxy-bg)",   label: "Proxy" },
+  { key: "in_another_deck", color: "var(--src-deck-fg)",    bg: "var(--src-deck-bg)",    label: "In another deck" },
+  { key: "need_to_buy",     color: "var(--src-buy-fg)",     bg: "var(--src-buy-bg)",     label: "to buy" },
+  { key: "borrowed",        color: "var(--src-borrow-fg)",  bg: "var(--src-borrow-bg)",  label: "Borrowed" },
+  { key: "in_binder",       color: "var(--src-binder-fg)",  bg: "var(--src-binder-bg)",  label: "In binder" },
+  { key: "in_storage",      color: "var(--src-storage-fg)", bg: "var(--src-storage-bg)", label: "In storage" },
+  { key: "untagged",        color: "transparent",           bg: "transparent",           label: "Untagged" },
 ];
 
 interface Props {
@@ -27,15 +28,11 @@ interface Props {
   onAddCard: (name: string) => Promise<{ success: boolean; error?: string }>;
   /** When set, only cards whose IDs are in this array are shown (used by notification "Show cards"). */
   filterCardIds?: string[];
-  // ── Buy CTA (inline filter pill + Shop dropdown) ─────────────────────────
-  /** Total card quantity flagged need_to_buy. 0 = hide the pill. */
+  // ── Buy bar ──────────────────────────────────────────────────────────────
+  /** Total card quantity flagged need_to_buy. 0 = hide the buy bar. */
   toBuyTotal?: number;
-  /** Called when user picks a vendor from the Shop dropdown. */
-  onSendToVendor?: (vendorIndex: number) => void;
-  /** Vendor list passed through from App for the dropdown. */
-  vendors?: Array<{ label: string; prefill: boolean }>;
-  /** Label of the last-used vendor (shows checkmark). */
-  sentVendor?: string | null;
+  /** Called when the user taps the buy bar or the need_to_buy progress chip. */
+  onOpenBuySheet?: () => void;
 }
 
 type GroupBy = "none" | "color" | "type" | "source";
@@ -274,7 +271,7 @@ function AddCardRow({ onAdd }: { onAdd: (name: string) => Promise<{ success: boo
 }
 
 // ─── Main Checklist component ─────────────────────────────────────────────────
-export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetSource, onBulkSetSource, onRemoveCard, onUpdateQuantity, onAddCard, filterCardIds, toBuyTotal, onSendToVendor, vendors, sentVendor }: Props) {
+export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetSource, onBulkSetSource, onRemoveCard, onUpdateQuantity, onAddCard, filterCardIds, toBuyTotal, onOpenBuySheet }: Props) {
   const [groupBy, setGroupBy] = useState<GroupBy>("none");
   const [showMissingOnly, setShowMissingOnly] = useState(false);
   const [search, setSearch] = useState("");
@@ -297,19 +294,6 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
   const [groupPickerOpen, setGroupPickerOpen] = useState(false);
   const groupPickerRef = useRef<HTMLDivElement>(null);
 
-  // ── Shop dropdown (buy pill) ─────────────────────────────────────────────
-  const [shopOpen, setShopOpen] = useState(false);
-  const shopMenuRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!shopOpen) return;
-    function handler(e: MouseEvent) {
-      if (shopMenuRef.current && !shopMenuRef.current.contains(e.target as Node)) {
-        setShopOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [shopOpen]);
 
   // Coachmark dismissal — persisted per deck ID
   const [dismissedDeckIds, setDismissedDeckIds] = useLocalStorage<string[]>(
@@ -498,24 +482,18 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
             </span>
             <span className="progress-strip-pct">{totalCards > 0 ? Math.round((acquiredCards / totalCards) * 100) : 0}%</span>
           </div>
-          <div className="progress-seg-track">
-            {SEGMENT_SOURCES.map(({ key, color }) => {
-              const qty = sourceBreakdown.get(key) ?? 0;
-              if (qty === 0 || totalCards === 0) return null;
-              const width = (qty / totalCards) * 100;
-              const label = key === "untagged" ? "Untagged" : (ACQUISITION_SOURCES.find(s => s.value === key)?.label ?? key);
-              return (
-                <div
-                  key={key}
-                  className={`progress-seg${key === "untagged" ? " seg-untagged" : ""}`}
-                  style={{ width: `${width}%`, background: key === "untagged" ? undefined : color }}
-                  title={`${qty} ${label}`}
-                />
-              );
-            })}
+          {/* ── Acquisition completion bar ── */}
+          <div className="progress-bar-track">
+            <div
+              className="progress-bar-fill"
+              style={{
+                width: totalCards > 0 ? `${(acquiredCards / totalCards) * 100}%` : "0%",
+                backgroundPosition: totalCards > 0 ? `${100 - (acquiredCards / totalCards) * 100}% center` : "100% center"
+              }}
+            />
           </div>
           <div className="progress-legend">
-            {SEGMENT_SOURCES.map(({ key, color, label }) => {
+            {SEGMENT_SOURCES.map(({ key, color, bg, label }) => {
               const qty = sourceBreakdown.get(key) ?? 0;
               if (qty === 0) return null;
               const isActive = filterSource === key;
@@ -523,9 +501,12 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
                 <button
                   key={key}
                   className={`progress-chip${isActive ? " active" : ""}`}
-                  onClick={() => setFilterSource(isActive ? "" : key as AcquisitionSource | "untagged")}
+                  style={key !== "untagged" ? { "--chip-fg": color, "--chip-bg": bg } as React.CSSProperties : undefined}
+                  onClick={() => {
+                    setFilterSource(isActive ? "" : key as AcquisitionSource | "untagged");
+                  }}
                 >
-                  <span className={`progress-chip-dot${key === "untagged" ? " dot-untagged" : ""}`} style={key !== "untagged" ? { background: color } : undefined} />
+                  <span className={`progress-chip-dot${key === "untagged" ? " dot-untagged" : ""}`} />
                   {qty} {label.toLowerCase()}
                 </button>
               );
@@ -577,46 +558,6 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
             Missing only
           </button>
 
-          {/* N to buy pill — only when there are cards flagged need_to_buy */}
-          {(toBuyTotal ?? 0) > 0 && (
-            <button
-              className={`filter-pill buy-pill${filterSource === "need_to_buy" ? " active" : ""}`}
-              onClick={() => setFilterSource(prev => prev === "need_to_buy" ? "" : "need_to_buy")}
-            >
-              {toBuyTotal} to buy
-            </button>
-          )}
-
-          {/* Shop ▾ — only visible when the buy filter is active */}
-          {filterSource === "need_to_buy" && vendors && vendors.length > 0 && (
-            <div className="shop-pill-wrap" ref={shopMenuRef}>
-              <button
-                className={`filter-pill shop-pill${shopOpen ? " open" : ""}`}
-                onClick={() => setShopOpen(v => !v)}
-              >
-                Shop {shopOpen ? "▴" : "▾"}
-              </button>
-              {shopOpen && (
-                <div className="buy-vendor-dropdown">
-                  {vendors.map((v, i) => (
-                    <button
-                      key={v.label}
-                      className="buy-vendor-item"
-                      onClick={() => { onSendToVendor?.(i); setShopOpen(false); }}
-                    >
-                      <span className="buy-vendor-name">
-                        {sentVendor === v.label ? `✓ ${v.label}` : v.label}
-                      </span>
-                      <span className="buy-vendor-hint">
-                        {v.prefill ? "Pre-fills cart" : "Copies to clipboard"}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
           {/* Group by */}
           <div className="group-pill-wrap" ref={groupPickerRef}>
             <button
@@ -643,7 +584,6 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
             )}
           </div>
 
-          {/* Active source filter pill */}
           {filterSource && (
             <button
               className="filter-pill active filter-pill-dismissable"
