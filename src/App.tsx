@@ -1089,7 +1089,7 @@ function AppInner() {
                 </button>
               </div>
 
-              {activeDeck ? (
+              {!showImport && activeDeck ? (
                 <>
                   <div className="deck-content-header">
                     {renamingDeckId === activeDeck.id ? (
