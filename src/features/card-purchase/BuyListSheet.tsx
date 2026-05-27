@@ -74,9 +74,8 @@ export function BuyListSheet({
   // ── Vendor picker sub-view ──────────────────────────────────────────────────
   if (vendorPickerOpen) {
     return (
-      <>
-        <div className="buy-sheet-backdrop" onClick={onCloseVendorPicker} />
-        <div className="buy-sheet" role="dialog" aria-modal="true" aria-label="Choose vendor">
+      <div className="buy-sheet-backdrop" onClick={onCloseVendorPicker}>
+        <div className="buy-sheet" role="dialog" aria-modal="true" aria-label="Choose vendor" onClick={e => e.stopPropagation()}>
           <VendorPicker
             initialVendorId={selectedVendorId}
             vendorLastUsed={vendorLastUsed}
@@ -85,7 +84,7 @@ export function BuyListSheet({
             onBack={onCloseVendorPicker}
           />
         </div>
-      </>
+      </div>
     );
   }
 
@@ -95,9 +94,8 @@ export function BuyListSheet({
     const clipPreview = cards.map(c => `${c.quantity} ${c.name}`).join("\n");
 
     return (
-      <>
-        <div className="buy-sheet-backdrop" onClick={onClose} />
-        <div className="buy-sheet" role="dialog" aria-modal="true" aria-label="Send complete">
+      <div className="buy-sheet-backdrop" onClick={onClose}>
+        <div className="buy-sheet" role="dialog" aria-modal="true" aria-label="Send complete" onClick={e => e.stopPropagation()}>
           <div className="buy-sheet-handle" />
           <div className="buy-sheet-header">
             <div>
@@ -143,7 +141,7 @@ export function BuyListSheet({
 
           <div className="buy-sheet-footer">
             {createdOrderId && (
-              <button className="buy-sheet-btn buy-sheet-btn-accent" onClick={onViewOrder}>
+              <button className="buy-sheet-btn buy-sheet-btn-accent" onClick={() => { onViewOrder(); onClose(); }}>
                 View order
               </button>
             )}
@@ -160,7 +158,7 @@ export function BuyListSheet({
             </button>
           </div>
         </div>
-      </>
+      </div>
     );
   }
 
@@ -168,9 +166,8 @@ export function BuyListSheet({
   if (sendState === "error") {
     if (errorType === "popup-blocked" && vendor) {
       return (
-        <>
-          <div className="buy-sheet-backdrop" onClick={onClose} />
-          <div className="buy-sheet" role="dialog" aria-modal="true" aria-label="Popup blocked">
+        <div className="buy-sheet-backdrop" onClick={onClose}>
+          <div className="buy-sheet" role="dialog" aria-modal="true" aria-label="Popup blocked" onClick={e => e.stopPropagation()}>
             <div className="buy-sheet-handle" />
             <div className="buy-sheet-header">
               <div><div className="buy-sheet-title">Buy list</div></div>
@@ -201,15 +198,14 @@ export function BuyListSheet({
               </button>
             </div>
           </div>
-        </>
+        </div>
       );
     }
 
     if (errorType === "clipboard-denied" && vendor) {
       return (
-        <>
-          <div className="buy-sheet-backdrop" onClick={onClose} />
-          <div className="buy-sheet" role="dialog" aria-modal="true" aria-label="Clipboard error">
+        <div className="buy-sheet-backdrop" onClick={onClose}>
+          <div className="buy-sheet" role="dialog" aria-modal="true" aria-label="Clipboard error" onClick={e => e.stopPropagation()}>
             <div className="buy-sheet-handle" />
             <div className="buy-sheet-header">
               <div><div className="buy-sheet-title">Buy list</div></div>
@@ -241,7 +237,7 @@ export function BuyListSheet({
               </button>
             </div>
           </div>
-        </>
+        </div>
       );
     }
   }
@@ -249,9 +245,8 @@ export function BuyListSheet({
   // ── Empty state ─────────────────────────────────────────────────────────────
   if (cards.length === 0) {
     return (
-      <>
-        <div className="buy-sheet-backdrop" onClick={onClose} />
-        <div className="buy-sheet" role="dialog" aria-modal="true" aria-label="Buy list">
+      <div className="buy-sheet-backdrop" onClick={onClose}>
+        <div className="buy-sheet" role="dialog" aria-modal="true" aria-label="Buy list" onClick={e => e.stopPropagation()}>
           <div className="buy-sheet-handle" />
           <div className="buy-sheet-header">
             <div>
@@ -273,7 +268,7 @@ export function BuyListSheet({
             <button className="buy-sheet-btn buy-sheet-btn-ghost" onClick={onClose}>Close</button>
           </div>
         </div>
-      </>
+      </div>
     );
   }
 
@@ -281,9 +276,8 @@ export function BuyListSheet({
   const hasVendorHistory = selectedVendorId !== null;
 
   return (
-    <>
-      <div className="buy-sheet-backdrop" onClick={onClose} />
-      <div className="buy-sheet" role="dialog" aria-modal="true" aria-label="Buy list">
+    <div className="buy-sheet-backdrop" onClick={onClose}>
+      <div className="buy-sheet" role="dialog" aria-modal="true" aria-label="Buy list" onClick={e => e.stopPropagation()}>
         <div className="buy-sheet-handle" />
         <div className="buy-sheet-header">
           <div>
@@ -357,6 +351,6 @@ export function BuyListSheet({
           )}
         </div>
       </div>
-    </>
+    </div>
   );
 }

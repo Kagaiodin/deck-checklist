@@ -143,7 +143,7 @@ html[data-mode="light"][data-accent="ember"] {
 
 /* ─── Theme transition ──────────────────────────────────────────────────────── */
 body, .app-header, .card-row, .deck-item, .source-tag, .card-rarity,
-.progress-bar-fill, .deck-item-bar-fill, .progress-seg {
+.progress-bar-fill, .deck-item-bar-fill {
   transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
 
@@ -159,8 +159,12 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
   padding: 0 16px; height: 56px;
   background: var(--surface); border-bottom: 1px solid var(--border);
   position: sticky; top: 0; z-index: 10;
-  gap: 8px;
+  gap: 6px;
   box-shadow: var(--shadow-sticky);
+}
+
+@media (max-width: 479px) {
+  .app-header { gap: 4px; }
 }
 
 .app-title { font-size: 18px; font-weight: 700; color: var(--accent); white-space: nowrap; line-height: 1; }
@@ -175,66 +179,86 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 /* Short nav labels on mobile, full labels on larger screens */
 .nav-label-short { display: none; }
 .nav-label-full  { display: inline; }
-.feedback-label-short { display: none; }
-.feedback-label-full  { display: inline; }
 
 @media (max-width: 479px) {
   .nav-label-short { display: inline; }
   .nav-label-full  { display: none; }
   .app-logo { max-width: 120px; }
-  .feedback-label-short { display: inline; }
-  .feedback-label-full  { display: none; }
+}
+
+/* ─── Header overflow menu (⋮) ───────────────────────────────────────────────── */
+.header-overflow-container {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.header-overflow-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.header-overflow-btn:hover,
+.header-overflow-btn[aria-expanded="true"] {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.header-overflow-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 200px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 8px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  z-index: 500;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.overflow-menu-section {
+  padding: 4px 4px 8px;
+}
+
+.overflow-menu-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 2px 0 6px;
+}
+
+.overflow-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 13px;
+  line-height: 1;
+  transition: background 0.12s, color 0.12s;
+}
+
+.overflow-menu-item:hover {
+  background: var(--surface-2);
+  color: var(--text);
 }
 
 .app-main { flex: 1; padding: 16px; }
 
-/* ─── Feedback menu ─────────────────────────────────────────────────────────── */
-.feedback-menu-container { position: relative; margin-left: 8px; flex-shrink: 0; }
-
-.feedback-btn { white-space: nowrap; }
-.feedback-btn-icon { display: none; font-weight: 700; }
-.feedback-btn-full { display: inline; }
-
-@media (max-width: 639px) {
-  .feedback-btn-full { display: none; }
-  .feedback-btn-icon { display: inline; }
-  .feedback-btn { min-width: 36px; padding: 0 10px; }
-}
-
-.feedback-dropdown {
-  position: absolute; right: 0; top: calc(100% + 6px); z-index: 400;
-  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
-  box-shadow: 0 8px 24px rgba(0,0,0,.45); min-width: 220px; padding: 6px 0; display: flex;
-  flex-direction: column;
-}
-
-.feedback-dropdown-label {
-  padding: 6px 14px 4px; font-size: 11px; text-transform: uppercase; letter-spacing: .06em;
-  color: var(--text-muted); font-weight: 600;
-}
-
-.feedback-item {
-  display: flex; flex-direction: column; align-items: flex-start;
-  width: 100%; padding: 9px 14px; background: none; border: none;
-  cursor: pointer; text-align: left; gap: 2px;
-  font-size: 13px; color: var(--text); text-decoration: none;
-  transition: background 0.12s;
-}
-.feedback-item:hover { background: rgba(255,255,255,.06); }
-.feedback-item-hint { font-size: 11px; color: var(--text-muted); }
-
-@media (max-width: 639px) {
-  .feedback-dropdown {
-    position: fixed; left: 0; right: 0; bottom: 0; top: auto;
-    border-radius: 16px 16px 0 0; min-width: unset;
-    padding-bottom: max(12px, env(safe-area-inset-bottom, 12px));
-  }
-  .feedback-dropdown::before {
-    content: ""; display: block; width: 36px; height: 4px;
-    background: rgba(255,255,255,.2); border-radius: 2px;
-    margin: 8px auto 4px;
-  }
-}
 
 @media (min-width: 640px) {
   .app-header { padding: 0 24px; }
@@ -347,7 +371,7 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 /* ─── Decks layout ──────────────────────────────────────────────────────────── */
 .decks-layout { display: flex; flex-direction: column; gap: 16px; align-items: stretch; }
 
-@media (min-width: 768px) {
+@media (min-width: 1024px) {
   .decks-layout { flex-direction: row; gap: 24px; align-items: flex-start; }
 }
 
@@ -409,15 +433,15 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
   background: rgba(255, 255, 255, .06); color: var(--text);
 }
 
-/* On desktop: hide mobile bar and overlay, keep sidebar */
-@media (min-width: 768px) {
+/* On desktop (≥1024px): hide mobile bar and overlay, keep sidebar */
+@media (min-width: 1024px) {
   .mobile-deck-bar { display: none; }
   .deck-picker-overlay { display: none !important; }
 }
 
-/* On mobile: hide sidebar */
-@media (max-width: 767px) {
-  .deck-sidebar { display: none; }
+/* On mobile/tablet (<1024px): hide sidebar */
+@media (max-width: 1023px) {
+  .deck-sidebar { display: none !important; }
 }
 
 /* ─── Sidebar ───────────────────────────────────────────────────────────────── */
@@ -431,7 +455,7 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 
 .deck-sidebar.sidebar-collapsed { padding-bottom: 12px; }
 
-@media (min-width: 768px) {
+@media (min-width: 1024px) {
   .deck-sidebar { width: 220px; flex-shrink: 0; padding: 16px; }
   .deck-sidebar.sidebar-collapsed { padding-bottom: 16px; }
 }
@@ -454,7 +478,7 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 .sidebar-toggle:hover { color: var(--text); background: var(--surface-2); }
 
 /* On desktop the toggle is hidden — sidebar is always visible */
-@media (min-width: 768px) {
+@media (min-width: 1024px) {
   .sidebar-toggle { display: none; }
   .sidebar-header { margin-bottom: 12px; }
   .deck-sidebar h2 { margin-bottom: 0; }
@@ -519,9 +543,16 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
   background: none; border: none; cursor: pointer;
   font-size: 11px; color: var(--text-muted); padding: 3px 7px;
   border-radius: 4px; border: 1px solid transparent;
-  font-family: inherit; white-space: nowrap; transition: color 0.12s, border-color 0.12s;
+  font-family: inherit; white-space: nowrap; transition: color 0.12s, border-color 0.12s, opacity 0.15s;
+  opacity: 0;
+  pointer-events: none;
 }
 .rename-btn:hover { color: var(--accent-light); border-color: var(--border); background: var(--surface-2); }
+.deck-title-row:hover .rename-btn,
+.deck-title-wrap:hover .rename-btn {
+  opacity: 1;
+  pointer-events: auto;
+}
 
 .rename-form { display: flex; gap: 8px; align-items: center; flex: 1; }
 .rename-input {
@@ -1059,8 +1090,7 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 
   /* Header buttons must stay compact — do not apply 44px min-height */
   .app-header .btn,
-  .app-header .btn-sm,
-  .app-header .feedback-btn { min-height: unset; padding: 6px 10px; font-size: 12px; }
+  .app-header .btn-sm { min-height: unset; padding: 6px 10px; font-size: 12px; }
 
   /* Deck delete button in the mobile picker sheet */
   .deck-picker-list .deck-delete-btn {
@@ -1622,6 +1652,26 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 .deck-meta-link { color: var(--accent-light); text-decoration: none; }
 .deck-meta-link:hover { text-decoration: underline; }
 
+/* ─── Buy list action-row button ──────────────────────────────────────────── */
+.buy-list-btn { gap: 6px; }
+
+.buy-list-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 99px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0;
+  flex-shrink: 0;
+}
+
 /* ─── Buy pill + Shop pill (inline filter row) ───────────────────────────────── */
 /* .buy-pill and .shop-pill inherit .filter-pill base styles.
    Active/open states are handled by .filter-pill.active and .filter-pill.open.
@@ -1646,29 +1696,22 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 .progress-strip-total { font-size: 13px; color: var(--text-muted); font-weight: 400; }
 .progress-strip-pct { font-size: 14px; color: var(--accent-light); font-weight: 700; flex-shrink: 0; }
 
-.progress-seg-track {
-  display: flex; height: 8px; border-radius: 4px; overflow: hidden;
-  background: var(--surface-2);
-}
-.progress-seg { height: 100%; transition: width 0.3s ease; }
-.progress-seg.seg-untagged {
-  background: transparent !important;
-  border-left: 1px dashed var(--text-muted);
-  opacity: 0.4;
-}
 
 .progress-legend { display: flex; flex-wrap: wrap; gap: 4px 6px; }
 .progress-chip {
   display: inline-flex; align-items: center; gap: 5px;
-  padding: 3px 8px; border-radius: 999px; border: 1px solid var(--border);
-  background: var(--surface-2); color: var(--text-muted);
+  padding: 3px 8px; border-radius: 999px;
+  border: 1px solid var(--chip-fg, var(--border));
+  background: var(--chip-bg, var(--surface-2));
+  color: var(--chip-fg, var(--text-muted));
   font-size: 10px; cursor: pointer; font-family: inherit;
-  transition: border-color 0.12s, color 0.12s, background 0.12s;
+  transition: border-color 0.12s, color 0.12s, background 0.12s, opacity 0.12s;
 }
-.progress-chip:hover { border-color: var(--accent); color: var(--text); }
-.progress-chip.active { background: var(--accent-tint-12); border-color: var(--accent); color: var(--text); }
+.progress-chip:hover { opacity: 0.8; }
+.progress-chip.active { outline: 2px solid var(--chip-fg, var(--accent)); outline-offset: 1px; }
 .progress-chip-dot {
   width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+  background: var(--chip-fg, var(--border));
 }
 .progress-chip-dot.dot-untagged {
   background: transparent; border: 1px dashed var(--text-muted);
@@ -1779,7 +1822,7 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 }
 
 /* Desktop sidebar toggle stays compact */
-@media (min-width: 768px) {
+@media (min-width: 1024px) {
   .sidebar-toggle { display: inline-flex; }
 }
 

@@ -4,16 +4,16 @@ import { useLocalStorage } from "../hooks/useLocalStorage";
 import { ACQUISITION_SOURCES } from "../types/index";
 
 
-const SEGMENT_SOURCES: Array<{ key: AcquisitionSource | "untagged"; color: string; label: string }> = [
-  { key: "owned",           color: "var(--src-owned-fg)",   label: "Owned" },
-  { key: "ordered",         color: "var(--src-ordered-fg)", label: "Ordered" },
-  { key: "proxy",           color: "var(--src-proxy-fg)",   label: "Proxy" },
-  { key: "in_another_deck", color: "var(--src-deck-fg)",    label: "In another deck" },
-  { key: "need_to_buy",     color: "var(--src-buy-fg)",     label: "Need to buy" },
-  { key: "borrowed",        color: "var(--src-borrow-fg)",  label: "Borrowed" },
-  { key: "in_binder",       color: "var(--src-binder-fg)",  label: "In binder" },
-  { key: "in_storage",      color: "var(--src-storage-fg)", label: "In storage" },
-  { key: "untagged",        color: "transparent",           label: "Untagged" },
+const SEGMENT_SOURCES: Array<{ key: AcquisitionSource | "untagged"; color: string; bg: string; label: string }> = [
+  { key: "owned",           color: "var(--src-owned-fg)",   bg: "var(--src-owned-bg)",   label: "Owned" },
+  { key: "ordered",         color: "var(--src-ordered-fg)", bg: "var(--src-ordered-bg)", label: "Ordered" },
+  { key: "proxy",           color: "var(--src-proxy-fg)",   bg: "var(--src-proxy-bg)",   label: "Proxy" },
+  { key: "in_another_deck", color: "var(--src-deck-fg)",    bg: "var(--src-deck-bg)",    label: "In another deck" },
+  { key: "need_to_buy",     color: "var(--src-buy-fg)",     bg: "var(--src-buy-bg)",     label: "to buy" },
+  { key: "borrowed",        color: "var(--src-borrow-fg)",  bg: "var(--src-borrow-bg)",  label: "Borrowed" },
+  { key: "in_binder",       color: "var(--src-binder-fg)",  bg: "var(--src-binder-bg)",  label: "In binder" },
+  { key: "in_storage",      color: "var(--src-storage-fg)", bg: "var(--src-storage-bg)", label: "In storage" },
+  { key: "untagged",        color: "transparent",           bg: "transparent",           label: "Untagged" },
 ];
 
 interface Props {
@@ -482,24 +482,18 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
             </span>
             <span className="progress-strip-pct">{totalCards > 0 ? Math.round((acquiredCards / totalCards) * 100) : 0}%</span>
           </div>
-          <div className="progress-seg-track">
-            {SEGMENT_SOURCES.map(({ key, color }) => {
-              const qty = sourceBreakdown.get(key) ?? 0;
-              if (qty === 0 || totalCards === 0) return null;
-              const width = (qty / totalCards) * 100;
-              const label = key === "untagged" ? "Untagged" : (ACQUISITION_SOURCES.find(s => s.value === key)?.label ?? key);
-              return (
-                <div
-                  key={key}
-                  className={`progress-seg${key === "untagged" ? " seg-untagged" : ""}`}
-                  style={{ width: `${width}%`, background: key === "untagged" ? undefined : color }}
-                  title={`${qty} ${label}`}
-                />
-              );
-            })}
+          {/* ── Acquisition completion bar ── */}
+          <div className="progress-bar-track">
+            <div
+              className="progress-bar-fill"
+              style={{
+                width: totalCards > 0 ? `${(acquiredCards / totalCards) * 100}%` : "0%",
+                backgroundPosition: totalCards > 0 ? `${100 - (acquiredCards / totalCards) * 100}% center` : "100% center"
+              }}
+            />
           </div>
           <div className="progress-legend">
-            {SEGMENT_SOURCES.map(({ key, color, label }) => {
+            {SEGMENT_SOURCES.map(({ key, color, bg, label }) => {
               const qty = sourceBreakdown.get(key) ?? 0;
               if (qty === 0) return null;
               const isActive = filterSource === key;
@@ -507,15 +501,12 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
                 <button
                   key={key}
                   className={`progress-chip${isActive ? " active" : ""}`}
+                  style={key !== "untagged" ? { "--chip-fg": color, "--chip-bg": bg } as React.CSSProperties : undefined}
                   onClick={() => {
                     setFilterSource(isActive ? "" : key as AcquisitionSource | "untagged");
-                    // Progress chip for need_to_buy also opens the buy sheet
-                    if (key === "need_to_buy" && !isActive && (toBuyTotal ?? 0) > 0) {
-                      onOpenBuySheet?.();
-                    }
                   }}
                 >
-                  <span className={`progress-chip-dot${key === "untagged" ? " dot-untagged" : ""}`} style={key !== "untagged" ? { background: color } : undefined} />
+                  <span className={`progress-chip-dot${key === "untagged" ? " dot-untagged" : ""}`} />
                   {qty} {label.toLowerCase()}
                 </button>
               );
@@ -567,16 +558,6 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
             Missing only
           </button>
 
-          {/* N to buy pill — view filter only; buy bar is the send entry point */}
-          {(toBuyTotal ?? 0) > 0 && (
-            <button
-              className={`filter-pill buy-pill${filterSource === "need_to_buy" ? " active" : ""}`}
-              onClick={() => setFilterSource(prev => prev === "need_to_buy" ? "" : "need_to_buy")}
-            >
-              {toBuyTotal} to buy
-            </button>
-          )}
-
           {/* Group by */}
           <div className="group-pill-wrap" ref={groupPickerRef}>
             <button
@@ -603,7 +584,6 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
             )}
           </div>
 
-          {/* Active source filter pill */}
           {filterSource && (
             <button
               className="filter-pill active filter-pill-dismissable"

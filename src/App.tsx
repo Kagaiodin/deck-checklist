@@ -606,11 +606,16 @@ function AppInner() {
   const toBuyCards = activeDeck?.cards.filter(c => c.source === "need_to_buy") ?? [];
   const toBuyTotal = toBuyCards.reduce((s, c) => s + c.quantity, 0);
 
+  function switchView(v: "decks" | "collection" | "orders") {
+    setView(v);
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }
+
   const buyFlow = useBuyFlow({
     toBuyCards,
     deckId: activeDeckId,
     onCreateOrder: (order) => setOrders(prev => [order, ...prev]),
-    onViewOrder: () => setView("orders"),
+    onViewOrder: () => switchView("orders"),
     nextOrderId: () => crypto.randomUUID(),
   });
 
@@ -644,19 +649,18 @@ function AppInner() {
     if (!showCreateOrder) { setShowNotes(false); setShowShipping(false); }
   }, [showCreateOrder]);
 
-  // ── Feedback menu ──────────────────────────────────────────────────────────
-  const [feedbackOpen, setFeedbackOpen] = useState(false);
-  const feedbackMenuRef = useRef<HTMLDivElement>(null);
+  // ── Overflow menu (⋮) — ThemeToggle + feedback links ─────────────────────
+  const [overflowMenuOpen, setOverflowMenuOpen] = useState(false);
+  const overflowMenuRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (!feedbackOpen) return;
     function handleClickOutside(e: MouseEvent) {
-      if (feedbackMenuRef.current && !feedbackMenuRef.current.contains(e.target as Node)) {
-        setFeedbackOpen(false);
+      if (overflowMenuRef.current && !overflowMenuRef.current.contains(e.target as Node)) {
+        setOverflowMenuOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [feedbackOpen]);
+  }, []);
 
   const filteredDecks = sidebarSearch.trim()
     ? state.decks.filter(d => d.name.toLowerCase().includes(sidebarSearch.toLowerCase()))
@@ -690,21 +694,21 @@ function AppInner() {
         <nav className="app-nav">
           <button
             className={`nav-btn${view === "decks" ? " active" : ""}`}
-            onClick={() => setView("decks")}
+            onClick={() => switchView("decks")}
           >
             <span className="nav-label-short">Decks</span>
             <span className="nav-label-full">My Decks</span>
           </button>
           <button
             className={`nav-btn${view === "collection" ? " active" : ""}`}
-            onClick={() => setView("collection")}
+            onClick={() => switchView("collection")}
           >
             <span className="nav-label-short">Collection</span>
             <span className="nav-label-full">My Collection</span>
           </button>
           <button
             className={`nav-btn${view === "orders" ? " active" : ""}`}
-            onClick={() => setView("orders")}
+            onClick={() => switchView("orders")}
           >
             Orders
             {orders.filter(o => o.status === "active").length > 0 && (
@@ -712,43 +716,47 @@ function AppInner() {
             )}
           </button>
         </nav>
-        <div className="feedback-menu-container" ref={feedbackMenuRef}>
+        <div className="header-overflow-container" ref={overflowMenuRef}>
           <button
-            className={`btn btn-secondary btn-sm feedback-btn${feedbackOpen ? " active" : ""}`}
-            onClick={() => setFeedbackOpen(o => !o)}
-            title="Give feedback"
+            className="header-overflow-btn"
+            onClick={() => setOverflowMenuOpen(o => !o)}
+            aria-label="More options"
+            aria-expanded={overflowMenuOpen}
           >
-            <span className="feedback-label-full">Feedback</span>
-            <span className="feedback-label-short">?</span>
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor">
+              <circle cx="9" cy="3" r="1.5" />
+              <circle cx="9" cy="9" r="1.5" />
+              <circle cx="9" cy="15" r="1.5" />
+            </svg>
           </button>
-          {feedbackOpen && <div className="mobile-sheet-backdrop" onClick={() => setFeedbackOpen(false)} />}
-          {feedbackOpen && (
-            <div className="feedback-dropdown">
-              <div className="feedback-dropdown-label">Have something to share?</div>
+
+          {overflowMenuOpen && (
+            <div className="header-overflow-menu">
+              <div className="overflow-menu-section">
+                <ThemeToggle />
+              </div>
+              <div className="overflow-menu-divider" />
               <a
-                className="feedback-item"
+                className="overflow-menu-item"
                 href="https://github.com/Kagaiodin/deck-checklist/issues/new?template=bug_report.md"
                 target="_blank"
                 rel="noopener noreferrer"
-                onClick={() => setFeedbackOpen(false)}
+                onClick={() => setOverflowMenuOpen(false)}
               >
                 🐛 Report a bug
-                <span className="feedback-item-hint">Something not working right</span>
               </a>
               <a
-                className="feedback-item"
+                className="overflow-menu-item"
                 href="https://github.com/Kagaiodin/deck-checklist/issues/new?template=feature_request.md"
                 target="_blank"
                 rel="noopener noreferrer"
-                onClick={() => setFeedbackOpen(false)}
+                onClick={() => setOverflowMenuOpen(false)}
               >
                 ✨ Request a feature
-                <span className="feedback-item-hint">Suggest an idea or improvement</span>
               </a>
             </div>
           )}
         </div>
-        <ThemeToggle />
       </header>
 
       <main className="app-main">
@@ -897,7 +905,7 @@ function AppInner() {
                         <li
                           key={deck.id}
                           className={`deck-item${activeDeckId === deck.id ? " active" : ""}${isDeleting ? " confirming-delete" : ""}`}
-                          onClick={() => { if (!isDeleting) { setActiveDeckId(deck.id); if (window.innerWidth < 768) setSidebarOpen(false); } }}
+                          onClick={() => { if (!isDeleting) { setActiveDeckId(deck.id); if (window.innerWidth < 1024) setSidebarOpen(false); } }}
                         >
                           <div className="deck-item-info">
                             <div className="deck-item-top">
@@ -1147,11 +1155,12 @@ function AppInner() {
                               <>
                                 {toBuyTotal > 0 && (
                                   <button
-                                    className="btn btn-primary btn-sm"
+                                    className="btn btn-secondary btn-sm buy-list-btn"
                                     onClick={buyFlow.openBuySheet}
                                   >
-                                    <span className="buy-btn-full">Buy list ({toBuyTotal}) →</span>
-                                    <span className="buy-btn-short">Buy ({toBuyTotal})</span>
+                                    <span className="buy-btn-full">Buy list</span>
+                                    <span className="buy-btn-short">Buy</span>
+                                    <span className="buy-list-badge">{toBuyTotal}</span>
                                   </button>
                                 )}
                                 <button
