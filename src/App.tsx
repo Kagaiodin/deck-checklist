@@ -712,7 +712,6 @@ function AppInner() {
             )}
           </button>
         </nav>
-        <ThemeToggle />
         <div className="feedback-menu-container" ref={feedbackMenuRef}>
           <button
             className={`btn btn-secondary btn-sm feedback-btn${feedbackOpen ? " active" : ""}`}
@@ -749,6 +748,7 @@ function AppInner() {
             </div>
           )}
         </div>
+        <ThemeToggle />
       </header>
 
       <main className="app-main">
