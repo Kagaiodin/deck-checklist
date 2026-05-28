@@ -190,38 +190,13 @@ export function useBuyFlow({
 
   const getVendorLastUsedMap = useCallback(() => getVendorLastUsed(), []);
 
-  /** Build the formatted card list for this vendor */
-  function buildList(): string {
-    return toBuyCards.map(c => `${c.quantity} ${c.name}`).join("\n");
-  }
-
-  /** Create an order draft and return its id */
-  function createOrderDraft(vendorId: string): string {
-    const vendor = VENDORS.find(v => v.id === vendorId);
-    const id = nextOrderId();
-    const orderCards: OrderCard[] = toBuyCards.map(c => ({
-      cardName: c.name,
-      quantity: c.quantity,
-      deckId: deckId ?? undefined,
-      cardId: c.id,
-    }));
-    const draft: Order = {
-      id,
-      createdAt: Date.now(),
-      vendor: vendor?.label ?? vendorId,
-      status: "active",
-      cards: orderCards,
-    };
-    onCreateOrder(draft);
-    return id;
-  }
-
   const handleSend = useCallback(async (vendorId: string) => {
     const vendor = VENDORS.find(v => v.id === vendorId);
     if (!vendor) return;
 
+    const list = toBuyCards.map(c => `${c.quantity} ${c.name}`).join("\n");
+
     setSendState("sending");
-    const list = buildList();
 
     if (vendor.prefill) {
       // Tab-based vendor (Manapool): encode list and open
@@ -258,11 +233,24 @@ export function useBuyFlow({
     setLastVendorId(vendorId);
     setSelectedVendorId(vendorId);
     recordVendorUsed(vendorId);
-    const orderId = createOrderDraft(vendorId);
-    setCreatedOrderId(orderId);
+
+    const id = nextOrderId();
+    const orderCards: OrderCard[] = toBuyCards.map(c => ({
+      cardName: c.name,
+      quantity: c.quantity,
+      deckId: deckId ?? undefined,
+      cardId: c.id,
+    }));
+    onCreateOrder({
+      id,
+      createdAt: Date.now(),
+      vendor: vendor.label,
+      status: "active",
+      cards: orderCards,
+    });
+    setCreatedOrderId(id);
     setSendState("success");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [toBuyCards, deckId]);
+  }, [toBuyCards, deckId, nextOrderId, onCreateOrder]);
 
   return {
     // State
@@ -285,5 +273,5 @@ export function useBuyFlow({
     resetSendState,
     getVendorLastUsedMap,
     onViewOrder,
-  } as BuyFlowState & BuyFlowActions & { onViewOrder: () => void };
+  };
 }
