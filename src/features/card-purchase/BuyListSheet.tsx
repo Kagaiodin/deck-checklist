@@ -57,6 +57,18 @@ export function BuyListSheet({
 }: Props) {
   const manualTextRef = useRef<HTMLTextAreaElement>(null);
 
+  // Dismiss the entire flow on Escape regardless of which sub-view is active.
+  // Intentionally calls onClose (not onCloseVendorPicker) so Escape fully
+  // closes rather than stepping back one level.
+  useEffect(() => {
+    if (!isOpen) return;
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [isOpen, onClose]);
+
   // Pre-select the manual fallback textarea when clipboard is denied
   useEffect(() => {
     if (errorType === "clipboard-denied" && manualTextRef.current) {
