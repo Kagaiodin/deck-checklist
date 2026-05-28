@@ -595,3 +595,54 @@
 .bulk-warn-ico { font-size: 15px; line-height: 1; flex-shrink: 0; }
 .bulk-warn strong { color: var(--text); display: block; margin-bottom: 2px; }
 .bulk-warn p { color: var(--text-muted); font-size: 11px; margin: 0; }
+
+/* ── Undo toast ──────────────────────────────────────────────────────────── */
+.undo-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  min-width: 260px;
+  max-width: 360px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+.undo-toast-message {
+  flex: 1;
+  font-size: 13px;
+  color: var(--text);
+}
+.undo-toast-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--accent-light);
+  font-weight: 600;
+  font-size: 13px;
+  font-family: inherit;
+  padding: 2px 6px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+.undo-toast-btn:hover { background: var(--accent-tint-12); }
+.undo-toast-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  width: 100%;
+  background: var(--accent);
+  animation: undo-countdown 30s linear forwards;
+}
+@keyframes undo-countdown {
+  from { width: 100%; }
+  to   { width: 0%; }
+}

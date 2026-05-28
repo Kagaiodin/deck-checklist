@@ -93,8 +93,15 @@ export function CollectionPage({ decks, onCollectionChange }: CollectionPageProp
   const [pendingCsvFile,    setPendingCsvFile]     = useState<File | null>(null);
   const [editingPrinting,   setEditingPrinting]    = useState<EditingPrinting | null>(null);
 
-  const csvInputRef      = useRef<HTMLInputElement>(null);
+  const csvInputRef       = useRef<HTMLInputElement>(null);
   const collectionListRef = useRef<VirtuosoHandle>(null);
+  const snapshotRef       = useRef<{ collection: Collection; meta: CollectionMeta | null } | null>(null);
+  const toastTimerRef     = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const [undoToast, setUndoToast] = useState<string | null>(null);
+  const [toastKey,  setToastKey]  = useState(0);
+
+  useEffect(() => () => { if (toastTimerRef.current) clearTimeout(toastTimerRef.current); }, []);
 
   // ── Derived / hook values ──────────────────────────────────────────────────
   const getCommittedInfo = useCommittedInfo(decks);
@@ -148,6 +155,25 @@ export function CollectionPage({ decks, onCollectionChange }: CollectionPageProp
     setFirstVisibleIdx(0);
   }, [collectionFilter, collectionSearch, collectionSort]);
 
+  // ── Undo toast ─────────────────────────────────────────────────────────────
+  function showUndoToast(message: string) {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    snapshotRef.current = { collection, meta: collectionMeta };
+    setUndoToast(message);
+    setToastKey(k => k + 1);
+    toastTimerRef.current = setTimeout(() => setUndoToast(null), 30_000);
+  }
+
+  function handleUndo() {
+    if (!snapshotRef.current) return;
+    setCollection(snapshotRef.current.collection);
+    setCollectionMeta(snapshotRef.current.meta);
+    onCollectionChange(snapshotRef.current.collection);
+    snapshotRef.current = null;
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setUndoToast(null);
+  }
+
   // ── Collection mutators ────────────────────────────────────────────────────
   function applyCollection(updated: Collection, meta: CollectionMeta) {
     setCollection(updated);
@@ -181,6 +207,7 @@ export function CollectionPage({ decks, onCollectionChange }: CollectionPageProp
   }
 
   function handleClearCollection() {
+    showUndoToast("Collection cleared.");
     setCollection({});
     setCollectionMeta(null);
     setCollectionError(null);
@@ -281,7 +308,10 @@ export function CollectionPage({ decks, onCollectionChange }: CollectionPageProp
   } = useBulkEdit({
     collection,
     collectionMeta,
-    onApply: applyCollection,
+    onApply: (next, meta, mode) => {
+      if (mode === "replace") showUndoToast("Collection replaced.");
+      applyCollection(next, meta);
+    },
   });
 
   // ── Alpha rail ─────────────────────────────────────────────────────────────
@@ -467,6 +497,13 @@ export function CollectionPage({ decks, onCollectionChange }: CollectionPageProp
             )}
           </div>
         </>
+      )}
+      {undoToast && (
+        <div className="undo-toast" role="status">
+          <span className="undo-toast-message">{undoToast}</span>
+          <button className="undo-toast-btn" onClick={handleUndo}>Undo</button>
+          <div key={toastKey} className="undo-toast-bar" />
+        </div>
       )}
     </section>
   );
