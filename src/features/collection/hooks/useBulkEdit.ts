@@ -6,7 +6,7 @@ import { parseDecklist } from "../../../utils/parser";
 interface UseBulkEditOptions {
   collection: Collection;
   collectionMeta: CollectionMeta | null;
-  onApply: (next: Collection, meta: CollectionMeta) => void;
+  onApply: (next: Collection, meta: CollectionMeta, mode: BulkEditMode) => void;
 }
 
 interface UseBulkEditResult {
@@ -83,7 +83,7 @@ export function useBulkEdit({
       importedAt: collectionMeta?.importedAt ?? Date.now(),
       cardCount,
     };
-    onApply(base, meta);
+    onApply(base, meta, bulkEditMode);
     setBulkEditText("");
     setBulkEditOpen(false);
   }
