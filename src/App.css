@@ -1350,8 +1350,9 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 @media (min-width: 1280px) {
   body { font-size: 16px; }
 
-  /* Cap content width and centre it so it doesn't stretch at 2560px */
-  .app-main { max-width: 1600px; margin-left: auto; margin-right: auto; width: 100%; padding: 40px 48px; }
+  /* Sidebar always left-aligned; cap only the right content area on ultra-wide screens */
+  .app-main { width: 100%; padding: 40px 48px; }
+  .deck-content { max-width: 1400px; }
   .app-header { padding: 0 48px; height: 68px; }
   .app-logo { height: 50px; }
 
