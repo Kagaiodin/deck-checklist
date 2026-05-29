@@ -789,7 +789,7 @@ function AppInner() {
               <div className="deck-picker-overlay" onClick={() => setDeckPickerOpen(false)}>
                 <div className="deck-picker-sheet" onClick={e => e.stopPropagation()}>
                   <div className="deck-picker-header">
-                    <span className="deck-picker-title">My Decks</span>
+                    <span className="deck-picker-title">Decks</span>
                     <button className="deck-picker-close" onClick={() => setDeckPickerOpen(false)}>✕</button>
                   </div>
                   <ul className="deck-picker-list">
@@ -1115,6 +1115,9 @@ function AppInner() {
                   />
                   {importError && <p className="import-error">{importError}</p>}
                   {validating && <ProgressTracker progress={progress} />}
+                  {!importText.trim() && !validating && (
+                    <p className="import-hint">Paste a decklist to enable import.</p>
+                  )}
                   <button
                     className="btn btn-primary"
                     onClick={handleImport}

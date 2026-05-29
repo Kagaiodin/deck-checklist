@@ -1542,7 +1542,7 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 .orders-header {
   display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
 }
-.orders-header h2 { font-size: 20px; }
+.orders-header h2 { font-size: 20px; color: var(--text); }
 
 .orders-empty {
   background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
@@ -1717,7 +1717,7 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
   padding: 2px 8px; border-radius: 999px; white-space: nowrap;
 }
 .order-status-active    { background: rgba(59,130,246,.18);   color: #60a5fa; }
-.order-status-late      { background: rgba(244,162,60,.18);   color: var(--warn); }
+.order-status-late      { background: rgba(224,83,83,.18);    color: #e05353; border: 1px solid rgba(224,83,83,.3); }
 .order-status-received  { background: rgba(74,222,128,.18);   color: var(--good); }
 .order-status-cancelled { background: rgba(148,163,184,.12);  color: #94a3b8; }
 
