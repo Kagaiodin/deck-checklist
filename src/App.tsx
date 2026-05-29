@@ -697,14 +697,14 @@ function AppInner() {
             onClick={() => switchView("decks")}
           >
             <span className="nav-label-short">Decks</span>
-            <span className="nav-label-full">My Decks</span>
+            <span className="nav-label-full">Decks</span>
           </button>
           <button
             className={`nav-btn${view === "collection" ? " active" : ""}`}
             onClick={() => switchView("collection")}
           >
             <span className="nav-label-short">Collection</span>
-            <span className="nav-label-full">My Collection</span>
+            <span className="nav-label-full">Collection</span>
           </button>
           <button
             className={`nav-btn${view === "orders" ? " active" : ""}`}
