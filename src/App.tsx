@@ -1306,6 +1306,10 @@ function AppInner() {
                   </div>
                 </div>
                 </div>
+              ) : !showImport ? (
+                <div className="empty-state centered">
+                  <p>Select a deck from the sidebar.</p>
+                </div>
               ) : null}
             </div>
           </div>
