@@ -142,13 +142,13 @@ export function ProfileExportImport({
       {!hideFooter && (
         <div className="sidebar-footer">
           <button className="btn btn-ghost btn-sm" onClick={handleExport}>
-            ↓ Export data
+            ↓ Export backup
           </button>
           <button
             className={`btn btn-ghost btn-sm${importPanelOpen ? " active" : ""}`}
             onClick={onToggleImportPanel}
           >
-            ↑ Import data
+            ↑ Import backup
           </button>
         </div>
       )}
