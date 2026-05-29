@@ -1276,7 +1276,7 @@ function AppInner() {
                     filterCardIds={notificationFilterIds ?? undefined}
                   />
                 </>
-              ) : state.decks.length === 0 ? (
+              ) : state.decks.length === 0 && !showImport ? (
                 <div className="deck-empty-cta-wrap">
                 <div className="deck-empty-cta">
                   <div className="deck-empty-icon" aria-hidden="true">
