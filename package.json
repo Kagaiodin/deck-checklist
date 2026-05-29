@@ -11,7 +11,10 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "preview": "npm run build && wrangler dev",
-    "deploy": "npm run build && wrangler deploy"
+    "deploy": "npm run build && wrangler deploy",
+    "screenshots": "tsx scripts/capture-screenshots.ts",
+    "screenshots:chrome": "tsx scripts/capture-screenshots.ts --browser chrome",
+    "screenshots:firefox": "tsx scripts/capture-screenshots.ts --browser firefox"
   },
   "dependencies": {
     "react": "^19.2.5",
@@ -34,6 +37,8 @@
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.5.0",
     "jsdom": "^29.1.1",
+    "playwright": "^1.60.0",
+    "tsx": "^4.22.3",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.58.2",
     "vite": "^8.0.10",
