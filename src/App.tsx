@@ -835,11 +835,11 @@ function AppInner() {
                         Object.assign(document.createElement("a"), { href: url, download: filename }).click();
                         URL.revokeObjectURL(url);
                         showToast({ title: "Profile exported", sub: filename, variant: "success", autoDismiss: 2000 });
-                      }}>↓ Export data</button>
+                      }}>↓ Export backup</button>
                       <button
                         className={`btn btn-ghost btn-sm${importPanelOpen ? " active" : ""}`}
                         onClick={() => setImportPanelOpen(v => !v)}
-                      >↑ Import data</button>
+                      >↑ Import backup</button>
                     </div>
                     {importPanelOpen && (
                       <ProfileExportImport
@@ -889,7 +889,7 @@ function AppInner() {
               </div>
               {sidebarOpen && (
                 state.decks.length === 0 ? (
-                  <p className="empty-state" style={{ flex: 1 }}>No decks yet. Import one to get started.</p>
+                  <p className="empty-state" style={{ flex: 1 }}>No decks yet.</p>
                 ) : filteredDecks.length === 0 ? (
                   <p className="empty-state" style={{ flex: 1 }}>No decks match "{sidebarSearch}".</p>
                 ) : (
@@ -1276,12 +1276,37 @@ function AppInner() {
                     filterCardIds={notificationFilterIds ?? undefined}
                   />
                 </>
+              ) : state.decks.length === 0 ? (
+                <div className="deck-empty-cta">
+                  <div className="deck-empty-icon" aria-hidden="true">
+                    <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
+                      <rect x="6" y="4" width="20" height="24" rx="3" stroke="currentColor" strokeWidth="1.5"/>
+                      <path d="M11 12h10M11 16h7M11 20h5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                      <circle cx="24" cy="24" r="5" fill="var(--surface)" stroke="currentColor" strokeWidth="1.5"/>
+                      <path d="M22 24h4M24 22v4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <div className="deck-empty-headline">No decks yet</div>
+                    <p className="deck-empty-body">Import a decklist from Moxfield, MTGO, or Arena to start tracking your missing cards.</p>
+                  </div>
+                  <div className="deck-empty-actions">
+                    <button className="btn btn-primary deck-empty-btn-import" onClick={() => setShowImport(true)}>
+                      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 2v9M4 8l4 4 4-4M2 13h12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      Import a deck
+                    </button>
+                    <button className="deck-empty-btn-blank" onClick={() => {
+                      const id = crypto.randomUUID();
+                      dispatch({ type: "ADD_DECK", payload: { id, name: "New deck", cards: [], createdAt: Date.now() } });
+                      setActiveDeckId(id);
+                    }}>
+                      or create a blank deck
+                    </button>
+                  </div>
+                </div>
               ) : (
                 <div className="empty-state centered">
-                  <p>Select a deck from the sidebar, or import a new one.</p>
-                  <button className="btn btn-primary" onClick={() => setShowImport(true)}>
-                    Import Deck
-                  </button>
+                  <p>Select a deck from the sidebar.</p>
                 </div>
               )}
             </div>

@@ -1182,6 +1182,64 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 .empty-state { color: var(--text-muted); font-size: 13px; padding: 16px 0; }
 .empty-state.centered { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 48px 0; }
 
+/* ─── Deck empty CTA (no decks yet — main pane) ──────────────────────────── */
+.deck-empty-cta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  max-width: 360px;
+  text-align: center;
+  padding: 40px 24px;
+}
+.deck-empty-icon {
+  width: 56px;
+  height: 56px;
+  background: var(--accent-tint-12);
+  border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  color: var(--accent-light);
+}
+.deck-empty-headline {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+  line-height: 1.25;
+  margin-bottom: 8px;
+}
+.deck-empty-body {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+.deck-empty-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+.deck-empty-btn-import {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.deck-empty-btn-blank {
+  font-size: 13px;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  padding: 2px 0;
+}
+.deck-empty-btn-blank:hover { color: var(--text); }
+
 /* ─── New-deck source tagging coachmark ─────────────────────────────────── */
 .deck-coachmark {
   display: flex;
