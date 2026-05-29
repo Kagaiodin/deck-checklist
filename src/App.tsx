@@ -1277,6 +1277,7 @@ function AppInner() {
                   />
                 </>
               ) : state.decks.length === 0 ? (
+                <div className="deck-empty-cta-wrap">
                 <div className="deck-empty-cta">
                   <div className="deck-empty-icon" aria-hidden="true">
                     <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
@@ -1303,6 +1304,7 @@ function AppInner() {
                       or create a blank deck
                     </button>
                   </div>
+                </div>
                 </div>
               ) : (
                 <div className="empty-state centered">
