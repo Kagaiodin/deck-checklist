@@ -151,7 +151,7 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 @media (min-width: 1024px) { body { font-size: 15px; } }
 
 /* ─── Layout ────────────────────────────────────────────────────────────────── */
-.app { display: flex; flex-direction: column; min-height: 100vh; overflow-x: clip; } /* clip: doesn't create scroll container, keeps position:fixed chrome working */
+.app { display: flex; flex-direction: column; height: 100dvh; overflow: hidden; } /* height: 100dvh so flex children get a definite height; overflow:hidden contains content within viewport */
 
 .app-header {
   display: flex; align-items: stretch; justify-content: flex-start;
@@ -260,12 +260,12 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
   color: var(--text);
 }
 
-.app-main { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 16px; }
+.app-main { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 0; overflow-y: auto; }
 
 
 @media (min-width: 640px) {
   .app-header { padding: 0 24px; }
-  .app-main { padding: 24px; }
+  .app-main { padding: 0; }
 }
 
 /* ─── Navigation buttons ────────────────────────────────────────────────────── */
@@ -380,10 +380,10 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 .import-error { color: var(--danger); font-size: 13px; }
 
 /* ─── Decks layout ──────────────────────────────────────────────────────────── */
-.decks-layout { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 16px; align-items: stretch; }
+.decks-layout { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 0; align-items: stretch; overflow: hidden; }
 
 @media (min-width: 1024px) {
-  .decks-layout { flex-direction: row; gap: 24px; align-items: stretch; }
+  .decks-layout { flex-direction: row; gap: 0; align-items: stretch; }
 }
 
 /* ─── Mobile deck bar & picker ──────────────────────────────────────────────── */
@@ -457,42 +457,158 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 
 /* ─── Sidebar ───────────────────────────────────────────────────────────────── */
 .deck-sidebar {
-  width: 100%;
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--radius); padding: 12px 16px;
-  /* Flex column so the pinned footer stays at the bottom */
+  width: 240px;
+  flex-shrink: 0;
+  background: var(--surface); border: none; border-right: 1px solid var(--border);
   display: flex; flex-direction: column;
+  overflow: hidden;
+  transition: width 200ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.deck-sidebar.sidebar-collapsed { padding-bottom: 12px; }
+.deck-sidebar.sidebar-collapsed { width: 52px; }
 
-@media (min-width: 1024px) {
-  .deck-sidebar { width: 220px; flex-shrink: 0; padding: 16px; }
-  .deck-sidebar.sidebar-collapsed { padding-bottom: 16px; }
+/* ── Sidebar top row: label + collapse toggle ── */
+.sidebar-top {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 14px 6px;
+  flex-shrink: 0;
 }
-
-.sidebar-header {
-  display: flex; flex-direction: column; gap: 8px;
-  margin-bottom: 12px;
+.sidebar-label {
+  font-size: 11px; font-weight: 600; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: .06em;
+  white-space: nowrap; overflow: hidden;
+  transition: opacity 150ms;
 }
-.sidebar-header-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.sidebar-header-btns { display: flex; align-items: center; gap: 6px; }
-.sidebar-deck-count { font-weight: 400; color: var(--text-muted); }
-.deck-sidebar h2 { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 0; }
+/* In rail mode: hide the label and center the collapse button */
+.deck-sidebar.sidebar-collapsed .sidebar-label { opacity: 0; pointer-events: none; width: 0; overflow: hidden; }
+.deck-sidebar.sidebar-collapsed .sidebar-top { justify-content: center; padding-left: 0; padding-right: 0; }
 
-.sidebar-toggle {
-  display: inline-flex; align-items: center;
+.collapse-btn {
+  display: inline-flex; align-items: center; justify-content: center;
   background: none; border: none; color: var(--text-muted);
-  font-size: 11px; cursor: pointer; padding: 4px 8px;
-  border-radius: var(--radius); transition: color 0.12s, background 0.12s;
+  cursor: pointer; padding: 4px; border-radius: 4px;
+  transition: color 0.12s, background 0.12s;
+  flex-shrink: 0;
 }
-.sidebar-toggle:hover { color: var(--text); background: var(--surface-2); }
+.collapse-btn:hover { color: var(--text); background: var(--surface-2); }
 
-/* On desktop the toggle is hidden — sidebar is always visible */
-@media (min-width: 1024px) {
-  .sidebar-toggle { display: none; }
-  .sidebar-header { margin-bottom: 12px; }
-  .deck-sidebar h2 { margin-bottom: 0; }
+.sidebar-chevron {
+  display: block;
+  transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.sidebar-chevron.rotated { transform: rotate(180deg); }
+
+/* ── Search row — hidden in rail mode ── */
+.sidebar-search-row {
+  display: flex; align-items: center; gap: 6px;
+  padding: 0 10px 8px;
+  flex-shrink: 0;
+  overflow: hidden;
+  transition: opacity 150ms, max-height 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  max-height: 60px;
+}
+.deck-sidebar.sidebar-collapsed .sidebar-search-row {
+  opacity: 0; pointer-events: none; max-height: 0;
+}
+
+.sidebar-search {
+  flex: 1; min-width: 0; padding: 5px 8px;
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: 6px; font-size: 12px; color: var(--text);
+  font-family: inherit;
+}
+.sidebar-search:focus { outline: none; border-color: var(--accent); }
+
+/* ── Scrollable deck list ── */
+.sidebar-scroll {
+  flex: 1; overflow-y: auto; min-height: 0;
+  padding: 0 6px;
+}
+.deck-sidebar.sidebar-collapsed .sidebar-scroll { padding: 0 4px; }
+.deck-sidebar.sidebar-collapsed .deck-item { padding: 8px 0; justify-content: center; }
+.sidebar-empty {
+  font-size: 12px; color: var(--text-muted);
+  padding: 12px 8px; text-align: center;
+}
+
+/* ── Deck avatar (visible in rail) ── */
+.deck-av {
+  width: 28px; height: 28px; border-radius: 6px;
+  background: var(--accent-tint-12); border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 600; color: var(--accent-light);
+  flex-shrink: 0; position: relative; user-select: none;
+}
+.deck-av-dot {
+  position: absolute; bottom: -2px; right: -2px;
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--text-muted); border: 2px solid var(--surface);
+  opacity: 0; transition: opacity 150ms;
+}
+.deck-av-dot.done { background: var(--success); }
+.deck-item.active .deck-av {
+  background: var(--accent-tint-20, rgba(108,92,231,.2));
+  border-color: var(--accent);
+  color: var(--accent-light);
+}
+/* Rail: drop the row bg/shadow, use a crisp ring on the avatar only */
+.deck-sidebar.sidebar-collapsed .deck-item.active {
+  background: transparent;
+  box-shadow: none;
+}
+.deck-sidebar.sidebar-collapsed .deck-item.active .deck-av {
+  background: transparent;
+  border: 2px solid var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-tint-20, rgba(108,92,231,.2));
+}
+.deck-sidebar.sidebar-collapsed .deck-av-dot { opacity: 1; }
+
+/* ── Deck info block — fades out and collapses in rail ── */
+.deck-info {
+  flex: 1; min-width: 0;
+  display: flex; flex-direction: column; gap: 3px;
+  overflow: hidden;
+  max-width: 300px;
+  transition: opacity 150ms, max-width 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.deck-sidebar.sidebar-collapsed .deck-info {
+  opacity: 0; pointer-events: none; max-width: 0; height: 0; overflow: hidden;
+}
+.deck-sidebar.sidebar-collapsed .deck-delete-btn { display: none; }
+.deck-sidebar.sidebar-collapsed .deck-delete-confirm { display: none; }
+
+.deck-item-pct { font-size: 10px; color: var(--text-muted); flex-shrink: 0; }
+.deck-item-pct.complete { color: var(--success); }
+.deck-item-meta { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+
+/* ── Sidebar footer ── */
+.sidebar-footer {
+  display: flex; flex-direction: column; gap: 4px;
+  flex-shrink: 0;
+}
+/* Hidden in expanded — the top-row "+ New" button covers this action */
+.new-deck-btn { display: none; }
+
+/* Rail only: centered ghost icon button */
+.deck-sidebar.sidebar-collapsed .sidebar-footer { padding: 8px 8px 12px; align-items: center; }
+.deck-sidebar.sidebar-collapsed .new-deck-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; padding: 0; flex-shrink: 0;
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  color: var(--text-muted); cursor: pointer;
+  transition: color 0.12s, background 0.12s, border-color 0.12s;
+}
+.deck-sidebar.sidebar-collapsed .new-deck-btn:hover {
+  color: var(--text); background: var(--surface-2); border-color: var(--accent);
+}
+
+.sidebar-backup {
+  overflow: hidden;
+  transition: max-height 250ms cubic-bezier(0.4, 0, 0.2, 1), opacity 150ms;
+  max-height: 200px;
+}
+.deck-sidebar.sidebar-collapsed .sidebar-backup {
+  max-height: 0; opacity: 0; pointer-events: none;
 }
 
 .deck-list {
@@ -537,7 +653,7 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 .deck-picker-list .deck-delete-btn { opacity: 1; }
 
 /* ─── Deck content area ─────────────────────────────────────────────────────── */
-.deck-content { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
+.deck-content { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 16px; padding: 16px; overflow-y: auto; }
 
 .deck-content-header {
   display: flex; flex-direction: column; gap: 6px;
@@ -1173,7 +1289,9 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 
   /* Safe area insets for notched/dynamic island phones */
   .app-header { padding-top: env(safe-area-inset-top, 0px); }
-  .app-main { padding-bottom: max(24px, env(safe-area-inset-bottom, 24px)); }
+  .deck-content { padding-bottom: max(16px, env(safe-area-inset-bottom, 16px)); }
+  .orders-panel { padding-bottom: max(16px, env(safe-area-inset-bottom, 16px)); }
+  .collection-panel { padding-bottom: max(16px, env(safe-area-inset-bottom, 16px)); }
   .deck-picker-sheet,
   .source-picker,
   .display-menu-dropdown { padding-bottom: env(safe-area-inset-bottom, 0px); }
@@ -1309,12 +1427,12 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
   .app-logo { height: 46px; }
   .app-title { font-size: 20px; }
 
-  /* Main padding */
-  .app-main { padding: 32px; }
+  /* Main padding moved to content panes */
+  .app-main { padding: 0; }
+  .deck-content { padding: 24px; }
+  .orders-panel { padding: 24px; }
 
   /* Sidebar */
-  .deck-sidebar { width: 260px; padding: 20px; }
-  .deck-sidebar.sidebar-collapsed { padding-bottom: 20px; }
   .deck-item { padding: 10px 12px; }
   .deck-item-name { font-size: 14px; }
   .deck-item-progress { font-size: 11px; }
@@ -1342,7 +1460,7 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
   .progress-bar-fill { border-radius: 4px; }
 
   /* Layout gap */
-  .decks-layout { gap: 32px; }
+  .decks-layout { gap: 0; }
   .deck-content { gap: 20px; }
 }
 
@@ -1351,12 +1469,13 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
   body { font-size: 16px; }
 
   /* Cap content width and centre it so it doesn't stretch at 2560px */
-  .app-main { max-width: 1600px; margin-left: auto; margin-right: auto; width: 100%; padding: 40px 48px; }
+  .app-main { max-width: 1600px; margin-left: auto; margin-right: auto; width: 100%; padding: 0; }
+  .deck-content { padding: 32px; }
+  .orders-panel { padding: 32px; }
   .app-header { padding: 0 48px; height: 68px; }
   .app-logo { height: 50px; }
 
   /* Sidebar roomier */
-  .deck-sidebar { width: 300px; padding: 24px; }
   .deck-item { padding: 12px 14px; gap: 10px; }
   .deck-item-name { font-size: 15px; }
   .deck-item-progress { font-size: 12px; }
@@ -1372,7 +1491,7 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
   /* Deck header */
   .deck-content-title { font-size: 22px; }
   .deck-content { gap: 24px; }
-  .decks-layout { gap: 40px; }
+  .decks-layout { gap: 0; }
 
   /* Checklist header */
   .checklist-header { gap: 12px; }
@@ -1417,6 +1536,7 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 .orders-panel {
   width: 100%; max-width: 760px; margin: 0 auto;
   display: flex; flex-direction: column; gap: 16px;
+  padding: 16px;
 }
 
 .orders-header {

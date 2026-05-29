@@ -77,7 +77,10 @@ function AppInner() {
   const [showImport, setShowImport] = useState(false);
   const [renamingDeckId, setRenamingDeckId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState<boolean>(() => {
+    try { return localStorage.getItem("fl-sidebar-collapsed") !== "true"; }
+    catch { return true; }
+  });
   const [archidektFetching, setArchidektFetching] = useState(false);
   const [archidektError, setArchidektError] = useState<string | null>(null);
   const [showFormats, setShowFormats] = useState(false);
@@ -86,6 +89,23 @@ function AppInner() {
   const [deletingDeckId, setDeletingDeckId] = useState<string | null>(null);
   const [editingFormatId, setEditingFormatId] = useState<string | null>(null);
   const [formatDraft, setFormatDraft] = useState("");
+
+  // ── Sidebar persistence + keyboard shortcut ───────────────────────────────
+  useEffect(() => {
+    try { localStorage.setItem("fl-sidebar-collapsed", sidebarOpen ? "false" : "true"); }
+    catch {}
+  }, [sidebarOpen]);
+
+  useEffect(() => {
+    function onSidebarKey(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === "b") {
+        e.preventDefault();
+        setSidebarOpen(o => !o);
+      }
+    }
+    document.addEventListener("keydown", onSidebarKey);
+    return () => document.removeEventListener("keydown", onSidebarKey);
+  }, []);
 
   // ── Onboarding modal ──────────────────────────────────────────────────────
   const [onboardingDismissed, setOnboardingDismissed] = useLocalStorage<boolean>(ONBOARDING_KEY, false);
@@ -862,36 +882,45 @@ function AppInner() {
             )}
 
             <aside className={`deck-sidebar${sidebarOpen ? "" : " sidebar-collapsed"}`}>
-              <div className="sidebar-header">
-                <div className="sidebar-header-top">
-                  <h2>Decks <span className="sidebar-deck-count">· {state.decks.length}</span></h2>
-                  <div className="sidebar-header-btns">
-                    <button className="btn btn-primary btn-sm" onClick={() => setShowImport(v => !v)}>
-                      {showImport ? "✕" : "+ New"}
-                    </button>
-                    <button
-                      className="sidebar-toggle"
-                      onClick={() => setSidebarOpen(o => !o)}
-                      aria-label={sidebarOpen ? "Hide deck list" : "Show deck list"}
-                    >
-                      {sidebarOpen ? "▲" : "▼"}
-                    </button>
-                  </div>
-                </div>
-                {sidebarOpen && (
-                  <input
-                    className="sidebar-search"
-                    placeholder="Filter decks…"
-                    value={sidebarSearch}
-                    onChange={e => setSidebarSearch(e.target.value)}
-                  />
-                )}
+              {/* ── Top: label + collapse toggle ── */}
+              <div className="sidebar-top">
+                <span className="sidebar-label">Decks</span>
+                <button
+                  className="collapse-btn"
+                  onClick={() => setSidebarOpen(o => !o)}
+                  aria-label={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
+                  title="Toggle sidebar (⌘B)"
+                >
+                  <svg
+                    className={`sidebar-chevron${sidebarOpen ? "" : " rotated"}`}
+                    width="14" height="14" viewBox="0 0 14 14" fill="none"
+                    aria-hidden="true"
+                  >
+                    <path d="M9 2.5L4.5 7L9 11.5" stroke="currentColor" strokeWidth="1.6"
+                          strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </button>
               </div>
-              {sidebarOpen && (
-                state.decks.length === 0 ? (
-                  <p className="empty-state" style={{ flex: 1 }}>No decks yet.</p>
+
+              {/* ── Search + New button — hidden in rail mode ── */}
+              <div className="sidebar-search-row">
+                <input
+                  className="sidebar-search"
+                  placeholder="Filter decks…"
+                  value={sidebarSearch}
+                  onChange={e => setSidebarSearch(e.target.value)}
+                />
+                <button className="btn btn-primary btn-sm" onClick={() => setShowImport(v => !v)}>
+                  {showImport ? "✕" : "+ New"}
+                </button>
+              </div>
+
+              {/* ── Scrollable deck list — always rendered for rail ── */}
+              <div className="sidebar-scroll">
+                {state.decks.length === 0 ? (
+                  <p className="sidebar-empty">No decks yet.</p>
                 ) : filteredDecks.length === 0 ? (
-                  <p className="empty-state" style={{ flex: 1 }}>No decks match "{sidebarSearch}".</p>
+                  <p className="sidebar-empty">No match.</p>
                 ) : (
                   <ul className="deck-list">
                     {filteredDecks.map(deck => {
@@ -899,19 +928,27 @@ function AppInner() {
                       const acquiredCards = deck.cards.filter(c => c.acquired).reduce((s, c) => s + c.quantity, 0);
                       const pct = totalCards > 0 ? Math.round((acquiredCards / totalCards) * 100) : 0;
                       const isComplete = totalCards > 0 && acquiredCards === totalCards;
+                      const initials = deck.name.replace(/^(Cmdr|EDH|Commander)[:–\-]\s*/i, "").charAt(0).toUpperCase();
                       const colors = getDeckColorIdentity(deck);
                       const isDeleting = deletingDeckId === deck.id;
                       return (
                         <li
                           key={deck.id}
                           className={`deck-item${activeDeckId === deck.id ? " active" : ""}${isDeleting ? " confirming-delete" : ""}`}
-                          onClick={() => { if (!isDeleting) { setActiveDeckId(deck.id); if (window.innerWidth < 1024) setSidebarOpen(false); } }}
+                          onClick={() => { if (!isDeleting) setActiveDeckId(deck.id); }}
+                          title={!sidebarOpen ? `${deck.name} · ${acquiredCards}/${totalCards} cards` : undefined}
                         >
-                          <div className="deck-item-info">
+                          {/* Avatar — always visible on rail */}
+                          <div className="deck-av">
+                            {initials}
+                            <div className={`deck-av-dot${isComplete ? " done" : ""}`} />
+                          </div>
+                          {/* Info — fades out on rail */}
+                          <div className="deck-info">
                             <div className="deck-item-top">
                               <span className="deck-item-name">{deck.name}</span>
                               <span className={`deck-item-pct${isComplete ? " complete" : ""}`}>
-                                {isComplete ? "✓ 100%" : `${pct}%`}
+                                {isComplete ? "✓" : `${pct}%`}
                               </span>
                             </div>
                             <div className="deck-item-meta">
@@ -944,21 +981,35 @@ function AppInner() {
                       );
                     })}
                   </ul>
-                )
-              )}
-              {/* Profile export/import — always visible, outside the sidebarOpen guard */}
-              <ProfileExportImport
-                decks={state.decks}
-                allErrors={allErrors}
-                collection={collection}
-                collectionMeta={collectionMeta}
-                orders={orders}
-                vendorHistory={recentVendors}
-                onImport={handleProfileImport}
-                showToast={showToast}
-                importPanelOpen={importPanelOpen}
-                onToggleImportPanel={() => setImportPanelOpen(v => !v)}
-              />
+                )}
+              </div>
+
+              {/* ── Footer ── */}
+              <div className="sidebar-footer">
+                <button
+                  className="new-deck-btn"
+                  onClick={() => setShowImport(true)}
+                  title="New deck"
+                >
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                    <path d="M6 1v10M1 6h10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
+                  </svg>
+                </button>
+                <div className="sidebar-backup">
+                  <ProfileExportImport
+                    decks={state.decks}
+                    allErrors={allErrors}
+                    collection={collection}
+                    collectionMeta={collectionMeta}
+                    orders={orders}
+                    vendorHistory={recentVendors}
+                    onImport={handleProfileImport}
+                    showToast={showToast}
+                    importPanelOpen={importPanelOpen}
+                    onToggleImportPanel={() => setImportPanelOpen(v => !v)}
+                  />
+                </div>
+              </div>
             </aside>
 
             <div className="deck-content">
