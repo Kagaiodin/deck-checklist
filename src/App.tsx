@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from "react";
+import "./tokens.css";
 import "./App.css";
 import { DeckProvider, useDecks } from "./store/decks";
 import { parseDecklist } from "./utils/parser";
-import { validateDecklist } from "./utils/validator";
+import { validateDecklist, enrichDeckExtraInfo } from "./utils/validator";
 import type { ValidationProgress } from "./utils/validator";
 import { useLocalStorage } from "./hooks/useLocalStorage";
 import { Checklist } from "./components/Checklist";
@@ -89,6 +90,7 @@ function AppInner() {
   const [deletingDeckId, setDeletingDeckId] = useState<string | null>(null);
   const [editingFormatId, setEditingFormatId] = useState<string | null>(null);
   const [formatDraft, setFormatDraft] = useState("");
+  const [enrichingDeckIds, setEnrichingDeckIds] = useState<Set<string>>(new Set());
 
   // ── Sidebar persistence + keyboard shortcut ───────────────────────────────
   useEffect(() => {
@@ -228,6 +230,14 @@ function AppInner() {
       dispatch({ type: "ADD_DECK", payload: deck });
       setAllErrors(prev => ({ ...prev, [id]: result.errors }));
       setActiveDeckId(id);
+
+      // Fire-and-forget enrichment (tokens + alt printings)
+      setEnrichingDeckIds(prev => new Set(prev).add(id));
+      enrichDeckExtraInfo(taggedCards).then(extraInfo => {
+        dispatch({ type: "SET_EXTRA_INFO", payload: { deckId: id, extraInfo } });
+      }).finally(() => {
+        setEnrichingDeckIds(prev => { const next = new Set(prev); next.delete(id); return next; });
+      });
       setImportText("");
       setDeckName("");
       setDeckUrl("");
@@ -1328,6 +1338,7 @@ function AppInner() {
                     onUpdateQuantity={handleUpdateQuantity}
                     onAddCard={handleAddCard}
                     filterCardIds={notificationFilterIds ?? undefined}
+                    isEnrichmentLoading={enrichingDeckIds.has(activeDeck.id)}
                   />
                 </>
               ) : state.decks.length === 0 && !showImport ? (

@@ -1,0 +1,155 @@
+/* ─── Reset / base ─────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { overflow-x: hidden; } /* catch-all: prevents root scroll container from forming */
+
+:root {
+  /* Accent family */
+  --accent:       #6c5ce7;
+  --accent-hover: #8b7cf8;
+  --accent-light: #a78bfa;
+  --accent-deep:  #4c3dbf;
+
+  /* Surfaces */
+  --bg:        #0d0f1a;
+  --surface:   #151829;
+  --surface-2: #1e2238;
+  --border:    #2d3258;
+
+  /* Text */
+  --text:       #eceef8;
+  --text-muted: #9ba5c9;
+
+  /* Status */
+  --danger:  #e05353;
+  --warn:    #f4a23c;
+  --success: #4ade80;
+  --good:    var(--success); /* backward-compat alias */
+
+  /* Radii */
+  --radius:      8px;
+  --radius-sm:   4px;
+  --radius-xs:   3px;
+  --radius-pill: 99px;
+
+  /* Gradients (derive from accent vars) */
+  --grad-progress: linear-gradient(90deg,
+    var(--accent-deep) 0%, var(--accent) 50%, var(--accent-light) 100%);
+
+  /* Shadows */
+  --shadow-sticky: 0 1px 12px rgba(0,0,0,.40);
+  --shadow-menu:   0 4px 20px rgba(0,0,0,.50);
+
+  /* Additional surfaces */
+  --surface-3: #252a42;
+
+  /* Accent dim (⋯ button active state background) */
+  --accent-dim: rgba(108,92,231,.15);
+
+  /* Dim variants */
+  --border-dim: #222540;
+  --text-dim:   #4a5280;
+
+  /* Accent tints */
+  --accent-tint-10: color-mix(in srgb, var(--accent) 10%, transparent);
+  --accent-tint-12: color-mix(in srgb, var(--accent) 12%, transparent);
+  --accent-tint-35: color-mix(in srgb, var(--accent) 35%, transparent);
+
+  /* Rarity */
+  --rar-common-fg:   #9ba5c9;
+  --rar-uncommon-fg: #7cb9e8; --rar-uncommon-bg: rgba(124,185,232,.09);
+  --rar-rare-fg:     #d4a017; --rar-rare-bg:     rgba(212,160,23,.09);
+  --rar-mythic-fg:   #e8721a; --rar-mythic-bg:   rgba(232,114,26,.09);
+  --rar-special-fg:  #c084fc; --rar-special-bg:  rgba(192,132,252,.09);
+
+  /* Source tags */
+  --src-owned-fg:    #4ade80; --src-owned-bg:    rgba(34,197,94,.18);
+  --src-ordered-fg:  #60a5fa; --src-ordered-bg:  rgba(59,130,246,.18);
+  --src-proxy-fg:    #c084fc; --src-proxy-bg:    rgba(168,85,247,.18);
+  --src-deck-fg:     #facc15; --src-deck-bg:     rgba(234,179,8,.18);
+  --src-buy-fg:      #f87171; --src-buy-bg:      rgba(239,68,68,.18);
+  --src-borrow-fg:   #fb923c; --src-borrow-bg:   rgba(249,115,22,.18);
+  --src-binder-fg:   #2dd4bf; --src-binder-bg:   rgba(20,184,166,.18);
+  --src-storage-fg:  #94a3b8; --src-storage-bg:  rgba(148,163,184,.18);
+}
+
+/* ─── Light mode ────────────────────────────────────────────────────────────── */
+html[data-mode="light"] {
+  --bg:         #f5f5fb;
+  --surface:    #ffffff;
+  --surface-2:  #ededf8;
+  --border:     #deddf2;
+  --text:       #1c1d2e;
+  --text-muted: #464b74;
+
+  --shadow-sticky: 0 1px 12px rgba(0,0,0,.07);
+  --shadow-menu:   0 4px 20px rgba(0,0,0,.12);
+  --surface-3: #e0dff5;
+  --border-dim: #eceef8;
+  --text-dim:   #8891b8;
+
+  /* Rarity — darker fg for AA/AAA on white */
+  --rar-common-fg:   #464b74;
+  --rar-uncommon-fg: #1d4ed8; --rar-uncommon-bg: rgba(59,130,246,.10);
+  --rar-rare-fg:     #92400e; --rar-rare-bg:     rgba(212,160,23,.10);
+  --rar-mythic-fg:   #c2410c; --rar-mythic-bg:   rgba(232,114,26,.10);
+  --rar-special-fg:  #6d28d9; --rar-special-bg:  rgba(192,132,252,.10);
+
+  /* Source tags — darker fg for readability on near-white */
+  --src-owned-fg:   #15803d; --src-owned-bg:   rgba(34,197,94,.13);
+  --src-ordered-fg: #1d4ed8; --src-ordered-bg: rgba(59,130,246,.13);
+  --src-proxy-fg:   #7c3aed; --src-proxy-bg:   rgba(168,85,247,.13);
+  --src-deck-fg:    #92400e; --src-deck-bg:    rgba(234,179,8,.13);
+  --src-buy-fg:     #dc2626; --src-buy-bg:     rgba(239,68,68,.13);
+  --src-borrow-fg:  #c2410c; --src-borrow-bg:  rgba(249,115,22,.13);
+  --src-binder-fg:  #0f766e; --src-binder-bg:  rgba(20,184,166,.13);
+  --src-storage-fg: #475569; --src-storage-bg: rgba(148,163,184,.13);
+}
+
+/* ─── Accent variants ───────────────────────────────────────────────────────── */
+html[data-accent="sapphire"] {
+  --accent:       #3b82f6;
+  --accent-hover: #60a5fa;
+  --accent-light: #93c5fd;
+  --accent-deep:  #1d4ed8;
+}
+html[data-accent="emerald"] {
+  --accent:       #10b981;
+  --accent-hover: #34d399;
+  --accent-light: #6ee7b7;
+  --accent-deep:  #059669;
+}
+html[data-accent="ember"] {
+  --accent:       #f59e0b;
+  --accent-hover: #fbbf24;
+  --accent-light: #fde68a;
+  --accent-deep:  #d97706;
+}
+
+/* ─── Light mode accent overrides — AA/AAA contrast on white surfaces ────────
+   Only --accent / --accent-hover / --accent-deep are darkened for legibility.
+   --accent-light is intentionally left at its original bright value so
+   gradients (progress bar, "list" wordmark) stay vivid.                       */
+html[data-mode="light"][data-accent="indigo"] {
+  --accent:       #4f46e5;
+  --accent-hover: #6c5ce7;
+  --accent-light: #6c5ce7;
+  --accent-deep:  #3730a3;
+}
+html[data-mode="light"][data-accent="sapphire"] {
+  --accent:       #2563eb;
+  --accent-hover: #3b82f6;
+  --accent-light: #3b82f6;
+  --accent-deep:  #1d4ed8;
+}
+html[data-mode="light"][data-accent="emerald"] {
+  --accent:       #059669;
+  --accent-hover: #10b981;
+  --accent-light: #10b981;
+  --accent-deep:  #047857;
+}
+html[data-mode="light"][data-accent="ember"] {
+  --accent:       #b45309;
+  --accent-hover: #d97706;
+  --accent-light: #d97706;
+  --accent-deep:  #92400e;
+}
