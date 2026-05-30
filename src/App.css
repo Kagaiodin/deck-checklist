@@ -415,7 +415,7 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
   padding: 0 6px;
 }
 .deck-sidebar.sidebar-collapsed .sidebar-scroll { padding: 0 4px; }
-.deck-sidebar.sidebar-collapsed .deck-item { padding: 8px 0; justify-content: center; }
+.deck-sidebar.sidebar-collapsed .deck-item { padding: 8px 0; justify-content: center; gap: 0; }
 .sidebar-empty {
   font-size: 12px; color: var(--text-muted);
   padding: 12px 8px; text-align: center;
