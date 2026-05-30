@@ -2,6 +2,10 @@ import { useState, useRef, useEffect } from "react";
 import type { Card, Deck, AcquisitionSource } from "../types/index";
 import { useLocalStorage } from "../hooks/useLocalStorage";
 import { ACQUISITION_SOURCES } from "../types/index";
+import { CardRowOverflowMenu } from "./CardRowOverflowMenu";
+import { CardRowSheet } from "./CardRowSheet";
+import { DeckExtraInfo } from "./DeckExtraInfo";
+import { useMediaQuery } from "../hooks/useMediaQuery";
 
 
 const SEGMENT_SOURCES: Array<{ key: AcquisitionSource | "untagged"; color: string; bg: string; label: string }> = [
@@ -28,6 +32,7 @@ interface Props {
   onAddCard: (name: string) => Promise<{ success: boolean; error?: string }>;
   /** When set, only cards whose IDs are in this array are shown (used by notification "Show cards"). */
   filterCardIds?: string[];
+  isEnrichmentLoading?: boolean;
 }
 
 type GroupBy = "none" | "color" | "type" | "source";
@@ -60,9 +65,12 @@ function extractMainType(typeStr: string): string {
   return beforeDash;
 }
 
-// Source tag class names (colours live in CSS via --src-* tokens)
-function sourceTagClass(source: AcquisitionSource | undefined): string {
-  return source ? `source-tag-${source}` : "";
+function rarityLabel(rarity: string): string {
+  if (rarity === "mythic") return "M";
+  if (rarity === "rare") return "R";
+  if (rarity === "uncommon") return "U";
+  if (rarity === "special" || rarity === "bonus") return "S";
+  return "C";
 }
 
 function sourceLabel(source: AcquisitionSource | undefined): string {
@@ -107,51 +115,6 @@ function matchesSearch(card: Card, query: string): boolean {
   );
 }
 
-// ─── Source picker dropdown ───────────────────────────────────────────────────
-function SourcePicker({
-  current,
-  onSelect,
-  onClose,
-}: {
-  current: AcquisitionSource | undefined;
-  onSelect: (s: AcquisitionSource | undefined) => void;
-  onClose: () => void;
-}) {
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
-    }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [onClose]);
-
-  return (
-    <>
-      <div className="mobile-sheet-backdrop" onClick={onClose} />
-      <div className="source-picker" ref={ref}>
-      {current && (
-        <button
-          className="source-picker-item source-picker-clear"
-          onClick={() => { onSelect(undefined); onClose(); }}
-        >
-          Clear tag
-        </button>
-      )}
-      {ACQUISITION_SOURCES.map(s => (
-        <button
-          key={s.value}
-          className={`source-picker-item source-tag-${s.value}${current === s.value ? " active" : ""}`}
-          onClick={() => { onSelect(s.value); onClose(); }}
-        >
-          {s.label}
-        </button>
-      ))}
-      </div>
-    </>
-  );
-}
 
 // ─── Add card row (shown at bottom in edit mode) ──────────────────────────────
 function AddCardRow({ onAdd }: { onAdd: (name: string) => Promise<{ success: boolean; error?: string }> }) {
@@ -266,7 +229,7 @@ function AddCardRow({ onAdd }: { onAdd: (name: string) => Promise<{ success: boo
 }
 
 // ─── Main Checklist component ─────────────────────────────────────────────────
-export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetSource, onBulkSetSource, onRemoveCard, onUpdateQuantity, onAddCard, filterCardIds }: Props) {
+export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetSource, onBulkSetSource, onRemoveCard, onUpdateQuantity, onAddCard, filterCardIds, isEnrichmentLoading }: Props) {
   const [groupBy, setGroupBy] = useState<GroupBy>("none");
   const [showMissingOnly, setShowMissingOnly] = useState(false);
   const [search, setSearch] = useState("");
@@ -280,7 +243,8 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
   // Derive available types from this deck's cards (in MAIN_TYPES order)
   const availableTypes = MAIN_TYPES.filter(t => deck.cards.some(c => extractMainType(c.type) === t));
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [openPickerId, setOpenPickerId] = useState<string | null>(null);
+  const [sheetCard, setSheetCard] = useState<Card | null>(null);
+  const isTouchDevice = useMediaQuery("(pointer: coarse)");
   const [bulkSource, setBulkSource] = useState<AcquisitionSource | "">("");
   const [editingQtyId, setEditingQtyId] = useState<string | null>(null);
   const [qtyDraft, setQtyDraft] = useState("");
@@ -761,30 +725,27 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
             {cards.map(card => {
               const isSelected = selectedIds.has(card.id);
               const isEditingQty = editingQtyId === card.id;
+              const setChipClass = `row-set-chip${card.rarity ? ` card-rarity-${card.rarity}` : ""}`;
 
               return (
                 <li
                   key={card.id}
                   className={`card-row${card.acquired ? " acquired" : ""}${isSelected ? " selected" : ""}${editMode ? " edit-mode-row" : ""}`}
-                  onClick={editMode ? undefined : selectMode ? () => toggleSelect(card.id) : () => onToggleAcquired(card.id)}
+                  onClick={
+                    editMode ? undefined :
+                    selectMode ? () => toggleSelect(card.id) :
+                    isTouchDevice ? (e) => {
+                      if ((e.target as HTMLElement).closest('input[type="checkbox"]')) return;
+                      setSheetCard(card);
+                    } : undefined
+                  }
                 >
-                  {/* Selection checkbox — only in select mode */}
-                  {selectMode && !editMode && (
+                  {/* Checkbox */}
+                  {!editMode && (
                     <input
                       type="checkbox"
-                      checked={isSelected}
-                      onChange={() => toggleSelect(card.id)}
-                      onClick={e => e.stopPropagation()}
-                      className="card-checkbox"
-                    />
-                  )}
-
-                  {/* Acquired checkbox — hidden in edit mode and select mode */}
-                  {!editMode && !selectMode && (
-                    <input
-                      type="checkbox"
-                      checked={card.acquired}
-                      onChange={() => onToggleAcquired(card.id)}
+                      checked={selectMode ? isSelected : card.acquired}
+                      onChange={selectMode ? () => toggleSelect(card.id) : () => onToggleAcquired(card.id)}
                       onClick={e => e.stopPropagation()}
                       className="card-checkbox"
                     />
@@ -814,64 +775,51 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
                         onClick={e => { e.stopPropagation(); startEditQty(card); }}
                         title="Click to edit quantity"
                       >
-                        {card.quantity}x
+                        {card.quantity}×
                       </button>
                     )
                   ) : (
-                    <span className="card-qty">{card.quantity}x</span>
+                    <span className="card-qty">{card.quantity}×</span>
                   )}
 
-                  <span className="card-name">
-                    <span className="card-name-primary">{card.name}</span>
-                    <span className="card-meta">
-                      {card.set && card.rarity && (
-                        <span className={`card-rarity card-rarity-${card.rarity}`}>
-                          {card.set} · {card.rarity === "mythic" ? "M" : card.rarity === "rare" ? "R" : card.rarity === "uncommon" ? "U" : card.rarity === "special" || card.rarity === "bonus" ? "S" : "C"}
-                        </span>
-                      )}
-                      <a
-                        className="card-printings-link"
-                        href={`https://scryfall.com/search?q=!"${encodeURIComponent(card.name)}"&unique=prints`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={e => e.stopPropagation()}
-                        title="View all printings on Scryfall"
-                      >
-                        <span className="card-printings-label">All printings </span>↗
-                      </a>
-                      {card.inputName && <span className="card-input-name">{card.inputName}</span>}
-                    </span>
-                  </span>
-                  <span className="card-type">{card.type}</span>
-
-                  {/* Source tag — visible in both modes */}
-                  <div className="source-tag-wrapper" onClick={e => e.stopPropagation()}>
-                    <button
-                      className={`source-tag${card.source ? " has-source" : ""} ${sourceTagClass(card.source)}`}
-                      onClick={() => setOpenPickerId(openPickerId === card.id ? null : card.id)}
-                      title="Set acquisition source"
-                    >
-                      {card.source ? sourceLabel(card.source) : "+ card source"}
-                    </button>
-                    {openPickerId === card.id && (
-                      <SourcePicker
-                        current={card.source}
-                        onSelect={source => onSetSource(card.id, source)}
-                        onClose={() => setOpenPickerId(null)}
-                      />
-                    )}
+                  {/* Card name */}
+                  <div className="row-name-group">
+                    <span className="row-name">{card.name}</span>
                   </div>
 
-                  {/* Remove button — only in edit mode */}
-                  {editMode && (
-                    <button
-                      className="card-remove-btn"
-                      onClick={e => { e.stopPropagation(); onRemoveCard(card.id); }}
-                      title="Remove card"
-                    >
-                      ×
-                    </button>
-                  )}
+                  {/* Right cluster: set chip → pill slot → ⋯ */}
+                  <div className="row-right">
+                    {card.set && card.rarity && (
+                      <span className={setChipClass}>
+                        {card.set} · {rarityLabel(card.rarity)}
+                      </span>
+                    )}
+                    <div className="pill-slot">
+                      {card.source && (
+                        <span className={`row-status-pill source-tag-${card.source}`}>
+                          {sourceLabel(card.source)}
+                        </span>
+                      )}
+                    </div>
+                    {!editMode && !selectMode && !isTouchDevice && (
+                      <CardRowOverflowMenu
+                        cardId={card.id}
+                        cardName={card.name}
+                        currentStatus={card.source}
+                        onSetSource={onSetSource}
+                        onRemoveCard={onRemoveCard}
+                      />
+                    )}
+                    {editMode && (
+                      <button
+                        className="card-remove-btn"
+                        onClick={e => { e.stopPropagation(); onRemoveCard(card.id); }}
+                        title="Remove card"
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
                 </li>
               );
             })}
@@ -890,6 +838,22 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
                 ? "No cards with this source tag."
                 : "No cards in this deck."}
         </p>
+      )}
+
+      <DeckExtraInfo
+        extraInfo={deck.extraInfo}
+        isLoading={isEnrichmentLoading}
+      />
+
+      {/* Mobile bottom sheet — rendered once for the active card */}
+      {sheetCard && (
+        <CardRowSheet
+          card={sheetCard}
+          deckId={deck.id}
+          onClose={() => setSheetCard(null)}
+          onSetSource={onSetSource}
+          onRemoveCard={(cardId) => { onRemoveCard(cardId); setSheetCard(null); }}
+        />
       )}
     </div>
   );
