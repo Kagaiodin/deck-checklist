@@ -74,6 +74,7 @@ html { overflow-x: hidden; } /* catch-all: prevents root scroll container from f
 
 /* ─── Light mode ────────────────────────────────────────────────────────────── */
 html[data-mode="light"] {
+  color-scheme: light;
   --bg:         #f5f5fb;
   --surface:    #ffffff;
   --surface-2:  #ededf8;
