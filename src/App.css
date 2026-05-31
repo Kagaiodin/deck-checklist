@@ -1764,7 +1764,7 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 }
 .order-row-stripe { background: var(--text-muted); }
 .order-row-active    .order-row-stripe { background: #60a5fa; }
-.order-row-late      .order-row-stripe { background: var(--warn); }
+.order-row-late      .order-row-stripe { background: var(--danger); }
 .order-row-received  .order-row-stripe { background: var(--good); }
 .order-row-cancelled .order-row-stripe { background: #94a3b8; }
 .order-row-cancelled { opacity: .75; }
