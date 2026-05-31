@@ -554,7 +554,7 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 .deck-title-wrap { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .deck-header-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; flex-shrink: 0; }
 .deck-content-title {
-  font-size: 18px; font-weight: 600; display: flex; align-items: center; gap: 8px;
+  font-size: 18px; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 8px;
 }
 .rename-btn {
   background: none; border: none; cursor: pointer;
@@ -2212,6 +2212,26 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
   margin: 12px 0;
 }
 
+/* ── Extra Info nav links ───────────────────────────────────── */
+.checklist-extra-info-nav,
+.checklist-back-to-top {
+  display: flex;
+  justify-content: flex-end;
+  padding: 4px 0;
+}
+.checklist-jump-link {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-decoration: none;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.checklist-jump-link:hover {
+  color: var(--text-primary);
+  background: var(--surface-3);
+}
+
 /* ── Extra Info Section ─────────────────────────────────────── */
 .ei-section {
   border-top: 1px solid var(--border-dim);
@@ -2300,6 +2320,62 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
   border: 1px solid var(--border);
   color: var(--text-muted);
   white-space: nowrap;
+  position: relative;
+  cursor: default;
+}
+.token-chip:hover {
+  border-color: var(--border-strong, var(--border));
+  color: var(--text-primary);
+}
+.token-chip::before {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  height: 8px;
+}
+.token-chip-tooltip {
+  display: none;
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  min-width: 160px;
+  max-width: 240px;
+  box-shadow: 0 4px 12px rgba(0,0,0,.25);
+  z-index: 100;
+  flex-direction: column;
+  gap: 4px;
+  white-space: normal;
+}
+.token-chip:hover .token-chip-tooltip {
+  display: flex;
+}
+.token-chip-tooltip-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--text-muted);
+  margin-bottom: 2px;
+}
+.token-chip-tooltip-card {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+.token-chip-tooltip-link {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--accent);
+  text-decoration: none;
 }
 .ei-dot {
   width: 6px;

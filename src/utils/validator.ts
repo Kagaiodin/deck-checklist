@@ -201,8 +201,13 @@ export async function enrichDeckExtraInfo(cards: Card[]): Promise<DeckExtraInfo>
   const tokenMap = new Map<string, DeckToken>();
   for (const card of allResults) {
     for (const part of card.all_parts ?? []) {
-      if (part.component === "token" && !tokenMap.has(part.name)) {
-        tokenMap.set(part.name, { name: part.name, typeLine: part.type_line });
+      if (part.component === "token") {
+        const existing = tokenMap.get(part.name);
+        if (existing) {
+          if (!existing.createdBy.includes(card.name)) existing.createdBy.push(card.name);
+        } else {
+          tokenMap.set(part.name, { name: part.name, typeLine: part.type_line, createdBy: [card.name] });
+        }
       }
     }
   }

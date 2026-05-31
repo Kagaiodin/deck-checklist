@@ -35,7 +35,7 @@ export function DeckExtraInfo({ extraInfo, isLoading }: Props) {
   if (hasAltPrintings) summaryParts.push(`${extraInfo!.altPrintings.length} alt name${extraInfo!.altPrintings.length !== 1 ? "s" : ""}`);
 
   return (
-    <div className="ei-section">
+    <div className="ei-section" id="extra-info">
       <button
         className="ei-toggle"
         onClick={() => setOpen(o => !o)}
@@ -70,6 +70,21 @@ export function DeckExtraInfo({ extraInfo, isLoading }: Props) {
                   <span key={t.name} className="token-chip">
                     <span className={`ei-dot ${tokenDotClass(t.typeLine)}`} />
                     {t.name}
+                    {t.createdBy.length > 0 && (
+                      <span className="token-chip-tooltip">
+                        <span className="token-chip-tooltip-label">Created by</span>
+                        {t.createdBy.map(c => <span key={c} className="token-chip-tooltip-card">{c}</span>)}
+                        <a
+                          className="token-chip-tooltip-link"
+                          href={`https://scryfall.com/search?q=!"${encodeURIComponent(t.name)}"+type:token`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={e => e.stopPropagation()}
+                        >
+                          Search on Scryfall ↗
+                        </a>
+                      </span>
+                    )}
                   </span>
                 ))}
               </div>

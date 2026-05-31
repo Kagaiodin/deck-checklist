@@ -431,7 +431,7 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
 
   return (
     <div className={`checklist${editMode ? " edit-mode" : ""}`}>
-      <div className="checklist-header">
+      <div className="checklist-header" id="checklist-top">
         {/* ── Segmented progress strip ── */}
         <div className="progress-strip">
           <div className="progress-strip-top">
@@ -680,6 +680,12 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
         )}
       </div>
 
+      {(deck.extraInfo || isEnrichmentLoading) && (
+        <div className="checklist-extra-info-nav">
+          <a href="#extra-info" className="checklist-jump-link">Extra Info ↓</a>
+        </div>
+      )}
+
       {/* ── New-deck source tagging coachmark ── */}
       {showCoachmark && (
         <div className="deck-coachmark" role="status" aria-live="polite">
@@ -844,6 +850,12 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
         extraInfo={deck.extraInfo}
         isLoading={isEnrichmentLoading}
       />
+
+      {(deck.extraInfo || isEnrichmentLoading) && (
+        <div className="checklist-back-to-top">
+          <a href="#checklist-top" className="checklist-jump-link">Back to top ↑</a>
+        </div>
+      )}
 
       {/* Mobile bottom sheet — rendered once for the active card */}
       {sheetCard && (

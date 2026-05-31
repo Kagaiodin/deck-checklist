@@ -61,6 +61,7 @@ export interface DeckNotification {
 export interface DeckToken {
   name: string;
   typeLine: string;
+  createdBy: string[];
 }
 
 export interface DeckAltPrinting {
