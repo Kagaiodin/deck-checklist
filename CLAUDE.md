@@ -67,3 +67,10 @@
 - Commit message format: feat/fix/refactor/style: description
 - npm run build must pass before every push — no exceptions
 - npm test must pass before every push — no exceptions
+
+## Work tracking
+- Active work tracked in docs/BACKLOG.md
+- Before starting a session, check BACKLOG.md for the next ready item
+- When pausing a feature, update its entry in BACKLOG.md with last known 
+  state and the open question blocking it
+- Link to the relevant spec file from every BACKLOG entry
