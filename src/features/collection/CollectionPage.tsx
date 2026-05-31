@@ -126,7 +126,7 @@ export function CollectionPage({ decks, onCollectionChange }: CollectionPageProp
     return map;
   }, [decks]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const { totalCards, uniqueCards, foilTotal, inDecksCount } =
+  const { totalCards, uniqueCards, deckCardTotal } =
     useCollectionStats(collection, getCommittedInfo);
 
   const { collectionSort, setCollectionSort, collectionFiltered } =
@@ -366,8 +366,7 @@ export function CollectionPage({ decks, onCollectionChange }: CollectionPageProp
         collectionMeta={collectionMeta}
         totalCards={totalCards}
         uniqueCards={uniqueCards}
-        foilTotal={foilTotal}
-        inDecksCount={inDecksCount}
+        deckCardTotal={deckCardTotal}
         hasDeckContext={decks.length > 0}
         onUploadClick={() => csvInputRef.current?.click()}
         onQuickAddClick={() => setQuickAddOpen(v => !v)}

@@ -1,4 +1,4 @@
-import type { Deck, Collection, DeckNotification } from "../types/index";
+import type { Deck, Collection, DeckNotification, DeckExtraInfo } from "../types/index";
 import { applyCollectionToCards } from "../utils/csvParser";
 import { useReducer, createContext, useContext, createElement } from "react";
 import type { Dispatch, ReactNode } from "react";
@@ -23,7 +23,8 @@ type DeckAction =
   | { type: "UNSET_CARD_SOURCES"; payload: { deckId: string; cardIds: string[] } }
   | { type: "ADD_NOTIFICATION"; payload: { deckId: string; notification: DeckNotification } }
   | { type: "DISMISS_NOTIFICATION"; payload: { deckId: string; notificationId: string } }
-  | { type: "SET_DECKS"; payload: Deck[] };
+  | { type: "SET_DECKS"; payload: Deck[] }
+  | { type: "SET_EXTRA_INFO"; payload: { deckId: string; extraInfo: DeckExtraInfo } };
 
 // Exported for unit testing
 export function deckReducer(state: DeckState, action: DeckAction): DeckState {
@@ -176,6 +177,15 @@ export function deckReducer(state: DeckState, action: DeckAction): DeckState {
       };
     case "SET_DECKS":
       return { ...state, decks: action.payload };
+    case "SET_EXTRA_INFO":
+      return {
+        ...state,
+        decks: state.decks.map(d =>
+          d.id === action.payload.deckId
+            ? { ...d, extraInfo: action.payload.extraInfo }
+            : d
+        ),
+      };
     default:
       return state;
   }

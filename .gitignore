@@ -39,3 +39,4 @@ coverage/
 
 # Generated screenshot output
 design-review-screenshots/
+*.zip

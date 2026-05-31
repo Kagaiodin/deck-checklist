@@ -11,8 +11,7 @@ interface CollectionHeaderProps {
   collectionMeta: CollectionMeta | null;
   totalCards: number;
   uniqueCards: number;
-  foilTotal: number;
-  inDecksCount: number;
+  deckCardTotal: number;
   hasDeckContext: boolean;
   onUploadClick: () => void;
   onQuickAddClick: () => void;
@@ -25,8 +24,7 @@ export function CollectionHeader({
   collectionMeta,
   totalCards,
   uniqueCards,
-  foilTotal,
-  inDecksCount,
+  deckCardTotal,
   hasDeckContext,
   onUploadClick,
   onQuickAddClick,
@@ -40,11 +38,6 @@ export function CollectionHeader({
       <div className="collection-header">
         <div className="collection-title-row">
           <h2 className="collection-title">Collection</h2>
-          {collectionMeta && (
-            <span className="collection-unique-badge">
-              {uniqueCards.toLocaleString()} unique
-            </span>
-          )}
         </div>
         <div className="collection-header-actions">
           {!collectionMeta && (
@@ -80,27 +73,21 @@ export function CollectionHeader({
           <div className="collection-stat">
             <span className="collection-stat-num">
               {hasDeckContext ? (
-                <>
-                  <span className="collection-stat-accent">
-                    {inDecksCount.toLocaleString()}
-                  </span>
-                  <span className="collection-stat-slash"> / </span>
-                  <span className="collection-stat-denom">
-                    {uniqueCards.toLocaleString()}
-                  </span>
-                </>
+                <span className="collection-stat-accent">
+                  {deckCardTotal.toLocaleString()}
+                </span>
               ) : (
                 <span className="collection-stat-muted">—</span>
               )}
             </span>
-            <span className="collection-stat-lbl">In a deck</span>
+            <span className="collection-stat-lbl">In decks</span>
           </div>
 
           <div className="collection-stat">
             <span className="collection-stat-num">
-              {foilTotal > 0 ? foilTotal.toLocaleString() : "—"}
+              {uniqueCards.toLocaleString()}
             </span>
-            <span className="collection-stat-lbl">Foils</span>
+            <span className="collection-stat-lbl">Unique</span>
           </div>
         </div>
       )}
