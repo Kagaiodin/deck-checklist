@@ -70,6 +70,7 @@ function AppInner() {
   const [deckName, setDeckName] = useState("");
   const [deckUrl, setDeckUrl] = useState("");
   const [deckFormat, setDeckFormat] = useState("");
+  const [importAsBuilt, setImportAsBuilt] = useState(false);
   const [allErrors, setAllErrors] = useLocalStorage<Record<string, ErrorQueueItem[]>>("mtg-checklist-errors", {});
   const [validating, setValidating] = useState(false);
   const [progress, setProgress] = useState<ValidationProgress>({ total: 0, validated: 0 });
@@ -224,7 +225,8 @@ function AppInner() {
         url: deckUrl.trim() || undefined,
         format: deckFormat.trim() || undefined,
         cards: taggedCards,
-        createdAt: Date.now()
+        createdAt: Date.now(),
+        isBuilt: importAsBuilt || undefined,
       };
 
       dispatch({ type: "ADD_DECK", payload: deck });
@@ -242,12 +244,17 @@ function AppInner() {
       setDeckName("");
       setDeckUrl("");
       setDeckFormat("");
+      setImportAsBuilt(false);
       setShowImport(false);
     } catch (e) {
       setImportError(e instanceof Error ? e.message : "Validation failed. Please try again.");
     } finally {
       setValidating(false);
     }
+  }
+
+  function handleToggleDeckBuilt(deckId: string) {
+    dispatch({ type: "TOGGLE_DECK_BUILT", payload: deckId });
   }
 
   function handleToggleAcquired(cardId: string) {
@@ -829,11 +836,17 @@ function AppInner() {
                                 </span>
                               )}
                               <span className="deck-item-card-count">{totalCards} cards</span>
+                              {deck.isBuilt && <span className="deck-built-badge">Built</span>}
                             </div>
                             <div className="deck-item-bar-track">
                               <div className={`deck-item-bar-fill${isComplete ? " complete" : ""}`} style={{ width: `${pct}%` }} />
                             </div>
                           </div>
+                          <button
+                            className={`deck-built-btn${deck.isBuilt ? " is-built" : ""}`}
+                            onClick={e => { e.stopPropagation(); handleToggleDeckBuilt(deck.id); }}
+                            title={deck.isBuilt ? "Unmark as built" : "Mark as built"}
+                          >{deck.isBuilt ? "✓" : "◻"}</button>
                           <button
                             className="deck-delete-btn"
                             onClick={e => { e.stopPropagation(); handleDeleteDeck(deck.id); }}
@@ -969,6 +982,7 @@ function AppInner() {
                               )}
                               {deck.format && <span className="deck-format-pill">{deck.format.toUpperCase()}</span>}
                               <span className="deck-item-card-count">· {totalCards} cards</span>
+                              {deck.isBuilt && <span className="deck-built-badge">Built</span>}
                             </div>
                             <div className="deck-item-bar-track">
                               <div className={`deck-item-bar-fill${isComplete ? " complete" : ""}`} style={{ width: `${pct}%` }} />
@@ -981,11 +995,18 @@ function AppInner() {
                               <button className="deck-delete-no" onClick={() => setDeletingDeckId(null)}>No</button>
                             </div>
                           ) : (
-                            <button
-                              className="deck-delete-btn"
-                              onClick={e => { e.stopPropagation(); setDeletingDeckId(deck.id); }}
-                              title="Delete deck"
-                            >×</button>
+                            <>
+                              <button
+                                className={`deck-built-btn${deck.isBuilt ? " is-built" : ""}`}
+                                onClick={e => { e.stopPropagation(); handleToggleDeckBuilt(deck.id); }}
+                                title={deck.isBuilt ? "Unmark as built" : "Mark as built"}
+                              >{deck.isBuilt ? "✓" : "◻"}</button>
+                              <button
+                                className="deck-delete-btn"
+                                onClick={e => { e.stopPropagation(); setDeletingDeckId(deck.id); }}
+                                title="Delete deck"
+                              >×</button>
+                            </>
                           )}
                         </li>
                       );
@@ -1097,6 +1118,15 @@ function AppInner() {
                     )}
                   </div>
                   {archidektError && <p className="import-error">{archidektError}</p>}
+                  <label className="import-built-row">
+                    <input
+                      type="checkbox"
+                      checked={importAsBuilt}
+                      onChange={e => setImportAsBuilt(e.target.checked)}
+                      disabled={validating}
+                    />
+                    This deck is already built
+                  </label>
                   <label className="file-upload-label">
                     <input
                       type="file"

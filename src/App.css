@@ -268,6 +268,11 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 .file-upload-input { display: none; }
 
 .import-error { color: var(--danger); font-size: 13px; }
+.import-built-row {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13px; color: var(--text-muted); cursor: pointer; user-select: none;
+}
+.import-built-row input[type="checkbox"] { cursor: pointer; accent-color: var(--success); }
 
 /* ─── Decks layout ──────────────────────────────────────────────────────────── */
 .decks-layout { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 0; align-items: stretch; overflow: hidden; }
@@ -541,6 +546,25 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 .deck-delete-btn:hover { color: var(--danger); }
 /* Always show delete button inside the mobile picker sheet */
 .deck-picker-list .deck-delete-btn { opacity: 1; }
+
+.deck-built-btn {
+  background: none; border: none; cursor: pointer;
+  font-size: 13px; line-height: 1; padding: 0 2px; opacity: 0;
+  transition: opacity 0.12s, color 0.12s; color: var(--text-muted);
+  flex-shrink: 0;
+}
+.deck-item:hover .deck-built-btn { opacity: 1; }
+.deck-built-btn.is-built { opacity: 1; color: var(--success); }
+.deck-built-btn:hover { color: var(--success); }
+.deck-picker-list .deck-built-btn { opacity: 1; }
+
+.deck-built-badge {
+  font-size: 9px; font-weight: 700; letter-spacing: .06em;
+  color: var(--success);
+  background: color-mix(in srgb, var(--success) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--success) 40%, transparent);
+  border-radius: 3px; padding: 1px 4px; flex-shrink: 0;
+}
 
 /* ─── Deck content area ─────────────────────────────────────────────────────── */
 .deck-content { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 16px; padding: 16px; overflow-y: auto; }

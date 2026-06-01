@@ -83,6 +83,7 @@ export interface Deck {
   format?: string;
   cards: Card[];
   createdAt: number;
+  isBuilt?: boolean;
   notifications?: DeckNotification[];
   extraInfo?: DeckExtraInfo;
 }
