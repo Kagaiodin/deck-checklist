@@ -213,9 +213,13 @@ function AppInner() {
       const result = await validateDecklist(parsed, p => setProgress(p));
 
       // Auto-tag owned cards from collection before creating deck
-      const taggedCards = Object.keys(collection).length > 0
+      const collectionTagged = Object.keys(collection).length > 0
         ? applyCollectionToCards(result.cards, collection)
         : result.cards;
+
+      const taggedCards = importAsBuilt
+        ? collectionTagged.map(c => ({ ...c, acquired: true, source: "owned" as const, manuallyTagged: true }))
+        : collectionTagged;
 
       const id = crypto.randomUUID();
       const name = deckName.trim() || `Deck ${state.decks.length + 1}`;
