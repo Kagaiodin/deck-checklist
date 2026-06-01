@@ -289,6 +289,33 @@ async function main(): Promise<void> {
       await page.waitForTimeout(300);
     });
 
+    // 35 — Sidebar in collapsed rail mode
+    await attempt("collapse sidebar to rail", async () => {
+      await click(page, 'button[aria-label="Collapse sidebar"]');
+      await page.waitForTimeout(600);
+    });
+    await shot(page, "35-desktop-sidebar-rail.png");
+    await attempt("expand sidebar", async () => {
+      await click(page, 'button[aria-label="Expand sidebar"]');
+      await page.waitForTimeout(400);
+    });
+
+    // 36 — Extra Info section expanded (token chips + alt printings)
+    await attempt("scroll to extra info section", async () => {
+      await page.locator("#extra-info").first().scrollIntoViewIfNeeded({ timeout: 3_000 });
+      await page.waitForTimeout(300);
+    });
+    await attempt("open extra info section", async () => {
+      await click(page, ".ei-toggle");
+      await page.waitForTimeout(400);
+    });
+    await shot(page, "36-desktop-extra-info.png");
+    await attempt("close extra info and scroll up", async () => {
+      await click(page, ".ei-toggle");
+      await page.waitForTimeout(200);
+      await page.evaluate(() => window.scrollTo(0, 0));
+    });
+
     // 04 — Collection tab
     await attempt("nav to Collection", () => clickNav(page, "My Collection"));
     await shot(page, "04-desktop-collection.png");
