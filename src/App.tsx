@@ -836,17 +836,18 @@ function AppInner() {
                                 </span>
                               )}
                               <span className="deck-item-card-count">{totalCards} cards</span>
-                              {deck.isBuilt && <span className="deck-built-badge">Built</span>}
+                              {deck.isBuilt && (
+                                <button
+                                  className="deck-built-badge is-built"
+                                  onClick={e => { e.stopPropagation(); handleToggleDeckBuilt(deck.id); }}
+                                  title="Unmark as built"
+                                >Built</button>
+                              )}
                             </div>
                             <div className="deck-item-bar-track">
                               <div className={`deck-item-bar-fill${isComplete ? " complete" : ""}`} style={{ width: `${pct}%` }} />
                             </div>
                           </div>
-                          <button
-                            className={`deck-built-btn${deck.isBuilt ? " is-built" : ""}`}
-                            onClick={e => { e.stopPropagation(); handleToggleDeckBuilt(deck.id); }}
-                            title={deck.isBuilt ? "Unmark as built" : "Mark as built"}
-                          >{deck.isBuilt ? "✓" : "◻"}</button>
                           <button
                             className="deck-delete-btn"
                             onClick={e => { e.stopPropagation(); handleDeleteDeck(deck.id); }}
@@ -982,7 +983,11 @@ function AppInner() {
                               )}
                               {deck.format && <span className="deck-format-pill">{deck.format.toUpperCase()}</span>}
                               <span className="deck-item-card-count">· {totalCards} cards</span>
-                              {deck.isBuilt && <span className="deck-built-badge">Built</span>}
+                              <button
+                                className={`deck-built-badge${deck.isBuilt ? " is-built" : ""}`}
+                                onClick={e => { e.stopPropagation(); handleToggleDeckBuilt(deck.id); }}
+                                title={deck.isBuilt ? "Unmark as built" : "Mark as built"}
+                              >Built</button>
                             </div>
                             <div className="deck-item-bar-track">
                               <div className={`deck-item-bar-fill${isComplete ? " complete" : ""}`} style={{ width: `${pct}%` }} />
@@ -995,18 +1000,11 @@ function AppInner() {
                               <button className="deck-delete-no" onClick={() => setDeletingDeckId(null)}>No</button>
                             </div>
                           ) : (
-                            <>
-                              <button
-                                className={`deck-built-btn${deck.isBuilt ? " is-built" : ""}`}
-                                onClick={e => { e.stopPropagation(); handleToggleDeckBuilt(deck.id); }}
-                                title={deck.isBuilt ? "Unmark as built" : "Mark as built"}
-                              >{deck.isBuilt ? "✓" : "◻"}</button>
-                              <button
-                                className="deck-delete-btn"
-                                onClick={e => { e.stopPropagation(); setDeletingDeckId(deck.id); }}
-                                title="Delete deck"
-                              >×</button>
-                            </>
+                            <button
+                              className="deck-delete-btn"
+                              onClick={e => { e.stopPropagation(); setDeletingDeckId(deck.id); }}
+                              title="Delete deck"
+                            >×</button>
                           )}
                         </li>
                       );
