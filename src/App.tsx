@@ -89,6 +89,7 @@ function AppInner() {
   const [deckPickerOpen, setDeckPickerOpen] = useState(false);
   const [sidebarSearch, setSidebarSearch] = useState("");
   const [deletingDeckId, setDeletingDeckId] = useState<string | null>(null);
+  const [unmarkingBuiltDeckId, setUnmarkingBuiltDeckId] = useState<string | null>(null);
   const [editingFormatId, setEditingFormatId] = useState<string | null>(null);
   const [formatDraft, setFormatDraft] = useState("");
   const [enrichingDeckIds, setEnrichingDeckIds] = useState<Set<string>>(new Set());
@@ -218,7 +219,12 @@ function AppInner() {
         : result.cards;
 
       const taggedCards = importAsBuilt
-        ? collectionTagged.map(c => ({ ...c, acquired: true, source: "owned" as const, manuallyTagged: true }))
+        ? collectionTagged.map(c => ({
+            ...c,
+            acquired: true,
+            source: ((c.manuallyTagged && c.source === "proxy") ? "proxy" : "owned") as AcquisitionSource,
+            manuallyTagged: true,
+          }))
         : collectionTagged;
 
       const id = crypto.randomUUID();
@@ -267,7 +273,12 @@ function AppInner() {
         type: "SET_CARDS",
         payload: {
           deckId,
-          cards: deck.cards.map(c => ({ ...c, acquired: true, source: "owned" as const, manuallyTagged: true })),
+          cards: deck.cards.map(c => ({
+            ...c,
+            acquired: true,
+            source: ((c.manuallyTagged && c.source === "proxy") ? "proxy" : "owned") as AcquisitionSource,
+            manuallyTagged: true,
+          })),
         },
       });
     } else {
@@ -872,11 +883,19 @@ function AppInner() {
                               )}
                               <span className="deck-item-card-count">{totalCards} cards</span>
                               {deck.isBuilt && (
-                                <button
-                                  className="deck-built-badge is-built"
-                                  onClick={e => { e.stopPropagation(); handleToggleDeckBuilt(deck.id); }}
-                                  title="Unmark as built"
-                                >Built</button>
+                                unmarkingBuiltDeckId === deck.id ? (
+                                  <span className="deck-built-confirm" onClick={e => e.stopPropagation()}>
+                                    <span className="deck-built-confirm-label">Unmark?</span>
+                                    <button className="deck-built-confirm-yes" onClick={() => { handleToggleDeckBuilt(deck.id); setUnmarkingBuiltDeckId(null); }}>Yes</button>
+                                    <button className="deck-built-confirm-no" onClick={() => setUnmarkingBuiltDeckId(null)}>No</button>
+                                  </span>
+                                ) : (
+                                  <button
+                                    className="deck-built-badge is-built"
+                                    onClick={e => { e.stopPropagation(); setUnmarkingBuiltDeckId(deck.id); }}
+                                    title="Unmark as built"
+                                  >Built</button>
+                                )
                               )}
                             </div>
                             <div className="deck-item-bar-track">
@@ -1018,11 +1037,19 @@ function AppInner() {
                               )}
                               {deck.format && <span className="deck-format-pill">{deck.format.toUpperCase()}</span>}
                               <span className="deck-item-card-count">· {totalCards} cards</span>
-                              <button
-                                className={`deck-built-badge${deck.isBuilt ? " is-built" : ""}`}
-                                onClick={e => { e.stopPropagation(); handleToggleDeckBuilt(deck.id); }}
-                                title={deck.isBuilt ? "Unmark as built" : "Mark as built"}
-                              >Built</button>
+                              {unmarkingBuiltDeckId === deck.id ? (
+                                <span className="deck-built-confirm" onClick={e => e.stopPropagation()}>
+                                  <span className="deck-built-confirm-label">Unmark?</span>
+                                  <button className="deck-built-confirm-yes" onClick={() => { handleToggleDeckBuilt(deck.id); setUnmarkingBuiltDeckId(null); }}>Yes</button>
+                                  <button className="deck-built-confirm-no" onClick={() => setUnmarkingBuiltDeckId(null)}>No</button>
+                                </span>
+                              ) : (
+                                <button
+                                  className={`deck-built-badge${deck.isBuilt ? " is-built" : ""}`}
+                                  onClick={e => { e.stopPropagation(); deck.isBuilt ? setUnmarkingBuiltDeckId(deck.id) : handleToggleDeckBuilt(deck.id); }}
+                                  title={deck.isBuilt ? "Unmark as built" : "Mark as built"}
+                                >Built</button>
+                              )}
                             </div>
                             <div className="deck-item-bar-track">
                               <div className={`deck-item-bar-fill${isComplete ? " complete" : ""}`} style={{ width: `${pct}%` }} />

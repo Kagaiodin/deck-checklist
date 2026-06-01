@@ -1920,6 +1920,20 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 }
 .deck-delete-no:hover { color: var(--text); }
 
+/* Built unmark confirm — inline in deck-item-meta */
+.deck-built-confirm { display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0; }
+.deck-built-confirm-label { font-size: 10px; color: var(--text-muted); font-weight: 600; white-space: nowrap; }
+.deck-built-confirm-yes {
+  background: var(--surface-2); color: var(--text); border: 1px solid var(--border); cursor: pointer;
+  font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 4px; font-family: inherit;
+}
+.deck-built-confirm-yes:hover { border-color: var(--text-muted); color: var(--text); }
+.deck-built-confirm-no {
+  background: none; border: 1px solid var(--border); color: var(--text-muted); cursor: pointer;
+  font-size: 10px; padding: 2px 7px; border-radius: 4px; font-family: inherit;
+}
+.deck-built-confirm-no:hover { color: var(--text); }
+
 /* ─── Deck header — metadata line ──────────────────────────────────────────── */
 .deck-meta-line {
   display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
