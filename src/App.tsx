@@ -264,6 +264,18 @@ function AppInner() {
   function handleToggleAcquired(cardId: string) {
     if (!activeDeckId) return;
     dispatch({ type: "TOGGLE_ACQUIRED", payload: { deckId: activeDeckId, cardId } });
+
+    // Auto-mark as built when the last card is checked off
+    const deck = state.decks.find(d => d.id === activeDeckId);
+    if (deck && !deck.isBuilt) {
+      const card = deck.cards.find(c => c.id === cardId);
+      if (card && !card.acquired) {
+        const allOthersAcquired = deck.cards.every(c => c.id === cardId || c.acquired);
+        if (allOthersAcquired && deck.cards.length > 0) {
+          dispatch({ type: "TOGGLE_DECK_BUILT", payload: activeDeckId });
+        }
+      }
+    }
   }
 
   function handleSetSource(cardId: string, source: AcquisitionSource | undefined) {
