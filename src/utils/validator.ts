@@ -1,4 +1,4 @@
-import type { Card, ErrorQueueItem } from "../types/index";
+import type { Card, ErrorQueueItem, DeckToken, DeckAltPrinting, DeckExtraInfo } from "../types/index";
 import { getFrontFaceName, isDualFace } from "./dualface";
 
 interface ScryfallCardFace {
@@ -16,6 +16,14 @@ interface ScryfallCard {
   card_faces?: ScryfallCardFace[];
   set: string;
   rarity: "common" | "uncommon" | "rare" | "mythic" | "special" | "bonus";
+  flavor_name?: string;
+  all_parts?: Array<{
+    object: "related_card";
+    component: "token" | "meld_part" | "meld_result" | "combo_piece";
+    name: string;
+    type_line: string;
+    uri: string;
+  }>;
 }
 
 interface ScryfallNotFound {
@@ -169,4 +177,52 @@ export async function validateDecklist(
   }
 
   return { cards: allCards, errors: allErrors };
+}
+
+export async function enrichDeckExtraInfo(cards: Card[]): Promise<DeckExtraInfo> {
+  const ids = cards.map(c => ({ id: c.id }));
+  const batches: { id: string }[][] = [];
+  for (let i = 0; i < ids.length; i += SCRYFALL_BATCH_SIZE) {
+    batches.push(ids.slice(i, i + SCRYFALL_BATCH_SIZE));
+  }
+
+  const allResults: ScryfallCard[] = [];
+  for (const batch of batches) {
+    const res = await fetch(SCRYFALL_COLLECTION_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ identifiers: batch }),
+    });
+    if (!res.ok) continue;
+    const data = await res.json() as { data?: ScryfallCard[] };
+    allResults.push(...(data.data ?? []));
+  }
+
+  const tokenMap = new Map<string, DeckToken>();
+  for (const card of allResults) {
+    for (const part of card.all_parts ?? []) {
+      if (part.component === "token") {
+        const existing = tokenMap.get(part.name);
+        if (existing) {
+          if (!existing.createdBy.includes(card.name)) existing.createdBy.push(card.name);
+        } else {
+          tokenMap.set(part.name, { name: part.name, typeLine: part.type_line, createdBy: [card.name] });
+        }
+      }
+    }
+  }
+
+  const altPrintings: DeckAltPrinting[] = allResults
+    .filter(c => c.flavor_name)
+    .map(c => ({
+      cardName: c.name,
+      setCode: c.set.toUpperCase(),
+      altName: c.flavor_name!,
+    }));
+
+  return {
+    tokens: Array.from(tokenMap.values()),
+    altPrintings,
+    enrichedAt: Date.now(),
+  };
 }

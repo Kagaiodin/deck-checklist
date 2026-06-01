@@ -5,8 +5,7 @@ import type { CommittedInfo } from "../../../types/collection";
 interface CollectionStats {
   totalCards: number;
   uniqueCards: number;
-  foilTotal: number;
-  inDecksCount: number;
+  deckCardTotal: number;
 }
 
 /**
@@ -20,18 +19,16 @@ export function useCollectionStats(
   return useMemo(() => {
     const entries = Object.entries(collection);
     let totalCards = 0;
-    let foilTotal = 0;
-    let inDecksCount = 0;
+    let deckCardTotal = 0;
 
     for (const [name, printings] of entries) {
       if (!Array.isArray(printings)) continue;
       for (const p of printings) {
         totalCards += p.quantity;
-        if (p.foil) foilTotal += p.quantity;
       }
-      if (getCommittedInfo(name).total > 0) inDecksCount++;
+      deckCardTotal += getCommittedInfo(name).total;
     }
 
-    return { totalCards, uniqueCards: entries.length, foilTotal, inDecksCount };
+    return { totalCards, uniqueCards: entries.length, deckCardTotal };
   }, [collection, getCommittedInfo]);
 }

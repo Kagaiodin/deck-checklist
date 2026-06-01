@@ -58,6 +58,24 @@ export interface DeckNotification {
   createdAt: number;
 }
 
+export interface DeckToken {
+  name: string;
+  typeLine: string;
+  createdBy: string[];
+}
+
+export interface DeckAltPrinting {
+  cardName: string;
+  setCode: string;
+  altName: string;
+}
+
+export interface DeckExtraInfo {
+  tokens: DeckToken[];
+  altPrintings: DeckAltPrinting[];
+  enrichedAt: number;
+}
+
 export interface Deck {
   id: string;
   name: string;
@@ -66,6 +84,7 @@ export interface Deck {
   cards: Card[];
   createdAt: number;
   notifications?: DeckNotification[];
+  extraInfo?: DeckExtraInfo;
 }
 
 export interface ErrorQueueItem {

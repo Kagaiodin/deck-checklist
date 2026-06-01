@@ -5,6 +5,7 @@
  *   npx tsx scripts/capture-screenshots.ts                    # fixture data (default)
  *   npx tsx scripts/capture-screenshots.ts --browser chrome   # your real Chrome profile
  *   npx tsx scripts/capture-screenshots.ts --browser firefox  # reads Firefox SQLite
+ *   npx tsx scripts/capture-screenshots.ts --local            # target localhost:5173
  *   npx tsx scripts/capture-screenshots.ts --seed path/to/seed.json  # custom fixture
  *
  * The fixture at scripts/fixtures/design-seed.json is the default seed.
@@ -18,13 +19,16 @@ import path from "path";
 import fs from "fs";
 import os from "os";
 
-const BASE_URL = "https://fetchlist.kagaiodin.dev";
 const OUT_DIR = path.resolve(process.cwd(), "design-review-screenshots");
 const CHROME_PROFILE = "/Users/codyparker/Library/Application Support/Google/Chrome";
 const SETTLE_MS = 1000;
 
 // ── CLI args ──────────────────────────────────────────────────────────────────
 const args = process.argv.slice(2);
+
+const BASE_URL = args.includes("--local")
+  ? "http://localhost:5173"
+  : "https://fetchlist.kagaiodin.dev";
 
 const browserArg = (() => {
   const idx = args.indexOf("--browser");
@@ -287,6 +291,33 @@ async function main(): Promise<void> {
     await attempt("untoggle missing only", async () => {
       await click(page, "button", { hasText: "Missing only" });
       await page.waitForTimeout(300);
+    });
+
+    // 35 — Sidebar in collapsed rail mode
+    await attempt("collapse sidebar to rail", async () => {
+      await click(page, 'button[aria-label="Collapse sidebar"]');
+      await page.waitForTimeout(600);
+    });
+    await shot(page, "35-desktop-sidebar-rail.png");
+    await attempt("expand sidebar", async () => {
+      await click(page, 'button[aria-label="Expand sidebar"]');
+      await page.waitForTimeout(400);
+    });
+
+    // 36 — Extra Info section expanded (token chips + alt printings)
+    await attempt("scroll to extra info section", async () => {
+      await page.locator("#extra-info").first().scrollIntoViewIfNeeded({ timeout: 3_000 });
+      await page.waitForTimeout(300);
+    });
+    await attempt("open extra info section", async () => {
+      await click(page, ".ei-toggle");
+      await page.waitForTimeout(400);
+    });
+    await shot(page, "36-desktop-extra-info.png");
+    await attempt("close extra info and scroll up", async () => {
+      await click(page, ".ei-toggle");
+      await page.waitForTimeout(200);
+      await page.evaluate(() => window.scrollTo(0, 0));
     });
 
     // 04 — Collection tab

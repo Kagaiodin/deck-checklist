@@ -170,6 +170,7 @@
 .collection-panel {
   width: 100%; max-width: 760px; margin: 0 auto;
   display: flex; flex-direction: column; gap: 16px;
+  padding: 16px;
 }
 
 /* ── Header ─────────────────────────────────────────────────────── */
