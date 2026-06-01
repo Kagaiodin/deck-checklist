@@ -260,7 +260,8 @@ function AppInner() {
   function handleToggleDeckBuilt(deckId: string) {
     const deck = state.decks.find(d => d.id === deckId);
     dispatch({ type: "TOGGLE_DECK_BUILT", payload: deckId });
-    if (deck && !deck.isBuilt) {
+    if (!deck) return;
+    if (!deck.isBuilt) {
       // Marking as built — set all cards to acquired + owned
       dispatch({
         type: "SET_CARDS",
@@ -269,6 +270,13 @@ function AppInner() {
           cards: deck.cards.map(c => ({ ...c, acquired: true, source: "owned" as const, manuallyTagged: true })),
         },
       });
+    } else {
+      // Unmarking as built — clear checkboxes and re-apply collection tagging
+      const reset = deck.cards.map(c => ({ ...c, acquired: false, source: undefined, manuallyTagged: false }));
+      const retagged = Object.keys(collection).length > 0
+        ? applyCollectionToCards(reset, collection)
+        : reset;
+      dispatch({ type: "SET_CARDS", payload: { deckId, cards: retagged } });
     }
   }
 
