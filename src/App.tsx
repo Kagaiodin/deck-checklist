@@ -70,6 +70,7 @@ function AppInner() {
   const [deckName, setDeckName] = useState("");
   const [deckUrl, setDeckUrl] = useState("");
   const [deckFormat, setDeckFormat] = useState("");
+  const [importAsBuilt, setImportAsBuilt] = useState(false);
   const [allErrors, setAllErrors] = useLocalStorage<Record<string, ErrorQueueItem[]>>("mtg-checklist-errors", {});
   const [validating, setValidating] = useState(false);
   const [progress, setProgress] = useState<ValidationProgress>({ total: 0, validated: 0 });
@@ -88,6 +89,7 @@ function AppInner() {
   const [deckPickerOpen, setDeckPickerOpen] = useState(false);
   const [sidebarSearch, setSidebarSearch] = useState("");
   const [deletingDeckId, setDeletingDeckId] = useState<string | null>(null);
+  const [unmarkingBuiltDeckId, setUnmarkingBuiltDeckId] = useState<string | null>(null);
   const [editingFormatId, setEditingFormatId] = useState<string | null>(null);
   const [formatDraft, setFormatDraft] = useState("");
   const [enrichingDeckIds, setEnrichingDeckIds] = useState<Set<string>>(new Set());
@@ -212,9 +214,18 @@ function AppInner() {
       const result = await validateDecklist(parsed, p => setProgress(p));
 
       // Auto-tag owned cards from collection before creating deck
-      const taggedCards = Object.keys(collection).length > 0
+      const collectionTagged = Object.keys(collection).length > 0
         ? applyCollectionToCards(result.cards, collection)
         : result.cards;
+
+      const taggedCards = importAsBuilt
+        ? collectionTagged.map(c => ({
+            ...c,
+            acquired: true,
+            source: ((c.manuallyTagged && c.source === "proxy") ? "proxy" : "owned") as AcquisitionSource,
+            manuallyTagged: true,
+          }))
+        : collectionTagged;
 
       const id = crypto.randomUUID();
       const name = deckName.trim() || `Deck ${state.decks.length + 1}`;
@@ -224,7 +235,8 @@ function AppInner() {
         url: deckUrl.trim() || undefined,
         format: deckFormat.trim() || undefined,
         cards: taggedCards,
-        createdAt: Date.now()
+        createdAt: Date.now(),
+        isBuilt: importAsBuilt || undefined,
       };
 
       dispatch({ type: "ADD_DECK", payload: deck });
@@ -242,6 +254,7 @@ function AppInner() {
       setDeckName("");
       setDeckUrl("");
       setDeckFormat("");
+      setImportAsBuilt(false);
       setShowImport(false);
     } catch (e) {
       setImportError(e instanceof Error ? e.message : "Validation failed. Please try again.");
@@ -250,9 +263,49 @@ function AppInner() {
     }
   }
 
+  function handleToggleDeckBuilt(deckId: string) {
+    const deck = state.decks.find(d => d.id === deckId);
+    dispatch({ type: "TOGGLE_DECK_BUILT", payload: deckId });
+    if (!deck) return;
+    if (!deck.isBuilt) {
+      // Marking as built — set all cards to acquired + owned
+      dispatch({
+        type: "SET_CARDS",
+        payload: {
+          deckId,
+          cards: deck.cards.map(c => ({
+            ...c,
+            acquired: true,
+            source: ((c.manuallyTagged && c.source === "proxy") ? "proxy" : "owned") as AcquisitionSource,
+            manuallyTagged: true,
+          })),
+        },
+      });
+    } else {
+      // Unmarking as built — clear checkboxes and re-apply collection tagging
+      const reset = deck.cards.map(c => ({ ...c, acquired: false, source: undefined, manuallyTagged: false }));
+      const retagged = Object.keys(collection).length > 0
+        ? applyCollectionToCards(reset, collection)
+        : reset;
+      dispatch({ type: "SET_CARDS", payload: { deckId, cards: retagged } });
+    }
+  }
+
   function handleToggleAcquired(cardId: string) {
     if (!activeDeckId) return;
     dispatch({ type: "TOGGLE_ACQUIRED", payload: { deckId: activeDeckId, cardId } });
+
+    // Auto-mark as built when the last card is checked off
+    const deck = state.decks.find(d => d.id === activeDeckId);
+    if (deck && !deck.isBuilt) {
+      const card = deck.cards.find(c => c.id === cardId);
+      if (card && !card.acquired) {
+        const allOthersAcquired = deck.cards.every(c => c.id === cardId || c.acquired);
+        if (allOthersAcquired && deck.cards.length > 0) {
+          dispatch({ type: "TOGGLE_DECK_BUILT", payload: activeDeckId });
+        }
+      }
+    }
   }
 
   function handleSetSource(cardId: string, source: AcquisitionSource | undefined) {
@@ -829,6 +882,21 @@ function AppInner() {
                                 </span>
                               )}
                               <span className="deck-item-card-count">{totalCards} cards</span>
+                              {deck.isBuilt && (
+                                unmarkingBuiltDeckId === deck.id ? (
+                                  <span className="deck-built-confirm" onClick={e => e.stopPropagation()}>
+                                    <span className="deck-built-confirm-label">Unmark?</span>
+                                    <button className="deck-built-confirm-yes" onClick={() => { handleToggleDeckBuilt(deck.id); setUnmarkingBuiltDeckId(null); }}>Yes</button>
+                                    <button className="deck-built-confirm-no" onClick={() => setUnmarkingBuiltDeckId(null)}>No</button>
+                                  </span>
+                                ) : (
+                                  <button
+                                    className="deck-built-badge is-built"
+                                    onClick={e => { e.stopPropagation(); setUnmarkingBuiltDeckId(deck.id); }}
+                                    title="Unmark as built"
+                                  >Built</button>
+                                )
+                              )}
                             </div>
                             <div className="deck-item-bar-track">
                               <div className={`deck-item-bar-fill${isComplete ? " complete" : ""}`} style={{ width: `${pct}%` }} />
@@ -969,6 +1037,19 @@ function AppInner() {
                               )}
                               {deck.format && <span className="deck-format-pill">{deck.format.toUpperCase()}</span>}
                               <span className="deck-item-card-count">· {totalCards} cards</span>
+                              {unmarkingBuiltDeckId === deck.id ? (
+                                <span className="deck-built-confirm" onClick={e => e.stopPropagation()}>
+                                  <span className="deck-built-confirm-label">Unmark?</span>
+                                  <button className="deck-built-confirm-yes" onClick={() => { handleToggleDeckBuilt(deck.id); setUnmarkingBuiltDeckId(null); }}>Yes</button>
+                                  <button className="deck-built-confirm-no" onClick={() => setUnmarkingBuiltDeckId(null)}>No</button>
+                                </span>
+                              ) : (
+                                <button
+                                  className={`deck-built-badge${deck.isBuilt ? " is-built" : ""}`}
+                                  onClick={e => { e.stopPropagation(); deck.isBuilt ? setUnmarkingBuiltDeckId(deck.id) : handleToggleDeckBuilt(deck.id); }}
+                                  title={deck.isBuilt ? "Unmark as built" : "Mark as built"}
+                                >Built</button>
+                              )}
                             </div>
                             <div className="deck-item-bar-track">
                               <div className={`deck-item-bar-fill${isComplete ? " complete" : ""}`} style={{ width: `${pct}%` }} />
@@ -1097,6 +1178,15 @@ function AppInner() {
                     )}
                   </div>
                   {archidektError && <p className="import-error">{archidektError}</p>}
+                  <label className="import-built-row">
+                    <input
+                      type="checkbox"
+                      checked={importAsBuilt}
+                      onChange={e => setImportAsBuilt(e.target.checked)}
+                      disabled={validating}
+                    />
+                    This deck is already built
+                  </label>
                   <label className="file-upload-label">
                     <input
                       type="file"

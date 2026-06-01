@@ -24,7 +24,8 @@ type DeckAction =
   | { type: "ADD_NOTIFICATION"; payload: { deckId: string; notification: DeckNotification } }
   | { type: "DISMISS_NOTIFICATION"; payload: { deckId: string; notificationId: string } }
   | { type: "SET_DECKS"; payload: Deck[] }
-  | { type: "SET_EXTRA_INFO"; payload: { deckId: string; extraInfo: DeckExtraInfo } };
+  | { type: "SET_EXTRA_INFO"; payload: { deckId: string; extraInfo: DeckExtraInfo } }
+  | { type: "TOGGLE_DECK_BUILT"; payload: string };
 
 // Exported for unit testing
 export function deckReducer(state: DeckState, action: DeckAction): DeckState {
@@ -184,6 +185,13 @@ export function deckReducer(state: DeckState, action: DeckAction): DeckState {
           d.id === action.payload.deckId
             ? { ...d, extraInfo: action.payload.extraInfo }
             : d
+        ),
+      };
+    case "TOGGLE_DECK_BUILT":
+      return {
+        ...state,
+        decks: state.decks.map(d =>
+          d.id === action.payload ? { ...d, isBuilt: !d.isBuilt } : d
         ),
       };
     default:

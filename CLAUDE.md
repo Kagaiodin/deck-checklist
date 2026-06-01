@@ -63,6 +63,8 @@
 - `src/App.css` — component and layout styles (~2005 lines). See section index comment at the top of that file for line ranges.
 
 ## Git
+- **Never commit directly to main** — always create a feature branch first
+- Branch naming: `feat/<short-description>` or `fix/<short-description>`
 - Atomic commits — one logical change per commit
 - Commit message format: feat/fix/refactor/style: description
 - npm run build must pass before every push — no exceptions
