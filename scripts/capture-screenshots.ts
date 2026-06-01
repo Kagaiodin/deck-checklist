@@ -5,6 +5,7 @@
  *   npx tsx scripts/capture-screenshots.ts                    # fixture data (default)
  *   npx tsx scripts/capture-screenshots.ts --browser chrome   # your real Chrome profile
  *   npx tsx scripts/capture-screenshots.ts --browser firefox  # reads Firefox SQLite
+ *   npx tsx scripts/capture-screenshots.ts --local            # target localhost:5173
  *   npx tsx scripts/capture-screenshots.ts --seed path/to/seed.json  # custom fixture
  *
  * The fixture at scripts/fixtures/design-seed.json is the default seed.
@@ -18,13 +19,16 @@ import path from "path";
 import fs from "fs";
 import os from "os";
 
-const BASE_URL = "https://fetchlist.kagaiodin.dev";
 const OUT_DIR = path.resolve(process.cwd(), "design-review-screenshots");
 const CHROME_PROFILE = "/Users/codyparker/Library/Application Support/Google/Chrome";
 const SETTLE_MS = 1000;
 
 // ── CLI args ──────────────────────────────────────────────────────────────────
 const args = process.argv.slice(2);
+
+const BASE_URL = args.includes("--local")
+  ? "http://localhost:5173"
+  : "https://fetchlist.kagaiodin.dev";
 
 const browserArg = (() => {
   const idx = args.indexOf("--browser");

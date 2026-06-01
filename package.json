@@ -14,7 +14,8 @@
     "deploy": "npm run build && wrangler deploy",
     "screenshots": "tsx scripts/capture-screenshots.ts",
     "screenshots:chrome": "tsx scripts/capture-screenshots.ts --browser chrome",
-    "screenshots:firefox": "tsx scripts/capture-screenshots.ts --browser firefox"
+    "screenshots:firefox": "tsx scripts/capture-screenshots.ts --browser firefox",
+    "screenshots:local": "tsx scripts/capture-screenshots.ts --local"
   },
   "dependencies": {
     "react": "^19.2.5",
