@@ -258,7 +258,18 @@ function AppInner() {
   }
 
   function handleToggleDeckBuilt(deckId: string) {
+    const deck = state.decks.find(d => d.id === deckId);
     dispatch({ type: "TOGGLE_DECK_BUILT", payload: deckId });
+    if (deck && !deck.isBuilt) {
+      // Marking as built — set all cards to acquired + owned
+      dispatch({
+        type: "SET_CARDS",
+        payload: {
+          deckId,
+          cards: deck.cards.map(c => ({ ...c, acquired: true, source: "owned" as const, manuallyTagged: true })),
+        },
+      });
+    }
   }
 
   function handleToggleAcquired(cardId: string) {
