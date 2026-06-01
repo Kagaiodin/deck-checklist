@@ -76,8 +76,8 @@ export function pickCardColors(
   dual: boolean,
   frontFaceColors: string[] | undefined
 ): string[] {
-  if (dual) return frontFaceColors ?? colorIdentity;
   if (typeLine.includes("Land")) return colorIdentity;
+  if (dual) return frontFaceColors ?? colorIdentity;
   return colors ?? colorIdentity;
 }
 

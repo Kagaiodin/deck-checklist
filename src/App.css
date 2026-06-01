@@ -761,10 +761,44 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
   background: var(--surface-2); border: 1px solid var(--border); color: var(--text-muted);
 }
 
+/* ── Desktop row meta: type label + color pips ──────────────────────────── */
+.row-meta {
+  display: none;
+  align-items: center; gap: 12px;
+  flex-shrink: 0;
+}
+@media (min-width: 1024px) {
+  .row-meta { display: flex; }
+}
+.row-meta-type {
+  font-size: 11px; color: var(--text-muted);
+  white-space: nowrap; min-width: 80px; text-align: right;
+}
+.row-meta-colors {
+  display: flex; gap: 3px; align-items: center;
+  min-width: 56px;
+}
+.color-pip {
+  width: 10px; height: 10px; border-radius: 50%;
+  display: inline-block; flex-shrink: 0;
+  border: 1px solid rgba(0,0,0,0.3);
+}
+.color-pip-W { background: #f8f4e4; border-color: #c4b882; }
+.color-pip-U { background: #0e68ab; border-color: #0a4f85; }
+.color-pip-B { background: #4a4060; border-color: #2d2440; }
+.color-pip-R { background: #d3202a; border-color: #a8191f; }
+.color-pip-G { background: #00733e; border-color: #005a30; }
+.color-pip-C { background: #888; border-color: #666; }
+
+@media (max-width: 639px) {
+  .card-row .row-set-chip { display: none; }
+}
+
 /* Dim acquired elements without affecting the whole row (portals, popovers) */
 .card-row.acquired .card-checkbox,
 .card-row.acquired .card-qty,
 .card-row.acquired .row-name-group,
+.card-row.acquired .row-meta,
 .card-row.acquired .row-right { opacity: 0.45; }
 .card-row.acquired .row-name { text-decoration: line-through; color: var(--text-muted); }
 
