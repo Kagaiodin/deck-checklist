@@ -1627,18 +1627,50 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
   .progress-bar-track { height: 10px; }
   .progress-label { font-size: 14px; }
 
-  /* 2-column card grid — gap shows page bg, making columns feel like separate lists */
+  /* 2-column card grid — each column is a self-contained bordered box */
   .card-list {
     display: grid;
     grid-template-columns: 1fr 1fr;
     column-gap: 16px;
     background: var(--bg);
+    border: none;
+    border-radius: 0;
+    overflow: visible;
   }
-  /* Full-width rows that shouldn't split across columns */
+  /* Utility rows span both columns, no column-box styling */
   .card-row.card-row-select-all,
   .card-row.add-card-row { grid-column: 1 / -1; }
-  /* Container overflow:hidden handles corner clipping; reset per-item radius */
-  .card-row:last-child { border-radius: 0; }
+  /* Content rows: left + right borders form column box walls */
+  .card-row:not(.card-row-select-all):not(.add-card-row) {
+    border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+  }
+  /* Top border + corners: first content row in col 1 and col 2 */
+  .card-list:not(:has(.card-row-select-all)) .card-row:first-child,
+  .card-list:not(:has(.card-row-select-all)) .card-row:nth-child(2),
+  .card-list:has(.card-row-select-all) .card-row:nth-child(2),
+  .card-list:has(.card-row-select-all) .card-row:nth-child(3) {
+    border-top: 1px solid var(--border);
+    border-radius: 8px 8px 0 0;
+  }
+  /* Bottom border + corners: last content row in col 1 and col 2 */
+  .card-row:not(.card-row-select-all):last-child,
+  .card-row:not(.card-row-select-all):nth-last-child(2) {
+    border-bottom: 1px solid var(--border);
+    border-radius: 0 0 8px 8px;
+  }
+  /* Single-item columns: both top and bottom rules apply to the same element,
+     so the later one wins; explicitly set all 4 corners to resolve the conflict */
+  .card-list:not(:has(.card-row-select-all)) .card-row:first-child:last-child,
+  .card-list:not(:has(.card-row-select-all)) .card-row:first-child:nth-last-child(2),
+  .card-list:not(:has(.card-row-select-all)) .card-row:nth-child(2):last-child,
+  .card-list:not(:has(.card-row-select-all)) .card-row:nth-child(2):nth-last-child(2),
+  .card-list:has(.card-row-select-all) .card-row:nth-child(2):last-child,
+  .card-list:has(.card-row-select-all) .card-row:nth-child(2):nth-last-child(2),
+  .card-list:has(.card-row-select-all) .card-row:nth-child(3):last-child,
+  .card-list:has(.card-row-select-all) .card-row:nth-child(3):nth-last-child(2) {
+    border-radius: 8px;
+  }
 }
 
 /* Collection styles live in features/collection/CollectionPage.css */
