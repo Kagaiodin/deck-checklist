@@ -1626,6 +1626,19 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
   /* Progress bar */
   .progress-bar-track { height: 10px; }
   .progress-label { font-size: 14px; }
+
+  /* 2-column card grid — gap shows page bg, making columns feel like separate lists */
+  .card-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 16px;
+    background: var(--bg);
+  }
+  /* Full-width rows that shouldn't split across columns */
+  .card-row.card-row-select-all,
+  .card-row.add-card-row { grid-column: 1 / -1; }
+  /* Container overflow:hidden handles corner clipping; reset per-item radius */
+  .card-row:last-child { border-radius: 0; }
 }
 
 /* Collection styles live in features/collection/CollectionPage.css */
