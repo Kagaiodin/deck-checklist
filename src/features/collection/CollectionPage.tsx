@@ -438,7 +438,12 @@ export function CollectionPage({ decks, onCollectionChange }: CollectionPageProp
         {/* Empty state */}
         {!collectionMeta && !collectionError && (
           <div className="collection-empty">
-            <div className="collection-empty-icon" aria-hidden>📭</div>
+            <img
+            src={`${import.meta.env.BASE_URL}favicon.svg`}
+            className="collection-empty-icon"
+            aria-hidden
+            alt=""
+          />
             <p className="collection-empty-headline">No cards yet</p>
             <p className="collection-empty-body">
               Import your collection from Moxfield or add cards manually.
