@@ -42,6 +42,13 @@ _Updated: 2026-06-01. One item per session. Check here before starting work._
 
 ## Backlog (needs design or more scoping)
 
+### Deck inventory conflict banner
+**Ref:** Issue #80  
+**What it is:** On deck open, check each owned-tagged card against free collection copies (total − checked-off in other decks). If any card is short, show a dismissible banner at the top of the deck listing the conflicts and shortfall counts. No banner when collection isn't loaded.  
+**Design direction:** Top-of-deck notification banner, fires on deck open, dismissible, non-blocking.  
+**Depends on:** #79 (merged — defines what "free copies" means).  
+**Touches:** New `useInventoryConflicts` hook + new `InventoryConflictBanner` component; deck view in `src/App.tsx`.
+
 ### Cross-deck buy list
 **Ref:** Issue #55, `docs/specs/card-purchase-handoff.md` (open question 2)  
 **What it is:** The buy bar and buy list sheet currently scope to the active deck. This extends `toBuyCards` to span multiple decks. The buy flow redesign was intentionally built to be compatible — this is a follow-on.

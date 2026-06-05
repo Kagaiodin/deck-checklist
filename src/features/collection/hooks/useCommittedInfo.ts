@@ -18,7 +18,7 @@ export function useCommittedInfo(decks: Deck[]): (name: string) => CommittedInfo
       const deckList: Array<{ name: string; qty: number }> = [];
       for (const deck of decks) {
         const card = deck.cards.find(c => c.name.toLowerCase() === name);
-        if (card) {
+        if (card && card.acquired) {
           total += card.quantity;
           deckCount++;
           deckList.push({ name: deck.name, qty: card.quantity });
