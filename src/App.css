@@ -761,10 +761,44 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
   background: var(--surface-2); border: 1px solid var(--border); color: var(--text-muted);
 }
 
+/* ── Desktop row meta: type label + color pips ──────────────────────────── */
+.row-meta {
+  display: none;
+  align-items: center; gap: 12px;
+  flex-shrink: 0;
+}
+@media (min-width: 1024px) {
+  .row-meta { display: flex; }
+}
+.row-meta-type {
+  font-size: 11px; color: var(--text-muted);
+  white-space: nowrap; min-width: 80px; text-align: right;
+}
+.row-meta-colors {
+  display: flex; gap: 3px; align-items: center;
+  min-width: 56px;
+}
+.color-pip {
+  width: 10px; height: 10px; border-radius: 50%;
+  display: inline-block; flex-shrink: 0;
+  border: 1px solid rgba(0,0,0,0.3);
+}
+.color-pip-W { background: #f8f4e4; border-color: #c4b882; }
+.color-pip-U { background: #0e68ab; border-color: #0a4f85; }
+.color-pip-B { background: #4a4060; border-color: #2d2440; }
+.color-pip-R { background: #d3202a; border-color: #a8191f; }
+.color-pip-G { background: #00733e; border-color: #005a30; }
+.color-pip-C { background: #888; border-color: #666; }
+
+@media (max-width: 639px) {
+  .card-row .row-set-chip { display: none; }
+}
+
 /* Dim acquired elements without affecting the whole row (portals, popovers) */
 .card-row.acquired .card-checkbox,
 .card-row.acquired .card-qty,
 .card-row.acquired .row-name-group,
+.card-row.acquired .row-meta,
 .card-row.acquired .row-right { opacity: 0.45; }
 .card-row.acquired .row-name { text-decoration: line-through; color: var(--text-muted); }
 
@@ -1592,6 +1626,51 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
   /* Progress bar */
   .progress-bar-track { height: 10px; }
   .progress-label { font-size: 14px; }
+
+  /* 2-column card grid — each column is a self-contained bordered box */
+  .card-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 16px;
+    background: var(--bg);
+    border: none;
+    border-radius: 0;
+    overflow: visible;
+  }
+  /* Utility rows span both columns, no column-box styling */
+  .card-row.card-row-select-all,
+  .card-row.add-card-row { grid-column: 1 / -1; }
+  /* Content rows: left + right borders form column box walls */
+  .card-row:not(.card-row-select-all):not(.add-card-row) {
+    border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+  }
+  /* Top border + corners: first content row in col 1 and col 2 */
+  .card-list:not(:has(.card-row-select-all)) .card-row:first-child,
+  .card-list:not(:has(.card-row-select-all)) .card-row:nth-child(2),
+  .card-list:has(.card-row-select-all) .card-row:nth-child(2),
+  .card-list:has(.card-row-select-all) .card-row:nth-child(3) {
+    border-top: 1px solid var(--border);
+    border-radius: 8px 8px 0 0;
+  }
+  /* Bottom border + corners: last content row in col 1 and col 2 */
+  .card-row:not(.card-row-select-all):last-child,
+  .card-row:not(.card-row-select-all):nth-last-child(2) {
+    border-bottom: 1px solid var(--border);
+    border-radius: 0 0 8px 8px;
+  }
+  /* Single-item columns: both top and bottom rules apply to the same element,
+     so the later one wins; explicitly set all 4 corners to resolve the conflict */
+  .card-list:not(:has(.card-row-select-all)) .card-row:first-child:last-child,
+  .card-list:not(:has(.card-row-select-all)) .card-row:first-child:nth-last-child(2),
+  .card-list:not(:has(.card-row-select-all)) .card-row:nth-child(2):last-child,
+  .card-list:not(:has(.card-row-select-all)) .card-row:nth-child(2):nth-last-child(2),
+  .card-list:has(.card-row-select-all) .card-row:nth-child(2):last-child,
+  .card-list:has(.card-row-select-all) .card-row:nth-child(2):nth-last-child(2),
+  .card-list:has(.card-row-select-all) .card-row:nth-child(3):last-child,
+  .card-list:has(.card-row-select-all) .card-row:nth-child(3):nth-last-child(2) {
+    border-radius: 8px;
+  }
 }
 
 /* Collection styles live in features/collection/CollectionPage.css */

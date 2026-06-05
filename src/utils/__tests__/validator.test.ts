@@ -5,8 +5,8 @@ import { pickCardColors, validateDecklist } from "../validator";
 //
 // This is the core logic that decides which Scryfall color field to store on a
 // Card. The rules are:
-//   - Dual-face cards  → front face colors (falls back to color_identity)
-//   - Land cards       → color_identity  (so shock/fetch lands get the right colors)
+//   - Land cards       → color_identity  (covers shock/fetch/pathway lands; land check wins)
+//   - Dual-face spells → front face colors (falls back to color_identity)
 //   - Everything else  → colors          (falls back to color_identity)
 
 describe("pickCardColors", () => {
@@ -62,9 +62,10 @@ describe("pickCardColors", () => {
     expect(pickCardColors("Creature", undefined, ["U", "R"], true, undefined)).toEqual(["U", "R"]);
   });
 
-  it("dual-face takes front-face colors even when type_line contains 'Land'", () => {
-    // If somehow both dual and land: dual flag wins, uses front face
-    expect(pickCardColors("Land", undefined, ["W"], true, ["W", "B"])).toEqual(["W", "B"]);
+  it("land check takes priority over dual-face for MDFC pathway lands", () => {
+    // Barkchannel Pathway: front face colors=[] but color_identity=["G","U"]
+    // Land rule wins so we get the full identity, not the empty front-face colors
+    expect(pickCardColors("Land", undefined, ["G", "U"], true, [])).toEqual(["G", "U"]);
   });
 
   // ── Type line matching ───────────────────────────────────────────────────────
