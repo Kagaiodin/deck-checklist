@@ -793,6 +793,20 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
                     <span className="row-name">{card.name}</span>
                   </div>
 
+                  {/* Desktop meta: type + color identity (hidden on mobile) */}
+                  <div className="row-meta">
+                    <span className="row-meta-type">{extractMainType(card.type)}</span>
+                    <div className="row-meta-colors">
+                      {card.color.length === 0 ? (
+                        <span className="color-pip color-pip-C" title="Colorless" />
+                      ) : (
+                        card.color.map(c => (
+                          <span key={c} className={`color-pip color-pip-${c}`} title={COLOR_LABELS[c] ?? c} />
+                        ))
+                      )}
+                    </div>
+                  </div>
+
                   {/* Right cluster: set chip → pill slot → ⋯ */}
                   <div className="row-right">
                     {card.set && card.rarity && (

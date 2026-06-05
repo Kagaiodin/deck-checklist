@@ -1,6 +1,6 @@
 # deck-checklist — Backlog
 
-_Updated: 2026-05-30. One item per session. Check here before starting work._
+_Updated: 2026-06-01. One item per session. Check here before starting work._
 
 ---
 
@@ -16,18 +16,6 @@ _Updated: 2026-05-30. One item per session. Check here before starting work._
 ---
 
 ## Ready
-
-### Mark deck as complete (built status)
-**Ref:** Issue #64  
-**Spec:** none  
-**What it is:** Opt-in "built" flag on a deck. When marked complete, all cards in that deck are treated as committed in the collection free count. Other decks see those cards as unavailable. UI: checkbox in the import flow + toggle on an existing deck (sidebar or edit menu). Complete decks get a visual badge. Toggling off restores cards to the free pool.  
-**Acceptance criteria:**
-- User can mark complete at import time
-- User can toggle complete on an existing deck
-- Cards in complete decks deduct from collection free count
-- Complete decks show a clear visual distinction
-- Toggling back restores free count  
-**Touches:** deck data model, DeckProvider/store, import form, deck sidebar item, collection free-count logic.
 
 ### Card row desktop popover
 **Spec:** `docs/specs/card-row-desktop-popover-spec.md`  
@@ -76,6 +64,8 @@ _Updated: 2026-05-30. One item per session. Check here before starting work._
 
 | Feature | Commit / PR |
 |---------|-------------|
+| Sidebar left-anchor fix on wide screens | PR #77 |
+| Mark deck as built (import + toggle + auto) | PR #76 |
 | Extra Info section — tokens + alt printings | `4b5e158` |
 | Token chips with creator tooltip + section nav | `7e68269` |
 | Design review fixes (4 findings) | `fc3a430` |
