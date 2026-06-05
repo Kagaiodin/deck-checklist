@@ -710,7 +710,7 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 }
 .card-row {
   display: flex; align-items: center; gap: 8px;
-  padding: 9px 12px;
+  padding: 9px 16px;
   border-bottom: 1px solid var(--border);
   background: var(--surface);
   cursor: pointer; transition: background 0.1s;
@@ -722,7 +722,7 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 .card-row:has(.row-overflow.active) { background: var(--surface-2); }
 .card-row.acquired {
   border-left: 3px solid var(--success);
-  padding-left: 10px;
+  padding-left: 14px;
 }
 /* Utility rows */
 .card-row.card-row-select-all,
@@ -1528,7 +1528,7 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
   .deck-content-title { font-size: 20px; }
 
   /* Card rows */
-  .card-row { padding: 10px 16px; }
+  .card-row { padding: 10px 20px; }
   .card-name { font-size: 14px; }
   .card-qty { font-size: 13px; }
   .card-type { font-size: 12px; min-width: 110px; }
@@ -1569,7 +1569,7 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
   .deck-item-bar-track { height: 4px; }
 
   /* Card rows */
-  .card-row { padding: 12px 20px; gap: 14px; }
+  .card-row { padding: 12px 24px; gap: 14px; }
   .card-name { font-size: 15px; }
   .card-qty { font-size: 14px; min-width: 36px; }
   .card-type { font-size: 13px; min-width: 130px; }
