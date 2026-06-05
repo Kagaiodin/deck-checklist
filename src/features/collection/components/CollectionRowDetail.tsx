@@ -29,7 +29,6 @@ export function CollectionRowDetail({
   onRemove,
 }: CollectionRowDetailProps) {
   const ep = editingPrinting;
-  // True when the user clicked "+ Printing" — editing a not-yet-existent entry
   const isAddingNew = ep?.key === name && ep?.idx === printings.length;
 
   function startEditExisting(p: CollectionPrinting, i: number) {
@@ -89,16 +88,8 @@ export function CollectionRowDetail({
           />
           Foil
         </label>
-        <button
-          className="collection-printing-save"
-          onClick={onCommitEdit}
-          aria-label="Save"
-        >✓</button>
-        <button
-          className="collection-printing-cancel"
-          onClick={onCancelEdit}
-          aria-label="Cancel"
-        >✕</button>
+        <button className="collection-printing-save" onClick={onCommitEdit} aria-label="Save">✓</button>
+        <button className="collection-printing-cancel" onClick={onCancelEdit} aria-label="Cancel">✕</button>
       </li>
     );
   }
@@ -108,7 +99,7 @@ export function CollectionRowDetail({
       p.set ? p.set.toUpperCase() : null,
       `${p.quantity}×`,
       p.collectorNumber ? `#${p.collectorNumber}` : null,
-      p.foil ? "✦ Foil" : null,
+      p.foil ? "Foil" : null,
     ].filter(Boolean).join(" ");
 
     return (
@@ -121,7 +112,7 @@ export function CollectionRowDetail({
           {p.collectorNumber && (
             <span className="collection-printing-cn">#{p.collectorNumber}</span>
           )}
-          {p.foil && <span className="collection-printing-foil">✦ Foil</span>}
+          {p.foil && <span className="collection-printing-foil">Foil</span>}
           <button
             className="collection-printing-edit-btn"
             onClick={() => startEditExisting(p, i)}
@@ -136,53 +127,50 @@ export function CollectionRowDetail({
 
   return (
     <div className="collection-row-detail">
-      {/* Printing list */}
-      <ul className="collection-printings">
-        {printings.map((p, i) => {
-          const isEditingThis = ep?.key === name && ep?.idx === i;
-          return isEditingThis && ep ? renderEditForm(ep) : renderPrintingView(p, i);
-        })}
-        {/* New-printing edit form (+ Printing was clicked) */}
-        {isAddingNew && ep && renderEditForm(ep)}
-      </ul>
-
-      {/* Deck breakdown bar */}
-      {hasDeckContext && committed.total > 0 && (
-        <div className="collection-deck-breakdown">
-          <span className="collection-deck-breakdown-arrow">→</span>
-          <span className="collection-deck-breakdown-count">
-            {committed.total} in deck{committed.deckCount !== 1 ? "s" : ""}
+      {/* In-decks callout — leads the expansion when card is in any deck */}
+      {hasDeckContext && committed.deckCount > 0 && (
+        <div className="collection-indecks-callout">
+          <span className="collection-indecks-arrow">→</span>
+          <span className="collection-indecks-count">
+            {committed.total} in {committed.deckCount === 1 ? "deck" : "decks"}
           </span>
           {committed.decks.length > 0 && (
-            <>
-              <span className="collection-deck-breakdown-sep">·</span>
-              <span className="collection-deck-breakdown-names">
-                {committed.decks.map(d => `${d.name} (${d.qty})`).join(", ")}
-              </span>
-            </>
+            <span className="collection-indecks-names">
+              {committed.decks.map(d => `${d.name} (${d.qty})`).join(" · ")}
+            </span>
           )}
         </div>
       )}
 
-      {/* Footer actions */}
+      {/* Printings section */}
+      <div className="collection-printings-section">
+        <span className="collection-printings-eyebrow">
+          PRINTINGS · {printings.length}
+        </span>
+        <ul className="collection-printings">
+          {printings.map((p, i) => {
+            const isEditingThis = ep?.key === name && ep?.idx === i;
+            return isEditingThis && ep ? renderEditForm(ep) : renderPrintingView(p, i);
+          })}
+          {isAddingNew && ep && renderEditForm(ep)}
+        </ul>
+      </div>
+
+      {/* Action bar */}
       <div className="collection-detail-footer">
-        <button
-          className="btn btn-ghost btn-sm"
-          onClick={() => onAddCopy(name)}
-        >
-          + Add copy
-        </button>
-        <button
-          className="btn btn-ghost btn-sm"
-          onClick={startNewPrinting}
-          disabled={isAddingNew}
-        >
-          + Printing
-        </button>
-        <button
-          className="btn btn-ghost btn-sm collection-remove-all-btn"
-          onClick={() => onRemove(name)}
-        >
+        <div className="collection-detail-footer-left">
+          <button className="btn btn-ghost btn-sm" onClick={() => onAddCopy(name)}>
+            + Add copy
+          </button>
+          <button
+            className="btn btn-ghost btn-sm"
+            onClick={startNewPrinting}
+            disabled={isAddingNew}
+          >
+            + Printing
+          </button>
+        </div>
+        <button className="btn btn-ghost btn-sm collection-remove-all-btn" onClick={() => onRemove(name)}>
           Remove all
         </button>
       </div>

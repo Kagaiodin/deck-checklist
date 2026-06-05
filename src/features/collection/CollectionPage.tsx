@@ -12,9 +12,10 @@ import { useCollectionSort }   from "./hooks/useCollectionSort";
 import { useCollectionFilter } from "./hooks/useCollectionFilter";
 import { useBulkEdit }         from "./hooks/useBulkEdit";
 
-import { CollectionHeader }   from "./components/CollectionHeader";
-import { CollectionControls } from "./components/CollectionControls";
-import { CollectionQuickAdd } from "./components/CollectionQuickAdd";
+import { CollectionHeader }        from "./components/CollectionHeader";
+import { CollectionQuickAdd }       from "./components/CollectionQuickAdd";
+import { CollectionFab }            from "./components/CollectionFab";
+import { CollectionOverflowSheet }  from "./components/CollectionOverflowSheet";
 import { AlphaRail }          from "./components/AlphaRail";
 import { CollectionRow }      from "./components/CollectionRow";
 import { BulkEditPanel }      from "./components/BulkEditPanel";
@@ -83,12 +84,12 @@ export function CollectionPage({ decks, onCollectionChange }: CollectionPageProp
   );
 
   // ── Local UI state ─────────────────────────────────────────────────────────
-  const [quickAddOpen,      setQuickAddOpen]       = useState(false);
-  const [collectionError,   setCollectionError]   = useState<string | null>(null);
-  const [collectionSearch,  setCollectionSearch]   = useState("");
-  const [collectionFilter,  setCollectionFilter]   = useState<CollectionFilterKey>("all");
-  const [sortOpen,          setSortOpen]           = useState(false);
-  const [expandedKey,       setExpandedKey]        = useState<string | null>(null);
+  const [quickAddOpen,        setQuickAddOpen]         = useState(false);
+  const [collectionError,     setCollectionError]     = useState<string | null>(null);
+  const [collectionSearch,    setCollectionSearch]     = useState("");
+  const [collectionFilter,    setCollectionFilter]     = useState<CollectionFilterKey>("all");
+  const [expandedKey,         setExpandedKey]          = useState<string | null>(null);
+  const [overflowSheetOpen,   setOverflowSheetOpen]   = useState(false);
   const [firstVisibleIdx,   setFirstVisibleIdx]    = useState(0);
   const [pendingCsvFile,    setPendingCsvFile]     = useState<File | null>(null);
   const [editingPrinting,   setEditingPrinting]    = useState<EditingPrinting | null>(null);
@@ -368,11 +369,18 @@ export function CollectionPage({ decks, onCollectionChange }: CollectionPageProp
         uniqueCards={uniqueCards}
         deckCardTotal={deckCardTotal}
         hasDeckContext={decks.length > 0}
+        filteredCount={collectionPillFiltered.length}
         onUploadClick={() => csvInputRef.current?.click()}
         onQuickAddClick={() => setQuickAddOpen(v => !v)}
-        quickAddOpen={quickAddOpen}
         onBulkEditClick={() => setBulkEditOpen(!bulkEditOpen)}
-        bulkEditOpen={bulkEditOpen}
+        onOverflowOpen={() => setOverflowSheetOpen(true)}
+        collectionSearch={collectionSearch}
+        onSearchChange={setCollectionSearch}
+        collectionFilter={collectionFilter}
+        onFilterChange={setCollectionFilter}
+        pillCounts={pillCounts}
+        collectionSort={collectionSort}
+        onSortChange={setCollectionSort}
       />
 
       {quickAddOpen && (
@@ -431,39 +439,25 @@ export function CollectionPage({ decks, onCollectionChange }: CollectionPageProp
       {/* Empty state */}
       {!collectionMeta && !collectionError && (
         <div className="collection-empty">
-          <p>No collection uploaded yet.</p>
-          <p className="collection-empty-hint">
-            Export your collection from Moxfield (Account → Collection → Export) or any other
-            supported app and upload the CSV above. Cards you own will be automatically tagged
-            across all your decks.
+          <div className="collection-empty-icon" aria-hidden>📭</div>
+          <p className="collection-empty-headline">No cards yet</p>
+          <p className="collection-empty-body">
+            Import your collection from Moxfield or add cards manually.
           </p>
+          <div className="collection-empty-actions">
+            <button className="btn btn-primary btn-sm" onClick={() => csvInputRef.current?.click()}>
+              Upload CSV
+            </button>
+            <button className="btn btn-ghost btn-sm" onClick={() => setQuickAddOpen(true)}>
+              + Add card
+            </button>
+          </div>
         </div>
       )}
 
       {/* Main list */}
       {collectionMeta && (
         <>
-          <CollectionControls
-            collectionSearch={collectionSearch}
-            onSearchChange={setCollectionSearch}
-            collectionSort={collectionSort}
-            onSortChange={setCollectionSort}
-            sortOpen={sortOpen}
-            onSortOpenChange={setSortOpen}
-            collectionFilter={collectionFilter}
-            onFilterChange={setCollectionFilter}
-            pillCounts={pillCounts}
-            uniqueCards={uniqueCards}
-          />
-
-          <p className="collection-count-line">
-            {collectionPillFiltered.length.toLocaleString()} card
-            {collectionPillFiltered.length !== 1 ? "s" : ""}
-            {collectionFilter !== "all" || collectionSearch
-              ? ` · ${pillCounts.all.toLocaleString()} total`
-              : ""}
-          </p>
-
           {collectionPillFiltered.length === 0 &&
             (collectionSearch || collectionFilter !== "all") && (
               <p className="collection-empty-search">
@@ -497,6 +491,21 @@ export function CollectionPage({ decks, onCollectionChange }: CollectionPageProp
           </div>
         </>
       )}
+      {/* FAB — mobile only, hidden in empty state */}
+      {collectionMeta && (
+        <CollectionFab onClick={() => setQuickAddOpen(v => !v)} />
+      )}
+
+      {/* Mobile overflow sheet */}
+      {overflowSheetOpen && (
+        <CollectionOverflowSheet
+          collectionMeta={collectionMeta}
+          onClose={() => setOverflowSheetOpen(false)}
+          onUploadClick={() => csvInputRef.current?.click()}
+          onBulkEditClick={() => setBulkEditOpen(!bulkEditOpen)}
+        />
+      )}
+
       {undoToast && (
         <div className="undo-toast" role="status">
           <span className="undo-toast-message">{undoToast}</span>

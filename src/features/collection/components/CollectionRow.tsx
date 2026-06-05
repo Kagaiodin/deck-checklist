@@ -20,7 +20,6 @@ interface CollectionRowProps {
   onCancelEdit: () => void;
 }
 
-/** Derives a display name by title-casing word boundaries in the lowercase key. */
 function toDisplayName(key: string): string {
   return key.replace(/(?:^|\s|-)\S/g, c => c.toUpperCase());
 }
@@ -43,40 +42,31 @@ export function CollectionRow({
   onCancelEdit,
 }: CollectionRowProps) {
   const foilCount = printings.reduce((n, p) => n + (p.foil ? p.quantity : 0), 0);
-  const freeCount = Math.max(0, total - committed.total);
-  // "free" = has deck context, but none of this card is committed to any deck
-  const isFree = hasDeckContext && committed.total === 0;
-  // "partially free" = some committed, some not — show "N free" on the right
-  const isPartiallyFree = hasDeckContext && committed.total > 0 && freeCount > 0;
+  const rawFree = Math.max(0, total - committed.total);
+  // "free" only meaningful when decks are loaded — without deck context every
+  // card would appear amber since committed.total is always 0.
+  const freeCount = hasDeckContext ? rawFree : 0;
 
-  // Stripe: rarity wins over free when known; amber free is fallback.
-  const stripeRarity: string | null = rarity ?? (isFree ? "free" : null);
+  // Amber stripe overrides rarity when card has free copies
+  const stripeKey: string | null =
+    freeCount > 0 ? "free" : (rarity ?? null);
 
-  // Build the subtitle: "N printings [· +N foil] [· in N decks | · free]"
+  // Subtitle: omit each segment when count is 0
   const subtitleParts: string[] = [
     `${printings.length} printing${printings.length !== 1 ? "s" : ""}`,
   ];
-  if (foilCount > 0) subtitleParts.push(`+${foilCount} foil`);
-  if (hasDeckContext) {
-    if (committed.deckCount > 0) {
-      subtitleParts.push(`in ${committed.deckCount} deck${committed.deckCount !== 1 ? "s" : ""}`);
-    } else {
-      subtitleParts.push("free");
-    }
+  if (foilCount > 0) subtitleParts.push(`${foilCount} foil`);
+  if (hasDeckContext && committed.deckCount > 0) {
+    subtitleParts.push(`${committed.deckCount} deck${committed.deckCount !== 1 ? "s" : ""}`);
   }
 
   return (
     <div
       data-collection-key={name}
-      className={[
-        "collection-row",
-        isExpanded ? "expanded" : "",
-        isFree     ? "row-free" : "",
-      ].filter(Boolean).join(" ")}
+      className={["collection-row", isExpanded ? "expanded" : ""].filter(Boolean).join(" ")}
     >
-      {/* Rarity / free left-edge stripe */}
-      {stripeRarity && (
-        <div className="collection-row-stripe" data-rarity={stripeRarity} />
+      {stripeKey && (
+        <div className="collection-row-stripe" data-rarity={stripeKey} />
       )}
 
       <button
@@ -89,10 +79,15 @@ export function CollectionRow({
           <span className="collection-row-subtitle">{subtitleParts.join(" · ")}</span>
         </div>
         <div className="collection-row-right">
-          <span className="collection-card-qty-big">{total}×</span>
-          {isPartiallyFree && (
+          {freeCount > 0 && (
             <span className="collection-card-free">{freeCount} free</span>
           )}
+          <span
+            className="collection-card-qty-big"
+            data-free={freeCount > 0 ? "true" : undefined}
+          >
+            {total}×
+          </span>
         </div>
       </button>
 
