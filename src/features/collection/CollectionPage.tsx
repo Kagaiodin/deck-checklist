@@ -18,6 +18,7 @@ import { CollectionFab }            from "./components/CollectionFab";
 import { CollectionOverflowSheet }  from "./components/CollectionOverflowSheet";
 import { AlphaRail }          from "./components/AlphaRail";
 import { CollectionRow }      from "./components/CollectionRow";
+import { AppIcon }            from "../../components/AppIcon";
 import { BulkEditPanel }      from "./components/BulkEditPanel";
 
 // ── Virtual-list row ─────────────────────────────────────────────────────────
@@ -438,7 +439,7 @@ export function CollectionPage({ decks, onCollectionChange }: CollectionPageProp
         {/* Empty state */}
         {!collectionMeta && !collectionError && (
           <div className="collection-empty">
-            <div className="collection-empty-icon" aria-hidden>📭</div>
+            <AppIcon className="collection-empty-icon" />
             <p className="collection-empty-headline">No cards yet</p>
             <p className="collection-empty-body">
               Import your collection from Moxfield or add cards manually.
