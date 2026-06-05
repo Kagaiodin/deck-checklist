@@ -12,9 +12,10 @@ import { useCollectionSort }   from "./hooks/useCollectionSort";
 import { useCollectionFilter } from "./hooks/useCollectionFilter";
 import { useBulkEdit }         from "./hooks/useBulkEdit";
 
-import { CollectionHeader }   from "./components/CollectionHeader";
-import { CollectionControls } from "./components/CollectionControls";
-import { CollectionQuickAdd } from "./components/CollectionQuickAdd";
+import { CollectionHeader }        from "./components/CollectionHeader";
+import { CollectionQuickAdd }       from "./components/CollectionQuickAdd";
+import { CollectionFab }            from "./components/CollectionFab";
+import { CollectionOverflowSheet }  from "./components/CollectionOverflowSheet";
 import { AlphaRail }          from "./components/AlphaRail";
 import { CollectionRow }      from "./components/CollectionRow";
 import { BulkEditPanel }      from "./components/BulkEditPanel";
@@ -83,12 +84,12 @@ export function CollectionPage({ decks, onCollectionChange }: CollectionPageProp
   );
 
   // ── Local UI state ─────────────────────────────────────────────────────────
-  const [quickAddOpen,      setQuickAddOpen]       = useState(false);
-  const [collectionError,   setCollectionError]   = useState<string | null>(null);
-  const [collectionSearch,  setCollectionSearch]   = useState("");
-  const [collectionFilter,  setCollectionFilter]   = useState<CollectionFilterKey>("all");
-  const [sortOpen,          setSortOpen]           = useState(false);
-  const [expandedKey,       setExpandedKey]        = useState<string | null>(null);
+  const [quickAddOpen,        setQuickAddOpen]         = useState(false);
+  const [collectionError,     setCollectionError]     = useState<string | null>(null);
+  const [collectionSearch,    setCollectionSearch]     = useState("");
+  const [collectionFilter,    setCollectionFilter]     = useState<CollectionFilterKey>("all");
+  const [expandedKey,         setExpandedKey]          = useState<string | null>(null);
+  const [overflowSheetOpen,   setOverflowSheetOpen]   = useState(false);
   const [firstVisibleIdx,   setFirstVisibleIdx]    = useState(0);
   const [pendingCsvFile,    setPendingCsvFile]     = useState<File | null>(null);
   const [editingPrinting,   setEditingPrinting]    = useState<EditingPrinting | null>(null);
@@ -333,8 +334,6 @@ export function CollectionPage({ decks, onCollectionChange }: CollectionPageProp
   const cbCancelEdit   = useCallback(() => setEditingPrinting(null), []);
   const cbEditField    = useCallback((ep: EditingPrinting) => setEditingPrinting(ep), []);
 
-  const listHeight = Math.min(600, Math.max(240, collectionPillFiltered.length * 56));
-
   const rowData: CRowData = {
     expandedKey:     expandedKey,
     editingPrinting: editingPrinting,
@@ -362,141 +361,152 @@ export function CollectionPage({ decks, onCollectionChange }: CollectionPageProp
         onChange={handleCollectionUpload}
       />
 
-      <CollectionHeader
-        collectionMeta={collectionMeta}
-        totalCards={totalCards}
-        uniqueCards={uniqueCards}
-        deckCardTotal={deckCardTotal}
-        hasDeckContext={decks.length > 0}
-        onUploadClick={() => csvInputRef.current?.click()}
-        onQuickAddClick={() => setQuickAddOpen(v => !v)}
-        quickAddOpen={quickAddOpen}
-        onBulkEditClick={() => setBulkEditOpen(!bulkEditOpen)}
-        bulkEditOpen={bulkEditOpen}
-      />
-
-      {quickAddOpen && (
-        <CollectionQuickAdd
-          onAdd={handleQuickAdd}
-          onCancel={() => setQuickAddOpen(false)}
-        />
-      )}
-
-      {collectionError && <p className="import-error">{collectionError}</p>}
-
-      {/* CSV replace confirmation */}
-      {pendingCsvFile && (
-        <div className="collection-confirm-banner">
-          <span>
-            Replace{" "}
-            <strong>{collectionMeta?.cardCount.toLocaleString()} cards</strong> with{" "}
-            <strong>{pendingCsvFile.name}</strong>?
-          </span>
-          <div className="collection-confirm-actions">
-            <button
-              className="btn btn-primary btn-sm"
-              onClick={() => { importCollectionFile(pendingCsvFile); setPendingCsvFile(null); }}
-            >
-              Replace
-            </button>
-            <button
-              className="btn btn-ghost btn-sm"
-              onClick={() => setPendingCsvFile(null)}
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Bulk edit panel */}
-      {bulkEditOpen && (
-        <BulkEditPanel
-          collection={collection}
+      <div className="collection-container">
+        <CollectionHeader
           collectionMeta={collectionMeta}
-          bulkEditMode={bulkEditMode}
-          onModeChange={setBulkEditMode}
-          bulkEditText={bulkEditText}
-          onTextChange={setBulkEditText}
-          bulkPreview={bulkPreview}
-          bulkEditError={bulkEditError}
-          clearConfirming={clearConfirming}
-          onClearConfirmChange={setClearConfirming}
-          onApply={handleBulkEdit}
-          onClear={handleClearCollection}
-          onClose={() => { setBulkEditOpen(false); setBulkEditText(""); }}
+          totalCards={totalCards}
+          uniqueCards={uniqueCards}
+          deckCardTotal={deckCardTotal}
+          hasDeckContext={decks.length > 0}
+          filteredCount={collectionPillFiltered.length}
+          onUploadClick={() => csvInputRef.current?.click()}
+          onQuickAddClick={() => setQuickAddOpen(v => !v)}
+          onBulkEditClick={() => setBulkEditOpen(!bulkEditOpen)}
+          onOverflowOpen={() => setOverflowSheetOpen(true)}
+          collectionSearch={collectionSearch}
+          onSearchChange={setCollectionSearch}
+          collectionFilter={collectionFilter}
+          onFilterChange={setCollectionFilter}
+          pillCounts={pillCounts}
+          collectionSort={collectionSort}
+          onSortChange={setCollectionSort}
+        />
+
+        {quickAddOpen && (
+          <CollectionQuickAdd
+            onAdd={handleQuickAdd}
+            onCancel={() => setQuickAddOpen(false)}
+          />
+        )}
+
+        {collectionError && <p className="import-error">{collectionError}</p>}
+
+        {/* CSV replace confirmation */}
+        {pendingCsvFile && (
+          <div className="collection-confirm-banner">
+            <span>
+              Replace{" "}
+              <strong>{collectionMeta?.cardCount.toLocaleString()} cards</strong> with{" "}
+              <strong>{pendingCsvFile.name}</strong>?
+            </span>
+            <div className="collection-confirm-actions">
+              <button
+                className="btn btn-primary btn-sm"
+                onClick={() => { importCollectionFile(pendingCsvFile); setPendingCsvFile(null); }}
+              >
+                Replace
+              </button>
+              <button
+                className="btn btn-ghost btn-sm"
+                onClick={() => setPendingCsvFile(null)}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Bulk edit panel */}
+        {bulkEditOpen && (
+          <BulkEditPanel
+            collection={collection}
+            collectionMeta={collectionMeta}
+            bulkEditMode={bulkEditMode}
+            onModeChange={setBulkEditMode}
+            bulkEditText={bulkEditText}
+            onTextChange={setBulkEditText}
+            bulkPreview={bulkPreview}
+            bulkEditError={bulkEditError}
+            clearConfirming={clearConfirming}
+            onClearConfirmChange={setClearConfirming}
+            onApply={handleBulkEdit}
+            onClear={handleClearCollection}
+            onClose={() => { setBulkEditOpen(false); setBulkEditText(""); }}
+          />
+        )}
+
+        {/* Empty state */}
+        {!collectionMeta && !collectionError && (
+          <div className="collection-empty">
+            <div className="collection-empty-icon" aria-hidden>📭</div>
+            <p className="collection-empty-headline">No cards yet</p>
+            <p className="collection-empty-body">
+              Import your collection from Moxfield or add cards manually.
+            </p>
+            <div className="collection-empty-actions">
+              <button className="btn btn-primary btn-sm" onClick={() => csvInputRef.current?.click()}>
+                Upload CSV
+              </button>
+              <button className="btn btn-ghost btn-sm" onClick={() => setQuickAddOpen(true)}>
+                + Add card
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Main list */}
+        {collectionMeta && (
+          <>
+            {collectionPillFiltered.length === 0 &&
+              (collectionSearch || collectionFilter !== "all") && (
+                <p className="collection-empty-search">
+                  No cards
+                  {collectionSearch ? (
+                    <> matching "<strong>{collectionSearch}</strong>"</>
+                  ) : ""}
+                  {collectionFilter !== "all" ? ` in "${collectionFilter}"` : ""}
+                </p>
+              )}
+
+            <div className="collection-list-wrap">
+              <Virtuoso
+                ref={collectionListRef}
+                style={{ height: "100%" }}
+                data={collectionPillFiltered}
+                context={rowData}
+                itemContent={CollectionRowItem}
+                rangeChanged={({ startIndex }) => setFirstVisibleIdx(startIndex)}
+                className="collection-vlist"
+                overscan={4}
+              />
+
+              {alphaSort && collectionPillFiltered.length > 10 && (
+                <AlphaRail
+                  letterIndexMap={letterIndexMap}
+                  activeLetter={activeAlphaLetter}
+                  onJump={jumpToLetter}
+                />
+              )}
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* FAB — fixed positioned, outside container */}
+      {collectionMeta && (
+        <CollectionFab onClick={() => setQuickAddOpen(v => !v)} />
+      )}
+
+      {/* Mobile overflow sheet */}
+      {overflowSheetOpen && (
+        <CollectionOverflowSheet
+          collectionMeta={collectionMeta}
+          onClose={() => setOverflowSheetOpen(false)}
+          onUploadClick={() => csvInputRef.current?.click()}
+          onBulkEditClick={() => setBulkEditOpen(!bulkEditOpen)}
         />
       )}
 
-      {/* Empty state */}
-      {!collectionMeta && !collectionError && (
-        <div className="collection-empty">
-          <p>No collection uploaded yet.</p>
-          <p className="collection-empty-hint">
-            Export your collection from Moxfield (Account → Collection → Export) or any other
-            supported app and upload the CSV above. Cards you own will be automatically tagged
-            across all your decks.
-          </p>
-        </div>
-      )}
-
-      {/* Main list */}
-      {collectionMeta && (
-        <>
-          <CollectionControls
-            collectionSearch={collectionSearch}
-            onSearchChange={setCollectionSearch}
-            collectionSort={collectionSort}
-            onSortChange={setCollectionSort}
-            sortOpen={sortOpen}
-            onSortOpenChange={setSortOpen}
-            collectionFilter={collectionFilter}
-            onFilterChange={setCollectionFilter}
-            pillCounts={pillCounts}
-            uniqueCards={uniqueCards}
-          />
-
-          <p className="collection-count-line">
-            {collectionPillFiltered.length.toLocaleString()} card
-            {collectionPillFiltered.length !== 1 ? "s" : ""}
-            {collectionFilter !== "all" || collectionSearch
-              ? ` · ${pillCounts.all.toLocaleString()} total`
-              : ""}
-          </p>
-
-          {collectionPillFiltered.length === 0 &&
-            (collectionSearch || collectionFilter !== "all") && (
-              <p className="collection-empty-search">
-                No cards
-                {collectionSearch ? (
-                  <> matching "<strong>{collectionSearch}</strong>"</>
-                ) : ""}
-                {collectionFilter !== "all" ? ` in "${collectionFilter}"` : ""}
-              </p>
-            )}
-
-          <div className="collection-list-wrap">
-            <Virtuoso
-              ref={collectionListRef}
-              style={{ height: listHeight }}
-              data={collectionPillFiltered}
-              context={rowData}
-              itemContent={CollectionRowItem}
-              rangeChanged={({ startIndex }) => setFirstVisibleIdx(startIndex)}
-              className="collection-vlist"
-              overscan={4}
-            />
-
-            {alphaSort && collectionPillFiltered.length > 10 && (
-              <AlphaRail
-                letterIndexMap={letterIndexMap}
-                activeLetter={activeAlphaLetter}
-                onJump={jumpToLetter}
-              />
-            )}
-          </div>
-        </>
-      )}
       {undoToast && (
         <div className="undo-toast" role="status">
           <span className="undo-toast-message">{undoToast}</span>
