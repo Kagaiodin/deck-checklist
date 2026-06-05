@@ -71,8 +71,7 @@
 - npm test must pass before every push — no exceptions
 
 ## Work tracking
-- Active work tracked in docs/BACKLOG.md
-- Before starting a session, check BACKLOG.md for the next ready item
-- When pausing a feature, update its entry in BACKLOG.md with last known 
+- Active work tracked in GitHub Issues — check open issues before starting a session
+- When pausing a feature mid-session, add a comment to the issue with last known
   state and the open question blocking it
-- Link to the relevant spec file from every BACKLOG entry
+- Link to the relevant spec file in the issue body
