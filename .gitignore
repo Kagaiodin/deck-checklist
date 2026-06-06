@@ -40,3 +40,6 @@ coverage/
 # Generated screenshot output
 design-review-screenshots/
 *.zip
+
+# Open Design prompt scratch files
+docs/specs/*-od-prompt.md
