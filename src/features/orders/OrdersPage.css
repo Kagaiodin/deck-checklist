@@ -499,6 +499,25 @@ html[data-mode="light"] .li-qty {
   border-radius: 8px;
 }
 
+/* ── Received summary row (collapsed card list) ─────────────────────────────── */
+.recv-summary {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--ocard-hairline); border-radius: 8px;
+  font-size: 13px; color: var(--text-muted);
+}
+.recv-summary strong { color: var(--text); font-weight: 600; }
+
+.recv-toggle {
+  flex-shrink: 0;
+  background: transparent; border: 0; cursor: pointer;
+  font: inherit; font-size: 12px;
+  color: var(--ocard-muted); padding: 4px 8px; border-radius: 6px;
+  transition: background 0.1s, color 0.1s;
+}
+.recv-toggle:hover { background: var(--ocard-hover); color: var(--text); }
+
 /* ── Delete confirm ─────────────────────────────────────────────────────────── */
 .ocard-delete-confirm {
   display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
