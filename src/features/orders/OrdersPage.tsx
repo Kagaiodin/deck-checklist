@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { createPortal } from "react-dom";
 import "./OrdersPage.css";
 import type { Order, OrderCard, OrderStatus, Carrier, Deck } from "../../types/index";
 import { detectCarrier, getTrackingUrl, CARRIER_NAMES } from "../../utils/carrier";
@@ -21,7 +22,6 @@ function totalQty(order: Order): number {
   return order.cards.reduce((s, c) => s + c.quantity, 0);
 }
 
-/** Returns the human-readable ETA label and its CSS modifier class. */
 function etaInfo(expectedArrival: number | undefined): { label: string; cls: string } | null {
   if (!expectedArrival) return null;
   const d = daysFromNow(expectedArrival);
@@ -38,6 +38,61 @@ function etaInfo(expectedArrival: number | undefined): { label: string; cls: str
   return { label: formatShortDate(expectedArrival), cls: "" };
 }
 
+// ── Timeline helpers ──────────────────────────────────────────────────────────
+
+type TlDot = "done" | "now" | "warn" | "late" | "pending";
+
+interface TlStep {
+  dot: TlDot;
+  when: string;
+  what: string;
+  sub?: string;
+}
+
+function buildTimeline(order: Order & { isLate: boolean }): TlStep[] {
+  const steps: TlStep[] = [];
+
+  // Step 1 — always present
+  steps.push({
+    dot: "done",
+    when: formatShortDate(order.orderDate ?? order.createdAt),
+    what: "Order placed",
+    sub: order.vendor,
+  });
+
+  // Step 2 — only when tracking number is present
+  // TODO: replace static "Shipped" with real carrier API events when tracking
+  // integration lands (carrier.trackEvents(trackingNumber, carrier) → TlStep[])
+  if (order.trackingNumber) {
+    const carrierName = order.carrier ? CARRIER_NAMES[order.carrier] : "Carrier";
+    steps.push({
+      dot: "done",
+      when: "—",
+      what: "Shipped",
+      sub: `${carrierName} ${order.trackingNumber}`,
+    });
+  }
+
+  // Step 3 — expected / delivered
+  if (order.expectedArrival) {
+    let dot: TlDot = "pending";
+    let what = "Expected delivery";
+    let sub: string | undefined;
+    if (order.status === "received") {
+      dot = "done"; what = "Delivered";
+    } else if (order.isLate) {
+      const n = daysOverdue(order.expectedArrival);
+      dot = "late"; sub = `${n} day${n !== 1 ? "s" : ""} late`;
+    } else {
+      const d = daysFromNow(order.expectedArrival);
+      if (d <= 1) dot = "warn";
+    }
+    steps.push({ dot, when: formatShortDate(order.expectedArrival), what, sub });
+  }
+
+  return steps;
+}
+
 // ── Props ─────────────────────────────────────────────────────────────────────
 
 interface OrdersPageProps {
@@ -51,12 +106,162 @@ interface OrdersPageProps {
   onOpenBuyList?: () => void;
 }
 
+// ── Shared sub-components ─────────────────────────────────────────────────────
+
+function TlRow({ dot, when, what, sub }: TlStep) {
+  return (
+    <div className="tl-row">
+      <span className={`tl-dot ${dot}`} />
+      <span className="tl-when">{when}</span>
+      <span className="tl-what">
+        {what}
+        {sub && <span className="tl-sub">{sub}</span>}
+      </span>
+    </div>
+  );
+}
+
+function LineItems({ cards }: { cards: OrderCard[] }) {
+  return (
+    <div className="ocard-lineitems">
+      {cards.map(oc => (
+        <div key={`${oc.deckId ?? "free"}-${oc.cardName}`} className="li">
+          <span className="li-qty">×{oc.quantity}</span>
+          <span className="li-name">{oc.cardName}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Mobile detail sheet (full-screen portal) ──────────────────────────────────
+
+interface OrderDetailSheetProps {
+  order: Order & { isLate: boolean };
+  decks: Deck[];
+  onClose: () => void;
+  onMarkReceived: () => void;
+  onMarkCancelled: () => void;
+  onDeleteOrder: () => void;
+}
+
+function OrderDetailSheet({
+  order, decks, onClose, onMarkReceived, onMarkCancelled, onDeleteOrder,
+}: OrderDetailSheetProps) {
+  const eta = etaInfo(order.expectedArrival);
+  const timeline = buildTimeline(order);
+  const qty = totalQty(order);
+  const orderDateStr = order.orderDate
+    ? `Ordered ${formatShortDate(order.orderDate)}`
+    : `Added ${formatShortDate(order.createdAt)}`;
+
+  const linkedDecks = useMemo(() => {
+    const ids = [...new Set(order.cards.map(c => c.deckId).filter(Boolean) as string[])];
+    return ids.map(id => decks.find(d => d.id === id)).filter(Boolean) as Deck[];
+  }, [order.cards, decks]);
+
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = ""; };
+  }, []);
+
+  let statusCls = "active";
+  let statusLabel = "Active";
+  if (order.status === "received") { statusCls = "ok"; statusLabel = "Received"; }
+  else if (order.status === "cancelled") { statusCls = "muted"; statusLabel = "Cancelled"; }
+  else if (order.isLate && eta) { statusCls = "late"; statusLabel = eta.label; }
+  else if (eta?.cls === "warn") { statusCls = "warn"; statusLabel = eta.label; }
+  else if (eta) { statusLabel = eta.label; }
+
+  return createPortal(
+    <div className="ocard-mob-sheet-backdrop" onClick={onClose}>
+      <div className="ocard-mob-sheet" onClick={e => e.stopPropagation()}>
+        {/* Nav */}
+        <div className="ocard-mob-nav">
+          <button className="ocard-mob-back" onClick={onClose} aria-label="Back">‹</button>
+          <span className="ocard-mob-nav-title">Order detail</span>
+        </div>
+
+        <div className="ocard-mob-body">
+          {/* Hero */}
+          <div className="ocard-mob-hero">
+            <span className="ocard-mob-vendor">{order.vendor}</span>
+            <span className="ocard-mob-sub">{orderDateStr}</span>
+          </div>
+
+          <span className={`ocard-mob-status-pill ${statusCls}`}>● {statusLabel}</span>
+
+          {/* Tracking CTA */}
+          {order.trackingNumber && order.carrier && (
+            <a
+              className="ocard-mob-tracking-cta"
+              href={getTrackingUrl(order.trackingNumber, order.carrier)}
+              target="_blank" rel="noopener noreferrer"
+            >
+              <div>
+                <div className="ocard-mob-cta-k">Tracking</div>
+                <div className="ocard-mob-cta-v">
+                  {CARRIER_NAMES[order.carrier]} ···{order.trackingNumber.replace(/\s/g, "").slice(-4)}
+                </div>
+              </div>
+              <span className="ocard-mob-cta-arrow">↗</span>
+            </a>
+          )}
+
+          {/* Timeline */}
+          <div className="ocard-mob-section">
+            <h3 className="panel-h">Timeline</h3>
+            <div className="ocard-timeline">
+              {timeline.map((step, i) => <TlRow key={i} {...step} />)}
+            </div>
+          </div>
+
+          {/* Cards */}
+          <div className="ocard-mob-section">
+            <h3 className="panel-h">Cards · {qty} {qty === 1 ? "copy" : "copies"}</h3>
+            <LineItems cards={order.cards} />
+          </div>
+
+          {/* Linked decks */}
+          {linkedDecks.length > 0 && (
+            <div className="ocard-mob-section">
+              <h3 className="panel-h">Linked deck{linkedDecks.length !== 1 ? "s" : ""}</h3>
+              {linkedDecks.map(d => (
+                <div key={d.id} className="ocard-linked-deck">{d.name}</div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Stacked actions */}
+        <div className="ocard-mob-actions">
+          {order.status === "active" && (
+            <>
+              <button className="btn btn-primary" onClick={onMarkReceived}>✓ Mark received</button>
+              <button className="btn" onClick={onMarkCancelled}>Cancel order</button>
+            </>
+          )}
+          <button
+            className="btn"
+            style={{ color: "var(--danger)", marginTop: order.status !== "active" ? 0 : 4 }}
+            onClick={onDeleteOrder}
+          >
+            Delete order
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
 // ── OCard component ───────────────────────────────────────────────────────────
 
 interface OCardProps {
   order: Order & { isLate: boolean };
   decks: Deck[];
   isExpanded: boolean;
+  isMobile: boolean;
   isConfirmingDelete: boolean;
   onExpand: () => void;
   onMarkReceived: () => void;
@@ -67,63 +272,49 @@ interface OCardProps {
 }
 
 function OCard({
-  order,
-  decks,
-  isExpanded,
-  isConfirmingDelete,
-  onExpand,
-  onMarkReceived,
-  onMarkCancelled,
-  onDeleteOrder,
-  onConfirmDelete,
-  onCancelDelete,
+  order, decks, isExpanded, isMobile, isConfirmingDelete,
+  onExpand, onMarkReceived, onMarkCancelled, onDeleteOrder, onConfirmDelete, onCancelDelete,
 }: OCardProps) {
   const qty = totalQty(order);
   const eta = etaInfo(order.expectedArrival);
   const isLate = order.isLate;
   const isWarnTomorrow = !isLate && eta?.cls === "warn" && daysFromNow(order.expectedArrival ?? 0) === 1;
 
-  // Stripe class / state class
   let stateClass = "";
   if (order.status === "received")  stateClass = "state-ok";
   else if (order.status === "cancelled") stateClass = "state-cancelled state-muted";
   else if (isLate) stateClass = "state-late";
   else if (isWarnTomorrow) stateClass = "state-warn";
 
-  // Order date display
   const orderDateStr = order.orderDate
     ? `Ordered ${formatShortDate(order.orderDate)}`
     : `Added ${formatShortDate(order.createdAt)}`;
 
-  // Tracking tail (last 4 chars)
   const tnTail = order.trackingNumber
     ? `···${order.trackingNumber.replace(/\s/g, "").slice(-4)}`
     : null;
 
-  // Cards grouped by deck for expanded view
-  const cardsByDeck = useMemo(() => {
-    const groups: Record<string, { deckName: string; cards: OrderCard[] }> = {};
-    for (const oc of order.cards) {
-      const key = oc.deckId ?? "__freeform__";
-      const deck = oc.deckId ? decks.find(d => d.id === oc.deckId) : undefined;
-      const deckName = oc.deckId ? (deck?.name ?? "Deleted deck") : "No deck";
-      if (!groups[key]) groups[key] = { deckName, cards: [] };
-      groups[key].cards.push(oc);
-    }
-    return groups;
+  // Timeline for desktop panel
+  const timeline = buildTimeline(order);
+
+  // Linked decks for desktop panel
+  const linkedDecks = useMemo(() => {
+    const ids = [...new Set(order.cards.map(c => c.deckId).filter(Boolean) as string[])];
+    return ids.map(id => decks.find(d => d.id === id)).filter(Boolean) as Deck[];
   }, [order.cards, decks]);
+
+  const lineCount = order.cards.length;
 
   return (
     <div
       className={`ocard ${stateClass}${isExpanded ? " expanded" : ""}`}
       onClick={e => {
-        // Don't expand when clicking action buttons
         const target = e.target as HTMLElement;
         if (target.closest("button") || target.closest("a")) return;
         onExpand();
       }}
     >
-      {/* Top row: vendor | cards | actions */}
+      {/* Top row: vendor | cards | hover-actions | chevron */}
       <div className="ocard-top">
         <div className="ocard-vendor">
           <span className="ocard-vendor-name">{order.vendor}</span>
@@ -151,14 +342,15 @@ function OCard({
               Re-order
             </button>
           )}
-          <button
-            className="ocard-more"
-            title="More actions"
-            onClick={e => { e.stopPropagation(); onExpand(); }}
-          >
-            ⋯
-          </button>
         </div>
+
+        <button
+          className={`ocard-chev${isExpanded ? " open" : ""}`}
+          onClick={e => { e.stopPropagation(); onExpand(); }}
+          aria-label={isExpanded ? "Collapse" : "Expand"}
+        >
+          ›
+        </button>
       </div>
 
       {/* Bottom row: eta | tracking */}
@@ -177,13 +369,9 @@ function OCard({
               )}
             </>
           ) : order.status === "received" ? (
-            <span className="ocard-eta-when ok">
-              Received {formatShortDate(order.createdAt)}
-            </span>
+            <span className="ocard-eta-when ok">Received {formatShortDate(order.createdAt)}</span>
           ) : order.status === "cancelled" ? (
-            <span className="ocard-eta-when dim">
-              Cancelled {formatShortDate(order.createdAt)}
-            </span>
+            <span className="ocard-eta-when dim">Cancelled {formatShortDate(order.createdAt)}</span>
           ) : (
             <span className="ocard-eta-when">No expected date</span>
           )}
@@ -193,8 +381,7 @@ function OCard({
           <a
             className="ocard-tracking"
             href={getTrackingUrl(order.trackingNumber, order.carrier)}
-            target="_blank"
-            rel="noopener noreferrer"
+            target="_blank" rel="noopener noreferrer"
             onClick={e => e.stopPropagation()}
           >
             <span className="carrier">{CARRIER_NAMES[order.carrier]}</span>
@@ -206,51 +393,79 @@ function OCard({
         ) : null}
       </div>
 
-      {/* Expanded detail (Phase 1 stub — full redesign is Phase 2) */}
-      {isExpanded && (
-        <div className="ocard-detail-stub">
-          <div className="ocard-detail-cards">
-            {Object.values(cardsByDeck).map(({ deckName, cards }) => (
-              <div key={deckName}>
-                <div style={{ fontSize: 11, color: "var(--text-dim)", marginBottom: 2, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em" }}>{deckName}</div>
-                {cards.map(oc => (
-                  <div key={`${oc.cardId ?? oc.cardName}`} className="ocard-detail-card-item">
-                    {oc.quantity}× {oc.cardName}
-                  </div>
-                ))}
+      {/* Desktop expanded panel (hidden on mobile — mobile uses the sheet portal) */}
+      {isExpanded && !isMobile && (
+        <div className="ocard-panel">
+          {/* Left: timeline + actions */}
+          <div className="ocard-panel-left">
+            <div className="ocard-panel-section">
+              <div className="panel-h">
+                {order.trackingNumber
+                  ? `Tracking · ${order.carrier ? CARRIER_NAMES[order.carrier] : ""} ${order.trackingNumber}`
+                  : "Timeline"}
               </div>
-            ))}
+              <div className="ocard-timeline">
+                {timeline.map((step, i) => <TlRow key={i} {...step} />)}
+              </div>
+            </div>
+
+            <div className="ocard-panel-actions">
+              {order.status === "active" && (
+                <>
+                  <button
+                    className="btn btn-sm btn-recv"
+                    onClick={e => { e.stopPropagation(); onMarkReceived(); }}
+                  >
+                    ✓ Mark received
+                  </button>
+                  <button
+                    className="btn btn-sm btn-quiet"
+                    onClick={e => { e.stopPropagation(); onMarkCancelled(); }}
+                  >
+                    Cancel order
+                  </button>
+                </>
+              )}
+
+              {isConfirmingDelete ? (
+                <div className="ocard-delete-confirm">
+                  <span className="ocard-delete-confirm-text">Delete this order?</span>
+                  <button className="btn btn-sm btn-ghost"
+                    onClick={e => { e.stopPropagation(); onConfirmDelete(); }}>
+                    Yes, delete
+                  </button>
+                  <button className="btn btn-sm btn-ghost"
+                    onClick={e => { e.stopPropagation(); onCancelDelete(); }}>
+                    Keep
+                  </button>
+                </div>
+              ) : (
+                <button
+                  className="btn btn-sm btn-ghost ocard-delete-btn"
+                  onClick={e => { e.stopPropagation(); onDeleteOrder(); }}
+                >
+                  Delete
+                </button>
+              )}
+            </div>
           </div>
 
-          <div className="ocard-detail-actions">
-            {order.status === "active" && (
-              <>
-                <button className="btn btn-sm btn-quiet ocard-actions btn-recv"
-                  onClick={e => { e.stopPropagation(); onMarkReceived(); }}>
-                  ✓ Mark received
-                </button>
-                <button className="btn btn-sm btn-quiet"
-                  onClick={e => { e.stopPropagation(); onMarkCancelled(); }}>
-                  Cancel order
-                </button>
-              </>
-            )}
-
-            {isConfirmingDelete ? (
-              <div className="ocard-delete-confirm">
-                <span className="ocard-delete-confirm-text">Delete this order?</span>
-                <button className="btn btn-sm btn-ghost" onClick={e => { e.stopPropagation(); onConfirmDelete(); }}>
-                  Yes, delete
-                </button>
-                <button className="btn btn-sm btn-ghost" onClick={e => { e.stopPropagation(); onCancelDelete(); }}>
-                  Keep
-                </button>
+          {/* Right: line items + linked deck */}
+          <div className="ocard-panel-right">
+            <div className="ocard-panel-section">
+              <div className="panel-h">
+                Cards · {lineCount} line{lineCount !== 1 ? "s" : ""} · {qty} {qty === 1 ? "copy" : "copies"}
               </div>
-            ) : (
-              <button className="btn btn-sm btn-ghost" style={{ marginLeft: "auto", color: "var(--danger)" }}
-                onClick={e => { e.stopPropagation(); onDeleteOrder(); }}>
-                Delete
-              </button>
+              <LineItems cards={order.cards} />
+            </div>
+
+            {linkedDecks.length > 0 && (
+              <div className="ocard-panel-section">
+                <div className="panel-h">Linked deck{linkedDecks.length !== 1 ? "s" : ""}</div>
+                {linkedDecks.map(d => (
+                  <div key={d.id} className="ocard-linked-deck">{d.name}</div>
+                ))}
+              </div>
             )}
           </div>
         </div>
@@ -347,7 +562,6 @@ function CreateOrderForm({ decks, recentVendors, onSubmit, onClose }: CreateOrde
     <div className="orders-create-wrap">
       <div className="orders-create-title">New order</div>
 
-      {/* Cards field */}
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         <span className="form-label">Cards <span className="form-label-req">required</span></span>
         <div className="card-combobox">
@@ -439,7 +653,6 @@ function CreateOrderForm({ decks, recentVendors, onSubmit, onClose }: CreateOrde
         )}
       </div>
 
-      {/* Vendor field */}
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         <span className="form-label">Vendor <span className="form-label-req">required</span></span>
         <input className="deck-name-input" placeholder="Pick one or type your own"
@@ -455,7 +668,6 @@ function CreateOrderForm({ decks, recentVendors, onSubmit, onClose }: CreateOrde
         )}
       </div>
 
-      {/* Shipping & tracking toggle */}
       {!showShipping ? (
         <button type="button" className="form-collapser" onClick={() => setShowShipping(true)}>
           <span><span className="collapser-add">+</span> Shipping &amp; tracking</span>
@@ -498,7 +710,6 @@ function CreateOrderForm({ decks, recentVendors, onSubmit, onClose }: CreateOrde
         </div>
       )}
 
-      {/* Notes */}
       <label className="form-field" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         <span className="form-label">Notes <span style={{ opacity: 0.6 }}>(optional)</span></span>
         <textarea className="deck-name-input order-notes-textarea"
@@ -507,7 +718,6 @@ function CreateOrderForm({ decks, recentVendors, onSubmit, onClose }: CreateOrde
           onChange={e => setNotes(e.target.value)} rows={2} />
       </label>
 
-      {/* Actions */}
       <div className="order-form-actions">
         <button className="btn btn-primary"
           onClick={handleSubmit}
@@ -523,20 +733,24 @@ function CreateOrderForm({ decks, recentVendors, onSubmit, onClose }: CreateOrde
 // ── Page root ─────────────────────────────────────────────────────────────────
 
 export function OrdersPage({
-  orders,
-  decks,
-  recentVendors,
-  onCreateOrder,
-  onMarkReceived,
-  onMarkCancelled,
-  onDeleteOrder,
-  onOpenBuyList,
+  orders, decks, recentVendors,
+  onCreateOrder, onMarkReceived, onMarkCancelled, onDeleteOrder, onOpenBuyList,
 }: OrdersPageProps) {
   const [filter, setFilter] = useState<OrderStatus | "all">("active");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [search, setSearch] = useState("");
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    if (!window.matchMedia) return;
+    const mq = window.matchMedia("(max-width: 640px)");
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
 
   const now = Date.now();
 
@@ -580,7 +794,6 @@ export function OrdersPage({
     return filtered;
   }, [filtered, filter]);
 
-  // Count label for header
   const countLabel = filter === "active"
     ? `${counts.active} active`
     : filter === "received"
@@ -589,7 +802,6 @@ export function OrdersPage({
     ? `${counts.cancelled} cancelled`
     : `${counts.all} total`;
 
-  // Cards in flight for sub-meta
   const cardsInFlight = useMemo(
     () => annotated.filter(o => o.status === "active").reduce((s, o) => s + totalQty(o), 0),
     [annotated],
@@ -611,6 +823,8 @@ export function OrdersPage({
     setDeleteConfirmId(null);
     if (expandedId === id) setExpandedId(null);
   }
+
+  const expandedOrder = expandedId ? annotated.find(o => o.id === expandedId) ?? null : null;
 
   return (
     <section className="orders-panel">
@@ -651,7 +865,6 @@ export function OrdersPage({
         {/* ── Scrollable body ───────────────────────────────────────────────── */}
         <div className="orders-body">
 
-          {/* Create form */}
           {showCreate && (
             <CreateOrderForm
               decks={decks}
@@ -664,7 +877,6 @@ export function OrdersPage({
             />
           )}
 
-          {/* Empty state — no orders ever */}
           {orders.length === 0 && !showCreate && (
             <div className="orders-empty-wrap">
               <div className="orders-empty-card">
@@ -696,10 +908,8 @@ export function OrdersPage({
             </div>
           )}
 
-          {/* List view */}
           {orders.length > 0 && (
             <>
-              {/* Chips */}
               <div className="orders-chips">
                 {(["active", "received", "cancelled", "all"] as const).map(f => (
                   <button
@@ -713,7 +923,6 @@ export function OrdersPage({
                 ))}
               </div>
 
-              {/* Sub-meta + overdue warning */}
               <div className="orders-listmeta">
                 {filter === "active" && overdueCount > 0 && (
                   <span className="orders-overdue-meta">⚠ {overdueCount} order{overdueCount !== 1 ? "s" : ""} overdue</span>
@@ -724,7 +933,6 @@ export function OrdersPage({
                 </span>
               </div>
 
-              {/* Per-filter empty */}
               {sorted.length === 0 ? (
                 <div className="orders-filter-empty">
                   {filter === "active" && (search ? "No active orders match your search." : "No active orders.")}
@@ -740,6 +948,7 @@ export function OrdersPage({
                       order={order}
                       decks={decks}
                       isExpanded={expandedId === order.id}
+                      isMobile={isMobile}
                       isConfirmingDelete={deleteConfirmId === order.id}
                       onExpand={() => handleExpand(order.id)}
                       onMarkReceived={() => onMarkReceived(order.id)}
@@ -759,6 +968,18 @@ export function OrdersPage({
           )}
         </div>
       </div>
+
+      {/* Mobile full-screen detail sheet */}
+      {isMobile && expandedOrder && (
+        <OrderDetailSheet
+          order={expandedOrder}
+          decks={decks}
+          onClose={() => setExpandedId(null)}
+          onMarkReceived={() => { onMarkReceived(expandedOrder.id); setExpandedId(null); }}
+          onMarkCancelled={() => { onMarkCancelled(expandedOrder.id); setExpandedId(null); }}
+          onDeleteOrder={() => { onDeleteOrder(expandedOrder.id); setExpandedId(null); }}
+        />
+      )}
     </section>
   );
 }

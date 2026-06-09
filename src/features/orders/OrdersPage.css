@@ -196,7 +196,7 @@
 /* ── OCard top row ──────────────────────────────────────────────────────────── */
 .ocard-top {
   display: grid;
-  grid-template-columns: 1fr auto auto;
+  grid-template-columns: 1fr auto auto auto;
   gap: 12px;
   align-items: center;
 }
@@ -352,27 +352,133 @@
   color: var(--text-muted); font-size: 13px;
 }
 
-/* ── Expanded detail (Phase 1 stub — full expand is Phase 2) ────────────────── */
-.ocard-detail-stub {
-  margin-top: 12px; padding-top: 12px;
+/* ── OCard chevron ──────────────────────────────────────────────────────────── */
+.ocard-chev {
+  width: 24px; height: 24px; display: grid; place-items: center;
+  background: transparent; border: none; cursor: pointer;
+  color: var(--ocard-dim); font-size: 16px; flex-shrink: 0;
+  transition: transform 0.15s, color 0.12s;
+  padding: 0;
+}
+.ocard-chev.open { transform: rotate(90deg); color: var(--text-muted); }
+.ocard:hover .ocard-chev { color: var(--text-muted); }
+
+/* ── Expanded panel (desktop) ───────────────────────────────────────────────── */
+.ocard-panel {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 24px;
+  margin-top: 14px;
+  padding-top: 14px;
   border-top: 1px solid var(--ocard-hairline);
-  display: flex; flex-direction: column; gap: 10px;
-}
-.ocard-detail-cards {
-  display: flex; flex-direction: column; gap: 4px;
-}
-.ocard-detail-card-item {
-  font-size: 13px; color: var(--text-muted);
-  padding: 3px 0;
-}
-.ocard-detail-actions {
-  display: flex; gap: 6px; flex-wrap: wrap; padding-top: 4px;
-}
-.ocard-detail-actions .ocard-actions {
-  opacity: 1; pointer-events: auto;
 }
 
-/* Delete confirm */
+.ocard-panel-left,
+.ocard-panel-right {
+  display: flex; flex-direction: column; gap: 16px; min-width: 0;
+}
+
+.ocard-panel-section { display: flex; flex-direction: column; gap: 10px; }
+
+.panel-h {
+  font: 10.5px/1 var(--ocard-mono);
+  color: var(--ocard-dim);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  margin: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* ── Timeline ───────────────────────────────────────────────────────────────── */
+.ocard-timeline {
+  display: flex; flex-direction: column; position: relative;
+}
+
+.tl-row {
+  display: grid;
+  grid-template-columns: 16px 72px 1fr;
+  gap: 10px;
+  padding: 7px 0;
+  position: relative;
+}
+.tl-row:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  left: 7px; top: 20px; bottom: -7px;
+  width: 1px; background: var(--border);
+}
+
+.tl-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--ocard-dim);
+  margin-top: 5px; margin-left: 4px;
+  position: relative; z-index: 1; flex-shrink: 0;
+}
+.tl-dot.done    { background: var(--ok); }
+.tl-dot.now     { background: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.tl-dot.warn    { background: var(--warn);   box-shadow: 0 0 0 3px var(--warn-soft); }
+.tl-dot.late    { background: var(--danger); box-shadow: 0 0 0 3px var(--danger-soft); }
+.tl-dot.pending { background: transparent; border: 1.5px solid var(--ocard-dim); }
+
+.tl-when {
+  font: 11px/1.4 var(--ocard-mono); color: var(--ocard-dim);
+  padding-top: 2px; white-space: nowrap;
+}
+.tl-what {
+  font-size: 13px; color: var(--text-muted); padding-top: 2px;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.tl-sub {
+  font: 11px/1.3 var(--ocard-mono); color: var(--ocard-dim);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* ── Panel actions ──────────────────────────────────────────────────────────── */
+.ocard-panel-actions {
+  display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+  padding-top: 6px; border-top: 1px solid var(--ocard-hairline);
+}
+.ocard-panel-actions .btn-recv {
+  background: var(--ok-soft);
+  border: 1px solid rgba(74, 222, 128, 0.3);
+  color: var(--ok);
+}
+.ocard-panel-actions .btn-recv:hover { background: rgba(74, 222, 128, 0.22); }
+.ocard-delete-btn {
+  margin-left: auto; color: var(--danger) !important;
+}
+.ocard-delete-btn:hover {
+  background: var(--danger-soft) !important;
+  border-color: rgba(224, 83, 83, 0.35) !important;
+}
+
+/* ── Line items ─────────────────────────────────────────────────────────────── */
+.ocard-lineitems {
+  border: 1px solid var(--border); border-radius: 8px; overflow: hidden;
+}
+.li {
+  display: grid; grid-template-columns: 28px 1fr;
+  gap: 10px; align-items: center;
+  padding: 8px 10px;
+  border-top: 1px solid var(--ocard-hairline);
+}
+.li:first-child { border-top: 0; }
+.li-qty {
+  font: 11.5px/1 var(--ocard-mono); color: var(--accent);
+  background: var(--accent-soft); border: 1px solid var(--accent-border-clr);
+  border-radius: 4px; padding: 3px 0; text-align: center;
+}
+.li-name { font-size: 13px; color: var(--text); }
+
+/* ── Linked deck ────────────────────────────────────────────────────────────── */
+.ocard-linked-deck {
+  font-size: 13px; color: var(--accent);
+  padding: 8px 10px;
+  background: var(--accent-soft); border: 1px solid var(--accent-border-clr);
+  border-radius: 8px;
+}
+
+/* ── Delete confirm ─────────────────────────────────────────────────────────── */
 .ocard-delete-confirm {
   display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
 }
@@ -380,11 +486,85 @@
   font-size: 12px; color: var(--text-muted);
 }
 
+/* ── Mobile full-screen detail sheet ────────────────────────────────────────── */
+.ocard-mob-sheet-backdrop {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex; flex-direction: column; justify-content: flex-end;
+}
+.ocard-mob-sheet {
+  background: var(--bg);
+  border-top: 1px solid var(--border);
+  border-radius: 18px 18px 0 0;
+  max-height: 92dvh;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+.ocard-mob-nav {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 18px 10px;
+  border-bottom: 1px solid var(--ocard-hairline);
+  flex-shrink: 0;
+}
+.ocard-mob-back {
+  background: transparent; border: none; cursor: pointer;
+  color: var(--text); font-size: 24px; padding: 2px 6px; line-height: 1;
+}
+.ocard-mob-nav-title { font-size: 15px; font-weight: 600; color: var(--text); }
+
+.ocard-mob-body {
+  flex: 1; overflow-y: auto;
+  padding: 18px 18px 8px;
+  display: flex; flex-direction: column; gap: 20px;
+}
+.ocard-mob-hero { display: flex; flex-direction: column; gap: 3px; }
+.ocard-mob-vendor { font-size: 22px; font-weight: 600; letter-spacing: -0.01em; color: var(--text); }
+.ocard-mob-sub { font: 12px/1 var(--ocard-mono); color: var(--ocard-dim); }
+
+.ocard-mob-status-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 12px; border-radius: 999px;
+  font: 12px/1 var(--ocard-mono); align-self: flex-start;
+}
+.ocard-mob-status-pill.active   { background: var(--accent-soft); color: var(--text); }
+.ocard-mob-status-pill.warn     { background: var(--warn-soft);   color: var(--warn); }
+.ocard-mob-status-pill.late     { background: var(--danger-soft); color: var(--danger); }
+.ocard-mob-status-pill.ok       { background: var(--ok-soft);     color: var(--ok); }
+.ocard-mob-status-pill.muted    { background: var(--ocard-hairline); color: var(--text-muted); }
+
+.ocard-mob-tracking-cta {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--border); border-radius: 10px;
+  background: var(--surface); text-decoration: none; color: var(--text);
+}
+.ocard-mob-cta-k {
+  font: 10.5px/1 var(--ocard-mono); color: var(--ocard-dim);
+  letter-spacing: 0.16em; text-transform: uppercase; margin-bottom: 4px;
+}
+.ocard-mob-cta-v { font: 13px/1 var(--ocard-mono); color: var(--accent); }
+.ocard-mob-cta-arrow { margin-left: auto; color: var(--ocard-dim); font-size: 18px; }
+
+.ocard-mob-section { display: flex; flex-direction: column; gap: 10px; }
+.ocard-mob-section .panel-h { margin: 0; }
+
+.ocard-mob-actions {
+  display: flex; flex-direction: column; gap: 8px;
+  padding: 12px 18px 28px; flex-shrink: 0;
+  border-top: 1px solid var(--ocard-hairline);
+}
+.ocard-mob-actions .btn {
+  justify-content: center; padding: 12px; font-size: 14px; width: 100%;
+}
+
 /* ── Mobile layout ──────────────────────────────────────────────────────────── */
 @media (max-width: 640px) {
-  .ocard-actions { opacity: 1; pointer-events: auto; }
-  .ocard-top { grid-template-columns: 1fr auto; }
-  .ocard-top .ocard-actions { display: none; } /* bottom-sheet on tap for mobile (Phase 2) */
+  /* Hover-reveal actions hidden on mobile — detail opens via sheet */
+  .ocard-top { grid-template-columns: 1fr auto auto; }
+  .ocard-top .ocard-actions { display: none; }
+
+  /* Desktop panel hidden on mobile — sheet handles detail */
+  .ocard-panel { display: none; }
 
   .orders-chips {
     overflow-x: auto; flex-wrap: nowrap;
