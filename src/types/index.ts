@@ -104,6 +104,7 @@ export interface OrderCard {
   cardId?: string;   // undefined = freeform card not tied to any deck
   cardName: string;  // denormalized for display without deck lookup
   quantity: number;
+  price?: number;    // unit price in USD; undefined = not entered
 }
 
 export interface Order {

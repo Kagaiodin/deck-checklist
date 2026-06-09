@@ -325,6 +325,10 @@ function AppInner() {
     setOrders(prev => prev.filter(o => o.id !== id));
   }
 
+  function handleUpdateOrder(updated: Order) {
+    setOrders(prev => prev.map(o => o.id === updated.id ? updated : o));
+  }
+
   function handleMarkReceived(orderId: string) {
     const order = orders.find(o => o.id === orderId);
     if (!order) return;
@@ -1352,6 +1356,7 @@ function AppInner() {
             decks={state.decks}
             recentVendors={recentVendors}
             onCreateOrder={handleCreateOrder}
+            onUpdateOrder={handleUpdateOrder}
             onMarkReceived={handleMarkReceived}
             onMarkCancelled={handleMarkCancelled}
             onDeleteOrder={handleDeleteOrder}

@@ -101,6 +101,7 @@ interface OrdersPageProps {
   decks: Deck[];
   recentVendors: string[];
   onCreateOrder: (order: Order, vendor: string) => void;
+  onUpdateOrder: (order: Order) => void;
   onMarkReceived: (orderId: string) => void;
   onMarkCancelled: (orderId: string) => void;
   onDeleteOrder: (orderId: string) => void;
@@ -271,11 +272,12 @@ interface OCardProps {
   onConfirmDelete: () => void;
   onCancelDelete: () => void;
   onReorder: () => void;
+  onEdit: () => void;
 }
 
 function OCard({
   order, decks, isExpanded, isMobile, isConfirmingDelete,
-  onExpand, onMarkReceived, onMarkCancelled, onDeleteOrder, onConfirmDelete, onCancelDelete, onReorder,
+  onExpand, onMarkReceived, onMarkCancelled, onDeleteOrder, onConfirmDelete, onCancelDelete, onReorder, onEdit,
 }: OCardProps) {
   const [showCards, setShowCards] = useState(false);
   const qty = totalQty(order);
@@ -438,6 +440,12 @@ function OCard({
                   >
                     Re-order
                   </button>
+                  <button
+                    className="btn btn-sm btn-ghost"
+                    onClick={e => { e.stopPropagation(); onEdit(); }}
+                  >
+                    Edit
+                  </button>
                   {isConfirmingDelete ? (
                     <div className="ocard-delete-confirm">
                       <span className="ocard-delete-confirm-text">Delete this order?</span>
@@ -488,6 +496,12 @@ function OCard({
                     onClick={e => { e.stopPropagation(); onReorder(); }}
                   >
                     Re-order
+                  </button>
+                  <button
+                    className="btn btn-sm btn-ghost"
+                    onClick={e => { e.stopPropagation(); onEdit(); }}
+                  >
+                    Edit
                   </button>
                   {isConfirmingDelete ? (
                     <div className="ocard-delete-confirm">
@@ -545,6 +559,12 @@ function OCard({
                     ✓ Mark received
                   </button>
                   <button
+                    className="btn btn-sm btn-ghost"
+                    onClick={e => { e.stopPropagation(); onEdit(); }}
+                  >
+                    Edit
+                  </button>
+                  <button
                     className="btn btn-sm btn-quiet"
                     onClick={e => { e.stopPropagation(); onMarkCancelled(); }}
                   >
@@ -594,12 +614,13 @@ function OCard({
 
 export function OrdersPage({
   orders, decks, recentVendors,
-  onCreateOrder, onMarkReceived, onMarkCancelled, onDeleteOrder, onOpenBuyList,
+  onCreateOrder, onUpdateOrder, onMarkReceived, onMarkCancelled, onDeleteOrder, onOpenBuyList,
 }: OrdersPageProps) {
   const [filter, setFilter] = useState<OrderStatus | "all">("active");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+  const [editOrderId, setEditOrderId] = useState<string | null>(null);
   const [reorderVendor, setReorderVendor] = useState("");
   const [search, setSearch] = useState("");
   const [isMobile, setIsMobile] = useState(false);
@@ -676,6 +697,11 @@ export function OrdersPage({
   function handleReorder(vendor: string) {
     setReorderVendor(vendor);
     setShowCreate(true);
+    setExpandedId(null);
+  }
+
+  function handleEditOrder(id: string) {
+    setEditOrderId(id);
     setExpandedId(null);
   }
 
@@ -816,6 +842,7 @@ export function OrdersPage({
                       }}
                       onCancelDelete={() => setDeleteConfirmId(null)}
                       onReorder={() => handleReorder(order.vendor)}
+                      onEdit={() => handleEditOrder(order.id)}
                     />
                   ))}
                 </div>
@@ -850,6 +877,24 @@ export function OrdersPage({
           onClose={() => { setShowCreate(false); setReorderVendor(""); }}
         />
       )}
+
+      {/* Edit order sheet */}
+      {editOrderId && (() => {
+        const target = orders.find(o => o.id === editOrderId);
+        if (!target) return null;
+        return (
+          <NewOrderSheet
+            orders={orders}
+            decks={decks}
+            recentVendors={recentVendors}
+            editOrder={target}
+            onSubmit={() => {}}
+            onSave={updated => { onUpdateOrder(updated); }}
+            onDeleteEdit={() => { onDeleteOrder(editOrderId); }}
+            onClose={() => setEditOrderId(null)}
+          />
+        );
+      })()}
     </section>
   );
 }
