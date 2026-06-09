@@ -368,6 +368,9 @@
 .ocard-detail-actions {
   display: flex; gap: 6px; flex-wrap: wrap; padding-top: 4px;
 }
+.ocard-detail-actions .ocard-actions {
+  opacity: 1; pointer-events: auto;
+}
 
 /* Delete confirm */
 .ocard-delete-confirm {

@@ -135,7 +135,7 @@ function OCard({
         </div>
 
         <div className="ocard-actions">
-          {order.status === "active" && (
+          {!isExpanded && order.status === "active" && (
             <button
               className="btn btn-sm btn-quiet ocard-actions btn-recv"
               onClick={e => { e.stopPropagation(); onMarkReceived(); }}
@@ -143,7 +143,7 @@ function OCard({
               ✓ Mark received
             </button>
           )}
-          {(order.status === "received" || order.status === "cancelled") && (
+          {!isExpanded && (order.status === "received" || order.status === "cancelled") && (
             <button
               className="btn btn-sm btn-quiet"
               onClick={e => { e.stopPropagation(); }}
