@@ -1551,7 +1551,6 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
   /* Main padding moved to content panes */
   .app-main { padding: 0; }
   .deck-content { padding: 24px; }
-  .orders-panel { padding: 24px; }
 
   /* Sidebar */
   .deck-item { padding: 10px 12px; }
@@ -1592,7 +1591,6 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
   /* Keep full width so sidebar stays pinned to the left edge on wide screens */
   .app-main { width: 100%; padding: 0; }
   .deck-content { padding: 32px; }
-  .orders-panel { padding: 32px; }
   .app-header { padding: 0 48px; height: 68px; }
   .app-logo { height: 50px; }
 
@@ -1697,25 +1695,6 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
   border-radius: 999px; font-size: 10px; font-weight: 700;
   padding: 1px 5px; margin-left: 4px; line-height: 1;
 }
-
-/* ─── Orders panel ───────────────────────────────────────────────────────────── */
-.orders-panel {
-  width: 100%; max-width: 760px; margin: 0 auto;
-  display: flex; flex-direction: column; gap: 16px;
-  padding: 16px;
-}
-
-.orders-header {
-  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
-}
-.orders-header h2 { font-size: 20px; color: var(--text); }
-
-.orders-empty {
-  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
-  padding: 32px 24px; text-align: center;
-}
-.orders-empty p { color: var(--text-muted); }
-.orders-empty-hint { font-size: 12px; margin-top: 8px; }
 
 /* ─── Part B: Create order form ─────────────────────────────────────────────── */
 .order-form {
