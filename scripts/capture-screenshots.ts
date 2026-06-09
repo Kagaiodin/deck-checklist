@@ -9,8 +9,12 @@
  *   npx tsx scripts/capture-screenshots.ts --seed path/to/seed.json  # custom fixture
  *
  * The fixture at scripts/fixtures/design-seed.json is the default seed.
- * It contains 3 decks at varying completion, active + received orders, and
- * collection data — enough to reach every UI state including the buy list.
+ * It contains 3 decks at varying completion, active + received + cancelled orders
+ * (with prices on active order cards), and collection data — enough to reach
+ * every UI state including the buy list and spend meta.
+ *
+ * Shots 17, 18, 25, 26, 26b were removed (stale selectors from pre-redesign UI).
+ * Replaced by shots 37–53 covering the full orders v2 redesign flows.
  */
 
 import { chromium, type BrowserContext, type Page } from "playwright";
@@ -381,28 +385,169 @@ async function main(): Promise<void> {
       await page.waitForTimeout(300);
     });
 
-    // 17 — New order form open with vendor typed
-    await attempt("nav to Orders for create form", () => clickNav(page, "Orders"));
-    await attempt("open new order form", async () => {
+    // ── Orders redesign shots (37–48) ─────────────────────────────────────
+    await attempt("nav to Orders", () => clickNav(page, "Orders"));
+
+    // 47 — Overdue meta (order-001 is past its expected arrival)
+    await shot(page, "47-desktop-orders-overdue-meta.png");
+
+    // 48 — Spend meta (order-001 now has prices in seed)
+    // Same view as 47 — both overdue + spend meta show on Active tab
+    await shot(page, "48-desktop-orders-spend-meta.png");
+
+    // 42 — Active OCard expanded (timeline left + line items right)
+    await attempt("expand first active order", async () => {
+      await page.locator(".ocard").first().click({ timeout: 5_000 });
+      await page.waitForTimeout(600);
+    });
+    await shot(page, "42-desktop-orders-expanded-active.png");
+    // Collapse
+    await attempt("collapse active order", async () => {
+      await page.locator(".ocard.expanded .ocard-chev").first().click({ timeout: 5_000 });
+      await page.waitForTimeout(400);
+    });
+
+    // 43 — Received OCard expanded
+    await attempt("click Received chip", async () => {
+      await click(page, ".orders-chip", { hasText: "Received" });
+      await page.waitForTimeout(400);
+    });
+    await attempt("expand first received order", async () => {
+      await page.locator(".ocard").first().click({ timeout: 5_000 });
+      await page.waitForTimeout(600);
+    });
+    await shot(page, "43-desktop-orders-expanded-received.png");
+    await attempt("collapse received order", async () => {
+      await page.locator(".ocard.expanded .ocard-chev").first().click({ timeout: 5_000 });
+      await page.waitForTimeout(400);
+    });
+
+    // 44 — Cancelled tab (collapsed rows)
+    await attempt("click Cancelled chip", async () => {
+      await click(page, ".orders-chip", { hasText: "Cancelled" });
+      await page.waitForTimeout(400);
+    });
+    await shot(page, "44-desktop-orders-cancelled.png");
+
+    // 44b — Cancelled OCard expanded (shows Re-order CTA)
+    await attempt("expand cancelled order", async () => {
+      await page.locator(".ocard").first().click({ timeout: 5_000 });
+      await page.waitForTimeout(600);
+    });
+    await shot(page, "44b-desktop-orders-cancelled-expanded.png");
+    await attempt("collapse cancelled order", async () => {
+      await page.locator(".ocard.expanded .ocard-chev").first().click({ timeout: 5_000 });
+      await page.waitForTimeout(400);
+    });
+
+    // Back to Active for remaining shots
+    await attempt("click Active chip", async () => {
+      await click(page, ".orders-chip", { hasText: "Active" });
+      await page.waitForTimeout(400);
+    });
+
+    // 37 — NewOrderSheet Step 1 (vendor selection)
+    await attempt("open new order sheet step 1", async () => {
       await click(page, "button", { hasText: "New order" });
       await page.waitForTimeout(SETTLE_MS);
     });
-    await attempt("type vendor name", async () => {
-      await page.locator(".deck-name-input[placeholder*='vendor'], .deck-name-input[placeholder*='Pick']").first().fill("TCGPlayer");
-      await page.waitForTimeout(300);
-    });
-    await shot(page, "17-desktop-order-create-form.png");
-    await attempt("close order form", async () => {
-      await click(page, "button", { hasText: "Discard" });
-      await page.waitForTimeout(300);
-    });
+    await shot(page, "37-desktop-orders-new-sheet-step1.png");
 
-    // 18 — Orders received tab
-    await attempt("click Received tab", async () => {
-      await click(page, ".order-filter-tab", { hasText: "Received" });
+    // 38 — Step 2 with card search active
+    await attempt("advance to step 2", async () => {
+      // Select first vendor in the list so Continue is enabled
+      await page.locator(".nos-vrow").first().click({ timeout: 5_000 });
+      await page.waitForTimeout(200);
+      await click(page, "button", { hasText: "Continue →" });
+      await page.waitForTimeout(SETTLE_MS);
+    });
+    await attempt("type card search query", async () => {
+      await page.locator(".nos-card-search").fill("Force");
       await page.waitForTimeout(400);
     });
-    await shot(page, "18-desktop-orders-received.png");
+    await shot(page, "38-desktop-orders-new-sheet-step2.png");
+
+    // 39 — Step 2 with card added and qty/price filled
+    await attempt("add card from search result", async () => {
+      const result = page.locator(".nos-result").first();
+      if (await result.isVisible({ timeout: 1_000 }).catch(() => false)) {
+        await result.click({ timeout: 5_000 });
+      } else {
+        // Freeform add
+        await page.locator(".nos-card-search").press("Enter");
+      }
+      await page.waitForTimeout(400);
+    });
+    await attempt("fill price field", async () => {
+      await page.locator(".nos-price-input").first().fill("18.99");
+      await page.waitForTimeout(200);
+    });
+    await shot(page, "39-desktop-orders-new-sheet-step2-filled.png");
+
+    // 40 — Step 3 order details
+    await attempt("advance to step 3", async () => {
+      await click(page, "button", { hasText: "Continue →" });
+      await page.waitForTimeout(SETTLE_MS);
+    });
+    await shot(page, "40-desktop-orders-new-sheet-step3.png");
+
+    // 41 — Step 4 success
+    await attempt("submit order (step 4)", async () => {
+      await click(page, "button", { hasText: "Create order" });
+      await page.waitForTimeout(SETTLE_MS);
+    });
+    await shot(page, "41-desktop-orders-new-sheet-done.png");
+    await attempt("close new order sheet", async () => {
+      await click(page, "button[aria-label='Close']");
+      await page.waitForTimeout(400);
+    });
+
+    // 45 — Edit order sheet (pre-filled, with Save + Delete)
+    await attempt("expand first active order for edit", async () => {
+      await page.locator(".ocard").first().click({ timeout: 5_000 });
+      await page.waitForTimeout(600);
+    });
+    await attempt("click Edit button on active order", async () => {
+      await page.locator(".ocard.expanded .btn-ghost", { hasText: "Edit" }).first().click({ timeout: 5_000 });
+      await page.waitForTimeout(SETTLE_MS);
+    });
+    await shot(page, "45-desktop-orders-edit-sheet.png");
+    await attempt("close edit sheet", async () => {
+      await click(page, "button[aria-label='Close']");
+      await page.waitForTimeout(400);
+    });
+
+    // 46 + 46b — Light mode orders
+    await attempt("open overflow menu for light mode (orders)", () => click(page, ".header-overflow-btn"));
+    await page.waitForTimeout(300);
+    await attempt("open theme settings (orders)", () => click(page, ".settings-btn"));
+    await page.waitForTimeout(300);
+    await attempt("switch to light mode (orders)", () => click(page, ".mode-segment-btn", { hasText: "Light" }));
+    await page.waitForTimeout(600);
+    // Ensure we're on Orders tab
+    await attempt("nav to Orders (light mode)", () => clickNav(page, "Orders"));
+    await shot(page, "46-desktop-orders-light-mode.png");
+    // 46b — expanded ocard in light mode
+    await attempt("expand first order in light mode", async () => {
+      await page.locator(".ocard").first().click({ timeout: 5_000 });
+      await page.waitForTimeout(600);
+    });
+    await shot(page, "46b-desktop-orders-expanded-light-mode.png");
+    await attempt("collapse order light mode", async () => {
+      await page.locator(".ocard.expanded .ocard-chev").first().click({ timeout: 5_000 });
+      await page.waitForTimeout(300);
+    });
+    // Restore dark
+    await attempt("restore dark mode (after orders shots)", async () => {
+      await click(page, ".header-overflow-btn");
+      await page.waitForTimeout(300);
+      await click(page, ".settings-btn");
+      await page.waitForTimeout(300);
+      await click(page, ".mode-segment-btn", { hasText: "Dark" });
+      await page.waitForTimeout(300);
+      await page.keyboard.press("Escape");
+      await page.keyboard.press("Escape");
+    });
 
     // 19 — Collection import confirmation (inject a fake CSV to trigger the banner)
     await attempt("nav to Collection for import", () => clickNav(page, "My Collection"));
@@ -480,34 +625,6 @@ async function main(): Promise<void> {
     await shot(page, "24-desktop-edit-mode.png");
     await attempt("exit edit mode", async () => {
       await click(page, "button", { hasText: "Done" });
-      await page.waitForTimeout(300);
-    });
-
-    // 25 — Order details expanded
-    await attempt("nav to Orders for details", () => clickNav(page, "Orders"));
-    await attempt("expand order details", async () => {
-      await click(page, "button", { hasText: "Details" });
-      await page.waitForTimeout(600);
-    });
-    await shot(page, "25-desktop-order-details.png");
-
-    // 26 — Order create form with a card added
-    await attempt("open new order form for card add", async () => {
-      await click(page, "button", { hasText: "New order" });
-      await page.waitForTimeout(SETTLE_MS);
-    });
-    await attempt("search for a card in order form", async () => {
-      await page.locator(".combobox-input").fill("Force");
-      await page.waitForTimeout(600);
-    });
-    await shot(page, "26-desktop-order-form-card-search.png");
-    await attempt("pick first card result", async () => {
-      await page.locator(".combobox-result-btn").first().click({ timeout: 5_000 });
-      await page.waitForTimeout(500);
-    });
-    await shot(page, "26b-desktop-order-form-card-added.png");
-    await attempt("close order form", async () => {
-      await click(page, "button", { hasText: "Discard" });
       await page.waitForTimeout(300);
     });
 
@@ -655,6 +772,28 @@ async function main(): Promise<void> {
     await attempt("nav to Orders (mobile)", () => clickNav(page, "Orders"));
     await shot(page, "12-mobile-orders.png");
 
+    // 49 — Mobile order detail sheet (tap a row)
+    await attempt("tap first order row on mobile", async () => {
+      await page.locator(".ocard").first().click({ timeout: 5_000 });
+      await page.waitForTimeout(600);
+    });
+    await shot(page, "49-mobile-orders-detail-sheet.png");
+    await attempt("close mobile detail sheet", async () => {
+      await page.locator(".ocard-mob-back, button[aria-label='Back']").first().click({ timeout: 5_000 });
+      await page.waitForTimeout(400);
+    });
+
+    // 50 — Mobile new order sheet (slides up from bottom)
+    await attempt("open new order sheet (mobile)", async () => {
+      await click(page, "button", { hasText: "New order" });
+      await page.waitForTimeout(SETTLE_MS);
+    });
+    await shot(page, "50-mobile-orders-new-sheet.png");
+    await attempt("close new order sheet (mobile)", async () => {
+      await click(page, "button[aria-label='Close']");
+      await page.waitForTimeout(400);
+    });
+
     // 13 — Mobile nav bar visible
     await attempt("nav to Decks (mobile nav)", () => clickNav(page, "Decks"));
     await shot(page, "13-mobile-nav.png");
@@ -700,6 +839,64 @@ async function main(): Promise<void> {
 
     await attempt("nav to Collection (tablet)", () => clickNav(page, "My Collection"));
     await shot(page, "16-tablet-collection.png");
+
+    // 51 — Tablet orders list
+    await attempt("nav to Orders (tablet)", () => clickNav(page, "Orders"));
+    await shot(page, "51-tablet-orders.png");
+
+    // 51b — Tablet orders expanded
+    await attempt("expand first order (tablet)", async () => {
+      await page.locator(".ocard").first().click({ timeout: 5_000 });
+      await page.waitForTimeout(600);
+    });
+    await shot(page, "51b-tablet-orders-expanded.png");
+    await attempt("collapse order (tablet)", async () => {
+      await page.locator(".ocard.expanded .ocard-chev").first().click({ timeout: 5_000 });
+      await page.waitForTimeout(300);
+    });
+
+    // ── Empty state shots (separate contexts) ──────────────────────────────
+    // 52 — Desktop orders empty state
+    await attempt("capture empty orders state (desktop)", async () => {
+      const emptyBrowser = await chromium.launch({ headless: false });
+      const emptyCtx3 = await emptyBrowser.newContext({ viewport: { width: 1440, height: 900 } });
+      const emptySeed3 = Object.fromEntries(
+        Object.entries(seedData).filter(([k]) => !k.includes("orders"))
+      );
+      await emptyCtx3.addInitScript((entries: Record<string, string>) => {
+        for (const [k, v] of Object.entries(entries)) localStorage.setItem(k, v);
+      }, emptySeed3);
+      const emptyPage3 = await emptyCtx3.newPage();
+      await emptyPage3.goto(BASE_URL);
+      try { await emptyPage3.waitForLoadState("networkidle", { timeout: 10_000 }); } catch {}
+      await emptyPage3.waitForTimeout(SETTLE_MS);
+      await emptyPage3.locator("button.nav-btn", { hasText: "Orders" }).first().click({ timeout: 5_000 });
+      await emptyPage3.waitForTimeout(SETTLE_MS);
+      await shot(emptyPage3, "52-desktop-orders-empty.png");
+      await emptyPage3.close();
+      await emptyBrowser.close();
+    });
+
+    // 53 — Mobile orders empty state
+    await attempt("capture empty orders state (mobile)", async () => {
+      const emptyBrowser = await chromium.launch({ headless: false });
+      const emptyCtx4 = await emptyBrowser.newContext({ viewport: { width: 390, height: 844 } });
+      const emptySeed4 = Object.fromEntries(
+        Object.entries(seedData).filter(([k]) => !k.includes("orders"))
+      );
+      await emptyCtx4.addInitScript((entries: Record<string, string>) => {
+        for (const [k, v] of Object.entries(entries)) localStorage.setItem(k, v);
+      }, emptySeed4);
+      const emptyPage4 = await emptyCtx4.newPage();
+      await emptyPage4.goto(BASE_URL);
+      try { await emptyPage4.waitForLoadState("networkidle", { timeout: 10_000 }); } catch {}
+      await emptyPage4.waitForTimeout(SETTLE_MS);
+      await emptyPage4.locator("button.nav-btn", { hasText: "Orders" }).first().click({ timeout: 5_000 });
+      await emptyPage4.waitForTimeout(SETTLE_MS);
+      await shot(emptyPage4, "53-mobile-orders-empty.png");
+      await emptyPage4.close();
+      await emptyBrowser.close();
+    });
 
   } finally {
     await page.close();
