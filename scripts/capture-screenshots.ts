@@ -537,31 +537,37 @@ async function main(): Promise<void> {
       await page.locator(".ocard.expanded .ocard-chev").first().click({ timeout: 5_000 });
       await page.waitForTimeout(300);
     });
-    // Restore dark
-    await attempt("restore dark mode (after orders shots)", async () => {
-      await click(page, ".header-overflow-btn");
-      await page.waitForTimeout(300);
-      await click(page, ".settings-btn");
-      await page.waitForTimeout(300);
-      await click(page, ".mode-segment-btn", { hasText: "Dark" });
-      await page.waitForTimeout(300);
-      await page.keyboard.press("Escape");
-      await page.keyboard.press("Escape");
-    });
+    // Restore dark — split into separate attempts so a failing step doesn't abort the rest
+    await attempt("open overflow for dark restore", () => click(page, ".header-overflow-btn"));
+    await page.waitForTimeout(300);
+    await attempt("open theme settings for dark restore", () => click(page, ".settings-btn"));
+    await page.waitForTimeout(300);
+    await attempt("switch back to dark mode", () => click(page, ".mode-segment-btn", { hasText: "Dark" }));
+    await page.waitForTimeout(300);
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(150);
+    await page.keyboard.press("Escape");
 
     // 19 — Collection import confirmation (inject a fake CSV to trigger the banner)
+    // Hard reload first — the orders section leaves theme/panel state that can block nav
+    await gotoAndSettle(page, BASE_URL);
     await attempt("nav to Collection for import", () => clickNav(page, "My Collection"));
     await attempt("trigger CSV replace confirmation", async () => {
       const csvContent = "Card Name,Set Code,Collector Number,Quantity,Foil\nLightning Bolt,M11,149,4,No";
       const tmpCsv = path.join(os.tmpdir(), "fetchlist-test-collection.csv");
       fs.writeFileSync(tmpCsv, csvContent);
-      await page.locator('input[type="file"][accept=".csv"]').setInputFiles(tmpCsv);
+      await page.locator('input[type="file"][accept=".csv"]').setInputFiles(tmpCsv, { timeout: 5_000 });
       await page.waitForTimeout(600);
       fs.unlinkSync(tmpCsv);
     });
     await shot(page, "19-desktop-collection-import-confirm.png");
     await attempt("cancel CSV replace", async () => {
-      await click(page, ".collection-confirm-actions .btn-ghost", { hasText: "Cancel" });
+      const cancelBtn = page.locator(".collection-confirm-actions .btn-ghost").first();
+      if (await cancelBtn.isVisible({ timeout: 1_000 }).catch(() => false)) {
+        await cancelBtn.click({ timeout: 5_000 });
+      } else {
+        await page.keyboard.press("Escape");
+      }
       await page.waitForTimeout(300);
     });
 
