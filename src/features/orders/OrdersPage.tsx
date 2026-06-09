@@ -269,12 +269,14 @@ interface OCardProps {
   onDeleteOrder: () => void;
   onConfirmDelete: () => void;
   onCancelDelete: () => void;
+  onReorder: () => void;
 }
 
 function OCard({
   order, decks, isExpanded, isMobile, isConfirmingDelete,
-  onExpand, onMarkReceived, onMarkCancelled, onDeleteOrder, onConfirmDelete, onCancelDelete,
+  onExpand, onMarkReceived, onMarkCancelled, onDeleteOrder, onConfirmDelete, onCancelDelete, onReorder,
 }: OCardProps) {
+  const [showCards, setShowCards] = useState(false);
   const qty = totalQty(order);
   const eta = etaInfo(order.expectedArrival);
   const isLate = order.isLate;
@@ -337,7 +339,7 @@ function OCard({
           {!isExpanded && (order.status === "received" || order.status === "cancelled") && (
             <button
               className="btn btn-sm btn-quiet"
-              onClick={e => { e.stopPropagation(); }}
+              onClick={e => { e.stopPropagation(); onReorder(); }}
             >
               Re-order
             </button>
@@ -369,15 +371,25 @@ function OCard({
               )}
             </>
           ) : order.status === "received" ? (
-            <span className="ocard-eta-when ok">Received {formatShortDate(order.createdAt)}</span>
+            <>
+              <span className="ocard-eta-when ok">
+                Received {formatShortDate(order.expectedArrival ?? order.createdAt)}
+              </span>
+              <span className="ocard-pill ok">Received</span>
+            </>
           ) : order.status === "cancelled" ? (
-            <span className="ocard-eta-when dim">Cancelled {formatShortDate(order.createdAt)}</span>
+            <>
+              <span className="ocard-eta-when dim">Cancelled {formatShortDate(order.createdAt)}</span>
+              <span className="ocard-pill muted">Cancelled</span>
+            </>
           ) : (
             <span className="ocard-eta-when">No expected date</span>
           )}
         </div>
 
-        {order.trackingNumber && order.carrier ? (
+        {order.status === "cancelled" ? (
+          <span className="ocard-tracking-empty">—</span>
+        ) : order.trackingNumber && order.carrier ? (
           <a
             className="ocard-tracking"
             href={getTrackingUrl(order.trackingNumber, order.carrier)}
@@ -396,22 +408,135 @@ function OCard({
       {/* Desktop expanded panel (hidden on mobile — mobile uses the sheet portal) */}
       {isExpanded && !isMobile && (
         <div className="ocard-panel">
-          {/* Left: timeline + actions */}
-          <div className="ocard-panel-left">
-            <div className="ocard-panel-section">
-              <div className="panel-h">
-                {order.trackingNumber
-                  ? `Tracking · ${order.carrier ? CARRIER_NAMES[order.carrier] : ""} ${order.trackingNumber}`
-                  : "Timeline"}
-              </div>
-              <div className="ocard-timeline">
-                {timeline.map((step, i) => <TlRow key={i} {...step} />)}
-              </div>
-            </div>
 
-            <div className="ocard-panel-actions">
-              {order.status === "active" && (
-                <>
+          {order.status === "received" ? (
+            /* ── Received: summary + optional card list ── */
+            <>
+              <div className="ocard-panel-left">
+                <div className="ocard-panel-section">
+                  <div className="panel-h">Order summary</div>
+                  <div className="recv-summary">
+                    <div>
+                      <strong>{qty} of {qty} cards</strong>
+                      {" · "}added to collection {formatShortDate(order.expectedArrival ?? order.createdAt)}
+                    </div>
+                    <button
+                      className="recv-toggle"
+                      onClick={e => { e.stopPropagation(); setShowCards(v => !v); }}
+                    >
+                      {showCards ? "Hide cards ▴" : "Show cards ▾"}
+                    </button>
+                  </div>
+                  {showCards && <LineItems cards={order.cards} />}
+                </div>
+
+                <div className="ocard-panel-actions">
+                  <button
+                    className="btn btn-sm btn-quiet"
+                    onClick={e => { e.stopPropagation(); onReorder(); }}
+                  >
+                    Re-order
+                  </button>
+                  {isConfirmingDelete ? (
+                    <div className="ocard-delete-confirm">
+                      <span className="ocard-delete-confirm-text">Delete this order?</span>
+                      <button className="btn btn-sm btn-ghost"
+                        onClick={e => { e.stopPropagation(); onConfirmDelete(); }}>Yes, delete</button>
+                      <button className="btn btn-sm btn-ghost"
+                        onClick={e => { e.stopPropagation(); onCancelDelete(); }}>Keep</button>
+                    </div>
+                  ) : (
+                    <button className="btn btn-sm btn-ghost ocard-delete-btn"
+                      onClick={e => { e.stopPropagation(); onDeleteOrder(); }}>Delete</button>
+                  )}
+                </div>
+              </div>
+
+              <div className="ocard-panel-right">
+                {linkedDecks.length > 0 && (
+                  <div className="ocard-panel-section">
+                    <div className="panel-h">Linked deck{linkedDecks.length !== 1 ? "s" : ""}</div>
+                    {linkedDecks.map(d => (
+                      <div key={d.id} className="ocard-linked-deck">{d.name}</div>
+                    ))}
+                  </div>
+                )}
+                <div className="ocard-panel-section">
+                  <div className="panel-h">Timeline</div>
+                  <div className="ocard-timeline">
+                    {timeline.map((step, i) => <TlRow key={i} {...step} />)}
+                  </div>
+                </div>
+              </div>
+            </>
+
+          ) : order.status === "cancelled" ? (
+            /* ── Cancelled: cards + re-order, no action buttons ── */
+            <>
+              <div className="ocard-panel-left">
+                <div className="ocard-panel-section">
+                  <div className="panel-h">Timeline</div>
+                  <div className="ocard-timeline">
+                    {timeline.map((step, i) => <TlRow key={i} {...step} />)}
+                  </div>
+                </div>
+
+                <div className="ocard-panel-actions">
+                  <button
+                    className="btn btn-sm btn-quiet"
+                    onClick={e => { e.stopPropagation(); onReorder(); }}
+                  >
+                    Re-order
+                  </button>
+                  {isConfirmingDelete ? (
+                    <div className="ocard-delete-confirm">
+                      <span className="ocard-delete-confirm-text">Delete this order?</span>
+                      <button className="btn btn-sm btn-ghost"
+                        onClick={e => { e.stopPropagation(); onConfirmDelete(); }}>Yes, delete</button>
+                      <button className="btn btn-sm btn-ghost"
+                        onClick={e => { e.stopPropagation(); onCancelDelete(); }}>Keep</button>
+                    </div>
+                  ) : (
+                    <button className="btn btn-sm btn-ghost ocard-delete-btn"
+                      onClick={e => { e.stopPropagation(); onDeleteOrder(); }}>Delete</button>
+                  )}
+                </div>
+              </div>
+
+              <div className="ocard-panel-right">
+                <div className="ocard-panel-section">
+                  <div className="panel-h">
+                    Cards · {lineCount} line{lineCount !== 1 ? "s" : ""} · {qty} {qty === 1 ? "copy" : "copies"}
+                  </div>
+                  <LineItems cards={order.cards} />
+                </div>
+                {linkedDecks.length > 0 && (
+                  <div className="ocard-panel-section">
+                    <div className="panel-h">Linked deck{linkedDecks.length !== 1 ? "s" : ""}</div>
+                    {linkedDecks.map(d => (
+                      <div key={d.id} className="ocard-linked-deck">{d.name}</div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
+
+          ) : (
+            /* ── Active: timeline + actions | line items ── */
+            <>
+              <div className="ocard-panel-left">
+                <div className="ocard-panel-section">
+                  <div className="panel-h">
+                    {order.trackingNumber
+                      ? `Tracking · ${order.carrier ? CARRIER_NAMES[order.carrier] : ""} ${order.trackingNumber}`
+                      : "Timeline"}
+                  </div>
+                  <div className="ocard-timeline">
+                    {timeline.map((step, i) => <TlRow key={i} {...step} />)}
+                  </div>
+                </div>
+
+                <div className="ocard-panel-actions">
                   <button
                     className="btn btn-sm btn-recv"
                     onClick={e => { e.stopPropagation(); onMarkReceived(); }}
@@ -424,50 +549,40 @@ function OCard({
                   >
                     Cancel order
                   </button>
-                </>
-              )}
-
-              {isConfirmingDelete ? (
-                <div className="ocard-delete-confirm">
-                  <span className="ocard-delete-confirm-text">Delete this order?</span>
-                  <button className="btn btn-sm btn-ghost"
-                    onClick={e => { e.stopPropagation(); onConfirmDelete(); }}>
-                    Yes, delete
-                  </button>
-                  <button className="btn btn-sm btn-ghost"
-                    onClick={e => { e.stopPropagation(); onCancelDelete(); }}>
-                    Keep
-                  </button>
+                  {isConfirmingDelete ? (
+                    <div className="ocard-delete-confirm">
+                      <span className="ocard-delete-confirm-text">Delete this order?</span>
+                      <button className="btn btn-sm btn-ghost"
+                        onClick={e => { e.stopPropagation(); onConfirmDelete(); }}>Yes, delete</button>
+                      <button className="btn btn-sm btn-ghost"
+                        onClick={e => { e.stopPropagation(); onCancelDelete(); }}>Keep</button>
+                    </div>
+                  ) : (
+                    <button className="btn btn-sm btn-ghost ocard-delete-btn"
+                      onClick={e => { e.stopPropagation(); onDeleteOrder(); }}>Delete</button>
+                  )}
                 </div>
-              ) : (
-                <button
-                  className="btn btn-sm btn-ghost ocard-delete-btn"
-                  onClick={e => { e.stopPropagation(); onDeleteOrder(); }}
-                >
-                  Delete
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Right: line items + linked deck */}
-          <div className="ocard-panel-right">
-            <div className="ocard-panel-section">
-              <div className="panel-h">
-                Cards · {lineCount} line{lineCount !== 1 ? "s" : ""} · {qty} {qty === 1 ? "copy" : "copies"}
               </div>
-              <LineItems cards={order.cards} />
-            </div>
 
-            {linkedDecks.length > 0 && (
-              <div className="ocard-panel-section">
-                <div className="panel-h">Linked deck{linkedDecks.length !== 1 ? "s" : ""}</div>
-                {linkedDecks.map(d => (
-                  <div key={d.id} className="ocard-linked-deck">{d.name}</div>
-                ))}
+              <div className="ocard-panel-right">
+                <div className="ocard-panel-section">
+                  <div className="panel-h">
+                    Cards · {lineCount} line{lineCount !== 1 ? "s" : ""} · {qty} {qty === 1 ? "copy" : "copies"}
+                  </div>
+                  <LineItems cards={order.cards} />
+                </div>
+                {linkedDecks.length > 0 && (
+                  <div className="ocard-panel-section">
+                    <div className="panel-h">Linked deck{linkedDecks.length !== 1 ? "s" : ""}</div>
+                    {linkedDecks.map(d => (
+                      <div key={d.id} className="ocard-linked-deck">{d.name}</div>
+                    ))}
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+            </>
+          )}
+
         </div>
       )}
     </div>
@@ -479,12 +594,13 @@ function OCard({
 interface CreateOrderFormProps {
   decks: Deck[];
   recentVendors: string[];
+  defaultVendor?: string;
   onSubmit: (order: Order, vendor: string) => void;
   onClose: () => void;
 }
 
-function CreateOrderForm({ decks, recentVendors, onSubmit, onClose }: CreateOrderFormProps) {
-  const [vendor, setVendor] = useState("");
+function CreateOrderForm({ decks, recentVendors, defaultVendor = "", onSubmit, onClose }: CreateOrderFormProps) {
+  const [vendor, setVendor] = useState(defaultVendor);
   const [tracking, setTracking] = useState("");
   const [orderDate, setOrderDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [expected, setExpected] = useState(() => {
@@ -740,6 +856,7 @@ export function OrdersPage({
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+  const [reorderVendor, setReorderVendor] = useState("");
   const [search, setSearch] = useState("");
   const [isMobile, setIsMobile] = useState(false);
 
@@ -812,6 +929,12 @@ export function OrdersPage({
     setDeleteConfirmId(null);
   }
 
+  function handleReorder(vendor: string) {
+    setReorderVendor(vendor);
+    setShowCreate(true);
+    setExpandedId(null);
+  }
+
   function handleDeleteOrder(id: string) {
     const order = orders.find(o => o.id === id);
     if (!order) return;
@@ -869,11 +992,13 @@ export function OrdersPage({
             <CreateOrderForm
               decks={decks}
               recentVendors={recentVendors}
+              defaultVendor={reorderVendor}
               onSubmit={(order, vendor) => {
                 onCreateOrder(order, vendor);
                 setShowCreate(false);
+                setReorderVendor("");
               }}
-              onClose={() => setShowCreate(false)}
+              onClose={() => { setShowCreate(false); setReorderVendor(""); }}
             />
           )}
 
@@ -960,6 +1085,7 @@ export function OrdersPage({
                         if (expandedId === order.id) setExpandedId(null);
                       }}
                       onCancelDelete={() => setDeleteConfirmId(null)}
+                      onReorder={() => handleReorder(order.vendor)}
                     />
                   ))}
                 </div>
