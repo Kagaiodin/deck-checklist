@@ -75,18 +75,23 @@ html { overflow-x: hidden; } /* catch-all: prevents root scroll container from f
 /* ─── Light mode ────────────────────────────────────────────────────────────── */
 html[data-mode="light"] {
   color-scheme: light;
-  --bg:         #f5f5fb;
+  --bg:         #f5f3ee;  /* warm paper — cards need to lift off bg */
   --surface:    #ffffff;
   --surface-2:  #ededf8;
-  --border:     #deddf2;
+  --border:     #c9c4b5;  /* strong enough for the 2px stripe to read */
   --text:       #1c1d2e;
   --text-muted: #464b74;
 
   --shadow-sticky: 0 1px 12px rgba(0,0,0,.07);
   --shadow-menu:   0 4px 20px rgba(0,0,0,.12);
   --surface-3: #e0dff5;
-  --border-dim: #eceef8;
+  --border-dim: #e3dfd3;  /* hairline — light dividers inside cards */
   --text-dim:   #8891b8;
+
+  /* Semantic state — dark-mode values are too bright/pale on cream */
+  --success: #2f9d75;  /* #4ade80 washes out on white */
+  --warn:    #c08120;  /* #f4a23c looks peach on cream */
+  --danger:  #c43d3d;  /* #e05353 reads pink, not red */
 
   /* Rarity — darker fg for AA/AAA on white */
   --rar-common-fg:   #464b74;

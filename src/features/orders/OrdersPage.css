@@ -233,11 +233,11 @@
 }
 .ocard-actions .btn-recv {
   background: var(--ok-soft);
-  border: 1px solid rgba(74, 222, 128, 0.3);
+  border: 1px solid var(--ok-soft);
   color: var(--ok);
 }
 .ocard-actions .btn-recv:hover {
-  background: rgba(74, 222, 128, 0.22);
+  background: var(--ok-soft); filter: brightness(0.92);
 }
 .ocard-more {
   width: 28px; height: 28px; border-radius: 6px;
@@ -440,21 +440,42 @@
 }
 .ocard-panel-actions .btn-recv {
   background: var(--ok-soft);
-  border: 1px solid rgba(74, 222, 128, 0.3);
+  border: 1px solid var(--ok-soft);
   color: var(--ok);
 }
-.ocard-panel-actions .btn-recv:hover { background: rgba(74, 222, 128, 0.22); }
+.ocard-panel-actions .btn-recv:hover { background: var(--ok-soft); filter: brightness(0.92); }
+
+/* ── Light mode overrides — orders-specific surface + soft-tint tuning ──────
+   Global semantic tokens (--ok/--warn/--danger) are corrected in tokens.css.
+   Here we tune the orders-local shims that use hardcoded rgba values.       */
+html[data-mode="light"] .orders-panel {
+  /* Warm card states matching design's --card-hover / --card-expanded */
+  --ocard-hover:    #f7f5ef;
+  --ocard-expanded: #eeece4;
+
+  /* Soft tints re-derived from the corrected global state colors */
+  --ok-soft:     rgba(47, 157, 117, 0.16);   /* from --ok: #2f9d75 */
+  --warn-soft:   rgba(192, 129, 32, 0.16);   /* from --warn: #c08120 */
+  --danger-soft: rgba(196, 61, 61, 0.14);    /* from --danger: #c43d3d */
+}
+
+/* ×N quantity badges — accent-soft (12% tint) is too faint on white */
+html[data-mode="light"] .li-qty {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 50%, transparent);
+}
 .ocard-delete-btn {
   margin-left: auto; color: var(--danger) !important;
 }
 .ocard-delete-btn:hover {
   background: var(--danger-soft) !important;
-  border-color: rgba(224, 83, 83, 0.35) !important;
+  border-color: var(--danger-soft) !important;
 }
 
 /* ── Line items ─────────────────────────────────────────────────────────────── */
 .ocard-lineitems {
-  border: 1px solid var(--border); border-radius: 8px; overflow: hidden;
+  border: 1px solid var(--border); border-radius: 8px;
+  overflow-y: auto; max-height: 280px;
 }
 .li {
   display: grid; grid-template-columns: 28px 1fr;
@@ -546,6 +567,7 @@
 .ocard-mob-cta-arrow { margin-left: auto; color: var(--ocard-dim); font-size: 18px; }
 
 .ocard-mob-section { display: flex; flex-direction: column; gap: 10px; }
+.ocard-mob-section .ocard-lineitems { max-height: 240px; }
 .ocard-mob-section .panel-h { margin: 0; }
 
 .ocard-mob-actions {
