@@ -490,6 +490,20 @@ html[data-mode="light"] .li-qty {
   border-radius: 4px; padding: 3px 0; text-align: center;
 }
 .li-name { font-size: 13px; color: var(--text); }
+.ocard-lineitems.has-prices .li { grid-template-columns: 28px 1fr auto; }
+.li-price {
+  font: 11.5px/1 var(--ocard-mono); color: var(--text-muted);
+  font-variant-numeric: tabular-nums; text-align: right;
+}
+.li-subtotal {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 7px 10px;
+  border-top: 1px solid var(--ocard-hairline);
+  font: 11.5px/1 var(--ocard-mono); color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.li-subtotal-v { color: var(--text); font-weight: 600; }
+.orders-spend-meta { color: var(--accent); }
 
 /* ── Linked deck ────────────────────────────────────────────────────────────── */
 .ocard-linked-deck {
