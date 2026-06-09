@@ -11,7 +11,10 @@ interface NewOrderSheetProps {
   decks: Deck[];
   recentVendors: string[];
   defaultVendor?: string;
+  editOrder?: Order;
   onSubmit: (order: Order, vendor: string) => void;
+  onSave?: (order: Order) => void;
+  onDeleteEdit?: () => void;
   onClose: () => void;
 }
 
@@ -19,29 +22,49 @@ function fmtDate(ts: number): string {
   return new Date(ts).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
+function toDateInput(ts: number | undefined): string {
+  if (!ts) return "";
+  return new Date(ts).toISOString().split("T")[0];
+}
+
 export function NewOrderSheet({
-  orders, decks, recentVendors, defaultVendor = "", onSubmit, onClose,
+  orders, decks, recentVendors, defaultVendor = "",
+  editOrder, onSubmit, onSave, onDeleteEdit, onClose,
 }: NewOrderSheetProps) {
+  const isEdit = !!editOrder;
+
   const [step, setStep] = useState<Step>(1);
 
   // Step 1
-  const [vendor, setVendor] = useState(defaultVendor);
+  const [vendor, setVendor] = useState(editOrder?.vendor ?? defaultVendor);
   const [showCustom, setShowCustom] = useState(false);
   const [customVendor, setCustomVendor] = useState("");
 
   // Step 2
-  const [cards, setCards] = useState<OrderCard[]>([]);
+  const [cards, setCards] = useState<OrderCard[]>(editOrder?.cards ?? []);
   const [cardSearch, setCardSearch] = useState("");
+  const [manualMode, setManualMode] = useState(true);
 
   // Step 3
-  const [orderNum, setOrderNum] = useState("");
-  const [orderDate, setOrderDate] = useState(() => new Date().toISOString().split("T")[0]);
-  const [tracking, setTracking] = useState("");
-  const [carrier, setCarrier] = useState<Carrier | "">("");
-  const [carrierManual, setCarrierManual] = useState(false);
+  const [orderNum, setOrderNum] = useState(() => {
+    if (editOrder?.notes) return editOrder.notes.replace(/^Order #/, "");
+    return "";
+  });
+  const [orderDate, setOrderDate] = useState(() =>
+    editOrder?.orderDate
+      ? toDateInput(editOrder.orderDate)
+      : new Date().toISOString().split("T")[0]
+  );
+  const [tracking, setTracking] = useState(editOrder?.trackingNumber ?? "");
+  const [carrier, setCarrier] = useState<Carrier | "">(editOrder?.carrier ?? "");
+  const [carrierManual, setCarrierManual] = useState(!!editOrder?.carrier);
   const [expected, setExpected] = useState(() => {
+    if (editOrder?.expectedArrival) return toDateInput(editOrder.expectedArrival);
     const d = new Date(); d.setDate(d.getDate() + 5); return d.toISOString().split("T")[0];
   });
+
+  // Confirm delete in edit mode
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -78,7 +101,7 @@ export function NewOrderSheet({
       .sort((a, b) => b.count - a.count);
   }, [recentVendors, vendorMeta]);
 
-  // Card search
+  // Card search (deck-based)
   const cardResults = cardSearch.trim().length >= 2
     ? decks.flatMap(deck =>
         deck.cards
@@ -109,8 +132,12 @@ export function NewOrderSheet({
   }
 
   function updateQty(idx: number, qty: number) {
-    if (qty <= 0) { setCards(prev => prev.filter((_, i) => i !== idx)); return; }
-    setCards(prev => prev.map((c, i) => i === idx ? { ...c, quantity: qty } : c));
+    const v = Math.max(1, Math.min(99, qty || 1));
+    setCards(prev => prev.map((c, i) => i === idx ? { ...c, quantity: v } : c));
+  }
+
+  function updatePrice(idx: number, price: number) {
+    setCards(prev => prev.map((c, i) => i === idx ? { ...c, price: price || undefined } : c));
   }
 
   function removeCard(idx: number) {
@@ -136,8 +163,27 @@ export function NewOrderSheet({
     setStep(4);
   }
 
+  function handleSave() {
+    if (!editOrder) return;
+    const finalVendor = showCustom ? customVendor.trim() : vendor;
+    if (!finalVendor || cards.length === 0) return;
+    const updated: Order = {
+      ...editOrder,
+      vendor: finalVendor,
+      cards,
+      orderDate: orderDate ? new Date(orderDate).getTime() : undefined,
+      expectedArrival: expected ? new Date(expected).getTime() : undefined,
+      trackingNumber: tracking.trim() || undefined,
+      carrier: tracking.trim() ? (carrier as Carrier) || detectCarrier(tracking) || undefined : undefined,
+      notes: orderNum.trim() ? `Order #${orderNum.trim()}` : undefined,
+    };
+    onSave?.(updated);
+    setStep(4);
+  }
+
   const activeVendor = showCustom ? customVendor.trim() : vendor;
   const totalQty = cards.reduce((s, c) => s + c.quantity, 0);
+  const totalPrice = cards.reduce((s, c) => s + (c.price ?? 0) * c.quantity, 0);
 
   const headerSub = step >= 2 && activeVendor
     ? `${activeVendor}${step >= 3 && totalQty > 0 ? ` · ${totalQty} card${totalQty !== 1 ? "s" : ""}` : ""}`
@@ -156,7 +202,11 @@ export function NewOrderSheet({
         {/* ── Header ── */}
         <div className="nos-head">
           <div className="nos-head-ttl">
-            <h2 className="nos-title">{step === 4 ? "Order created" : "New order"}</h2>
+            <h2 className="nos-title">
+              {step === 4
+                ? (isEdit ? "Order updated" : "Order created")
+                : (isEdit ? "Edit order" : "New order")}
+            </h2>
             {headerSub && <span className="nos-vendor-tag">{headerSub}</span>}
           </div>
           <button className="nos-close" onClick={onClose} aria-label="Close">✕</button>
@@ -230,65 +280,116 @@ export function NewOrderSheet({
           {step === 2 && (
             <>
               <h3 className="nos-body-h">What's in this order?</h3>
-              <p className="nos-body-lede">Search your decks or type any card name and press Enter.</p>
 
-              <div className="nos-search-wrap">
-                <input
-                  className="nos-card-search"
-                  placeholder="Search card name…"
-                  value={cardSearch}
-                  onChange={e => setCardSearch(e.target.value)}
-                  onKeyDown={e => {
-                    if (e.key === "Enter" && cardSearch.trim() && cardResults.length === 0) {
-                      addFreeform(cardSearch.trim());
-                    }
-                  }}
-                />
-                {cardSearch.trim().length >= 2 && (
-                  <ul className="nos-results">
-                    {cardResults.map(r => (
-                      <li key={`${r.deckId}-${r.cardId}`}>
-                        <button className="nos-result" onClick={() => addDeckCard(r.cardId, r.cardName, r.deckId)}>
-                          <span className="nos-result-name">{r.cardName}</span>
-                          <span className="nos-result-sub">{r.deckName}</span>
-                          <span className="nos-result-add">+</span>
-                        </button>
-                      </li>
-                    ))}
-                    <li>
-                      <button className="nos-result nos-result-free" onClick={() => addFreeform(cardSearch.trim())}>
-                        <span className="nos-result-name">Add "<b>{cardSearch.trim()}</b>"</span>
-                        <span className="nos-result-add">+</span>
-                      </button>
-                    </li>
-                  </ul>
-                )}
+              {/* Source toggle */}
+              <div className="nos-source-toggle">
+                <button
+                  className={`nos-source-btn${!manualMode ? " active" : ""}`}
+                  onClick={() => setManualMode(false)}
+                >
+                  From buy list <span className="nos-source-n">0</span>
+                </button>
+                <button
+                  className={`nos-source-btn${manualMode ? " active" : ""}`}
+                  onClick={() => setManualMode(true)}
+                >
+                  Add manually
+                  {cards.length > 0 && <span className="nos-source-n">{cards.length}</span>}
+                </button>
               </div>
 
-              {cards.length > 0 && (
-                <div className="nos-cardlist">
-                  <div className="nos-cardlist-head">
-                    <span>Card</span>
-                    <span>Qty</span>
-                  </div>
-                  {cards.map((c, i) => (
-                    <div key={i} className="nos-cardrow">
-                      <span className="nos-cardrow-name">{c.cardName}</span>
-                      <div className="nos-stepper-ctrl">
-                        <button onClick={() => updateQty(i, c.quantity - 1)}>−</button>
-                        <span>{c.quantity}</span>
-                        <button onClick={() => updateQty(i, c.quantity + 1)}>+</button>
-                      </div>
-                      <button className="nos-remove" onClick={() => removeCard(i)}>×</button>
-                    </div>
-                  ))}
+              {!manualMode ? (
+                <div className="nos-buylist-empty">
+                  <span className="nos-buylist-empty-icon">☐</span>
+                  <p>Your buy list is empty.</p>
+                  <p className="nos-buylist-empty-sub">Switch to manual entry to add cards directly.</p>
+                  <button className="btn btn-sm btn-ghost" onClick={() => setManualMode(true)}>
+                    Add manually →
+                  </button>
                 </div>
-              )}
+              ) : (
+                <>
+                  <p className="nos-body-lede">Search your decks or type any card name and press Enter.</p>
 
-              {totalQty > 0 && (
-                <p className="nos-selsum">
-                  {cards.length} line{cards.length !== 1 ? "s" : ""} · {totalQty} card{totalQty !== 1 ? "s" : ""}
-                </p>
+                  <div className="nos-search-wrap">
+                    <input
+                      className="nos-card-search"
+                      placeholder="Search card name…"
+                      value={cardSearch}
+                      onChange={e => setCardSearch(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === "Enter" && cardSearch.trim() && cardResults.length === 0) {
+                          addFreeform(cardSearch.trim());
+                        }
+                      }}
+                    />
+                    {cardSearch.trim().length >= 2 && (
+                      <ul className="nos-results">
+                        {cardResults.map(r => (
+                          <li key={`${r.deckId}-${r.cardId}`}>
+                            <button className="nos-result" onClick={() => addDeckCard(r.cardId, r.cardName, r.deckId)}>
+                              <span className="nos-result-name">{r.cardName}</span>
+                              <span className="nos-result-sub">{r.deckName}</span>
+                              <span className="nos-result-add">+</span>
+                            </button>
+                          </li>
+                        ))}
+                        <li>
+                          <button className="nos-result nos-result-free" onClick={() => addFreeform(cardSearch.trim())}>
+                            <span className="nos-result-name">Add "<b>{cardSearch.trim()}</b>"</span>
+                            <span className="nos-result-add">+</span>
+                          </button>
+                        </li>
+                      </ul>
+                    )}
+                  </div>
+
+                  {cards.length > 0 ? (
+                    <div className="nos-cardlist">
+                      <div className="nos-cardlist-head">
+                        <span>Card</span>
+                        <span className="nos-col-right">Qty</span>
+                        <span className="nos-col-right">Price</span>
+                        <span />
+                      </div>
+                      {cards.map((c, i) => (
+                        <div key={i} className="nos-cardrow">
+                          <span className="nos-cardrow-name">{c.cardName}</span>
+                          <input
+                            className="nos-qty-input"
+                            type="number"
+                            min="1" max="99"
+                            value={c.quantity}
+                            onChange={e => updateQty(i, parseInt(e.target.value))}
+                          />
+                          <div className="nos-price-wrap">
+                            <span className="nos-price-pfx">$</span>
+                            <input
+                              className="nos-price-input"
+                              type="number"
+                              min="0" step="0.01"
+                              value={c.price ?? ""}
+                              placeholder="0.00"
+                              onChange={e => updatePrice(i, parseFloat(e.target.value))}
+                            />
+                          </div>
+                          <button className="nos-remove" onClick={() => removeCard(i)}>×</button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="nos-cardlist nos-cardlist-placeholder">
+                      <div className="nos-cardlist-empty">No cards yet — search above or press Enter to add.</div>
+                    </div>
+                  )}
+
+                  {totalQty > 0 && (
+                    <p className="nos-selsum">
+                      {cards.length} line{cards.length !== 1 ? "s" : ""} · {totalQty} card{totalQty !== 1 ? "s" : ""}
+                      {totalPrice > 0 && ` · $${totalPrice.toFixed(2)}`}
+                    </p>
+                  )}
+                </>
               )}
             </>
           )}
@@ -337,19 +438,28 @@ export function NewOrderSheet({
             <div className="nos-success">
               <div className="nos-success-mark">✓</div>
               <h3 className="nos-success-h">
-                {orderNum ? `${orderNum} created` : "Order created"}
+                {isEdit
+                  ? (activeVendor ? `${activeVendor} updated` : "Order updated")
+                  : (orderNum ? `${orderNum} created` : "Order created")}
               </h3>
               <p className="nos-success-p">
                 {activeVendor} · {totalQty} card{totalQty !== 1 ? "s" : ""}
-                {expected ? ` · arriving ${fmtDate(new Date(expected).getTime())}` : ""}
+                {totalPrice > 0 ? ` · $${totalPrice.toFixed(2)}` : ""}
+                {!isEdit && expected ? ` · arriving ${fmtDate(new Date(expected).getTime())}` : ""}
               </p>
               <div className="nos-summary-card">
                 <div className="nos-sum-row"><span>Vendor</span><span className="nos-sum-v">{activeVendor}</span></div>
                 <div className="nos-sum-row"><span>Cards</span><span className="nos-sum-v">{totalQty}</span></div>
-                {expected && (
+                {!isEdit && expected && (
                   <div className="nos-sum-row">
                     <span>Expected</span>
                     <span className="nos-sum-v">{fmtDate(new Date(expected).getTime())}</span>
+                  </div>
+                )}
+                {totalPrice > 0 && (
+                  <div className="nos-sum-row">
+                    <span>Total</span>
+                    <span className="nos-sum-v nos-sum-accent">${totalPrice.toFixed(2)}</span>
                   </div>
                 )}
                 {tracking && (
@@ -384,19 +494,51 @@ export function NewOrderSheet({
               <button className="btn btn-ghost btn-sm" onClick={() => setStep(1)}>← Back</button>
               <div className="nos-foot-right">
                 <button className="btn btn-ghost btn-sm" onClick={onClose}>Cancel</button>
-                <button className="btn btn-primary btn-sm" disabled={cards.length === 0} onClick={() => setStep(3)}>
+                <button
+                  className="btn btn-primary btn-sm"
+                  disabled={cards.length === 0}
+                  onClick={() => setStep(3)}
+                >
                   Continue →
                 </button>
               </div>
             </>
           )}
-          {step === 3 && (
+          {step === 3 && !isEdit && (
             <>
               <button className="btn btn-ghost btn-sm" onClick={() => setStep(2)}>← Back</button>
               <div className="nos-foot-right">
                 <button className="btn btn-ghost btn-sm" onClick={onClose}>Cancel</button>
                 <button className="btn btn-primary btn-sm" onClick={handleCreate}>
                   Create order ✓
+                </button>
+              </div>
+            </>
+          )}
+          {step === 3 && isEdit && (
+            <>
+              {confirmDelete ? (
+                <div className="nos-delete-confirm">
+                  <span>Delete this order?</span>
+                  <button className="btn btn-ghost btn-sm" onClick={() => { onDeleteEdit?.(); onClose(); }}>
+                    Yes, delete
+                  </button>
+                  <button className="btn btn-ghost btn-sm" onClick={() => setConfirmDelete(false)}>
+                    Keep
+                  </button>
+                </div>
+              ) : (
+                <button
+                  className="btn btn-ghost btn-sm nos-delete-btn"
+                  onClick={() => setConfirmDelete(true)}
+                >
+                  Delete
+                </button>
+              )}
+              <div className="nos-foot-right">
+                <button className="btn btn-ghost btn-sm" onClick={() => setStep(2)}>← Back</button>
+                <button className="btn btn-primary btn-sm" onClick={handleSave}>
+                  Save changes ✓
                 </button>
               </div>
             </>

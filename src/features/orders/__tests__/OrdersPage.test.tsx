@@ -17,6 +17,7 @@ const defaultProps = {
   decks: [],
   recentVendors: [],
   onCreateOrder: vi.fn(),
+  onUpdateOrder: vi.fn(),
   onMarkReceived: vi.fn(),
   onMarkCancelled: vi.fn(),
   onDeleteOrder: vi.fn(),
