@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import "./OrdersPage.css";
-import type { Order, OrderCard, OrderStatus, Carrier, Deck } from "../../types/index";
-import { detectCarrier, getTrackingUrl, CARRIER_NAMES } from "../../utils/carrier";
+import type { Order, OrderCard, OrderStatus, Deck } from "../../types/index";
+import { getTrackingUrl, CARRIER_NAMES } from "../../utils/carrier";
+import { NewOrderSheet } from "./NewOrderSheet";
 
 // ── ETA helpers ───────────────────────────────────────────────────────────────
 
@@ -589,263 +590,6 @@ function OCard({
   );
 }
 
-// ── Create order form (existing form, lightly restyled) ───────────────────────
-
-interface CreateOrderFormProps {
-  decks: Deck[];
-  recentVendors: string[];
-  defaultVendor?: string;
-  onSubmit: (order: Order, vendor: string) => void;
-  onClose: () => void;
-}
-
-function CreateOrderForm({ decks, recentVendors, defaultVendor = "", onSubmit, onClose }: CreateOrderFormProps) {
-  const [vendor, setVendor] = useState(defaultVendor);
-  const [tracking, setTracking] = useState("");
-  const [orderDate, setOrderDate] = useState(() => new Date().toISOString().split("T")[0]);
-  const [expected, setExpected] = useState(() => {
-    const d = new Date(); d.setDate(d.getDate() + 5); return d.toISOString().split("T")[0];
-  });
-  const [notes, setNotes] = useState("");
-  const [cards, setCards] = useState<OrderCard[]>([]);
-  const [cardSearch, setCardSearch] = useState("");
-  const [carrier, setCarrier] = useState<Carrier | "">("");
-  const [carrierManual, setCarrierManual] = useState(false);
-  const [showShipping, setShowShipping] = useState(false);
-
-  useEffect(() => {
-    if (!carrierManual && tracking.trim()) {
-      setCarrier(detectCarrier(tracking));
-    } else if (!tracking.trim()) {
-      setCarrier(""); setCarrierManual(false);
-    }
-  }, [tracking, carrierManual]);
-
-  const cardResults = cardSearch.trim().length >= 2
-    ? decks.flatMap(deck =>
-        deck.cards
-          .filter(c => c.name.toLowerCase().includes(cardSearch.toLowerCase()))
-          .filter(c => !cards.some(oc => oc.cardId === c.id && oc.deckId === deck.id))
-          .slice(0, 4)
-          .map(c => ({ deckId: deck.id, deckName: deck.name, cardId: c.id, cardName: c.name, maxQty: c.quantity }))
-      ).slice(0, 8)
-    : [];
-
-  function addCard(deckId: string, _deckName: string, cardId: string, cardName: string, qty: number) {
-    setCards(prev => {
-      if (prev.some(oc => oc.cardId === cardId && oc.deckId === deckId)) return prev;
-      return [...prev, { deckId, cardId, cardName, quantity: qty }];
-    });
-    setCardSearch("");
-  }
-
-  function removeCard(cardName: string, deckId?: string) {
-    setCards(prev => prev.filter(oc => !(oc.cardName === cardName && oc.deckId === deckId)));
-  }
-
-  function updateQty(cardName: string, deckId: string | undefined, qty: number) {
-    if (qty <= 0) { removeCard(cardName, deckId); return; }
-    setCards(prev => prev.map(oc =>
-      oc.cardName === cardName && oc.deckId === deckId ? { ...oc, quantity: qty } : oc
-    ));
-  }
-
-  function handleSubmit() {
-    if (!vendor.trim() || cards.length === 0) return;
-    const newOrder: Order = {
-      id: crypto.randomUUID(),
-      createdAt: Date.now(),
-      vendor: vendor.trim(),
-      trackingNumber: tracking.trim() || undefined,
-      carrier: tracking.trim() ? (carrier || detectCarrier(tracking)) || undefined : undefined,
-      orderDate: orderDate ? new Date(orderDate).getTime() : undefined,
-      expectedArrival: expected ? new Date(expected).getTime() : undefined,
-      notes: notes.trim() || undefined,
-      status: "active",
-      cards,
-    };
-    onSubmit(newOrder, vendor.trim());
-  }
-
-  const pickedTotal = cards.reduce((s, c) => s + c.quantity, 0);
-  const groups = cards.reduce<Record<string, OrderCard[]>>((acc, oc) => {
-    const key = oc.deckId ?? "__freeform__";
-    (acc[key] ??= []).push(oc);
-    return acc;
-  }, {});
-
-  return (
-    <div className="orders-create-wrap">
-      <div className="orders-create-title">New order</div>
-
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        <span className="form-label">Cards <span className="form-label-req">required</span></span>
-        <div className="card-combobox">
-          <input
-            className="deck-name-input combobox-input"
-            placeholder="Search your decks or type a card name…"
-            value={cardSearch}
-            onChange={e => setCardSearch(e.target.value)}
-            onKeyDown={e => {
-              if (e.key === "Enter" && cardSearch.trim() && cardResults.length === 0) {
-                const name = cardSearch.trim();
-                setCards(prev => {
-                  const ex = prev.find(c => !c.deckId && c.cardName.toLowerCase() === name.toLowerCase());
-                  if (ex) return prev.map(c => c === ex ? { ...c, quantity: c.quantity + 1 } : c);
-                  return [...prev, { cardName: name, quantity: 1 }];
-                });
-                setCardSearch("");
-              }
-            }}
-          />
-          <span className="combobox-mode">search</span>
-        </div>
-        {cardSearch.trim().length >= 2 && (
-          <ul className="combobox-results">
-            {cardResults.map(r => (
-              <li key={`${r.deckId}-${r.cardId}`} className="combobox-result">
-                <button type="button" className="combobox-result-btn"
-                  onClick={() => addCard(r.deckId, r.deckName, r.cardId, r.cardName, 1)}>
-                  <span className="result-name">{r.cardName}</span>
-                  <span className="result-deck">{r.deckName} · {r.maxQty}× needed</span>
-                  <span className="result-qty-pill">+1</span>
-                </button>
-              </li>
-            ))}
-            <li className="combobox-result combobox-result-freeform">
-              <button type="button" className="combobox-result-btn"
-                onClick={() => {
-                  const name = cardSearch.trim();
-                  setCards(prev => {
-                    const ex = prev.find(c => !c.deckId && c.cardName.toLowerCase() === name.toLowerCase());
-                    if (ex) return prev.map(c => c === ex ? { ...c, quantity: c.quantity + 1 } : c);
-                    return [...prev, { cardName: name, quantity: 1 }];
-                  });
-                  setCardSearch("");
-                }}>
-                <span className="result-name">Add "<b>{cardSearch.trim()}</b>" as freeform card</span>
-                <span className="result-qty-pill">+1</span>
-              </button>
-            </li>
-          </ul>
-        )}
-        {cards.length > 0 && (
-          <div className="picked-list">
-            {Object.entries(groups).map(([key, grpCards]) => {
-              const isFreeform = key === "__freeform__";
-              const deck = isFreeform ? null : decks.find(d => d.id === key);
-              const groupName = isFreeform ? "Not in a deck" : (deck?.name ?? "Unknown deck");
-              const groupCount = grpCards.reduce((s, c) => s + c.quantity, 0);
-              return (
-                <div key={key} className="picked-group">
-                  <div className="picked-group-head">
-                    <span className={`picked-group-dot${isFreeform ? " freeform" : ""}`} />
-                    <span className="picked-group-name">{groupName}</span>
-                    <span className="picked-group-count">{groupCount} card{groupCount !== 1 ? "s" : ""}</span>
-                  </div>
-                  {grpCards.map(oc => {
-                    const d = oc.deckId ? decks.find(x => x.id === oc.deckId) : undefined;
-                    const maxQty = oc.cardId ? (d?.cards.find(c => c.id === oc.cardId)?.quantity ?? oc.quantity) : 999;
-                    return (
-                      <div key={`${oc.deckId ?? "free"}-${oc.cardName}`} className="picked-row">
-                        <span className="picked-row-name">{oc.cardName}</span>
-                        <div className="picked-row-stepper">
-                          <button type="button" className="step-btn"
-                            onClick={() => updateQty(oc.cardName, oc.deckId, Math.max(1, oc.quantity - 1))}>−</button>
-                          <span className="step-val">{oc.quantity}</span>
-                          <button type="button" className="step-btn"
-                            onClick={() => updateQty(oc.cardName, oc.deckId, oc.quantity + 1)}
-                            disabled={oc.quantity >= maxQty}>+</button>
-                        </div>
-                        <button type="button" className="picked-row-remove"
-                          onClick={() => removeCard(oc.cardName, oc.deckId)}>×</button>
-                      </div>
-                    );
-                  })}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        <span className="form-label">Vendor <span className="form-label-req">required</span></span>
-        <input className="deck-name-input" placeholder="Pick one or type your own"
-          value={vendor} onChange={e => setVendor(e.target.value)} />
-        {recentVendors.length > 0 && (
-          <div className="vendor-chips">
-            {recentVendors.map(v => (
-              <button key={v} type="button"
-                className={`vendor-chip${vendor === v ? " active" : ""}`}
-                onClick={() => setVendor(v)}>{v}</button>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {!showShipping ? (
-        <button type="button" className="form-collapser" onClick={() => setShowShipping(true)}>
-          <span><span className="collapser-add">+</span> Shipping &amp; tracking</span>
-          <span className="form-collapser-hint">
-            {carrier && carrier !== "other" ? CARRIER_NAMES[carrier as Carrier] : ""}
-            {expected ? ` · arrives ${formatShortDate(new Date(expected).getTime())}` : ""}
-          </span>
-        </button>
-      ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <div className="form-grid-2">
-            <label className="form-field">
-              <span className="form-label">Order date</span>
-              <input className="deck-name-input" type="date" value={orderDate}
-                onChange={e => setOrderDate(e.target.value)} />
-            </label>
-            <label className="form-field">
-              <span className="form-label">Expected arrival</span>
-              <input className="deck-name-input" type="date" value={expected}
-                onChange={e => setExpected(e.target.value)} />
-            </label>
-          </div>
-          <label className="form-field">
-            <span className="form-label">Tracking number</span>
-            <input className="deck-name-input" placeholder="Optional"
-              value={tracking} onChange={e => setTracking(e.target.value)} />
-          </label>
-          {tracking.trim() && (
-            <label className="form-field">
-              <span className="form-label">Carrier</span>
-              <select className="deck-name-input"
-                value={carrier || "other"}
-                onChange={e => { setCarrier(e.target.value as Carrier); setCarrierManual(true); }}>
-                {(Object.keys(CARRIER_NAMES) as Carrier[]).map(c => (
-                  <option key={c} value={c}>{CARRIER_NAMES[c]}</option>
-                ))}
-              </select>
-            </label>
-          )}
-        </div>
-      )}
-
-      <label className="form-field" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <span className="form-label">Notes <span style={{ opacity: 0.6 }}>(optional)</span></span>
-        <textarea className="deck-name-input order-notes-textarea"
-          style={{ fontFamily: "inherit", resize: "vertical" }}
-          placeholder="Optional notes" value={notes}
-          onChange={e => setNotes(e.target.value)} rows={2} />
-      </label>
-
-      <div className="order-form-actions">
-        <button className="btn btn-primary"
-          onClick={handleSubmit}
-          disabled={!vendor.trim() || cards.length === 0}>
-          Create order{pickedTotal > 0 ? ` · ${pickedTotal} card${pickedTotal !== 1 ? "s" : ""}` : ""}
-        </button>
-        <button className="btn btn-ghost btn-sm" onClick={onClose}>Discard</button>
-      </div>
-    </div>
-  );
-}
-
 // ── Page root ─────────────────────────────────────────────────────────────────
 
 export function OrdersPage({
@@ -978,9 +722,9 @@ export function OrdersPage({
             )}
             <button
               className="btn btn-primary btn-sm"
-              onClick={() => setShowCreate(v => !v)}
+              onClick={() => setShowCreate(true)}
             >
-              {showCreate ? "Close" : "+ New order"}
+              + New order
             </button>
           </div>
         </div>
@@ -988,21 +732,7 @@ export function OrdersPage({
         {/* ── Scrollable body ───────────────────────────────────────────────── */}
         <div className="orders-body">
 
-          {showCreate && (
-            <CreateOrderForm
-              decks={decks}
-              recentVendors={recentVendors}
-              defaultVendor={reorderVendor}
-              onSubmit={(order, vendor) => {
-                onCreateOrder(order, vendor);
-                setShowCreate(false);
-                setReorderVendor("");
-              }}
-              onClose={() => { setShowCreate(false); setReorderVendor(""); }}
-            />
-          )}
-
-          {orders.length === 0 && !showCreate && (
+          {orders.length === 0 && (
             <div className="orders-empty-wrap">
               <div className="orders-empty-card">
                 <div className="orders-empty-icon">
@@ -1104,6 +834,20 @@ export function OrdersPage({
           onMarkReceived={() => { onMarkReceived(expandedOrder.id); setExpandedId(null); }}
           onMarkCancelled={() => { onMarkCancelled(expandedOrder.id); setExpandedId(null); }}
           onDeleteOrder={() => { onDeleteOrder(expandedOrder.id); setExpandedId(null); }}
+        />
+      )}
+
+      {/* New order sheet (portal, all viewports) */}
+      {showCreate && (
+        <NewOrderSheet
+          orders={orders}
+          decks={decks}
+          recentVendors={recentVendors}
+          defaultVendor={reorderVendor}
+          onSubmit={(order, vendor) => {
+            onCreateOrder(order, vendor);
+          }}
+          onClose={() => { setShowCreate(false); setReorderVendor(""); }}
         />
       )}
     </section>
