@@ -124,14 +124,30 @@ function TlRow({ dot, when, what, sub }: TlStep) {
 }
 
 function LineItems({ cards }: { cards: OrderCard[] }) {
+  const hasPrices = cards.some(c => (c.price ?? 0) > 0);
+  const subtotal = hasPrices
+    ? cards.reduce((s, c) => s + (c.price ?? 0) * c.quantity, 0)
+    : 0;
+
   return (
-    <div className="ocard-lineitems">
+    <div className={`ocard-lineitems${hasPrices ? " has-prices" : ""}`}>
       {cards.map(oc => (
         <div key={`${oc.deckId ?? "free"}-${oc.cardName}`} className="li">
           <span className="li-qty">×{oc.quantity}</span>
           <span className="li-name">{oc.cardName}</span>
+          {hasPrices && (
+            <span className="li-price">
+              {(oc.price ?? 0) > 0 ? `$${(oc.price! * oc.quantity).toFixed(2)}` : "—"}
+            </span>
+          )}
         </div>
       ))}
+      {subtotal > 0 && (
+        <div className="li-subtotal">
+          <span>Subtotal</span>
+          <span className="li-subtotal-v">${subtotal.toFixed(2)}</span>
+        </div>
+      )}
     </div>
   );
 }
@@ -689,6 +705,13 @@ export function OrdersPage({
     [annotated],
   );
 
+  const activeSpend = useMemo(
+    () => annotated
+      .filter(o => o.status === "active")
+      .reduce((s, o) => s + o.cards.reduce((cs, c) => cs + (c.price ?? 0) * c.quantity, 0), 0),
+    [annotated],
+  );
+
   function handleExpand(id: string) {
     setExpandedId(prev => (prev === id ? null : id));
     setDeleteConfirmId(null);
@@ -811,6 +834,7 @@ export function OrdersPage({
                 <span>
                   {sorted.length} order{sorted.length !== 1 ? "s" : ""}
                   {filter === "active" && cardsInFlight > 0 && ` · ${cardsInFlight} card${cardsInFlight !== 1 ? "s" : ""} in flight`}
+                  {filter === "active" && activeSpend > 0 && <span className="orders-spend-meta"> · ${activeSpend.toFixed(2)} tracked</span>}
                 </span>
               </div>
 
