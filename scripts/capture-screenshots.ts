@@ -136,6 +136,11 @@ async function closeSheet(page: Page): Promise<void> {
 
 // ── Navigation helpers ────────────────────────────────────────────────────────
 async function gotoAndSettle(page: Page, url: string): Promise<void> {
+  // Reset transient UI state before navigating so reloads don't inherit
+  // a collapsed sidebar (fl-sidebar-collapsed) or other modal state.
+  await page.evaluate(() => {
+    localStorage.setItem("fl-sidebar-collapsed", "false");
+  }).catch(() => {});
   await page.goto(url);
   try {
     await page.waitForLoadState("networkidle", { timeout: 10_000 });
@@ -668,7 +673,8 @@ async function main(): Promise<void> {
       await page.waitForTimeout(600);
     });
     await attempt("open rename form", async () => {
-      await click(page, "button.rename-btn");
+      // Use JS click to bypass the deck-title-wrap hover overlay that intercepts pointer events
+      await page.locator("button.rename-btn").first().evaluate(el => (el as HTMLElement).click());
       await page.waitForTimeout(400);
     });
     await shot(page, "28-desktop-deck-rename.png");
@@ -717,27 +723,31 @@ async function main(): Promise<void> {
     await shot(page, "31-desktop-undo-toast.png");
 
     // 27 — Empty collection state (separate context, no collection keys in seed)
-    await attempt("capture empty collection state", async () => {
+    {
       const emptyBrowser = await chromium.launch({ headless: false });
-      const emptyCtx2 = await emptyBrowser.newContext({ viewport: { width: 1440, height: 900 } });
-      const emptySeed = Object.fromEntries(
-        Object.entries(seedData).filter(([k]) =>
-          !k.includes("collection")
-        )
-      );
-      await emptyCtx2.addInitScript((entries: Record<string, string>) => {
-        for (const [k, v] of Object.entries(entries)) localStorage.setItem(k, v);
-      }, emptySeed);
-      const emptyPage2 = await emptyCtx2.newPage();
-      await emptyPage2.goto(BASE_URL);
-      try { await emptyPage2.waitForLoadState("networkidle", { timeout: 10_000 }); } catch {}
-      await emptyPage2.waitForTimeout(SETTLE_MS);
-      await emptyPage2.locator("button.nav-btn", { hasText: "My Collection" }).first().click({ timeout: 5_000 });
-      await emptyPage2.waitForTimeout(SETTLE_MS);
-      await shot(emptyPage2, "27-desktop-collection-empty.png");
-      await emptyPage2.close();
-      await emptyBrowser.close();
-    });
+      try {
+        const emptyCtx2 = await emptyBrowser.newContext({ viewport: { width: 1440, height: 900 } });
+        const emptySeed = Object.fromEntries(
+          Object.entries(seedData).filter(([k]) => !k.includes("collection"))
+        );
+        await emptyCtx2.addInitScript((entries: Record<string, string>) => {
+          for (const [k, v] of Object.entries(entries)) localStorage.setItem(k, v);
+        }, emptySeed);
+        const emptyPage2 = await emptyCtx2.newPage();
+        await emptyPage2.goto(BASE_URL);
+        try { await emptyPage2.waitForLoadState("networkidle", { timeout: 10_000 }); } catch {}
+        await emptyPage2.waitForTimeout(SETTLE_MS);
+        await emptyPage2.locator("button.nav-btn", { hasText: "Collection" }).first().click({ timeout: 5_000 });
+        await emptyPage2.waitForTimeout(SETTLE_MS);
+        await shot(emptyPage2, "27-desktop-collection-empty.png");
+      } catch (e) {
+        const msg = e instanceof Error ? e.message.split("\n")[0] : String(e);
+        console.error(`  ✗  27-desktop-collection-empty.png: ${msg}`);
+        shotLog.push({ name: "27-desktop-collection-empty.png", ok: false, ts: new Date().toISOString(), durationMs: 0, error: msg, warnings: [] });
+      } finally {
+        await emptyBrowser.close();
+      }
+    }
 
     // 32 — Header overflow menu open
     await attempt("nav to Decks for overflow menu", () => clickNav(page, "My Decks"));
@@ -870,7 +880,7 @@ async function main(): Promise<void> {
     await attempt("nav to Decks (tablet)", () => clickNav(page, "Decks"));
     await shot(page, "15-tablet-decks.png");
 
-    await attempt("nav to Collection (tablet)", () => clickNav(page, "My Collection"));
+    await attempt("nav to Collection (tablet)", () => clickNav(page, "Collection"));
     await shot(page, "16-tablet-collection.png");
 
     // 51 — Tablet orders list
@@ -890,46 +900,58 @@ async function main(): Promise<void> {
 
     // ── Empty state shots (separate contexts) ──────────────────────────────
     // 52 — Desktop orders empty state
-    await attempt("capture empty orders state (desktop)", async () => {
+    {
       const emptyBrowser = await chromium.launch({ headless: false });
-      const emptyCtx3 = await emptyBrowser.newContext({ viewport: { width: 1440, height: 900 } });
-      const emptySeed3 = Object.fromEntries(
-        Object.entries(seedData).filter(([k]) => !k.includes("orders"))
-      );
-      await emptyCtx3.addInitScript((entries: Record<string, string>) => {
-        for (const [k, v] of Object.entries(entries)) localStorage.setItem(k, v);
-      }, emptySeed3);
-      const emptyPage3 = await emptyCtx3.newPage();
-      await emptyPage3.goto(BASE_URL);
-      try { await emptyPage3.waitForLoadState("networkidle", { timeout: 10_000 }); } catch {}
-      await emptyPage3.waitForTimeout(SETTLE_MS);
-      await emptyPage3.locator("button.nav-btn", { hasText: "Orders" }).first().click({ timeout: 5_000 });
-      await emptyPage3.waitForTimeout(SETTLE_MS);
-      await shot(emptyPage3, "52-desktop-orders-empty.png");
-      await emptyPage3.close();
-      await emptyBrowser.close();
-    });
+      try {
+        const emptyCtx3 = await emptyBrowser.newContext({ viewport: { width: 1440, height: 900 } });
+        const emptySeed3 = Object.fromEntries(
+          Object.entries(seedData).filter(([k]) => !k.includes("orders"))
+        );
+        await emptyCtx3.addInitScript((entries: Record<string, string>) => {
+          for (const [k, v] of Object.entries(entries)) localStorage.setItem(k, v);
+        }, emptySeed3);
+        const emptyPage3 = await emptyCtx3.newPage();
+        await emptyPage3.goto(BASE_URL);
+        try { await emptyPage3.waitForLoadState("networkidle", { timeout: 10_000 }); } catch {}
+        await emptyPage3.waitForTimeout(SETTLE_MS);
+        await emptyPage3.locator("button.nav-btn", { hasText: "Orders" }).first().click({ timeout: 5_000 });
+        await emptyPage3.waitForTimeout(SETTLE_MS);
+        await shot(emptyPage3, "52-desktop-orders-empty.png");
+      } catch (e) {
+        const msg = e instanceof Error ? e.message.split("\n")[0] : String(e);
+        console.error(`  ✗  52-desktop-orders-empty.png: ${msg}`);
+        shotLog.push({ name: "52-desktop-orders-empty.png", ok: false, ts: new Date().toISOString(), durationMs: 0, error: msg, warnings: [] });
+      } finally {
+        await emptyBrowser.close();
+      }
+    }
 
     // 53 — Mobile orders empty state
-    await attempt("capture empty orders state (mobile)", async () => {
+    {
       const emptyBrowser = await chromium.launch({ headless: false });
-      const emptyCtx4 = await emptyBrowser.newContext({ viewport: { width: 390, height: 844 } });
-      const emptySeed4 = Object.fromEntries(
-        Object.entries(seedData).filter(([k]) => !k.includes("orders"))
-      );
-      await emptyCtx4.addInitScript((entries: Record<string, string>) => {
-        for (const [k, v] of Object.entries(entries)) localStorage.setItem(k, v);
-      }, emptySeed4);
-      const emptyPage4 = await emptyCtx4.newPage();
-      await emptyPage4.goto(BASE_URL);
-      try { await emptyPage4.waitForLoadState("networkidle", { timeout: 10_000 }); } catch {}
-      await emptyPage4.waitForTimeout(SETTLE_MS);
-      await emptyPage4.locator("button.nav-btn", { hasText: "Orders" }).first().click({ timeout: 5_000 });
-      await emptyPage4.waitForTimeout(SETTLE_MS);
-      await shot(emptyPage4, "53-mobile-orders-empty.png");
-      await emptyPage4.close();
-      await emptyBrowser.close();
-    });
+      try {
+        const emptyCtx4 = await emptyBrowser.newContext({ viewport: { width: 390, height: 844 } });
+        const emptySeed4 = Object.fromEntries(
+          Object.entries(seedData).filter(([k]) => !k.includes("orders"))
+        );
+        await emptyCtx4.addInitScript((entries: Record<string, string>) => {
+          for (const [k, v] of Object.entries(entries)) localStorage.setItem(k, v);
+        }, emptySeed4);
+        const emptyPage4 = await emptyCtx4.newPage();
+        await emptyPage4.goto(BASE_URL);
+        try { await emptyPage4.waitForLoadState("networkidle", { timeout: 10_000 }); } catch {}
+        await emptyPage4.waitForTimeout(SETTLE_MS);
+        await emptyPage4.locator("button.nav-btn", { hasText: "Orders" }).first().click({ timeout: 5_000 });
+        await emptyPage4.waitForTimeout(SETTLE_MS);
+        await shot(emptyPage4, "53-mobile-orders-empty.png");
+      } catch (e) {
+        const msg = e instanceof Error ? e.message.split("\n")[0] : String(e);
+        console.error(`  ✗  53-mobile-orders-empty.png: ${msg}`);
+        shotLog.push({ name: "53-mobile-orders-empty.png", ok: false, ts: new Date().toISOString(), durationMs: 0, error: msg, warnings: [] });
+      } finally {
+        await emptyBrowser.close();
+      }
+    }
 
   } finally {
     await page.close();
