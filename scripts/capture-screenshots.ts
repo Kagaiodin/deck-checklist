@@ -381,7 +381,7 @@ async function main(): Promise<void> {
       await attempt("close buy list", () => closeSheet(page));
     } else {
       console.warn("  ⚠  no deck has need_to_buy cards — skipping 06");
-      shotLog.push({ ts: new Date().toISOString(), durationMs: 0, warnings: [], { name: "06-desktop-buy-list-open.png", ok: false, error: "no need_to_buy cards" } });
+      shotLog.push({ name: "06-desktop-buy-list-open.png", ok: false, ts: new Date().toISOString(), durationMs: 0, error: "no need_to_buy cards", warnings: [] });
     }
 
     // 07 — Light mode
@@ -621,7 +621,7 @@ async function main(): Promise<void> {
       await shot(page, "20-desktop-buy-flow-vendor.png");
       await attempt("close vendor picker", () => closeSheet(page));
     } else {
-      shotLog.push({ ts: new Date().toISOString(), durationMs: 0, warnings: [], { name: "20-desktop-buy-flow-vendor.png", ok: false, error: "buy-list-btn not visible" } });
+      shotLog.push({ name: "20-desktop-buy-flow-vendor.png", ok: false, ts: new Date().toISOString(), durationMs: 0, error: "buy-list-btn not visible", warnings: [] });
     }
 
     // 22 — Source picker open on a card row
@@ -859,7 +859,7 @@ async function main(): Promise<void> {
       await attempt("close buy list (mobile)", () => closeSheet(page));
     } else {
       console.warn("  ⚠  buy list not visible on mobile — skipping 14");
-      shotLog.push({ ts: new Date().toISOString(), durationMs: 0, warnings: [], { name: "14-mobile-buy-list.png", ok: false, error: "buy-list-btn not visible" } });
+      shotLog.push({ name: "14-mobile-buy-list.png", ok: false, ts: new Date().toISOString(), durationMs: 0, error: "buy-list-btn not visible", warnings: [] });
     }
 
     // ── TABLET (768×1024) ──────────────────────────────────────────────────
