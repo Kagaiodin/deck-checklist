@@ -54,17 +54,43 @@ const seedPath = (() => {
 fs.mkdirSync(OUT_DIR, { recursive: true });
 
 // ── Result tracking ───────────────────────────────────────────────────────────
-const results: { name: string; ok: boolean; error?: string }[] = [];
+
+interface AttemptRecord {
+  label: string;
+  ok: boolean;
+  error?: string;
+}
+
+interface ShotRecord {
+  name: string;
+  ok: boolean;
+  ts: string;              // ISO timestamp
+  durationMs: number;
+  error?: string;
+  /** Attempt steps that failed before this shot was taken. */
+  warnings: AttemptRecord[];
+}
+
+const shotLog: ShotRecord[] = [];
+// Attempt failures that have occurred since the last shot() call
+let pendingWarnings: AttemptRecord[] = [];
+
+const RUN_START = new Date();
 
 async function shot(page: Page, name: string): Promise<void> {
+  const t0 = Date.now();
+  const warnings = pendingWarnings.splice(0); // claim + clear
   try {
     await page.screenshot({ path: path.join(OUT_DIR, name), fullPage: false });
-    console.log(`  ✓  ${name}`);
-    results.push({ name, ok: true });
+    const durationMs = Date.now() - t0;
+    const dirty = warnings.length > 0;
+    console.log(`  ${dirty ? "⚠" : "✓"}  ${name}${dirty ? `  (${warnings.length} step warning${warnings.length !== 1 ? "s" : ""})` : ""}`);
+    shotLog.push({ name, ok: true, ts: new Date().toISOString(), durationMs, warnings });
   } catch (e) {
+    const durationMs = Date.now() - t0;
     const msg = e instanceof Error ? e.message.split("\n")[0] : String(e);
     console.error(`  ✗  ${name}: ${msg}`);
-    results.push({ name, ok: false, error: msg });
+    shotLog.push({ name, ok: false, ts: new Date().toISOString(), durationMs, error: msg, warnings });
   }
 }
 
@@ -75,8 +101,9 @@ async function attempt(label: string, fn: () => Promise<void>): Promise<boolean>
     await fn();
     return true;
   } catch (e) {
-    const msg = e instanceof Error ? e.message.split("\n")[0] : String(e);
-    console.warn(`  ⚠  ${label}: ${msg}`);
+    const msg = e instanceof Error ? e.message : String(e);
+    console.warn(`  ⚠  ${label}: ${msg.split("\n")[0]}`);
+    pendingWarnings.push({ label, ok: false, error: msg });
     return false;
   }
 }
@@ -913,21 +940,51 @@ async function main(): Promise<void> {
     }
   }
 
-  // ── Summary ───────────────────────────────────────────────────────────────
-  const succeeded = results.filter(r => r.ok);
-  const failed = results.filter(r => !r.ok);
+  // ── Write log file ────────────────────────────────────────────────────────
+  const logPayload = {
+    runAt: RUN_START.toISOString(),
+    source: browserArg === "fixture" ? `fixture:${path.basename(seedPath)}` : browserArg,
+    baseUrl: BASE_URL,
+    shots: shotLog,
+    summary: {
+      total: shotLog.length,
+      succeeded: shotLog.filter(s => s.ok).length,
+      failed: shotLog.filter(s => !s.ok).length,
+      dirty: shotLog.filter(s => s.ok && s.warnings.length > 0).length,
+    },
+  };
+  const logPath = path.join(OUT_DIR, "capture-log.json");
+  fs.writeFileSync(logPath, JSON.stringify(logPayload, null, 2));
+
+  // ── Console summary ───────────────────────────────────────────────────────
+  const { total, succeeded, failed, dirty } = logPayload.summary;
 
   console.log(`\n${"─".repeat(56)}`);
-  console.log(`Capture complete: ${succeeded.length} succeeded, ${failed.length} failed`);
-  console.log(`Output: ${OUT_DIR}\n`);
+  console.log(`Capture complete: ${succeeded}/${total} succeeded, ${failed} failed, ${dirty} dirty`);
+  console.log(`Log: ${logPath}\n`);
 
-  if (failed.length > 0) {
-    console.log("Failed:");
-    for (const f of failed) console.log(`  ✗  ${f.name}${f.error ? ": " + f.error : ""}`);
+  if (failed > 0) {
+    console.log("Failed shots:");
+    for (const s of shotLog.filter(r => !r.ok)) {
+      console.log(`  ✗  ${s.name}${s.error ? ": " + s.error.split("\n")[0] : ""}`);
+    }
     console.log("");
   }
-  console.log("Succeeded:");
-  for (const s of succeeded) console.log(`  ✓  ${s.name}`);
+
+  if (dirty > 0) {
+    console.log("Shots captured with step warnings (may show wrong state):");
+    for (const s of shotLog.filter(r => r.ok && r.warnings.length > 0)) {
+      console.log(`  ⚠  ${s.name}`);
+      for (const w of s.warnings) {
+        console.log(`       • ${w.label}: ${w.error?.split("\n")[0] ?? "unknown error"}`);
+      }
+    }
+    console.log("");
+  }
+
+  if (failed === 0 && dirty === 0) {
+    console.log("All shots clean ✓");
+  }
 }
 
 main().catch(err => {
