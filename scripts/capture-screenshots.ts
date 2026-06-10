@@ -158,8 +158,7 @@ async function gotoAndSettle(page: Page, url: string): Promise<void> {
 }
 
 async function clickNav(page: Page, label: string): Promise<void> {
-  // hasText matches on full DOM text content (includes hidden spans), so both
-  // "Decks" and "My Decks" will match the button that contains both span variants.
+  // Nav buttons render "Decks", "Collection", "Orders" — use exact short labels.
   await page.locator("button.nav-btn", { hasText: label }).first().click({ timeout: 5_000 });
   await page.waitForTimeout(SETTLE_MS);
 }
@@ -357,7 +356,7 @@ async function main(): Promise<void> {
     });
 
     // 04 — Collection tab
-    await attempt("nav to Collection", () => clickNav(page, "My Collection"));
+    await attempt("nav to Collection", () => clickNav(page, "Collection"));
     await shot(page, "04-desktop-collection.png");
 
     // 05 — Orders tab
@@ -365,7 +364,7 @@ async function main(): Promise<void> {
     await shot(page, "05-desktop-orders.png");
 
     // 06 — Buy list modal open
-    await attempt("nav to Decks for buy list", () => clickNav(page, "My Decks"));
+    await attempt("nav to Decks for buy list", () => clickNav(page, "Decks"));
     await attempt("select deck with need_to_buy cards", async () => {
       // Pick the first deck that has a visible buy-list button
       const decks = page.locator(".deck-list .deck-item");
@@ -406,7 +405,7 @@ async function main(): Promise<void> {
     });
 
     // 08 — Import deck modal open
-    await attempt("nav to Decks for import", () => clickNav(page, "My Decks"));
+    await attempt("nav to Decks for import", () => clickNav(page, "Decks"));
     await attempt("open import panel", async () => {
       await click(page, ".sidebar-header .btn-primary", { hasText: "New" });
       await page.waitForTimeout(SETTLE_MS);
@@ -583,7 +582,7 @@ async function main(): Promise<void> {
     // 19 — Collection import confirmation (inject a fake CSV to trigger the banner)
     // Hard reload first — the orders section leaves theme/panel state that can block nav
     await gotoAndSettle(page, BASE_URL);
-    await attempt("nav to Collection for import", () => clickNav(page, "My Collection"));
+    await attempt("nav to Collection for import", () => clickNav(page, "Collection"));
     await attempt("trigger CSV replace confirmation", async () => {
       const csvContent = "Card Name,Set Code,Collector Number,Quantity,Foil\nLightning Bolt,M11,149,4,No";
       const tmpCsv = path.join(os.tmpdir(), "fetchlist-test-collection.csv");
@@ -604,7 +603,7 @@ async function main(): Promise<void> {
     });
 
     // 20 — Buy flow vendor picker
-    await attempt("nav to Decks for vendor picker", () => clickNav(page, "My Decks"));
+    await attempt("nav to Decks for vendor picker", () => clickNav(page, "Decks"));
     await attempt("select deck with buy-list for vendor picker", async () => {
       const decks = page.locator(".deck-list .deck-item");
       const count = await decks.count();
@@ -630,7 +629,7 @@ async function main(): Promise<void> {
     }
 
     // 22 — Source picker open on a card row
-    await attempt("nav to Decks for source picker", () => clickNav(page, "My Decks"));
+    await attempt("nav to Decks for source picker", () => clickNav(page, "Decks"));
     await attempt("select Atraxa for source picker", async () => {
       await page.locator(".deck-list .deck-item").first().click({ timeout: 5_000 });
       await page.waitForTimeout(600);
@@ -667,7 +666,7 @@ async function main(): Promise<void> {
     });
 
     // 28 — Deck rename inline form
-    await attempt("nav to Decks for rename", () => clickNav(page, "My Decks"));
+    await attempt("nav to Decks for rename", () => clickNav(page, "Decks"));
     await attempt("select first deck for rename", async () => {
       await page.locator(".deck-list .deck-item").first().click({ timeout: 5_000 });
       await page.waitForTimeout(600);
@@ -706,7 +705,7 @@ async function main(): Promise<void> {
     });
 
     // 31 — Undo toast (trigger by clearing collection via Bulk edit panel)
-    await attempt("nav to Collection for undo toast", () => clickNav(page, "My Collection"));
+    await attempt("nav to Collection for undo toast", () => clickNav(page, "Collection"));
     await attempt("open bulk edit panel", async () => {
       await click(page, "button", { hasText: "Bulk edit" });
       await page.waitForTimeout(600);
@@ -750,7 +749,7 @@ async function main(): Promise<void> {
     }
 
     // 32 — Header overflow menu open
-    await attempt("nav to Decks for overflow menu", () => clickNav(page, "My Decks"));
+    await attempt("nav to Decks for overflow menu", () => clickNav(page, "Decks"));
     await attempt("open header overflow menu", async () => {
       await click(page, 'button[aria-label="More options"]');
       await page.waitForTimeout(400);
@@ -762,7 +761,7 @@ async function main(): Promise<void> {
     });
 
     // 33 — Collection bulk edit panel
-    await attempt("nav to Collection for bulk edit panel", () => clickNav(page, "My Collection"));
+    await attempt("nav to Collection for bulk edit panel", () => clickNav(page, "Collection"));
     await attempt("open bulk edit panel for shot", async () => {
       await click(page, "button", { hasText: "Bulk edit" });
       await page.waitForTimeout(600);
@@ -774,7 +773,7 @@ async function main(): Promise<void> {
     });
 
     // 34 — Profile import panel (in sidebar, always visible on desktop)
-    await attempt("nav to Decks for profile import panel", () => clickNav(page, "My Decks"));
+    await attempt("nav to Decks for profile import panel", () => clickNav(page, "Decks"));
     await attempt("open profile import panel", async () => {
       await click(page, "button", { hasText: "Import data" });
       await page.waitForTimeout(600);
