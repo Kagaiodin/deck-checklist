@@ -717,8 +717,7 @@ async function main(): Promise<void> {
       await page.waitForTimeout(400);
     });
     await attempt("confirm clear", async () => {
-      // Second click on the confirm variant of the same button
-      await click(page, "button.bulk-clear-btn", { hasText: "Clear entire collection" });
+      await click(page, "button.bulk-clear-btn", { hasText: "Yes, clear" });
       await page.waitForTimeout(600);
     });
     await shot(page, "31-desktop-undo-toast.png");
