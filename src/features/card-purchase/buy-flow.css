@@ -232,6 +232,7 @@
 .buy-vendor-name {
   font-size: 13px;
   font-weight: 500;
+  color: var(--text);
 }
 
 .buy-vendor-last {
@@ -515,6 +516,7 @@
   border-radius: var(--radius);
   border: 1px solid var(--border);
   background: var(--surface-2);
+  color: inherit;
   cursor: pointer;
   transition: all 0.12s;
   text-align: left;
