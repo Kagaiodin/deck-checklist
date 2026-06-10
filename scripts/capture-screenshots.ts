@@ -407,7 +407,7 @@ async function main(): Promise<void> {
     // 08 — Import deck modal open
     await attempt("nav to Decks for import", () => clickNav(page, "Decks"));
     await attempt("open import panel", async () => {
-      await click(page, ".sidebar-header .btn-primary", { hasText: "New" });
+      await click(page, ".sidebar-search-row .btn-primary", { hasText: "New" });
       await page.waitForTimeout(SETTLE_MS);
     });
     await shot(page, "08-desktop-import-modal.png");
@@ -635,8 +635,8 @@ async function main(): Promise<void> {
       await page.waitForTimeout(600);
     });
     await attempt("open source picker on unacquired card", async () => {
-      // Click the source tag on the first non-acquired card row
-      await page.locator(".card-row:not(.acquired) .source-tag").first().click({ timeout: 5_000 });
+      // Click the source pill on the first non-acquired card row
+      await page.locator(".card-row:not(.acquired) .row-status-pill").first().click({ timeout: 5_000 });
       await page.waitForTimeout(400);
     });
     await shot(page, "22-desktop-source-picker.png");
@@ -678,7 +678,7 @@ async function main(): Promise<void> {
     });
     await shot(page, "28-desktop-deck-rename.png");
     await attempt("cancel rename", async () => {
-      await page.keyboard.press("Escape");
+      await click(page, ".rename-form .btn-ghost", { hasText: "Cancel" });
       await page.waitForTimeout(300);
     });
 
@@ -707,7 +707,9 @@ async function main(): Promise<void> {
     // 31 — Undo toast (trigger by clearing collection via Bulk edit panel)
     await attempt("nav to Collection for undo toast", () => clickNav(page, "Collection"));
     await attempt("open bulk edit panel", async () => {
-      await click(page, "button", { hasText: "Bulk edit" });
+      await click(page, ".collection-overflow-btn");
+      await page.waitForTimeout(300);
+      await click(page, "button.collection-overflow-item", { hasText: "Bulk edit" });
       await page.waitForTimeout(600);
     });
     await attempt("click clear collection", async () => {
@@ -763,7 +765,9 @@ async function main(): Promise<void> {
     // 33 — Collection bulk edit panel
     await attempt("nav to Collection for bulk edit panel", () => clickNav(page, "Collection"));
     await attempt("open bulk edit panel for shot", async () => {
-      await click(page, "button", { hasText: "Bulk edit" });
+      await click(page, ".collection-overflow-btn");
+      await page.waitForTimeout(300);
+      await click(page, "button.collection-overflow-item", { hasText: "Bulk edit" });
       await page.waitForTimeout(600);
     });
     await shot(page, "33-desktop-collection-bulk-edit.png");
@@ -775,12 +779,12 @@ async function main(): Promise<void> {
     // 34 — Profile import panel (in sidebar, always visible on desktop)
     await attempt("nav to Decks for profile import panel", () => clickNav(page, "Decks"));
     await attempt("open profile import panel", async () => {
-      await click(page, "button", { hasText: "Import data" });
+      await click(page, "button.btn-ghost", { hasText: "Import backup" });
       await page.waitForTimeout(600);
     });
     await shot(page, "34-desktop-profile-import.png");
     await attempt("close profile import panel", async () => {
-      await click(page, "button", { hasText: "Import data" });
+      await click(page, "button.btn-ghost", { hasText: "Import backup" });
       await page.waitForTimeout(300);
     });
 
