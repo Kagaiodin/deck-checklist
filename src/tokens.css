@@ -61,6 +61,15 @@ html { overflow-x: hidden; } /* catch-all: prevents root scroll container from f
   --rar-mythic-fg:   #e8721a; --rar-mythic-bg:   rgba(232,114,26,.09);
   --rar-special-fg:  #c084fc; --rar-special-bg:  rgba(192,132,252,.09);
 
+  /* Mana color pills */
+  --mana-w-bg: #e8e4d0; --mana-w-fg: #5c4a1e;
+  --mana-u-bg: #1a56a0; --mana-u-fg: #c8e0f8;
+  --mana-b-bg: #2a2432; --mana-b-fg: #b8a8c8;
+  --mana-r-bg: #c0392b; --mana-r-fg: #fdd8d4;
+  --mana-g-bg: #1a6b3a; --mana-g-fg: #b8e8c8;
+  --mana-c-bg: #6b7280; --mana-c-fg: #e5e7eb;
+  --mana-m-gradient: linear-gradient(135deg, #c0392b 0%, #d4a017 50%, #1a6b3a 100%);
+
   /* Source tags */
   --src-owned-fg:    #4ade80; --src-owned-bg:    rgba(34,197,94,.18);
   --src-ordered-fg:  #60a5fa; --src-ordered-bg:  rgba(59,130,246,.18);

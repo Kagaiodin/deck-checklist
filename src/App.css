@@ -1241,14 +1241,14 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 .color-pill:hover { transform: scale(1.15); }
 .color-pill.active { border-color: #fff; transform: scale(1.15); }
 
-.color-pill-W { background: #e8e4d0; color: #5c4a1e; }
-.color-pill-U { background: #1a56a0; color: #c8e0f8; }
-.color-pill-B { background: #2a2432; color: #b8a8c8; border-color: var(--border); }
-.color-pill-B.active { border-color: #b8a8c8; }
-.color-pill-R { background: #c0392b; color: #fdd8d4; }
-.color-pill-G { background: #1a6b3a; color: #b8e8c8; }
-.color-pill-colorless { background: #6b7280; color: #e5e7eb; }
-.color-pill-multi { background: linear-gradient(135deg, #c0392b 0%, #d4a017 50%, #1a6b3a 100%); color: #fff; }
+.color-pill-W { background: var(--mana-w-bg); color: var(--mana-w-fg); }
+.color-pill-U { background: var(--mana-u-bg); color: var(--mana-u-fg); }
+.color-pill-B { background: var(--mana-b-bg); color: var(--mana-b-fg); border-color: var(--border); }
+.color-pill-B.active { border-color: var(--mana-b-fg); }
+.color-pill-R { background: var(--mana-r-bg); color: var(--mana-r-fg); }
+.color-pill-G { background: var(--mana-g-bg); color: var(--mana-g-fg); }
+.color-pill-colorless { background: var(--mana-c-bg); color: var(--mana-c-fg); }
+.color-pill-multi { background: var(--mana-m-gradient); color: #fff; }
 
 /* (edit-menu-dropdown removed — Bulk tag and Edit are now top-level buttons) */
 
