@@ -71,7 +71,13 @@ html { overflow-x: hidden; } /* catch-all: prevents root scroll container from f
   --mana-r-bg: #c0392b; --mana-r-fg: #fdd8d4;
   --mana-g-bg: #1a6b3a; --mana-g-fg: #b8e8c8;
   --mana-c-bg: #6b7280; --mana-c-fg: #e5e7eb;
-  --mana-m-gradient: linear-gradient(135deg, #c0392b 0%, #d4a017 50%, #1a6b3a 100%);
+  --mana-m-pie: conic-gradient(
+    var(--mana-w-bg) 0deg 71.75deg,
+    var(--mana-u-bg) 72.25deg 143.75deg,
+    var(--mana-b-bg) 144.25deg 215.75deg,
+    var(--mana-r-bg) 216.25deg 287.75deg,
+    var(--mana-g-bg) 288.25deg 360deg
+  );
 
   /* Source tags */
   --src-owned-fg:    #4ade80; --src-owned-bg:    rgba(34,197,94,.18);
