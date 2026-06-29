@@ -252,6 +252,15 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
   const displayMenuRef = useRef<HTMLDivElement>(null);
   const [groupPickerOpen, setGroupPickerOpen] = useState(false);
   const groupPickerRef = useRef<HTMLDivElement>(null);
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+
+  function toggleGroupCollapse(name: string) {
+    setCollapsedGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name); else next.add(name);
+      return next;
+    });
+  }
 
 
   // Coachmark dismissal — persisted per deck ID
@@ -704,17 +713,23 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
         </div>
       )}
 
-      {groups.map(([groupName, cards]) => (
+      {groups.map(([groupName, cards]) => {
+        const isCollapsed = groupBy !== "none" && collapsedGroups.has(groupName);
+        return (
         <div key={groupName} className="card-group">
           {groupBy !== "none" && (
-            <h3 className="group-title">
+            <button
+              className={`group-title group-title-btn${isCollapsed ? " collapsed" : ""}`}
+              onClick={() => toggleGroupCollapse(groupName)}
+            >
+              <span className="group-title-chevron">{isCollapsed ? "▶" : "▼"}</span>
               {groupName.toUpperCase()}
               <span className="group-count">
                 {cards.reduce((s, c) => s + c.quantity, 0)}
               </span>
-            </h3>
+            </button>
           )}
-          <ul className="card-list">
+          {!isCollapsed && <ul className="card-list">
             {selectMode && !editMode && cards.length > 0 && (
               <li className="card-row card-row-select-all" onClick={toggleSelectAll}>
                 <input
@@ -844,9 +859,10 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
               );
             })}
 
-          </ul>
+          </ul>}
         </div>
-      ))}
+        );
+      })}
 
       {visibleCards.length === 0 && (
         <p className="empty-state">
