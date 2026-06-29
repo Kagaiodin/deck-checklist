@@ -64,7 +64,6 @@ function AppInner() {
   const [editingFormatId, setEditingFormatId] = useState<string | null>(null);
   const [formatDraft, setFormatDraft] = useState("");
   const [enrichingDeckIds, setEnrichingDeckIds] = useState<Set<string>>(new Set());
-  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
 
   // ── Sidebar persistence + keyboard shortcut ───────────────────────────────
   useEffect(() => {
@@ -622,30 +621,6 @@ function AppInner() {
     ? state.decks.filter(d => d.name.toLowerCase().includes(sidebarSearch.toLowerCase()))
     : state.decks;
 
-  const hasFormats = filteredDecks.some(d => d.format);
-  const deckGroups: { label: string; decks: typeof filteredDecks }[] = hasFormats
-    ? (() => {
-        const map = new Map<string, typeof filteredDecks>();
-        for (const deck of filteredDecks) {
-          const key = deck.format ? deck.format.toUpperCase() : "Other";
-          if (!map.has(key)) map.set(key, []);
-          map.get(key)!.push(deck);
-        }
-        const groups = Array.from(map.entries()).map(([label, decks]) => ({ label, decks }));
-        const other = groups.find(g => g.label === "Other");
-        const rest = groups.filter(g => g.label !== "Other").sort((a, b) => a.label.localeCompare(b.label));
-        return other ? [...rest, other] : rest;
-      })()
-    : [{ label: "", decks: filteredDecks }];
-
-  function toggleGroup(label: string) {
-    setCollapsedGroups(prev => {
-      const next = new Set(prev);
-      if (next.has(label)) next.delete(label); else next.add(label);
-      return next;
-    });
-  }
-
   return (
     <div className="app">
       {/* ── First-run onboarding modal ────────────────────────────────────── */}
@@ -898,90 +873,73 @@ function AppInner() {
                   <p className="sidebar-empty">No match.</p>
                 ) : (
                   <ul className="deck-list">
-                    {deckGroups.map(group => {
-                      const isCollapsed = collapsedGroups.has(group.label);
+                    {filteredDecks.map(deck => {
+                      const totalCards = deck.cards.reduce((s, c) => s + c.quantity, 0);
+                      const acquiredCards = deck.cards.filter(c => c.acquired).reduce((s, c) => s + c.quantity, 0);
+                      const pct = totalCards > 0 ? Math.round((acquiredCards / totalCards) * 100) : 0;
+                      const isComplete = totalCards > 0 && acquiredCards === totalCards;
+                      const initials = deck.name.replace(/^(Cmdr|EDH|Commander)[:–\-]\s*/i, "").charAt(0).toUpperCase();
+                      const colors = getDeckColorIdentity(deck);
+                      const isDeleting = deletingDeckId === deck.id;
                       return (
-                        <li key={group.label || "__all__"} className="deck-group">
-                          {group.label && (
+                        <li
+                          key={deck.id}
+                          className={`deck-item${activeDeckId === deck.id ? " active" : ""}${isDeleting ? " confirming-delete" : ""}`}
+                          onClick={() => { if (!isDeleting) setActiveDeckId(deck.id); }}
+                          title={!sidebarOpen ? `${deck.name} · ${acquiredCards}/${totalCards} cards` : undefined}
+                        >
+                          {/* Avatar — always visible on rail */}
+                          <div className="deck-av">
+                            {initials}
+                            <div className={`deck-av-dot${isComplete ? " done" : ""}`} />
+                          </div>
+                          {/* Info — fades out on rail */}
+                          <div className="deck-info">
+                            <div className="deck-item-top">
+                              <span className="deck-item-name">{deck.name}</span>
+                              <span className={`deck-item-pct${isComplete ? " complete" : ""}`}>
+                                {isComplete ? "✓" : `${pct}%`}
+                              </span>
+                            </div>
+                            <div className="deck-item-meta">
+                              {colors.length > 0 && (
+                                <span className="deck-color-dots">
+                                  {colors.map(c => <span key={c} className={`deck-color-dot clr-${c.toLowerCase()}`} />)}
+                                </span>
+                              )}
+                              {deck.format && <span className="deck-format-pill">{deck.format.toUpperCase()}</span>}
+                              <span className="deck-item-card-count">· {totalCards} cards</span>
+                              {unmarkingBuiltDeckId === deck.id ? (
+                                <span className="deck-built-confirm" onClick={e => e.stopPropagation()}>
+                                  <span className="deck-built-confirm-label">Unmark?</span>
+                                  <button className="deck-built-confirm-yes" onClick={() => { handleToggleDeckBuilt(deck.id); setUnmarkingBuiltDeckId(null); }}>Yes</button>
+                                  <button className="deck-built-confirm-no" onClick={() => setUnmarkingBuiltDeckId(null)}>No</button>
+                                </span>
+                              ) : (
+                                <button
+                                  className={`deck-built-badge${deck.isBuilt ? " is-built" : ""}`}
+                                  onClick={e => { e.stopPropagation(); deck.isBuilt ? setUnmarkingBuiltDeckId(deck.id) : handleToggleDeckBuilt(deck.id); }}
+                                  title={deck.isBuilt ? "Unmark as built" : "Mark as built"}
+                                >Built</button>
+                              )}
+                            </div>
+                            <div className="deck-item-bar-track">
+                              <div className={`deck-item-bar-fill${isComplete ? " complete" : ""}`} style={{ width: `${pct}%` }} />
+                            </div>
+                          </div>
+                          {isDeleting ? (
+                            <div className="deck-delete-confirm" onClick={e => e.stopPropagation()}>
+                              <span className="deck-delete-confirm-label">Delete?</span>
+                              <button className="deck-delete-yes" onClick={() => { handleDeleteDeck(deck.id); setDeletingDeckId(null); }}>Yes</button>
+                              <button className="deck-delete-no" onClick={() => setDeletingDeckId(null)}>No</button>
+                            </div>
+                          ) : (
                             <button
-                              className={`deck-group-header${isCollapsed ? " collapsed" : ""}`}
-                              onClick={() => toggleGroup(group.label)}
-                            >
-                              <span className="deck-group-chevron">{isCollapsed ? "▶" : "▼"}</span>
-                              <span className="deck-group-label">{group.label}</span>
-                              <span className="deck-group-count">{group.decks.length}</span>
-                            </button>
+                              className="deck-delete-btn"
+                              onClick={e => { e.stopPropagation(); setDeletingDeckId(deck.id); }}
+                              title="Delete deck"
+                            >×</button>
                           )}
-                          {!isCollapsed && group.decks.map(deck => {
-                            const totalCards = deck.cards.reduce((s, c) => s + c.quantity, 0);
-                            const acquiredCards = deck.cards.filter(c => c.acquired).reduce((s, c) => s + c.quantity, 0);
-                            const pct = totalCards > 0 ? Math.round((acquiredCards / totalCards) * 100) : 0;
-                            const isComplete = totalCards > 0 && acquiredCards === totalCards;
-                            const initials = deck.name.replace(/^(Cmdr|EDH|Commander)[:–\-]\s*/i, "").charAt(0).toUpperCase();
-                            const colors = getDeckColorIdentity(deck);
-                            const isDeleting = deletingDeckId === deck.id;
-                            return (
-                              <div
-                                key={deck.id}
-                                className={`deck-item${activeDeckId === deck.id ? " active" : ""}${isDeleting ? " confirming-delete" : ""}${group.label ? " deck-item-grouped" : ""}`}
-                                onClick={() => { if (!isDeleting) setActiveDeckId(deck.id); }}
-                                title={!sidebarOpen ? `${deck.name} · ${acquiredCards}/${totalCards} cards` : undefined}
-                              >
-                                {/* Avatar — always visible on rail */}
-                                <div className="deck-av">
-                                  {initials}
-                                  <div className={`deck-av-dot${isComplete ? " done" : ""}`} />
-                                </div>
-                                {/* Info — fades out on rail */}
-                                <div className="deck-info">
-                                  <div className="deck-item-top">
-                                    <span className="deck-item-name">{deck.name}</span>
-                                    <span className={`deck-item-pct${isComplete ? " complete" : ""}`}>
-                                      {isComplete ? "✓" : `${pct}%`}
-                                    </span>
-                                  </div>
-                                  <div className="deck-item-meta">
-                                    {colors.length > 0 && (
-                                      <span className="deck-color-dots">
-                                        {colors.map(c => <span key={c} className={`deck-color-dot clr-${c.toLowerCase()}`} />)}
-                                      </span>
-                                    )}
-                                    {deck.format && !group.label && <span className="deck-format-pill">{deck.format.toUpperCase()}</span>}
-                                    <span className="deck-item-card-count">· {totalCards} cards</span>
-                                    {unmarkingBuiltDeckId === deck.id ? (
-                                      <span className="deck-built-confirm" onClick={e => e.stopPropagation()}>
-                                        <span className="deck-built-confirm-label">Unmark?</span>
-                                        <button className="deck-built-confirm-yes" onClick={() => { handleToggleDeckBuilt(deck.id); setUnmarkingBuiltDeckId(null); }}>Yes</button>
-                                        <button className="deck-built-confirm-no" onClick={() => setUnmarkingBuiltDeckId(null)}>No</button>
-                                      </span>
-                                    ) : (
-                                      <button
-                                        className={`deck-built-badge${deck.isBuilt ? " is-built" : ""}`}
-                                        onClick={e => { e.stopPropagation(); deck.isBuilt ? setUnmarkingBuiltDeckId(deck.id) : handleToggleDeckBuilt(deck.id); }}
-                                        title={deck.isBuilt ? "Unmark as built" : "Mark as built"}
-                                      >Built</button>
-                                    )}
-                                  </div>
-                                  <div className="deck-item-bar-track">
-                                    <div className={`deck-item-bar-fill${isComplete ? " complete" : ""}`} style={{ width: `${pct}%` }} />
-                                  </div>
-                                </div>
-                                {isDeleting ? (
-                                  <div className="deck-delete-confirm" onClick={e => e.stopPropagation()}>
-                                    <span className="deck-delete-confirm-label">Delete?</span>
-                                    <button className="deck-delete-yes" onClick={() => { handleDeleteDeck(deck.id); setDeletingDeckId(null); }}>Yes</button>
-                                    <button className="deck-delete-no" onClick={() => setDeletingDeckId(null)}>No</button>
-                                  </div>
-                                ) : (
-                                  <button
-                                    className="deck-delete-btn"
-                                    onClick={e => { e.stopPropagation(); setDeletingDeckId(deck.id); }}
-                                    title="Delete deck"
-                                  >×</button>
-                                )}
-                              </div>
-                            );
-                          })}
                         </li>
                       );
                     })}
