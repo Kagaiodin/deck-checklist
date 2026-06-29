@@ -703,6 +703,13 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 .group-count {
   font-size: 12px; font-weight: 400; color: var(--text-muted); letter-spacing: 0;
 }
+.group-title-btn {
+  background: none; border: none; cursor: pointer; width: 100%;
+  text-align: left; padding: 8px 4px 4px; border-radius: var(--radius);
+  transition: background 0.12s;
+}
+.group-title-btn:hover { background: var(--surface-2); }
+.group-title-chevron { font-size: 7px; margin-right: 4px; vertical-align: middle; }
 
 .card-list {
   list-style: none; display: flex; flex-direction: column;
