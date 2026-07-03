@@ -17,6 +17,44 @@
   flex-shrink: 0;
 }
 
+/* ── Linked-file chip (File System Access API save/load) ────────────────── */
+.sidebar-footer-group {
+  display: flex;
+  flex-direction: column;
+}
+.linked-file-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 16px;
+  border-top: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.linked-file-chip-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.linked-file-chip-change {
+  background: none;
+  border: none;
+  color: var(--accent);
+  cursor: pointer;
+  font-size: 11px;
+  padding: 0;
+  flex-shrink: 0;
+}
+.linked-file-chip-change:hover {
+  text-decoration: underline;
+}
+/* Footer immediately after the chip shouldn't double up the top border */
+.linked-file-chip + .sidebar-footer {
+  border-top: none;
+}
+
 /* ── Sidebar footer ─────────────────────────────────────────────────────── */
 .sidebar-footer {
   border-top: 1px solid var(--border);
