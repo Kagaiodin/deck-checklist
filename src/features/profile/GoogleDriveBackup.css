@@ -1,0 +1,177 @@
+/*
+ * GoogleDriveBackup.css
+ * Styles for the Google Drive backup block (Tier 2, issue #52):
+ *   - .gdrive--sidebar  desktop footer, sibling to the Tier 1 linked-file chip
+ *   - .gdrive--mobile   boxed unit inside the deck-picker sheet footer
+ */
+
+.gdrive {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ── Sidebar variant — sits below the Export/Import row, own divider ────── */
+.gdrive--sidebar {
+  margin-top: 8px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--border-dim, var(--border));
+}
+
+/* ── Mobile variant — boxed so identity + actions read as one unit ──────── */
+.gdrive--mobile .gdrive-card {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 11px;
+}
+.gdrive--mobile .btn {
+  padding: 11px 12px;
+  font-size: 13px;
+}
+
+.gdrive-btn-block {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+
+/* ── Connected card ───────────────────────────────────────────────────── */
+.gdrive-card {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.gdrive-id {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.gdrive-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, var(--accent), var(--accent-deep));
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+}
+.gdrive-who {
+  flex: 1;
+  min-width: 0;
+  line-height: 1.25;
+}
+.gdrive-who-label {
+  display: block;
+  font-family: ui-monospace, monospace;
+  font-size: 9.5px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--text-dim, var(--text-muted));
+}
+.gdrive-who-email {
+  display: block;
+  font-size: 12px;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.gdrive-disconnect {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 15px;
+  line-height: 1;
+  padding: 4px;
+  flex-shrink: 0;
+}
+.gdrive-disconnect:hover {
+  color: var(--danger);
+}
+
+.gdrive-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.gdrive-actions .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+.gdrive-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.gdrive-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--success);
+  flex-shrink: 0;
+}
+
+/* ── Notice (reconnect / offline / quota) — one flexible treatment ──────── */
+.gdrive-notice {
+  display: flex;
+  gap: 9px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+}
+.gdrive-notice-icon {
+  flex-shrink: 0;
+  color: var(--warn);
+  margin-top: 1px;
+}
+.gdrive-notice-icon.is-offline {
+  color: var(--text-muted);
+}
+.gdrive-notice strong {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 1px;
+}
+.gdrive-notice p {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+/* ── Spinner ──────────────────────────────────────────────────────────── */
+.gdrive-spin {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--accent-tint-35);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: gdrive-spin .7s linear infinite;
+  flex-shrink: 0;
+}
+.gdrive-spin--light {
+  border-color: rgba(255, 255, 255, .35);
+  border-top-color: #fff;
+}
+@keyframes gdrive-spin {
+  to { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gdrive-spin { animation: none; }
+}

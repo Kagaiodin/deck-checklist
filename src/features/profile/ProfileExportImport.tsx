@@ -4,6 +4,7 @@ import {
   supportsFileSystemAccess, getLinkedFileName,
   pickSaveHandle, pickOpenHandle, writeLinkedFile, readLinkedFile,
 } from "../../utils/fileSystemAccess";
+import { GoogleDriveBackup } from "./GoogleDriveBackup";
 import "./ProfileExportImport.css";
 
 export interface ToastInput {
@@ -211,6 +212,17 @@ export function ProfileExportImport({
               ↑ Import backup
             </button>
           </div>
+          <GoogleDriveBackup
+            decks={decks}
+            allErrors={allErrors}
+            collection={collection}
+            collectionMeta={collectionMeta}
+            orders={orders}
+            vendorHistory={vendorHistory}
+            onImport={onImport}
+            showToast={showToast}
+            variant="sidebar"
+          />
         </div>
       )}
 

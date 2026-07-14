@@ -1,0 +1,126 @@
+/* ── Backdrop ────────────────────────────────────────────────────────────── */
+.drive-conflict-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, .72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 300;
+  padding: 16px;
+}
+
+/* ── Modal ───────────────────────────────────────────────────────────────── */
+.drive-conflict-modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-menu);
+  width: 100%;
+  max-width: 400px;
+  padding: 18px 20px 16px;
+}
+
+.drive-conflict-kicker {
+  font-family: ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--warn);
+  margin-bottom: 8px;
+}
+
+.drive-conflict-modal h4 {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -.01em;
+  margin-bottom: 6px;
+}
+
+.drive-conflict-lead {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin-bottom: 14px;
+}
+
+/* ── Options ─────────────────────────────────────────────────────────────── */
+.drive-conflict-opts {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.drive-conflict-opt {
+  display: flex;
+  gap: 11px;
+  align-items: flex-start;
+  text-align: left;
+  width: 100%;
+  background: var(--surface-2);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+  cursor: pointer;
+}
+.drive-conflict-opt:hover {
+  border-color: var(--accent-light);
+}
+.drive-conflict-opt.is-sel {
+  border-color: var(--accent);
+  background: var(--accent-tint-12);
+}
+.drive-conflict-radio {
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  flex-shrink: 0;
+  margin-top: 2px;
+  display: grid;
+  place-items: center;
+}
+.drive-conflict-opt.is-sel .drive-conflict-radio {
+  border-color: var(--accent);
+}
+.drive-conflict-opt.is-sel .drive-conflict-radio::after {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.drive-conflict-opt-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.drive-conflict-opt-top {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+}
+.drive-conflict-opt-when {
+  font-family: ui-monospace, monospace;
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+.drive-conflict-opt-stat {
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
+/* ── Caution + footer ────────────────────────────────────────────────────── */
+.drive-conflict-caution {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  line-height: 1.45;
+  margin-bottom: 14px;
+}
+.drive-conflict-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
