@@ -68,13 +68,15 @@ describe("OrdersPage", () => {
     expect(screen.getByText("Card Kingdom")).toBeInTheDocument();
   });
 
-  it("shows Late pill for overdue active orders", () => {
+  it("shows overdue signal on late order card without a LATE pill", () => {
     const lateOrder = mockOrder({
       id: "late1",
       expectedArrival: Date.now() - 3 * 24 * 60 * 60 * 1000, // 3 days ago
     });
-    render(<OrdersPage {...defaultProps} orders={[lateOrder]} />);
-    expect(screen.getByText("Late")).toBeInTheDocument();
+    const { container } = render(<OrdersPage {...defaultProps} orders={[lateOrder]} />);
+    const etaWhen = container.querySelector(".ocard-eta-when.late");
+    expect(etaWhen?.textContent).toMatch(/days overdue/);
+    expect(container.querySelector(".ocard-pill.late")).not.toBeInTheDocument();
   });
 
   it("does NOT show Active pill for normal active orders", () => {
@@ -88,9 +90,10 @@ describe("OrdersPage", () => {
       id: "late1",
       expectedArrival: Date.now() - 2 * 24 * 60 * 60 * 1000,
     });
-    render(<OrdersPage {...defaultProps} orders={[lateOrder]} />);
-    // Use specific pattern to match the meta span, not the ETA "X days overdue" span
-    expect(screen.getByText(/orders? overdue/)).toBeInTheDocument();
+    const { container } = render(<OrdersPage {...defaultProps} orders={[lateOrder]} />);
+    // Digits are wrapped in a .num span, so match on the meta element's full text content
+    const meta = container.querySelector(".orders-overdue-meta");
+    expect(meta?.textContent).toMatch(/orders? overdue/);
   });
 
   it("calls onMarkReceived when mark received button clicked", () => {
@@ -124,7 +127,8 @@ describe("OrdersPage", () => {
         { cardName: "Mana Crypt", quantity: 1 },
       ],
     });
-    render(<OrdersPage {...defaultProps} orders={[order]} />);
-    expect(screen.getByText("3")).toBeInTheDocument();
+    const { container } = render(<OrdersPage {...defaultProps} orders={[order]} />);
+    const cardsCell = container.querySelector(".ocard-cards-cell");
+    expect(cardsCell?.textContent).toBe("3 cards");
   });
 });
