@@ -173,10 +173,9 @@
 .ocard.state-ok::before     { background: var(--ok); }
 .ocard.state-muted::before  { background: var(--ocard-dim); opacity: 0.4; }
 
-/* Late row: faint danger wash */
+/* Late row: flat surface, tinted border only (no gradient wash) */
 .ocard.state-late {
-  border-color: rgba(224, 83, 83, 0.3);
-  background: linear-gradient(180deg, rgba(224, 83, 83, 0.04) 0%, var(--ocard-bg) 60%);
+  border-color: color-mix(in srgb, var(--danger) 30%, transparent);
 }
 
 .ocard.state-cancelled {
@@ -191,10 +190,9 @@
   background: var(--ocard-hover);
   border-color: var(--ocard-border-strong);
 }
-/* Keep late hover tint while respecting card-hover background */
+/* Late hover: standard card hover surface, border stays tinted */
 .ocard.state-late:hover {
-  border-color: rgba(224, 83, 83, 0.4);
-  background: linear-gradient(180deg, rgba(224, 83, 83, 0.06) 0%, var(--ocard-hover) 70%);
+  border-color: color-mix(in srgb, var(--danger) 40%, transparent);
 }
 
 .ocard:hover .ocard-actions { opacity: 1; pointer-events: auto; }
