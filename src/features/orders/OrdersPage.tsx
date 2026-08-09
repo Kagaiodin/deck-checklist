@@ -23,12 +23,12 @@ function totalQty(order: Order): number {
   return order.cards.reduce((s, c) => s + c.quantity, 0);
 }
 
-function etaInfo(expectedArrival: number | undefined): { label: string; cls: string } | null {
+function etaInfo(expectedArrival: number | undefined): { label: string; cls: string; days?: number } | null {
   if (!expectedArrival) return null;
   const d = daysFromNow(expectedArrival);
   if (d < 0) {
     const n = daysOverdue(expectedArrival);
-    return { label: `${n} day${n !== 1 ? "s" : ""} overdue`, cls: "late" };
+    return { label: `${n} day${n !== 1 ? "s" : ""} overdue`, cls: "late", days: n };
   }
   if (d === 0) return { label: "Arrives today", cls: "warn" };
   if (d === 1) return { label: "Arrives tomorrow", cls: "warn" };
@@ -36,7 +36,7 @@ function etaInfo(expectedArrival: number | undefined): { label: string; cls: str
     const weekday = new Date(expectedArrival).toLocaleDateString(undefined, { weekday: "long" });
     return { label: `Arrives ${weekday}`, cls: "" };
   }
-  return { label: formatShortDate(expectedArrival), cls: "" };
+  return { label: `Arrives ${formatShortDate(expectedArrival)}`, cls: "" };
 }
 
 // ── Timeline helpers ──────────────────────────────────────────────────────────
@@ -48,6 +48,8 @@ interface TlStep {
   when: string;
   what: string;
   sub?: string;
+  subVariant?: "mono" | "late";
+  subDays?: number;
 }
 
 function buildTimeline(order: Order & { isLate: boolean }): TlStep[] {
@@ -71,6 +73,7 @@ function buildTimeline(order: Order & { isLate: boolean }): TlStep[] {
       when: "—",
       what: "Shipped",
       sub: `${carrierName} ${order.trackingNumber}`,
+      subVariant: "mono",
     });
   }
 
@@ -79,16 +82,18 @@ function buildTimeline(order: Order & { isLate: boolean }): TlStep[] {
     let dot: TlDot = "pending";
     let what = "Expected delivery";
     let sub: string | undefined;
+    let subVariant: TlStep["subVariant"];
+    let subDays: number | undefined;
     if (order.status === "received") {
       dot = "done"; what = "Delivered";
     } else if (order.isLate) {
       const n = daysOverdue(order.expectedArrival);
-      dot = "late"; sub = `${n} day${n !== 1 ? "s" : ""} late`;
+      dot = "late"; sub = `${n} day${n !== 1 ? "s" : ""} late`; subVariant = "late"; subDays = n;
     } else {
       const d = daysFromNow(order.expectedArrival);
       if (d <= 1) dot = "warn";
     }
-    steps.push({ dot, when: formatShortDate(order.expectedArrival), what, sub });
+    steps.push({ dot, when: formatShortDate(order.expectedArrival), what, sub, subVariant, subDays });
   }
 
   return steps;
@@ -110,14 +115,20 @@ interface OrdersPageProps {
 
 // ── Shared sub-components ─────────────────────────────────────────────────────
 
-function TlRow({ dot, when, what, sub }: TlStep) {
+function TlRow({ dot, when, what, sub, subVariant, subDays }: TlStep) {
   return (
     <div className="tl-row">
       <span className={`tl-dot ${dot}`} />
       <span className="tl-when">{when}</span>
       <span className="tl-what">
         {what}
-        {sub && <span className="tl-sub">{sub}</span>}
+        {sub && (
+          <span className={`tl-sub${subVariant ? ` ${subVariant}` : ""}`}>
+            {subVariant === "late" && subDays !== undefined
+              ? <><span className="num">{subDays}</span> day{subDays !== 1 ? "s" : ""} late</>
+              : sub}
+          </span>
+        )}
       </span>
     </div>
   );
@@ -343,7 +354,7 @@ function OCard({
         </div>
 
         <div className="ocard-cards-cell">
-          {qty}<span className="lbl"> card{qty !== 1 ? "s" : ""}</span>
+          <span className="num">{qty}</span><span className="lbl"> card{qty !== 1 ? "s" : ""}</span>
         </div>
 
         <div className="ocard-actions">
@@ -379,10 +390,13 @@ function OCard({
         <div className="ocard-eta">
           {order.status === "active" && eta ? (
             <>
-              <span className={`ocard-eta-when ${eta.cls}`}>{eta.label}</span>
-              {isLate && <span className="ocard-pill late">Late</span>}
+              <span className={`ocard-eta-when ${eta.cls}`}>
+                {eta.cls === "late" && eta.days !== undefined
+                  ? <><span className="num">{eta.days}</span> day{eta.days !== 1 ? "s" : ""} overdue</>
+                  : eta.label}
+              </span>
               {isWarnTomorrow && <span className="ocard-pill warn">Arrives tomorrow</span>}
-              {order.expectedArrival && (
+              {eta.cls === "late" && order.expectedArrival && (
                 <>
                   <span className="ocard-eta-dot">·</span>
                   <span className="ocard-eta-exp">Expected {formatShortDate(order.expectedArrival)}</span>
@@ -420,7 +434,7 @@ function OCard({
             <span className="arrow">↗</span>
           </a>
         ) : order.status === "active" ? (
-          <span className="ocard-tracking-empty">— no tracking</span>
+          <span className="ocard-tracking-empty">No tracking</span>
         ) : null}
       </div>
 
@@ -829,12 +843,18 @@ export function OrdersPage({
 
               <div className="orders-listmeta">
                 {filter === "active" && overdueCount > 0 && (
-                  <span className="orders-overdue-meta">⚠ {overdueCount} order{overdueCount !== 1 ? "s" : ""} overdue</span>
+                  <span className="orders-overdue-meta">
+                    ⚠ <span className="num">{overdueCount}</span> order{overdueCount !== 1 ? "s" : ""} overdue
+                  </span>
                 )}
                 <span>
-                  {sorted.length} order{sorted.length !== 1 ? "s" : ""}
-                  {filter === "active" && cardsInFlight > 0 && ` · ${cardsInFlight} card${cardsInFlight !== 1 ? "s" : ""} in flight`}
-                  {filter === "active" && activeSpend > 0 && <span className="orders-spend-meta"> · ${activeSpend.toFixed(2)} tracked</span>}
+                  <span className="num">{sorted.length}</span> order{sorted.length !== 1 ? "s" : ""}
+                  {filter === "active" && cardsInFlight > 0 && (
+                    <> · <span className="num">{cardsInFlight}</span> card{cardsInFlight !== 1 ? "s" : ""} in flight</>
+                  )}
+                  {filter === "active" && activeSpend > 0 && (
+                    <span className="orders-spend-meta"> · ${activeSpend.toFixed(2)} tracked</span>
+                  )}
                 </span>
               </div>
 
