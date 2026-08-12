@@ -1,5 +1,10 @@
 import { useRef, useState } from "react";
 import type { Deck, ErrorQueueItem, Collection, CollectionMeta, Order, ProfileExport } from "../../types/index";
+import {
+  supportsFileSystemAccess, getLinkedFileName,
+  pickSaveHandle, pickOpenHandle, writeLinkedFile, readLinkedFile,
+} from "../../utils/fileSystemAccess";
+import { GoogleDriveBackup } from "./GoogleDriveBackup";
 import "./ProfileExportImport.css";
 
 export interface ToastInput {
@@ -40,11 +45,11 @@ export function ProfileExportImport({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [replaceMode, setReplaceMode] = useState(false);
   const [panelError, setPanelError] = useState<string | null>(null);
+  const [linkedFileName, setLinkedFileName] = useState<string | null>(getLinkedFileName());
+  const fsaSupported = supportsFileSystemAccess();
 
-  // ── Export ───────────────────────────────────────────────────────────────────
-  function handleExport() {
-    const filename = `fetchlist-backup-${new Date().toISOString().slice(0, 10)}.json`;
-    const payload: ProfileExport = {
+  function buildPayload(): ProfileExport {
+    return {
       version: 1,
       exportedAt: new Date().toISOString(),
       decks,
@@ -54,70 +59,119 @@ export function ProfileExportImport({
       orders,
       vendorHistory,
     };
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  }
+
+  // ── Export ───────────────────────────────────────────────────────────────────
+  async function handleExport() {
+    const filename = `fetchlist-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    const contents = JSON.stringify(buildPayload(), null, 2);
+
+    if (fsaSupported) {
+      try {
+        if (!getLinkedFileName()) await pickSaveHandle(filename);
+        await writeLinkedFile(contents);
+        setLinkedFileName(getLinkedFileName());
+        showToast({ title: "Saved to file", sub: getLinkedFileName() ?? undefined, variant: "success", autoDismiss: 2000 });
+        return;
+      } catch (err) {
+        if ((err as DOMException)?.name === "AbortError") return; // user dismissed the picker
+        // fall through to the download fallback below
+      }
+    }
+
+    const blob = new Blob([contents], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     Object.assign(document.createElement("a"), { href: url, download: filename }).click();
     URL.revokeObjectURL(url);
     showToast({ title: "Profile exported", sub: filename, variant: "success", autoDismiss: 2000 });
   }
 
+  async function handleChangeLinkedFile() {
+    try {
+      await pickSaveHandle(`fetchlist-backup-${new Date().toISOString().slice(0, 10)}.json`);
+      setLinkedFileName(getLinkedFileName());
+    } catch (err) {
+      if ((err as DOMException)?.name !== "AbortError") throw err;
+    }
+  }
+
   // ── Import ───────────────────────────────────────────────────────────────────
+  function processImportedJson(rawText: string): boolean {
+    let raw: unknown;
+    try {
+      raw = JSON.parse(rawText);
+    } catch {
+      setPanelError("File could not be read. Make sure it's a Fetchlist backup (.json).");
+      return false;
+    }
+
+    // Shape validation
+    if (!raw || typeof raw !== "object" || !("version" in raw) ||
+        !("decks" in raw || "collection" in raw || "orders" in raw)) {
+      setPanelError("This doesn't look like a Fetchlist backup file.");
+      return false;
+    }
+
+    const data = raw as ProfileExport;
+
+    // Warn for future versions but still attempt import
+    if ((data.version as number) > 1) {
+      showToast({
+        title: "Newer backup format",
+        sub: "Some data may not import correctly.",
+        variant: "warn",
+      });
+    }
+
+    const counts = onImport(data, replaceMode);
+
+    // Build toast summary — omit zero-count domains
+    const parts: string[] = [];
+    if (counts.newDecks > 0) parts.push(`${counts.newDecks} deck${counts.newDecks !== 1 ? "s" : ""}`);
+    if (counts.newCards > 0) parts.push(`${counts.newCards} collection cards`);
+    if (counts.newOrders > 0) parts.push(`${counts.newOrders} order${counts.newOrders !== 1 ? "s" : ""}`);
+
+    if (parts.length === 0) {
+      showToast({
+        title: "Nothing new to import",
+        sub: "All items already exist locally.",
+        variant: "neutral",
+        autoDismiss: 3000,
+      });
+    } else {
+      showToast({ title: "Import complete", sub: `${parts.join(" · ")} added`, variant: "success" });
+    }
+
+    setPanelError(null);
+    setReplaceMode(false);
+    onToggleImportPanel();
+    return true;
+  }
+
   function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = "";
 
     const reader = new FileReader();
-    reader.onload = ev => {
-      try {
-        const raw = JSON.parse(ev.target?.result as string);
-
-        // Shape validation
-        if (!raw || typeof raw !== "object" || !raw.version ||
-            (!raw.decks && !raw.collection && !raw.orders)) {
-          setPanelError("This doesn't look like a Fetchlist backup file.");
-          return;
-        }
-
-        const data = raw as ProfileExport;
-
-        // Warn for future versions but still attempt import
-        if ((data.version as number) > 1) {
-          showToast({
-            title: "Newer backup format",
-            sub: "Some data may not import correctly.",
-            variant: "warn",
-          });
-        }
-
-        const counts = onImport(data, replaceMode);
-
-        // Build toast summary — omit zero-count domains
-        const parts: string[] = [];
-        if (counts.newDecks > 0) parts.push(`${counts.newDecks} deck${counts.newDecks !== 1 ? "s" : ""}`);
-        if (counts.newCards > 0) parts.push(`${counts.newCards} collection cards`);
-        if (counts.newOrders > 0) parts.push(`${counts.newOrders} order${counts.newOrders !== 1 ? "s" : ""}`);
-
-        if (parts.length === 0) {
-          showToast({
-            title: "Nothing new to import",
-            sub: "All items already exist locally.",
-            variant: "neutral",
-            autoDismiss: 3000,
-          });
-        } else {
-          showToast({ title: "Import complete", sub: `${parts.join(" · ")} added`, variant: "success" });
-        }
-
-        // Reset panel
-        setPanelError(null);
-        setReplaceMode(false);
-        onToggleImportPanel();
-      } catch {
-        setPanelError("File could not be read. Make sure it's a Fetchlist backup (.json).");
-      }
-    };
+    reader.onload = ev => processImportedJson(ev.target?.result as string);
     reader.readAsText(file);
+  }
+
+  async function handleChooseFile() {
+    if (!fsaSupported) {
+      fileInputRef.current?.click();
+      return;
+    }
+    try {
+      await pickOpenHandle();
+      setLinkedFileName(getLinkedFileName());
+      const text = await readLinkedFile();
+      processImportedJson(text);
+    } catch (err) {
+      if ((err as DOMException)?.name === "AbortError") return; // user dismissed the picker
+      setPanelError("File could not be read. Make sure it's a Fetchlist backup (.json).");
+    }
   }
 
   function handleCancel() {
@@ -140,16 +194,35 @@ export function ProfileExportImport({
 
       {/* Footer row — hidden in mobile-sheet context (buttons live in deck-picker-footer instead) */}
       {!hideFooter && (
-        <div className="sidebar-footer">
-          <button className="btn btn-ghost btn-sm" onClick={handleExport}>
-            ↓ Export backup
-          </button>
-          <button
-            className={`btn btn-ghost btn-sm${importPanelOpen ? " active" : ""}`}
-            onClick={onToggleImportPanel}
-          >
-            ↑ Import backup
-          </button>
+        <div className="sidebar-footer-group">
+          {linkedFileName && (
+            <div className="linked-file-chip">
+              <span className="linked-file-chip-name" title={linkedFileName}>📎 linked: {linkedFileName}</span>
+              <button className="linked-file-chip-change" onClick={handleChangeLinkedFile}>change</button>
+            </div>
+          )}
+          <div className="sidebar-footer">
+            <button className="btn btn-ghost btn-sm" onClick={handleExport}>
+              ↓ Export backup
+            </button>
+            <button
+              className={`btn btn-ghost btn-sm${importPanelOpen ? " active" : ""}`}
+              onClick={onToggleImportPanel}
+            >
+              ↑ Import backup
+            </button>
+          </div>
+          <GoogleDriveBackup
+            decks={decks}
+            allErrors={allErrors}
+            collection={collection}
+            collectionMeta={collectionMeta}
+            orders={orders}
+            vendorHistory={vendorHistory}
+            onImport={onImport}
+            showToast={showToast}
+            variant="sidebar"
+          />
         </div>
       )}
 
@@ -191,7 +264,7 @@ export function ProfileExportImport({
                   ? { borderColor: "var(--danger)", color: "var(--danger)" }
                   : { background: "var(--accent)", borderColor: "var(--accent)", color: "#fff" }),
               }}
-              onClick={() => fileInputRef.current?.click()}
+              onClick={handleChooseFile}
             >
               {replaceMode ? "Choose file & replace" : "Choose file"}
             </button>

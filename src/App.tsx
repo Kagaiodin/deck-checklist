@@ -16,6 +16,7 @@ import { CollectionPage } from "./features/collection/CollectionPage";
 import { OrdersPage } from "./features/orders/OrdersPage";
 import { OnboardingModal } from "./features/onboarding/OnboardingModal";
 import { ProfileExportImport } from "./features/profile/ProfileExportImport";
+import { GoogleDriveBackup } from "./features/profile/GoogleDriveBackup";
 import { ThemeToggle } from "./components/ThemeToggle";
 import { AppLogo } from "./components/AppLogo";
 import type { ToastInput } from "./features/profile/ProfileExportImport";
@@ -811,6 +812,17 @@ function AppInner() {
                         onClick={() => setImportPanelOpen(v => !v)}
                       >↑ Import backup</button>
                     </div>
+                    <GoogleDriveBackup
+                      decks={state.decks}
+                      allErrors={allErrors}
+                      collection={collection}
+                      collectionMeta={collectionMeta}
+                      orders={orders}
+                      vendorHistory={recentVendors}
+                      onImport={handleProfileImport}
+                      showToast={showToast}
+                      variant="mobile"
+                    />
                     {importPanelOpen && (
                       <ProfileExportImport
                         decks={state.decks}
