@@ -500,7 +500,7 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 .sidebar-backup {
   overflow: hidden;
   transition: max-height 250ms cubic-bezier(0.4, 0, 0.2, 1), opacity 150ms;
-  max-height: 200px;
+  max-height: 500px;
 }
 .deck-sidebar.sidebar-collapsed .sidebar-backup {
   max-height: 0; opacity: 0; pointer-events: none;
