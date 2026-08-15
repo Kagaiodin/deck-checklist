@@ -500,7 +500,12 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 .sidebar-backup {
   overflow: hidden;
   transition: max-height 250ms cubic-bezier(0.4, 0, 0.2, 1), opacity 150ms;
-  max-height: 60px;
+  /* Generous ceiling, not a tight fit: this wraps the linked-file chip,
+     footer buttons, and GoogleDriveBackup's sidebar variant (which grows
+     across connect/connected/error states) — none of it is user-expanding
+     like the old inline import panel was, so headroom here costs nothing
+     visually and avoids re-clipping once Drive is configured. */
+  max-height: 320px;
 }
 .deck-sidebar.sidebar-collapsed .sidebar-backup {
   max-height: 0; opacity: 0; pointer-events: none;

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { ProfileExport } from "../../types/index";
 import type { ToastInput } from "./ProfileExportImport";
+import { supportsFileSystemAccess, pickOpenHandle, readLinkedFile } from "../../utils/fileSystemAccess";
 import "./ImportBackupModal.css";
 
 interface Props {
@@ -15,6 +16,7 @@ export function ImportBackupModal({ onImport, showToast, onClose }: Props) {
   const chooseFileRef = useRef<HTMLButtonElement>(null);
   const [replaceMode, setReplaceMode] = useState(false);
   const [panelError, setPanelError] = useState<string | null>(null);
+  const fsaSupported = supportsFileSystemAccess();
 
   // Focus trap + Escape key — same pattern as OnboardingModal
   useEffect(() => {
@@ -48,59 +50,78 @@ export function ImportBackupModal({ onImport, showToast, onClose }: Props) {
     };
   }, [onClose]);
 
+  function processImportedJson(rawText: string): void {
+    let raw: unknown;
+    try {
+      raw = JSON.parse(rawText);
+    } catch {
+      setPanelError("File could not be read. Make sure it's a Fetchlist backup (.json).");
+      return;
+    }
+
+    // Shape validation
+    if (!raw || typeof raw !== "object" || !("version" in raw) ||
+        !("decks" in raw || "collection" in raw || "orders" in raw)) {
+      setPanelError("This doesn't look like a Fetchlist backup file.");
+      return;
+    }
+
+    const data = raw as ProfileExport;
+
+    // Warn for future versions but still attempt import
+    if ((data.version as number) > 1) {
+      showToast({
+        title: "Newer backup format",
+        sub: "Some data may not import correctly.",
+        variant: "warn",
+      });
+    }
+
+    const counts = onImport(data, replaceMode);
+
+    // Build toast summary — omit zero-count domains
+    const parts: string[] = [];
+    if (counts.newDecks > 0) parts.push(`${counts.newDecks} deck${counts.newDecks !== 1 ? "s" : ""}`);
+    if (counts.newCards > 0) parts.push(`${counts.newCards} collection cards`);
+    if (counts.newOrders > 0) parts.push(`${counts.newOrders} order${counts.newOrders !== 1 ? "s" : ""}`);
+
+    if (parts.length === 0) {
+      showToast({
+        title: "Nothing new to import",
+        sub: "All items already exist locally.",
+        variant: "neutral",
+        autoDismiss: 3000,
+      });
+    } else {
+      showToast({ title: "Import complete", sub: `${parts.join(" · ")} added`, variant: "success" });
+    }
+
+    onClose();
+  }
+
   function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = "";
 
     const reader = new FileReader();
-    reader.onload = ev => {
-      try {
-        const raw = JSON.parse(ev.target?.result as string);
-
-        // Shape validation
-        if (!raw || typeof raw !== "object" || !raw.version ||
-            (!raw.decks && !raw.collection && !raw.orders)) {
-          setPanelError("This doesn't look like a Fetchlist backup file.");
-          return;
-        }
-
-        const data = raw as ProfileExport;
-
-        // Warn for future versions but still attempt import
-        if ((data.version as number) > 1) {
-          showToast({
-            title: "Newer backup format",
-            sub: "Some data may not import correctly.",
-            variant: "warn",
-          });
-        }
-
-        const counts = onImport(data, replaceMode);
-
-        // Build toast summary — omit zero-count domains
-        const parts: string[] = [];
-        if (counts.newDecks > 0) parts.push(`${counts.newDecks} deck${counts.newDecks !== 1 ? "s" : ""}`);
-        if (counts.newCards > 0) parts.push(`${counts.newCards} collection cards`);
-        if (counts.newOrders > 0) parts.push(`${counts.newOrders} order${counts.newOrders !== 1 ? "s" : ""}`);
-
-        if (parts.length === 0) {
-          showToast({
-            title: "Nothing new to import",
-            sub: "All items already exist locally.",
-            variant: "neutral",
-            autoDismiss: 3000,
-          });
-        } else {
-          showToast({ title: "Import complete", sub: `${parts.join(" · ")} added`, variant: "success" });
-        }
-
-        onClose();
-      } catch {
-        setPanelError("File could not be read. Make sure it's a Fetchlist backup (.json).");
-      }
-    };
+    reader.onload = ev => processImportedJson(ev.target?.result as string);
     reader.readAsText(file);
+  }
+
+  async function handleChooseFile() {
+    if (!fsaSupported) {
+      fileInputRef.current?.click();
+      return;
+    }
+    try {
+      await pickOpenHandle();
+      const text = await readLinkedFile();
+      processImportedJson(text);
+    } catch (err) {
+      if ((err as DOMException)?.name === "AbortError") return; // user dismissed the picker
+      setPanelError("File could not be read. Make sure it's a Fetchlist backup (.json).");
+    }
   }
 
   return (
@@ -160,7 +181,7 @@ export function ImportBackupModal({ onImport, showToast, onClose }: Props) {
           <button
             className={`btn btn-sm${replaceMode ? " import-backup-btn-danger" : " btn-primary"}`}
             style={{ flex: 1 }}
-            onClick={() => fileInputRef.current?.click()}
+            onClick={handleChooseFile}
             ref={chooseFileRef}
           >
             {replaceMode ? "Choose file & replace" : "Choose file"}

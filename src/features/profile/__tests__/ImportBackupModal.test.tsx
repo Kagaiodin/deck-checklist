@@ -1,6 +1,7 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { ImportBackupModal } from "../ImportBackupModal";
+import { clearLinkedHandle } from "../../../utils/fileSystemAccess";
 
 const baseProps = {
   onImport: vi.fn(() => ({ newDecks: 1, newCards: 0, newOrders: 0 })),
@@ -13,7 +14,28 @@ function uploadFile(input: Element, contents: string, name = "fetchlist-backup-2
   fireEvent.change(input, { target: { files: [file] } });
 }
 
+function makeHandle(name: string, overrides: Partial<globalThis.FileSystemFileHandle> = {}): globalThis.FileSystemFileHandle {
+  return {
+    kind: "file",
+    name,
+    getFile: vi.fn(),
+    createWritable: vi.fn().mockResolvedValue({ write: vi.fn(), close: vi.fn() }),
+    queryPermission: vi.fn().mockResolvedValue("granted"),
+    requestPermission: vi.fn().mockResolvedValue("granted"),
+    ...overrides,
+  } as globalThis.FileSystemFileHandle;
+}
+
 describe("ImportBackupModal", () => {
+  afterEach(() => {
+    // @ts-expect-error test cleanup
+    delete window.showSaveFilePicker;
+    // @ts-expect-error test cleanup
+    delete window.showOpenFilePicker;
+    clearLinkedHandle();
+    vi.restoreAllMocks();
+  });
+
   it("calls onClose on Escape", () => {
     const onClose = vi.fn();
     render(<ImportBackupModal {...baseProps} onClose={onClose} />);
@@ -70,6 +92,23 @@ describe("ImportBackupModal", () => {
     expect(showToast).toHaveBeenCalledWith(
       expect.objectContaining({ title: "Import complete", sub: "2 decks · 3 collection cards added" })
     );
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("uses the File System Access open picker when supported, instead of the hidden input", async () => {
+    const payload = { version: 1, decks: [], collection: {}, orders: [] };
+    const handle = makeHandle("fetchlist-backup.json", {
+      getFile: vi.fn().mockResolvedValue({ text: () => Promise.resolve(JSON.stringify(payload)) }),
+    });
+    window.showSaveFilePicker = vi.fn(); // supportsFileSystemAccess() gates on this existing
+    window.showOpenFilePicker = vi.fn().mockResolvedValue([handle]);
+    const onImport = vi.fn().mockReturnValue({ newDecks: 1, newCards: 0, newOrders: 0 });
+    const onClose = vi.fn();
+
+    render(<ImportBackupModal {...baseProps} onImport={onImport} onClose={onClose} />);
+    fireEvent.click(screen.getByText("Choose file"));
+
+    await waitFor(() => expect(onImport).toHaveBeenCalledWith(payload, false));
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 });
