@@ -1,0 +1,189 @@
+/*
+ * ImportBackupModal.css
+ * Pop-out for importing a profile backup — reuses the OnboardingModal
+ * pattern (centered dialog on desktop, bottom sheet on mobile) so the
+ * panel isn't constrained by the sidebar's width/height.
+ */
+
+/* ── Backdrop ────────────────────────────────────────────────────────────────── */
+.import-backup-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, .72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Above the mobile deck-picker overlay (z-index: 400) — this modal can be
+     triggered from inside that sheet and must stack on top of it. */
+  z-index: 450;
+  padding: 16px;
+}
+
+/* ── Modal ───────────────────────────────────────────────────────────────────── */
+.import-backup-modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .45);
+  width: 100%;
+  max-width: 380px;
+  padding: 20px 20px 16px;
+  position: relative;
+  animation: import-backup-enter .22s ease-out;
+}
+
+@keyframes import-backup-enter {
+  from { opacity: 0; transform: translateY(6px) scale(.98); }
+  to   { opacity: 1; transform: none; }
+}
+
+.import-backup-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .12s, color .12s;
+}
+.import-backup-close:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.import-backup-title {
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.import-backup-hint {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin: 0 0 16px;
+}
+.import-backup-hint code {
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+  background: var(--surface-2);
+  padding: 1px 4px;
+  border-radius: 4px;
+}
+
+/* ── Replace toggle row ──────────────────────────────────────────────────────── */
+.import-backup-replace-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  margin-bottom: 16px;
+  transition: background .15s, border-color .15s;
+}
+.import-backup-replace-row.is-destructive {
+  background: rgba(224, 83, 83, .06);
+  border-color: rgba(224, 83, 83, .4);
+}
+.import-backup-replace-row input[type="checkbox"] {
+  accent-color: var(--accent);
+  margin-top: 2px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.import-backup-replace-label {
+  font-size: 12.5px;
+  color: var(--text);
+  line-height: 1.4;
+  cursor: pointer;
+}
+.import-backup-replace-label small {
+  display: block;
+  color: var(--text-muted);
+  margin-top: 2px;
+  font-size: 11px;
+}
+.is-destructive .import-backup-replace-label small {
+  color: var(--danger);
+}
+
+/* ── Inline error ────────────────────────────────────────────────────────────── */
+.import-backup-error {
+  font-size: 12px;
+  color: var(--danger);
+  background: rgba(224, 83, 83, .07);
+  border: 1px solid rgba(224, 83, 83, .22);
+  border-radius: 6px;
+  padding: 8px 10px;
+  line-height: 1.5;
+  margin: 0 0 16px;
+}
+
+/* ── Actions ─────────────────────────────────────────────────────────────────── */
+.import-backup-actions {
+  display: flex;
+  gap: 8px;
+}
+.import-backup-btn-danger {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: #fff;
+}
+.import-backup-btn-danger:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+/* ── Mobile — bottom sheet ────────────────────────────────────────────────────── */
+@media (max-width: 639px) {
+  .import-backup-backdrop {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .import-backup-modal {
+    max-width: 100%;
+    border-radius: 16px 16px 0 0;
+    padding: 12px 18px calc(20px + env(safe-area-inset-bottom));
+    animation: import-backup-enter-sheet .22s ease-out;
+  }
+
+  @keyframes import-backup-enter-sheet {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  /* Drag handle */
+  .import-backup-modal::before {
+    content: "";
+    display: block;
+    width: 32px;
+    height: 3px;
+    background: var(--border);
+    border-radius: 99px;
+    margin: 0 auto 14px;
+  }
+
+  .import-backup-close {
+    top: 10px;
+    right: 12px;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--surface-2);
+  }
+
+  .import-backup-title {
+    padding-right: 32px; /* clear the close btn */
+  }
+}

@@ -16,6 +16,7 @@ import { CollectionPage } from "./features/collection/CollectionPage";
 import { OrdersPage } from "./features/orders/OrdersPage";
 import { OnboardingModal } from "./features/onboarding/OnboardingModal";
 import { ProfileExportImport } from "./features/profile/ProfileExportImport";
+import { ImportBackupModal } from "./features/profile/ImportBackupModal";
 import { GoogleDriveBackup } from "./features/profile/GoogleDriveBackup";
 import { ThemeToggle } from "./components/ThemeToggle";
 import { AppLogo } from "./components/AppLogo";
@@ -631,6 +632,14 @@ function AppInner() {
           onImportDeck={handleOnboardingImport}
         />
       )}
+      {/* ── Import backup modal ───────────────────────────────────────────── */}
+      {importPanelOpen && (
+        <ImportBackupModal
+          onImport={handleProfileImport}
+          showToast={showToast}
+          onClose={() => setImportPanelOpen(false)}
+        />
+      )}
       {/* ── Toast container ───────────────────────────────────────────────── */}
       <div className="toast-container">
         {toasts.map(t => (
@@ -823,21 +832,6 @@ function AppInner() {
                       showToast={showToast}
                       variant="mobile"
                     />
-                    {importPanelOpen && (
-                      <ProfileExportImport
-                        decks={state.decks}
-                        allErrors={allErrors}
-                        collection={collection}
-                        collectionMeta={collectionMeta}
-                        orders={orders}
-                        vendorHistory={recentVendors}
-                        onImport={handleProfileImport}
-                        showToast={showToast}
-                        importPanelOpen={importPanelOpen}
-                        onToggleImportPanel={() => setImportPanelOpen(v => !v)}
-                        hideFooter={true}
-                      />
-                    )}
                   </div>
                 </div>
               </div>

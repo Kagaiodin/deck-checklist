@@ -94,29 +94,4 @@ describe("ProfileExportImport — File System Access save/load", () => {
     expect(clickSpy).not.toHaveBeenCalled();
     expect(showToast).not.toHaveBeenCalled();
   });
-
-  it("loads via the open picker and imports the parsed backup", async () => {
-    const payload = { version: 1, decks: [], collection: {}, orders: [] };
-    const handle = makeHandle("fetchlist-backup.json", {
-      getFile: vi.fn().mockResolvedValue({ text: () => Promise.resolve(JSON.stringify(payload)) }),
-    });
-    window.showSaveFilePicker = vi.fn(); // supportsFileSystemAccess() gates on this existing
-    window.showOpenFilePicker = vi.fn().mockResolvedValue([handle]);
-    const onImport = vi.fn().mockReturnValue({ newDecks: 1, newCards: 0, newOrders: 0 });
-    const onToggleImportPanel = vi.fn();
-
-    render(
-      <ProfileExportImport
-        {...baseProps}
-        importPanelOpen={true}
-        onImport={onImport}
-        onToggleImportPanel={onToggleImportPanel}
-      />
-    );
-
-    fireEvent.click(screen.getByText("Choose file"));
-
-    await waitFor(() => expect(onImport).toHaveBeenCalledWith(payload, false));
-    expect(onToggleImportPanel).toHaveBeenCalled();
-  });
 });

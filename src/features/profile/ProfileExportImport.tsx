@@ -1,8 +1,8 @@
-import { useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import type { Deck, ErrorQueueItem, Collection, CollectionMeta, Order, ProfileExport } from "../../types/index";
 import {
   supportsFileSystemAccess, getLinkedFileName,
-  pickSaveHandle, pickOpenHandle, writeLinkedFile, readLinkedFile,
+  pickSaveHandle, writeLinkedFile,
 } from "../../utils/fileSystemAccess";
 import { GoogleDriveBackup } from "./GoogleDriveBackup";
 import "./ProfileExportImport.css";
@@ -23,30 +23,29 @@ interface Props {
   orders: Order[];
   vendorHistory: string[];
 
-  // Import handler lives in App — returns new-item counts for the toast
+  // Passed through to GoogleDriveBackup, which manages its own import flow
   onImport: (data: ProfileExport, replace: boolean) => { newDecks: number; newCards: number; newOrders: number };
   showToast: (t: ToastInput) => void;
 
-  // Panel open state is lifted to App so sidebar + mobile sheet share one panel
+  // Import lives in a top-level modal (ImportBackupModal) — this button just opens it
   importPanelOpen: boolean;
   onToggleImportPanel: () => void;
-
-  // When true, suppress the sidebar-footer button row (used in mobile sheet
-  // where the buttons live in the sheet footer instead)
-  hideFooter?: boolean;
 }
 
 export function ProfileExportImport({
   decks, allErrors, collection, collectionMeta, orders, vendorHistory,
   onImport, showToast,
   importPanelOpen, onToggleImportPanel,
-  hideFooter = false,
 }: Props) {
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [replaceMode, setReplaceMode] = useState(false);
-  const [panelError, setPanelError] = useState<string | null>(null);
   const [linkedFileName, setLinkedFileName] = useState<string | null>(getLinkedFileName());
   const fsaSupported = supportsFileSystemAccess();
+
+  // ImportBackupModal can link a new file via the FSA open picker (Tier 1)
+  // during import — that handle lives at module scope, so re-sync our local
+  // chip state whenever the modal closes.
+  useEffect(() => {
+    if (!importPanelOpen) setLinkedFileName(getLinkedFileName());
+  }, [importPanelOpen]);
 
   function buildPayload(): ProfileExport {
     return {
@@ -95,185 +94,39 @@ export function ProfileExportImport({
     }
   }
 
-  // ── Import ───────────────────────────────────────────────────────────────────
-  function processImportedJson(rawText: string): boolean {
-    let raw: unknown;
-    try {
-      raw = JSON.parse(rawText);
-    } catch {
-      setPanelError("File could not be read. Make sure it's a Fetchlist backup (.json).");
-      return false;
-    }
-
-    // Shape validation
-    if (!raw || typeof raw !== "object" || !("version" in raw) ||
-        !("decks" in raw || "collection" in raw || "orders" in raw)) {
-      setPanelError("This doesn't look like a Fetchlist backup file.");
-      return false;
-    }
-
-    const data = raw as ProfileExport;
-
-    // Warn for future versions but still attempt import
-    if ((data.version as number) > 1) {
-      showToast({
-        title: "Newer backup format",
-        sub: "Some data may not import correctly.",
-        variant: "warn",
-      });
-    }
-
-    const counts = onImport(data, replaceMode);
-
-    // Build toast summary — omit zero-count domains
-    const parts: string[] = [];
-    if (counts.newDecks > 0) parts.push(`${counts.newDecks} deck${counts.newDecks !== 1 ? "s" : ""}`);
-    if (counts.newCards > 0) parts.push(`${counts.newCards} collection cards`);
-    if (counts.newOrders > 0) parts.push(`${counts.newOrders} order${counts.newOrders !== 1 ? "s" : ""}`);
-
-    if (parts.length === 0) {
-      showToast({
-        title: "Nothing new to import",
-        sub: "All items already exist locally.",
-        variant: "neutral",
-        autoDismiss: 3000,
-      });
-    } else {
-      showToast({ title: "Import complete", sub: `${parts.join(" · ")} added`, variant: "success" });
-    }
-
-    setPanelError(null);
-    setReplaceMode(false);
-    onToggleImportPanel();
-    return true;
-  }
-
-  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    e.target.value = "";
-
-    const reader = new FileReader();
-    reader.onload = ev => processImportedJson(ev.target?.result as string);
-    reader.readAsText(file);
-  }
-
-  async function handleChooseFile() {
-    if (!fsaSupported) {
-      fileInputRef.current?.click();
-      return;
-    }
-    try {
-      await pickOpenHandle();
-      setLinkedFileName(getLinkedFileName());
-      const text = await readLinkedFile();
-      processImportedJson(text);
-    } catch (err) {
-      if ((err as DOMException)?.name === "AbortError") return; // user dismissed the picker
-      setPanelError("File could not be read. Make sure it's a Fetchlist backup (.json).");
-    }
-  }
-
-  function handleCancel() {
-    onToggleImportPanel();
-    setPanelError(null);
-    setReplaceMode(false);
-  }
-
   // ── Render ───────────────────────────────────────────────────────────────────
   return (
-    <div className={hideFooter ? "profile-export-import-panel-only" : "profile-export-import"}>
-      {/* Hidden file input — triggered programmatically via ref */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept=".json"
-        style={{ display: "none" }}
-        onChange={handleFileSelect}
-      />
-
-      {/* Footer row — hidden in mobile-sheet context (buttons live in deck-picker-footer instead) */}
-      {!hideFooter && (
-        <div className="sidebar-footer-group">
-          {linkedFileName && (
-            <div className="linked-file-chip">
-              <span className="linked-file-chip-name" title={linkedFileName}>📎 linked: {linkedFileName}</span>
-              <button className="linked-file-chip-change" onClick={handleChangeLinkedFile}>change</button>
-            </div>
-          )}
-          <div className="sidebar-footer">
-            <button className="btn btn-ghost btn-sm" onClick={handleExport}>
-              ↓ Export backup
-            </button>
-            <button
-              className={`btn btn-ghost btn-sm${importPanelOpen ? " active" : ""}`}
-              onClick={onToggleImportPanel}
-            >
-              ↑ Import backup
-            </button>
+    <div className="profile-export-import">
+      <div className="sidebar-footer-group">
+        {linkedFileName && (
+          <div className="linked-file-chip">
+            <span className="linked-file-chip-name" title={linkedFileName}>📎 linked: {linkedFileName}</span>
+            <button className="linked-file-chip-change" onClick={handleChangeLinkedFile}>change</button>
           </div>
-          <GoogleDriveBackup
-            decks={decks}
-            allErrors={allErrors}
-            collection={collection}
-            collectionMeta={collectionMeta}
-            orders={orders}
-            vendorHistory={vendorHistory}
-            onImport={onImport}
-            showToast={showToast}
-            variant="sidebar"
-          />
+        )}
+        <div className="sidebar-footer">
+          <button className="btn btn-ghost btn-sm" onClick={handleExport}>
+            ↓ Export backup
+          </button>
+          <button
+            className={`btn btn-ghost btn-sm${importPanelOpen ? " active" : ""}`}
+            onClick={onToggleImportPanel}
+          >
+            ↑ Import backup
+          </button>
         </div>
-      )}
-
-      {/* Inline import panel */}
-      {importPanelOpen && (
-        <div className="profile-import-panel">
-          <span className="profile-import-panel-title">Import backup</span>
-          <p className="profile-import-hint">
-            Select a <code>fetchlist-backup-*.json</code> file. New items will be merged with your existing data.
-          </p>
-
-          <div className={`profile-replace-row${replaceMode ? " is-destructive" : ""}`}>
-            <input
-              type="checkbox"
-              id="profile-replace-chk"
-              checked={replaceMode}
-              onChange={e => setReplaceMode(e.target.checked)}
-            />
-            <label className="profile-replace-label" htmlFor="profile-replace-chk">
-              Replace all local data
-              <small>
-                {replaceMode
-                  ? "This will wipe all existing decks, collection, and orders."
-                  : "Wipes existing decks, collection, and orders before importing."}
-              </small>
-            </label>
-          </div>
-
-          {panelError && (
-            <p className="import-error-inline" role="alert">{panelError}</p>
-          )}
-
-          <div className="profile-import-actions">
-            <button
-              className="btn btn-sm"
-              style={{
-                flex: 1,
-                ...(replaceMode
-                  ? { borderColor: "var(--danger)", color: "var(--danger)" }
-                  : { background: "var(--accent)", borderColor: "var(--accent)", color: "#fff" }),
-              }}
-              onClick={handleChooseFile}
-            >
-              {replaceMode ? "Choose file & replace" : "Choose file"}
-            </button>
-            <button className="btn btn-ghost btn-sm" onClick={handleCancel}>
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
+        <GoogleDriveBackup
+          decks={decks}
+          allErrors={allErrors}
+          collection={collection}
+          collectionMeta={collectionMeta}
+          orders={orders}
+          vendorHistory={vendorHistory}
+          onImport={onImport}
+          showToast={showToast}
+          variant="sidebar"
+        />
+      </div>
     </div>
   );
 }
