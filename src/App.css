@@ -358,7 +358,7 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 @media (max-width: 1023px) {
   .empty-copy-desktop { display: none; }
   .empty-copy-mobile  { display: inline; }
-  .empty-mobile-primary { display: block; margin-top: 12px; }
+  .empty-mobile-primary { display: block; }
 }
 
 /* ─── Sidebar ───────────────────────────────────────────────────────────────── */
