@@ -267,12 +267,12 @@ function OrderDetailSheet({
           {order.status === "active" && (
             <>
               <button className="btn btn-primary" onClick={onMarkReceived}>✓ Mark received</button>
-              <button className="btn" onClick={onMarkCancelled}>Cancel order</button>
+              <button className="btn btn-secondary" onClick={onMarkCancelled}>Cancel order</button>
             </>
           )}
           <button
-            className="btn"
-            style={{ color: "var(--danger)", marginTop: order.status !== "active" ? 0 : 4 }}
+            className="btn btn-danger-soft"
+            style={{ marginTop: order.status !== "active" ? 0 : 4 }}
             onClick={onDeleteOrder}
           >
             Delete order
@@ -817,7 +817,7 @@ export function OrdersPage({
                     + New order
                   </button>
                   {onOpenBuyList && (
-                    <button className="btn" onClick={onOpenBuyList}>
+                    <button className="btn btn-secondary" onClick={onOpenBuyList}>
                       Open buy list →
                     </button>
                   )}
