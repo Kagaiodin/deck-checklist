@@ -186,8 +186,9 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 /* ─── Buttons ───────────────────────────────────────────────────────────────── */
 .btn {
   display: inline-flex; align-items: center; gap: 6px;
-  padding: 8px 16px; border-radius: var(--radius); border: none;
+  padding: 8px 16px; border-radius: var(--radius); border: 1px solid transparent;
   cursor: pointer; font-size: 13px; font-weight: 500; transition: opacity 0.15s;
+  background: transparent; color: var(--text-muted);
 }
 .btn:disabled { opacity: 0.45; cursor: not-allowed; }
 .btn-primary { background: var(--accent); color: #fff; }
@@ -196,6 +197,7 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 .btn-secondary:hover:not(:disabled) { border-color: var(--accent); }
 .btn-ghost { background: transparent; color: var(--text-muted); }
 .btn-ghost:hover:not(:disabled) { color: var(--text); }
+.btn-danger-soft { background: rgba(224,83,83,.2); color: var(--danger); border: 1px solid rgba(224,83,83,.3); }
 .btn-sm { padding: 4px 10px; font-size: 12px; }
 
 /* ─── Import panel ──────────────────────────────────────────────────────────── */
@@ -1443,6 +1445,31 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 /* ─── Utilities ─────────────────────────────────────────────────────────────── */
 .empty-state { color: var(--text-muted); font-size: 13px; padding: 16px 0; }
 .empty-state.centered { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 48px 0; }
+
+/* ─── Shared EmptyState anatomy (src/components/EmptyState.tsx) ─────────────── */
+.empty-card {
+  background: var(--surface);
+  border: 1px solid var(--border-dim);
+  border-radius: 12px;
+  padding: 32px 28px;
+  max-width: 400px;
+  margin: 0 auto;
+  display: flex; flex-direction: column; align-items: center;
+  text-align: center; gap: 6px;
+}
+.empty-icon {
+  width: 48px; height: 48px; border-radius: 10px;
+  background: var(--accent-dim); color: var(--accent-light);
+  display: grid; place-items: center; margin-bottom: 10px;
+}
+.empty-icon svg { width: 26px; height: 26px; }
+.empty-title { font-size: 17px; font-weight: 600; margin: 0; }
+.empty-body { font-size: 13.5px; color: var(--text-muted); max-width: 38ch; margin: 0; }
+.empty-actions { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; justify-content: center; }
+@media (max-width: 479px) {
+  .empty-actions { flex-direction: column; width: 100%; }
+  .empty-actions .btn { width: 100%; justify-content: center; }
+}
 
 /* ─── Deck empty CTA (no decks yet — main pane) ──────────────────────────── */
 .deck-empty-cta-wrap {
