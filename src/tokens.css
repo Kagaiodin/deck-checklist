@@ -25,6 +25,9 @@ html { overflow-x: hidden; } /* catch-all: prevents root scroll container from f
   --success: #4ade80;
   --good:    var(--success); /* backward-compat alias */
 
+  /* Type */
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
   /* Radii */
   --radius:      8px;
   --radius-sm:   4px;
