@@ -33,7 +33,17 @@ Per the collection-page rule: the trade screen must stay a calculator for moving
 | Collection picker | Caps at owned quantity; deck-committed cards are flagged ("N in decks") but not blocked |
 | Their-side editing | Condition/finish editable identically to My offer |
 | Fairness + cash lines | Cash/credit lines (if built) count toward the fairness meter |
-| Nav placement | Nested under Collection for v1 — **flagged tension**: the collection-vision rule says the collection tab should not become a destination in its own right; a Trade entry point inside Collection risks that. Re-confirm this placement specifically (not just the feature) before building nav, or revisit a standalone tab. |
+| Nav placement | **Decided (per mockups 09): quiet item in Collection's ⋯ menu**, below a separator, no icon, no badge, helper line "Weigh a trade. Doesn't change your collection." Same item in the mobile overflow sheet. Guardrails: no trade state anywhere in Collection's chrome/rows/stats; Trade is its own route (not a panel/mode inside Collection) so moving it to a standalone home later is a one-line nav change. Revisit when the #109 ledger lands. Rejected: contextual header button + per-row hover actions (puts trade state in Collection). |
+| Band cutoffs | Fair ≤ tolerance; Leaning ≤ `max(25, tolerance + 15)`; Lopsided above. Zones on the meter follow the tolerance live. Supersedes the earlier "fixed constants" decision. Same result at the default 10% (10 / 25). |
+| Manual price + discount | Manual price replaces `basePrice × condition`; the discount **still applies**. UI previews "Counts as $X after −N%". |
+| Global discount vs. meter | A discount both sides share doesn't move the meter (working as intended); it sets the dollar terms (totals, gap, balance hint, copy-as-text). Cash lines stay at **face value**, not discounted. |
+| Cash purpose | Cash is a **true-up mechanism** to cover the gap when there are no more cards to add — not a pricing input. Face value, never discounted. |
+| Cash-only side | A side with only a cash line is **not empty** — the meter gives a verdict. |
+| Fork with local trade | If the local trade has cards or cash, Fork shows a confirm (Cancel focused first, destructive "Replace", "Copy mine as text" escape hatch). Purpose: opening a shared link must never silently overwrite the receiver's existing trade. Empty local trade forks immediately. Undo works after replacing. |
+| Undo model | Clear's undo toast and ⌘Z/⇧⌘Z share **one** undo stack in `useTrade`; Clear has no confirm dialog. |
+| Mobile layout | **10R**: sticky verdict bar (meter + both totals, always visible) + Mine/Theirs tabs + full controls in a bottom sheet opened by tapping the bar. Add-card flows are bottom sheets on mobile. |
+| Bulk condition apply | **Decided: lives in each offer panel's header menu** ("Set condition for all…"), where the side is implied. Not in the control panel (supersedes mockup 06, which placed it there with a side select). |
+| Copy-as-text fallback | One-way: text can't be forked back into a trade (pasted lists are out of scope). Acceptable for v1. |
 
 ## Scope (v1)
 
@@ -85,13 +95,22 @@ interface TradeCard {
   imageUrl?: string;             // small image for row; not in share payload
   basePrice: number | null;      // fetched, USD, for chosen printing+finish; null = unavailable
   priceFetchedAt: number | null; // epoch ms
-  manualPrice?: number;          // if set, replaces basePrice*conditionMultiplier entirely — discount still applies; see Pricing rules
+  manualPrice?: number;          // if set, replaces basePrice*conditionMultiplier (condition skipped) — discount still applies; see Pricing rules
   discountOverridePct?: number;  // per-card override
   source: "collection" | "search";
+}
+// Owned cap and "N in decks" are NOT stored on TradeCard — derived at render time from Collection + decks
+// (matched by set + collectorNumber + finish). Rows with no collection match (search-sourced, or any row in a
+// read-only shared view) simply show neither.
+
+interface CashLine {
+  id: string;
+  amount: number;                // USD, face value — never discounted
 }
 
 interface TradeSide {
   cards: TradeCard[];
+  cash: CashLine[];              // manual +$ lines; count toward side total and fairness
   discountOverridePct?: number;  // per-side override
 }
 
@@ -125,7 +144,7 @@ Pure functions in `src/utils/tradePricing.ts` (fully unit-tested).
 4. **Discount resolution** — `card.discountOverridePct ?? side.discountOverridePct ?? settings.discountPct` (default 10%).
 5. **Unit price** — `effectiveBase × (1 − discount/100)`.
 6. **Line total** — `unitPrice × quantity`.
-7. **Side total** — sum of line totals. Cards with null price contribute 0 and are counted in a `missingPriceCount` surfaced in the UI.
+7. **Side total** — sum of line totals **plus cash lines at face value** (no discount). Cards with null price contribute 0 and are counted in a `missingPriceCount` surfaced in the UI.
 8. Round to cents only at display, never mid-calculation.
 
 ## Fairness
@@ -138,8 +157,9 @@ Pure functions in `src/utils/tradePricing.ts` (fully unit-tested).
   band: "fair" | "leaning" | "lopsided";
   balanceHint: number }   // dollars the lower side must add to be even
 ```
-- `band`: `fair` if `deltaPct <= tolerancePct` (default tolerance 10%); `leaning` if `10% < deltaPct <= 25%`; `lopsided` if `deltaPct > 25%`. The leaning/lopsided cutoffs are fixed constants in v1, not tied to `tolerancePct` scaling — revisit if user feedback wants them to scale together.
-- Empty state: if either side is empty, meter shows a neutral "add cards to compare" state, not "fair".
+- `band`: `fair` if `deltaPct <= tolerancePct` (default 10%); `leaning` if `deltaPct <= max(25, tolerancePct + 15)`; `lopsided` above that. At the default tolerance this is 10 / 25. The cutoff scales with tolerance so there are never gaps and Leaning always exists.
+- Empty state: if either side has **no cards and no cash**, meter shows a neutral "add cards to compare" state, not "fair" (copy points at the missing side when only one is empty). A side with only a cash line counts as non-empty.
+- Meter share = `mine / (mine + theirs)`; diamond clamped (~3%) so it never clips the track end.
 - "Favors" wording: the side receiving *more value than it gives* is favored. Copy TBD in design brief.
 - If cash/credit lines (suggestion #2) are built, their $ amounts are added into each side's total before the fairness calculation.
 
@@ -157,10 +177,12 @@ Pure functions in `src/utils/tradePricing.ts` (fully unit-tested).
 ## Share link
 
 - Client-only, **URL hash** (`/#trade=<payload>`), so nothing hits the server and Workers SPA fallback is unaffected.
-- Payload (JSON → deflate via `CompressionStream` → base64url), versioned (`v: 1`). Per card: name, set, collectorNumber, finish, condition, quantity, `basePrice` snapshot, manualPrice, override pcts; plus both side overrides and `TradeSettings`. **No** images or ids beyond set+cn.
-- Opening a link renders the trade `readOnly` with a banner: "Shared trade — prices as of <snapshotTime>" and a **Fork into my own trade** button (clones to an editable local trade, prices remain the snapshot until Refresh).
+- Payload (JSON → deflate via `CompressionStream` → base64url), versioned (`v: 1`). Per card: name, set, collectorNumber, finish, condition, quantity, `basePrice` snapshot, manualPrice, override pcts; plus **cash lines**, both side overrides and `TradeSettings`. **No** images or ids beyond set+cn. The link is built from `location.origin` (never a hardcoded domain), as `<origin>/#trade=v1.<payload>`. The `v1.` prefix is read before decompressing, so a future v2 link can show the "reload to get the latest version" message without attempting to decode it.
+- Opening a link renders the trade `readOnly` with a banner: "Shared trade — prices as of <snapshotTime>" (plus a light "Your side is on the left" hint) and a **Fork into my own trade** button (clones to an editable local trade, prices remain the snapshot until Refresh). Read-only view hides all editing controls and Refresh; "Copy as text" stays available. If the local trade has cards or cash, Fork asks before replacing (see Decisions).
+- Unknown `v` (newer format) shows its own message ("Reload to get the latest version"); malformed payloads show a separate broken-link state.
 - Perspective on open: panels **flip** so the opener's own cards are always on the left. Payload stores two symmetric sides (`sideA`, `sideB`) with no baked-in "mine"/"theirs" label — the creator's `mine` is encoded as `sideA`. On open: `sideA` renders on the right ("their offer", from the opener's point of view) and `sideB` renders on the left ("my offer"). In other words, the opener's left panel shows what the *creator* had labeled "their offer."
 - No built-in link shortener in v1 (would need Workers KV — new infra). If the compressed payload is too long for a practical URL, the share action falls back to **"Copy as text"** (a plain-text trade summary) instead of a link. Exact length threshold TBD at implementation (test against real browser/OS URL limits, aim to warn well before ~8000 chars).
+  **Decision:** build the link if the full URL is ≤ 4,000 chars; above that, the share action offers "Copy as text" instead. Chosen for headroom in chat apps and link previewers, well below browser limits. Tune during implementation by measuring a typical 30-card trade; the constant lives in `tradeShare.ts` and is covered by the size-limit test.
 - Malformed / unknown-version payloads → friendly error state, never a crash.
 
 ## Ledger hook (for #109, not built in v1)
@@ -183,7 +205,7 @@ Additional features, decided:
 | 6 | Missing-price warning with jump-to-row | **Yes** | |
 | 7 | Copy as text (plain-text summary for Discord/chat) | **Yes** | Also doubles as the share-link fallback (see Share link). |
 | 8 | Lock/confirm "Lock offer" animation (cosmetic, no functional effect) | **No** | Cut from v1; revisit later for polish. |
-| 9 | Bulk condition apply (set condition for a whole side at once) | **Yes** | |
+| 9 | Bulk condition apply (set condition for a whole side at once) | **Yes** | Lives in each offer panel's header menu, not the control panel. |
 | 10 | Undo/redo for recent edits | **Yes** | |
 
 ## Files to add
@@ -193,7 +215,7 @@ Additional features, decided:
 - `src/features/trade/hooks/useTrade.ts` (state via reducer, local to the feature; not in DeckProvider since it is sandbox state)
 - `src/types/trade.ts`
 - `src/utils/tradePricing.ts`, `src/utils/tradeShare.ts`, `src/utils/scryfallSearch.ts`
-- Entry point lives in Collection (per Nav placement decision) — likely a button/tab inside `CollectionPage.tsx` rather than a new `App.tsx` top-level `view`; exact wiring TBD at implementation once the flagged nav tension is re-confirmed.
+- Entry point: a menu item in Collection's existing ⋯ menu (and mobile overflow sheet) in `CollectionPage.tsx`, opening Trade on its own route with a "Collection › Trade" breadcrumb. Not a new `App.tsx` top-level tab; exact route/state wiring decided at implementation.
 
 ## Tests (required by CLAUDE.md)
 
@@ -205,9 +227,8 @@ Additional features, decided:
 
 ## Remaining open item
 
-- **Nav placement inside Collection** — see the flagged tension in Decisions. Needs a specific yes before implementing nav, distinct from the rest of this spec being resolved.
-- Exact share-URL length threshold to trigger the "copy as text" fallback (implementation detail, test against real limits).
-- Mobile layout is intentionally left to Open Design to propose (stacked / tabbed / swipe) and recommend — not a blocker, resolved during design.
+- Token notes (validated): the app always sets `data-accent` (inline script in `index.html` and `useTheme`, default `indigo`), so light-mode accent overrides apply. There is **no** `--font-mono` token in `src/tokens.css`; mocks use a local `--t-mono`. Decide at implementation: add a token to `tokens.css` or reuse whatever mono stack the app already uses.
+- Nav placement and mobile layout are resolved (see Decisions); revisit nav when #109 lands.
 
 ## Routing
 

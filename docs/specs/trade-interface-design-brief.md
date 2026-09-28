@@ -17,7 +17,7 @@ Playful and slightly nostalgic (think MMO / Pokémon-style trade windows) but it
 3. **Fair state** and **lopsided state** of the meter (show all three bands).
 4. **Card row** — thumbnail, name, set/collector number, finish toggle, condition select, quantity stepper, unit price, line total, overflow for discount override and manual price. Show variants: normal, discounted-by-override, manual price, no price available, stale price.
 5. **Add-card flows** — (a) Collection picker sheet (My side only) with owned quantities, showing an "N in decks" flag on committed cards (not blocked, just flagged); (b) Scryfall search sheet with autocomplete and a printing picker.
-6. **Control panel** — fairness meter, totals for both sides, global discount % (default 10), tolerance % (default 10), per-side discount override, Refresh prices (idle / loading / done / failed), swap sides, clear (with undo), balance suggestion, cash/credit line entry, price freshness indicator, missing-price warning, copy-as-text, bulk condition apply, undo/redo, share. (All of these are confirmed v1 — see the Control-panel table in the spec. The cosmetic "Lock offer" animation was cut from v1; do not design it.)
+6. **Control panel** — fairness meter, totals for both sides, global discount % (default 10), tolerance % (default 10), per-side discount override, Refresh prices (idle / loading / done / failed), swap sides, clear (with undo), balance suggestion, cash/credit line entry, price freshness indicator, missing-price warning, copy-as-text, undo/redo, share. (Bulk condition apply is confirmed v1 but lives in each offer panel's header menu, not the control panel. All of these are confirmed v1 — see the Control-panel table in the spec. The cosmetic "Lock offer" animation was cut from v1; do not design it.)
 7. **Per-side discount override** and **per-card discount override** affordances (discoverable but not cluttering).
 8. **Share** — copy-link confirmation; **read-only shared view** with banner ("Shared trade — prices as of …") and a "Fork into my own trade" button; error state for a broken link; a **"Copy as text"** fallback UI for when the link is too long (also doubles as its own standalone control-panel action).
 9. **Entry point from Collection** — the trade screen is nested under Collection (not a new top-level nav tab). Propose how this reads from `CollectionPage.tsx` without turning Collection into more of a destination — this is a flagged tension in the spec, so sketch 1-2 options here for discussion rather than committing to one.
@@ -43,7 +43,7 @@ Horizontal split meter, decided with the user:
 
 ## Condition & pricing details to reflect
 
-- Condition multiplier table: NM 100% / LP 90% / MP 75% / HP 55% / DMG 40%, applied to fetched price only — a manual price override is shown as-is (no condition adjustment badge on manual-price rows).
+- Condition multiplier table: NM 100% / LP 90% / MP 75% / HP 55% / DMG 40%, applied to fetched price only — a manual price override skips the condition adjustment (no condition badge on manual-price rows) but the discount still applies.
 - Fairness bands: Fair ≤10%, Leaning 10–25%, Lopsided >25% (tied to defaults above, both configurable).
 
 ## Constraints
