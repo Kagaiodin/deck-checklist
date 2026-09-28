@@ -316,3 +316,5 @@ button.tr-chip:hover { border-color: var(--border); color: var(--text); }
 .tr-bottom-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; display: flex; gap: 8px; padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); border-top: 1px solid var(--border); background: var(--surface); }
 .tr-bottom-bar .btn { flex: 1; min-height: 44px; }
 .tr-drag-handle { width: 36px; height: 4px; border-radius: 2px; background: var(--border); margin: 8px auto 0; flex: none; }
+
+.tr-offer-empty .empty-card { background: transparent; border: 0; }
