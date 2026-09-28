@@ -16,7 +16,8 @@
 .tr-crumb button { border: 0; background: transparent; color: var(--text-muted); font-size: inherit; padding: 0; cursor: pointer; }
 .tr-crumb button:hover { color: var(--text); text-decoration: underline; }
 .tr-page-head { margin: 4px 0 16px; }
-.tr-page-head h1 { font-size: 24px; line-height: 1.2; font-weight: 700; }
+/* src/index.css ships template h1/h2 styles (56px, --text-h); reset them for this page. */
+.tr-page-head h1 { font-family: inherit; font-size: 24px; line-height: 1.2; font-weight: 700; letter-spacing: normal; color: var(--text); margin: 4px 0 0; }
 .tr-page-sub { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
 
 .tr-grid {
@@ -33,7 +34,7 @@
 .tr-offer::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 2px; background: var(--accent); opacity: .9; }
 .tr-offer--theirs::before { background: var(--text-dim); }
 .tr-offer-head { display: flex; align-items: center; gap: 8px; padding: 14px 14px 10px; flex-wrap: wrap; }
-.tr-offer-head h2 { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--text); }
+.tr-offer-head h2 { font-family: inherit; line-height: 1.2; margin: 0; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--text); }
 .tr-offer-count { font-size: 12px; color: var(--text-muted); }
 .tr-spacer { flex: 1; }
 .tr-offer-adds { display: flex; gap: 6px; padding: 0 14px 12px; border-bottom: 1px solid var(--border-dim); }
@@ -319,3 +320,5 @@ button.tr-chip:hover { border-color: var(--border); color: var(--text); }
 .tr-drag-handle { width: 36px; height: 4px; border-radius: 2px; background: var(--border); margin: 8px auto 0; flex: none; }
 
 .tr-offer-empty .empty-card { background: transparent; border: 0; }
+
+.tr-print .tr-set-chip { font-size: 10px; min-width: 0; overflow: hidden; text-overflow: ellipsis; }

@@ -167,7 +167,7 @@
 /* Quiet entry to the Trade calculator: below a separator, no icon or badge */
 .collection-overflow-divider { height: 1px; background: var(--border); margin: 4px 0; }
 .collection-overflow-item--stacked { display: flex; flex-direction: column; gap: 2px; }
-.collection-overflow-hint { font-size: 12px; color: var(--text-muted); max-width: 26ch; }
+.collection-overflow-hint { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
 
 /* ── Single-line stats + provenance ─────────────────────────────── */
 .collection-stats-line {

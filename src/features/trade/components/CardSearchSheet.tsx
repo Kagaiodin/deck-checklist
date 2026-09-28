@@ -57,9 +57,11 @@ export function CardSearchSheet({ side, onAdd, onClose }: CardSearchSheetProps) 
       const found = await searchPrintings(name);
       if (request !== requestRef.current) return;
       setPrintings(found);
-      setPrintIdx(0);
+      // Newest-first lists open with promos that have no price; start on the first priced printing.
+      const first = Math.max(0, found.findIndex((p) => basePriceFor(p.prices, p.finishes.includes(finish) ? finish : p.finishes[0]) !== null));
+      setPrintIdx(first);
       if (found.length === 0) setError(`No card named “${name}”.`);
-      else if (!found[0].finishes.includes(finish)) setFinish(found[0].finishes[0]);
+      else if (!found[first].finishes.includes(finish)) setFinish(found[first].finishes[0]);
     } catch {
       if (request === requestRef.current) setError("Couldn't reach Scryfall. Check your connection and try again.");
     } finally {
