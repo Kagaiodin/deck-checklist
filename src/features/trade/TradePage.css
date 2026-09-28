@@ -10,7 +10,8 @@
 .tr-sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 /* ── Page shell ───────────────────────────────────────────────────────────── */
-.trade-page { max-width: 1600px; margin: 0 auto; padding: 20px 24px 48px; }
+/* .app-main is a scrolling flex column, so the page needs an explicit width and must not shrink. */
+.trade-page { width: 100%; flex: none; max-width: 1600px; margin: 0 auto; padding: 20px 24px 48px; }
 .tr-crumb { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); }
 .tr-crumb button { border: 0; background: transparent; color: var(--text-muted); font-size: inherit; padding: 0; cursor: pointer; }
 .tr-crumb button:hover { color: var(--text); text-decoration: underline; }
@@ -152,7 +153,7 @@ button.tr-chip:hover { border-color: var(--border); color: var(--text); }
 /* ── Control panel ────────────────────────────────────────────────────────── */
 .tr-ctrl {
   background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
-  display: flex; flex-direction: column; position: sticky; top: 80px;
+  display: flex; flex-direction: column; position: sticky; top: 16px; /* the app header sits outside the scroller */
 }
 .tr-ctrl--sheet { border: 0; border-radius: 0; position: static; overflow: auto; }
 .tr-ctrl-sec { padding: 14px 16px; border-bottom: 1px solid var(--border-dim); }
@@ -303,7 +304,7 @@ button.tr-chip:hover { border-color: var(--border); color: var(--text); }
 }
 .tr-meterbar {
   width: 100%; border: 0; text-align: left; background: var(--surface); border-bottom: 1px solid var(--border);
-  padding: 10px 14px 12px; display: block; position: sticky; top: 56px; z-index: 15; color: var(--text); font: inherit; cursor: pointer;
+  padding: 10px 14px 12px; display: block; position: sticky; top: 0; z-index: 15; color: var(--text); font: inherit; cursor: pointer;
 }
 .tr-meterbar .tot { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; font-size: 12px; color: var(--text-muted); }
 .tr-meterbar .tot .tr-mono { color: var(--text); font-weight: 700; font-size: 15px; }

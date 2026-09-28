@@ -71,11 +71,13 @@ function CollectionRowItem(
 interface CollectionPageProps {
   decks: Deck[];
   onCollectionChange: (collection: Collection) => void;
+  /** Opens the Trade calculator (its own route). Omit to hide the menu entry. */
+  onOpenTrade?: () => void;
 }
 
 // ── Page root ────────────────────────────────────────────────────────────────
 
-export function CollectionPage({ decks, onCollectionChange }: CollectionPageProps) {
+export function CollectionPage({ decks, onCollectionChange, onOpenTrade }: CollectionPageProps) {
   // ── Persisted state ────────────────────────────────────────────────────────
   const [collection, setCollection] = useLocalStorage<Collection>(
     "mtg-checklist-collection-v2", {},
@@ -374,6 +376,7 @@ export function CollectionPage({ decks, onCollectionChange }: CollectionPageProp
           onQuickAddClick={() => setQuickAddOpen(v => !v)}
           onBulkEditClick={() => setBulkEditOpen(!bulkEditOpen)}
           onOverflowOpen={() => setOverflowSheetOpen(true)}
+          onOpenTrade={onOpenTrade}
           collectionSearch={collectionSearch}
           onSearchChange={setCollectionSearch}
           collectionFilter={collectionFilter}
@@ -502,6 +505,7 @@ export function CollectionPage({ decks, onCollectionChange }: CollectionPageProp
           onClose={() => setOverflowSheetOpen(false)}
           onUploadClick={() => csvInputRef.current?.click()}
           onBulkEditClick={() => setBulkEditOpen(!bulkEditOpen)}
+          onOpenTradeClick={onOpenTrade}
         />
       )}
 
