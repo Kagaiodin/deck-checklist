@@ -18,7 +18,7 @@ import { CollectionFab }            from "./components/CollectionFab";
 import { CollectionOverflowSheet }  from "./components/CollectionOverflowSheet";
 import { AlphaRail }          from "./components/AlphaRail";
 import { CollectionRow }      from "./components/CollectionRow";
-import { AppIcon }            from "../../components/AppIcon";
+import { EmptyState }         from "../../components/EmptyState";
 import { BulkEditPanel }      from "./components/BulkEditPanel";
 
 // ── Virtual-list row ─────────────────────────────────────────────────────────
@@ -438,21 +438,18 @@ export function CollectionPage({ decks, onCollectionChange }: CollectionPageProp
 
         {/* Empty state */}
         {!collectionMeta && !collectionError && (
-          <div className="collection-empty">
-            <AppIcon className="collection-empty-icon" />
-            <p className="collection-empty-headline">No cards yet</p>
-            <p className="collection-empty-body">
-              Import your collection from Moxfield or add cards manually.
-            </p>
-            <div className="collection-empty-actions">
-              <button className="btn btn-primary btn-sm" onClick={() => csvInputRef.current?.click()}>
-                Upload CSV
-              </button>
-              <button className="btn btn-ghost btn-sm" onClick={() => setQuickAddOpen(true)}>
-                + Add card
-              </button>
-            </div>
-          </div>
+          <EmptyState
+            icon={
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="6" width="13" height="15" rx="2"/>
+                <rect x="8" y="3" width="13" height="15" rx="2"/>
+              </svg>
+            }
+            title="No cards yet"
+            body="Import your collection from Moxfield or add cards manually."
+            primary={{ label: "Upload CSV", onClick: () => csvInputRef.current?.click() }}
+            secondary={{ label: "+ Add card", onClick: () => setQuickAddOpen(true) }}
+          />
         )}
 
         {/* Main list */}

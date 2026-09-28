@@ -7,6 +7,7 @@ import { validateDecklist, enrichDeckExtraInfo } from "./utils/validator";
 import type { ValidationProgress } from "./utils/validator";
 import { useLocalStorage } from "./hooks/useLocalStorage";
 import { Checklist } from "./components/Checklist";
+import { EmptyState } from "./components/EmptyState";
 import { ErrorQueue } from "./components/ErrorQueue";
 import { ProgressTracker } from "./components/ProgressTracker";
 import type { Deck, ErrorQueueItem, AcquisitionSource, Collection, CollectionMeta, Order, DeckNotification, ProfileExport } from "./types/index";
@@ -1311,37 +1312,58 @@ function AppInner() {
                 </>
               ) : state.decks.length === 0 && !showImport ? (
                 <div className="deck-empty-cta-wrap">
-                <div className="deck-empty-cta">
-                  <div className="deck-empty-icon" aria-hidden="true">
-                    <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
-                      <rect x="6" y="4" width="20" height="24" rx="3" stroke="currentColor" strokeWidth="1.5"/>
-                      <path d="M11 12h10M11 16h7M11 20h5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                      <circle cx="24" cy="24" r="5" fill="var(--surface)" stroke="currentColor" strokeWidth="1.5"/>
-                      <path d="M22 24h4M24 22v4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                    </svg>
-                  </div>
-                  <div>
-                    <div className="deck-empty-headline">No decks yet</div>
-                    <p className="deck-empty-body">Import a decklist from Moxfield, MTGO, or Arena to start tracking your missing cards.</p>
-                  </div>
-                  <div className="deck-empty-actions">
-                    <button className="btn btn-primary deck-empty-btn-import" onClick={() => setShowImport(true)}>
-                      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 2v9M4 8l4 4 4-4M2 13h12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                      Import a deck
-                    </button>
-                    <button className="deck-empty-btn-blank" onClick={() => {
-                      const id = crypto.randomUUID();
-                      dispatch({ type: "ADD_DECK", payload: { id, name: "New deck", cards: [], createdAt: Date.now() } });
-                      setActiveDeckId(id);
-                    }}>
-                      or create a blank deck
-                    </button>
-                  </div>
-                </div>
+                  <EmptyState
+                    icon={
+                      <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
+                        <rect x="6" y="4" width="20" height="24" rx="3" stroke="currentColor" strokeWidth="1.5"/>
+                        <path d="M11 12h10M11 16h7M11 20h5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                        <circle cx="24" cy="24" r="5" fill="var(--surface)" stroke="currentColor" strokeWidth="1.5"/>
+                        <path d="M22 24h4M24 22v4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                      </svg>
+                    }
+                    title="No decks yet"
+                    body="Import a decklist from Moxfield, MTGO, or Arena to start tracking your missing cards."
+                    primary={{
+                      label: (
+                        <>
+                          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 2v9M4 8l4 4 4-4M2 13h12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                          Import a deck
+                        </>
+                      ),
+                      onClick: () => setShowImport(true),
+                    }}
+                    secondary={{
+                      label: "Create blank deck",
+                      onClick: () => {
+                        const id = crypto.randomUUID();
+                        dispatch({ type: "ADD_DECK", payload: { id, name: "New deck", cards: [], createdAt: Date.now() } });
+                        setActiveDeckId(id);
+                      },
+                    }}
+                  />
                 </div>
               ) : !showImport ? (
                 <div className="empty-state centered">
-                  <p>Select a deck from the sidebar.</p>
+                  <EmptyState
+                    icon={
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="5" y="3" width="14" height="18" rx="2"/>
+                        <path d="M9 8h6M9 12h4"/>
+                        <path d="M9 16.5l1.8 1.8L14.5 14"/>
+                      </svg>
+                    }
+                    title="Pick a deck"
+                    body={
+                      <>
+                        <span className="empty-copy-desktop">Choose a deck from the list on the left to see its fetch list.</span>
+                        <span className="empty-copy-mobile">Choose a deck above to see its fetch list.</span>
+                      </>
+                    }
+                    secondary={{ label: "+ Import another deck", onClick: () => setShowImport(true) }}
+                  />
+                  <div className="empty-mobile-primary">
+                    <button className="btn btn-primary" onClick={() => setDeckPickerOpen(true)}>Choose a deck</button>
+                  </div>
                 </div>
               ) : null}
             </div>
