@@ -227,8 +227,22 @@ Additional features, decided:
 
 ## Remaining open item
 
-- Token notes (validated): the app always sets `data-accent` (inline script in `index.html` and `useTheme`, default `indigo`), so light-mode accent overrides apply. There is **no** `--font-mono` token in `src/tokens.css`; mocks use a local `--t-mono`. Decide at implementation: add a token to `tokens.css` or reuse whatever mono stack the app already uses.
 - Nav placement and mobile layout are resolved (see Decisions); revisit nav when #109 lands.
+
+## Implementation notes (as built)
+
+Decisions made while building, where the spec left room or the data forced a choice:
+
+- **Mono font:** added a `--font-mono` token to `src/tokens.css`. Trade styles use it instead of the mockups' local `--t-mono`.
+- **"N in decks" matches on name, not printing.** Deck `Card`s carry no collector number or finish, so the count uses acquired copies by name, the same basis as the Collection tab. The owned cap still matches set + collector number + finish against the Collection.
+- **Owned cap only applies to `source: "collection"` rows** with a matching printing. Search-sourced rows are never capped.
+- **Finish change re-fetches.** A `TradeCard` doesn't store which finishes a printing offers, so changing finish looks the printing up again. If it doesn't come in that finish, or the lookup fails, the finish is left alone and a toast says why.
+- **Collection entries with no printing** (order receipts record quantity only) resolve to the newest printing of that name when added. If a price lookup fails, the card is still added, unpriced, so it can be priced by hand.
+- **Collection picker adds are one undo step** (`addCards` in `useTrade`).
+- **Trade reads the Collection fresh from storage each time it opens.** `AppInner`'s copy is only refreshed on reload because `CollectionPage` owns the writes.
+- **Leaving a shared trade drops `#trade=…` from the URL** (breadcrumb, a top-level tab, or forking), so a reload doesn't reopen it. A link pasted into an already-open tab is picked up via `hashchange`.
+- **Mobile controls sheet** closes on scrim tap, Esc or the close button. Swipe-down-to-dismiss from the mockup is not built.
+- **Bulk condition** lives in each offer panel's ⋯ menu as a row of NM–DMG buttons (mockup 06 still shows it in the control panel; it is stale).
 
 ## Routing
 
