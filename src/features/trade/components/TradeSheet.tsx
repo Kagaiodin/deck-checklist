@@ -19,7 +19,8 @@ export function TradeSheet({ title, chip, onClose, footer, children }: TradeShee
 
   useEffect(() => {
     const opener = document.activeElement as HTMLElement | null;
-    ref.current?.querySelector<HTMLElement>("input")?.focus();
+    // A control marked data-autofocus wins (e.g. the safe button in a confirm); else the first input.
+    (ref.current?.querySelector<HTMLElement>("[data-autofocus]") ?? ref.current?.querySelector<HTMLElement>("input"))?.focus();
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     function onKey(e: KeyboardEvent) {

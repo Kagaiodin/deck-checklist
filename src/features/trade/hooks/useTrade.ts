@@ -73,6 +73,7 @@ interface State {
 
 type Action =
   | { type: "addCard"; side: SideKey; card: Omit<TradeCard, "id"> }
+  | { type: "addCards"; side: SideKey; cards: Omit<TradeCard, "id">[] }
   | { type: "removeCard"; side: SideKey; id: string }
   | { type: "updateCard"; side: SideKey; id: string; patch: Partial<Omit<TradeCard, "id">> }
   | { type: "setSideCondition"; side: SideKey; condition: Condition }
@@ -100,6 +101,17 @@ const sameLine = (a: Omit<TradeCard, "id">, b: TradeCard) =>
 
 function editSide(trade: Trade, side: SideKey, fn: (s: TradeSide) => TradeSide): Trade {
   return { ...trade, [side]: fn(trade[side]) };
+}
+
+/** Adds a card line, or bumps the quantity of an identical one already on that side. */
+function withCard(trade: Trade, side: SideKey, card: Omit<TradeCard, "id">): Trade {
+  const existing = trade[side].cards.find((c) => sameLine(card, c));
+  return existing
+    ? editSide(trade, side, (s) => ({
+        ...s,
+        cards: s.cards.map((c) => (c.id === existing.id ? { ...c, quantity: c.quantity + card.quantity } : c)),
+      }))
+    : editSide(trade, side, (s) => ({ ...s, cards: [...s.cards, { ...card, id: newId() }] }));
 }
 
 /** Applies an edit and records the previous trade for undo. No-ops on read-only trades. */
@@ -160,15 +172,12 @@ function reduce(state: State, action: Action): State {
   if (trade.readOnly) return state;
 
   switch (action.type) {
-    case "addCard": {
-      const existing = trade[action.side].cards.find((c) => sameLine(action.card, c));
-      const next = existing
-        ? editSide(trade, action.side, (s) => ({
-            ...s,
-            cards: s.cards.map((c) => (c.id === existing.id ? { ...c, quantity: c.quantity + action.card.quantity } : c)),
-          }))
-        : editSide(trade, action.side, (s) => ({ ...s, cards: [...s.cards, { ...action.card, id: newId() }] }));
-      return commit(state, next);
+    case "addCard":
+      return commit(state, withCard(trade, action.side, action.card));
+    case "addCards": {
+      if (action.cards.length === 0) return state;
+      // One undo step for the whole batch (e.g. several cards picked from the collection).
+      return commit(state, action.cards.reduce((t, card) => withCard(t, action.side, card), trade));
     }
     case "removeCard":
       return commit(state, editSide(trade, action.side, (s) => ({ ...s, cards: s.cards.filter((c) => c.id !== action.id) })));
@@ -291,6 +300,7 @@ export function useTrade(initial?: Trade) {
     canRedo: state.future.length > 0,
 
     addCard: (side: SideKey, card: Omit<TradeCard, "id">) => dispatch({ type: "addCard", side, card }),
+    addCards: (side: SideKey, cards: Omit<TradeCard, "id">[]) => dispatch({ type: "addCards", side, cards }),
     removeCard: (side: SideKey, id: string) => dispatch({ type: "removeCard", side, id }),
     updateCard: (side: SideKey, id: string, patch: Partial<Omit<TradeCard, "id">>) =>
       dispatch({ type: "updateCard", side, id, patch }),

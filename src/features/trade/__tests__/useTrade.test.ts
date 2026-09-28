@@ -35,6 +35,25 @@ describe("useTrade editing", () => {
     expect(result.current.trade.mine.cards[0].quantity).toBe(2);
   });
 
+  it("adds several cards as one undo step, merging with lines already there", () => {
+    const { result } = renderHook(() => useTrade());
+    act(() => result.current.addCard("mine", card()));
+    act(() => result.current.addCards("mine", [card({ quantity: 2 }), card({ name: "Other", collectorNumber: "2" }), card({ name: "Other", collectorNumber: "2" })]));
+    expect(result.current.trade.mine.cards.map((c) => [c.name, c.quantity])).toEqual([["Sol Ring", 3], ["Other", 2]]);
+    act(() => result.current.undo());
+    expect(result.current.trade.mine.cards.map((c) => [c.name, c.quantity])).toEqual([["Sol Ring", 1]]);
+  });
+
+  it("addCards with nothing to add is not an undo entry, and read-only ignores it", () => {
+    const { result } = renderHook(() => useTrade());
+    act(() => result.current.addCards("mine", []));
+    expect(result.current.canUndo).toBe(false);
+    const shared: Trade = { ...emptyTrade(), mine: { cards: [], cash: [{ id: "k", amount: 1 }] } };
+    const ro = renderHook(() => useTrade(shared));
+    act(() => ro.result.current.addCards("mine", [card()]));
+    expect(ro.result.current.trade.mine.cards).toHaveLength(0);
+  });
+
   it("updates, clamps quantity, and removes", () => {
     const { result } = renderHook(() => useTrade());
     act(() => result.current.addCard("theirs", card()));

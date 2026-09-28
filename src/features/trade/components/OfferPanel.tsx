@@ -14,6 +14,8 @@ interface OfferPanelProps {
   totals: SideTotals;
   settings: TradeSettings;
   readOnly: boolean;
+  /** Mobile puts the add actions in a bottom bar instead. */
+  hideAdds?: boolean;
   staleIds: Set<string>;
   flashId: string | null;
   getOwned: (card: TradeCard) => OwnedInfo | null;
@@ -77,7 +79,7 @@ export function OfferPanel(p: OfferPanelProps) {
         )}
       </div>
 
-      {!p.readOnly && (
+      {!p.readOnly && !p.hideAdds && (
         <div className="tr-offer-adds">
           {isMine && p.onAddFromCollection && (
             <button type="button" className="btn btn-secondary btn-sm" onClick={p.onAddFromCollection}><StackIcon />From collection</button>
