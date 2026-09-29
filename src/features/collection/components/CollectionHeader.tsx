@@ -30,6 +30,8 @@ interface CollectionHeaderProps {
   onQuickAddClick: () => void;
   onBulkEditClick: () => void;
   onOverflowOpen: () => void;
+  /** Adds a quiet "Trade calculator" item to the ⋯ menu when provided. */
+  onOpenTrade?: () => void;
   collectionSearch: string;
   onSearchChange: (v: string) => void;
   collectionFilter: CollectionFilterKey;
@@ -50,6 +52,7 @@ export function CollectionHeader({
   onQuickAddClick,
   onBulkEditClick,
   onOverflowOpen,
+  onOpenTrade,
   collectionSearch,
   onSearchChange,
   collectionFilter,
@@ -176,6 +179,18 @@ export function CollectionHeader({
                   >
                     Bulk edit
                   </button>
+                  {onOpenTrade && (
+                    <>
+                      <div className="collection-overflow-divider" role="separator" />
+                      <button
+                        className="collection-overflow-item collection-overflow-item--stacked"
+                        onClick={() => { setOverflowOpen(false); onOpenTrade(); }}
+                      >
+                        Trade calculator
+                        <span className="collection-overflow-hint">Weigh a trade. Doesn't change your collection.</span>
+                      </button>
+                    </>
+                  )}
                 </div>
               )}
             </div>

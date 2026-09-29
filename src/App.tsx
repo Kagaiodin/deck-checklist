@@ -14,6 +14,8 @@ import type { Deck, ErrorQueueItem, AcquisitionSource, Collection, CollectionMet
 import { applyCollectionToCards, mergeOrderCardsIntoCollection } from "./utils/csvParser";
 import { getDeckColorIdentity, formatRelativeDate, getDeckDomain } from "./utils/deckUtils";
 import { CollectionPage } from "./features/collection/CollectionPage";
+import { TradePage, clearTradeHash } from "./features/trade/TradePage";
+import { extractPayload } from "./utils/tradeShare";
 import { OrdersPage } from "./features/orders/OrdersPage";
 import { OnboardingModal } from "./features/onboarding/OnboardingModal";
 import { ProfileExportImport } from "./features/profile/ProfileExportImport";
@@ -36,6 +38,23 @@ function orderLabelForNotification(order: Order): string {
 }
 
 const ONBOARDING_KEY = "fetchlist:onboarding:dismissed";
+const COLLECTION_KEY = "mtg-checklist-collection-v2";
+
+/** A `/#trade=…` share link opens the Trade page (nested under Collection) instead of the default tab. */
+const openedWithTradeLink = () => extractPayload(window.location.hash) !== null;
+
+/**
+ * The Collection as it is right now. AppInner's own copy is only refreshed on reload
+ * (CollectionPage owns the writes), so Trade reads storage fresh each time it opens.
+ */
+function readCollection(): Collection {
+  try {
+    const raw = window.localStorage.getItem(COLLECTION_KEY);
+    return raw ? (JSON.parse(raw) as Collection) : {};
+  } catch {
+    return {};
+  }
+}
 
 function AppInner() {
   const { state, dispatch } = useDecks();
@@ -49,7 +68,11 @@ function AppInner() {
   const [validating, setValidating] = useState(false);
   const [progress, setProgress] = useState<ValidationProgress>({ total: 0, validated: 0 });
   const [importError, setImportError] = useState<string | null>(null);
-  const [view, setView] = useState<"decks" | "collection" | "orders">("decks");
+  const [view, setView] = useState<"decks" | "collection" | "orders">(() => (openedWithTradeLink() ? "collection" : "decks"));
+  // Trade is a page nested under Collection, not a top-level tab. `tradeKey` remounts it for a new link.
+  const [tradeOpen, setTradeOpen] = useState<boolean>(openedWithTradeLink);
+  const [tradeKey, setTradeKey] = useState(0);
+  const [tradeCollection, setTradeCollection] = useState<Collection>(readCollection);
   const [showImport, setShowImport] = useState(false);
   const [renamingDeckId, setRenamingDeckId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
@@ -570,9 +593,35 @@ function AppInner() {
   const toBuyTotal = toBuyCards.reduce((s, c) => s + c.quantity, 0);
 
   function switchView(v: "decks" | "collection" | "orders") {
+    if (tradeOpen) closeTrade();
     setView(v);
     window.scrollTo({ top: 0, behavior: "instant" });
   }
+
+  // ── Trade (nested under Collection) ────────────────────────────────────────
+  function openTrade() {
+    setTradeCollection(readCollection());
+    setTradeKey(k => k + 1);
+    setTradeOpen(true);
+  }
+
+  function closeTrade() {
+    clearTradeHash();
+    setTradeOpen(false);
+  }
+
+  // A share link pasted into an already-open tab only changes the hash, so listen for it.
+  useEffect(() => {
+    function onHashChange() {
+      if (!openedWithTradeLink()) return;
+      setView("collection");
+      setTradeCollection(readCollection());
+      setTradeKey(k => k + 1);
+      setTradeOpen(true);
+    }
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
+  }, []);
 
   const buyFlow = useBuyFlow({
     toBuyCards,
@@ -1372,10 +1421,15 @@ function AppInner() {
 
         {/* ── Collection tab ─────────────────────────────────────────────── */}
         {view === "collection" && (
-          <CollectionPage
-            decks={state.decks}
-            onCollectionChange={updated => dispatch({ type: "APPLY_COLLECTION", payload: updated })}
-          />
+          tradeOpen ? (
+            <TradePage key={tradeKey} collection={tradeCollection} decks={state.decks} onBack={closeTrade} />
+          ) : (
+            <CollectionPage
+              decks={state.decks}
+              onCollectionChange={updated => dispatch({ type: "APPLY_COLLECTION", payload: updated })}
+              onOpenTrade={openTrade}
+            />
+          )
         )}
         {/* ── Orders tab ─────────────────────────────────────────────────── */}
         {view === "orders" && (

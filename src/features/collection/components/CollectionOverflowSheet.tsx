@@ -14,6 +14,8 @@ interface CollectionOverflowSheetProps {
   onClose: () => void;
   onUploadClick: () => void;
   onBulkEditClick: () => void;
+  /** Adds a quiet "Trade calculator" row when provided. */
+  onOpenTradeClick?: () => void;
 }
 
 export function CollectionOverflowSheet({
@@ -21,6 +23,7 @@ export function CollectionOverflowSheet({
   onClose,
   onUploadClick,
   onBulkEditClick,
+  onOpenTradeClick,
 }: CollectionOverflowSheetProps) {
   const [visible, setVisible] = useState(false);
   const sheetRef = useRef<HTMLDivElement>(null);
@@ -130,6 +133,21 @@ export function CollectionOverflowSheet({
         )}
 
         <div className="sheet-divider" />
+
+        {onOpenTradeClick && (
+          <>
+            <button
+              className="sheet-action"
+              onClick={() => { handleClose(); onOpenTradeClick(); }}
+            >
+              <div className="sheet-action-body">
+                <span className="sheet-action-label">Trade calculator</span>
+                <span className="sheet-action-desc">Weigh a trade. Doesn't change your collection.</span>
+              </div>
+            </button>
+            <div className="sheet-divider" />
+          </>
+        )}
 
         <button className="sheet-action collection-sheet-cancel" onClick={handleClose}>
           <div className="sheet-action-body">
