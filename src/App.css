@@ -2064,6 +2064,28 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
   background: transparent; border: 1px dashed var(--text-muted);
 }
 
+/* ─── Cost-to-complete line (#107) ──────────────────────────────────────────── */
+.cost-line {
+  display: flex; flex-wrap: wrap; align-items: baseline;
+  column-gap: 0; row-gap: 2px; font-size: 13px; line-height: 1.45;
+}
+.cost-line > span:first-child { margin-right: 8px; }
+.cost-lead { color: var(--text-muted); }
+.cost-amt {
+  font-family: var(--font-mono); font-variant-numeric: tabular-nums;
+  font-weight: 600; color: var(--text);
+}
+.cost-meta { color: var(--text-muted); font-size: 12px; }
+.cost-sep { color: var(--text-dim); white-space: pre; }
+.cost-stale { color: var(--warn); display: inline-flex; align-items: center; gap: 4px; }
+.cost-stale svg, .cost-done svg { width: 12px; height: 12px; flex-shrink: 0; }
+.cost-done { color: var(--success); font-size: 12px; display: inline-flex; align-items: center; gap: 5px; margin-right: 8px; }
+.cost-loading { color: var(--text-muted); font-size: 12px; }
+.cost-loading::after {
+  content: ""; display: inline-block; width: 44px; height: 8px; margin-left: 8px;
+  vertical-align: middle; border-radius: 4px; background: var(--surface-2);
+}
+
 /* ─── Inline filter pills ───────────────────────────────────────────────────── */
 .filter-pills-row {
   display: flex; align-items: center; gap: 5px; flex-wrap: wrap;

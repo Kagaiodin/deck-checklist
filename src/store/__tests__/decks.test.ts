@@ -460,3 +460,74 @@ describe("default branch", () => {
   });
 });
 
+
+// ── SET_DECK_PRICES ───────────────────────────────────────────────────────────
+
+describe("SET_DECK_PRICES", () => {
+  const base = () => ({
+    decks: [
+      makeDeck({
+        id: "d1",
+        name: "Burn",
+        cards: [makeCard({ id: "a", name: "A", price: 1 }), makeCard({ id: "b", name: "B", price: 2 })],
+      }),
+      makeDeck({ id: "d2", name: "Other", cards: [makeCard({ id: "a", name: "A", price: 1 })] }),
+    ],
+  });
+
+  it("updates prices on matching cards and stamps pricesUpdatedAt", () => {
+    const state = deckReducer(base(), {
+      type: "SET_DECK_PRICES",
+      payload: { deckId: "d1", prices: { a: 9.5, b: 3 }, updatedAt: 1000 },
+    });
+    expect(state.decks[0].cards.map(c => c.price)).toEqual([9.5, 3]);
+    expect(state.decks[0].pricesUpdatedAt).toBe(1000);
+  });
+
+  it("keeps the prior price for cards absent from the map", () => {
+    const state = deckReducer(base(), {
+      type: "SET_DECK_PRICES",
+      payload: { deckId: "d1", prices: { a: 7 }, updatedAt: 1000 },
+    });
+    expect(state.decks[0].cards.map(c => c.price)).toEqual([7, 2]);
+  });
+
+  it("clears the price when the map value is null", () => {
+    const state = deckReducer(base(), {
+      type: "SET_DECK_PRICES",
+      payload: { deckId: "d1", prices: { a: null }, updatedAt: 1000 },
+    });
+    expect(state.decks[0].cards[0].price).toBeUndefined();
+  });
+
+  it("does not change pricesUpdatedAt when updatedAt is omitted (partial failure)", () => {
+    const initial = base();
+    initial.decks[0].pricesUpdatedAt = 500;
+    const state = deckReducer(initial, {
+      type: "SET_DECK_PRICES",
+      payload: { deckId: "d1", prices: { a: 4 } },
+    });
+    expect(state.decks[0].pricesUpdatedAt).toBe(500);
+    expect(state.decks[0].cards[0].price).toBe(4);
+  });
+
+  it("leaves other decks untouched", () => {
+    const state = deckReducer(base(), {
+      type: "SET_DECK_PRICES",
+      payload: { deckId: "d1", prices: { a: 99 }, updatedAt: 1000 },
+    });
+    expect(state.decks[1].cards[0].price).toBe(1);
+    expect(state.decks[1].pricesUpdatedAt).toBeUndefined();
+  });
+
+  it("preserves card source, acquired state and quantity", () => {
+    const initial = {
+      decks: [makeDeck({ id: "d1", name: "X", cards: [makeCard({ id: "a", name: "A", source: "need_to_buy", quantity: 3, acquired: true })] })],
+    };
+    const state = deckReducer(initial, {
+      type: "SET_DECK_PRICES",
+      payload: { deckId: "d1", prices: { a: 5 }, updatedAt: 1 },
+    });
+    expect(state.decks[0].cards[0]).toMatchObject({ source: "need_to_buy", quantity: 3, acquired: true, price: 5 });
+  });
+});

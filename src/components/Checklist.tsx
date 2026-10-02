@@ -5,6 +5,7 @@ import { ACQUISITION_SOURCES } from "../types/index";
 import { CardRowOverflowMenu } from "./CardRowOverflowMenu";
 import { CardRowSheet } from "./CardRowSheet";
 import { DeckExtraInfo } from "./DeckExtraInfo";
+import { CostLine } from "./CostLine";
 import { useMediaQuery } from "../hooks/useMediaQuery";
 
 
@@ -33,6 +34,7 @@ interface Props {
   /** When set, only cards whose IDs are in this array are shown (used by notification "Show cards"). */
   filterCardIds?: string[];
   isEnrichmentLoading?: boolean;
+  isPricesLoading?: boolean;
 }
 
 type GroupBy = "none" | "color" | "type" | "source";
@@ -229,7 +231,7 @@ function AddCardRow({ onAdd }: { onAdd: (name: string) => Promise<{ success: boo
 }
 
 // ─── Main Checklist component ─────────────────────────────────────────────────
-export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetSource, onBulkSetSource, onRemoveCard, onUpdateQuantity, onAddCard, filterCardIds, isEnrichmentLoading }: Props) {
+export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetSource, onBulkSetSource, onRemoveCard, onUpdateQuantity, onAddCard, filterCardIds, isEnrichmentLoading, isPricesLoading }: Props) {
   const [groupBy, setGroupBy] = useState<GroupBy>("none");
   const [showMissingOnly, setShowMissingOnly] = useState(false);
   const [search, setSearch] = useState("");
@@ -460,6 +462,7 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
               }}
             />
           </div>
+          <CostLine cards={deck.cards} pricesUpdatedAt={deck.pricesUpdatedAt} isLoading={isPricesLoading ?? false} />
           <div className="progress-legend">
             {SEGMENT_SOURCES.map(({ key, color, bg, label }) => {
               const qty = sourceBreakdown.get(key) ?? 0;

@@ -25,6 +25,7 @@ type DeckAction =
   | { type: "DISMISS_NOTIFICATION"; payload: { deckId: string; notificationId: string } }
   | { type: "SET_DECKS"; payload: Deck[] }
   | { type: "SET_EXTRA_INFO"; payload: { deckId: string; extraInfo: DeckExtraInfo } }
+  | { type: "SET_DECK_PRICES"; payload: { deckId: string; prices: Record<string, number | null>; updatedAt?: number } }
   | { type: "TOGGLE_DECK_BUILT"; payload: string };
 
 // Exported for unit testing
@@ -187,6 +188,25 @@ export function deckReducer(state: DeckState, action: DeckAction): DeckState {
             : d
         ),
       };
+    case "SET_DECK_PRICES": {
+      // A card absent from `prices` keeps its prior price; null clears it (Scryfall has no price).
+      // `updatedAt` is omitted after a partial failure so the deck still reads as stale.
+      const { deckId, prices, updatedAt } = action.payload;
+      return {
+        ...state,
+        decks: state.decks.map(d =>
+          d.id === deckId
+            ? {
+                ...d,
+                cards: d.cards.map(c =>
+                  c.id in prices ? { ...c, price: prices[c.id] ?? undefined } : c
+                ),
+                pricesUpdatedAt: updatedAt ?? d.pricesUpdatedAt,
+              }
+            : d
+        ),
+      };
+    }
     case "TOGGLE_DECK_BUILT":
       return {
         ...state,

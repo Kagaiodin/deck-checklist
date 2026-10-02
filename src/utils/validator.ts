@@ -1,5 +1,7 @@
 import type { Card, ErrorQueueItem, DeckToken, DeckAltPrinting, DeckExtraInfo } from "../types/index";
 import { getFrontFaceName, isDualFace } from "./dualface";
+import { pickUsdPrice } from "./deckCost";
+import type { ScryfallUsdPrices } from "./deckCost";
 
 interface ScryfallCardFace {
   name: string;
@@ -17,6 +19,7 @@ interface ScryfallCard {
   set: string;
   rarity: "common" | "uncommon" | "rare" | "mythic" | "special" | "bonus";
   flavor_name?: string;
+  prices?: ScryfallUsdPrices;
   all_parts?: Array<{
     object: "related_card";
     component: "token" | "meld_part" | "meld_result" | "combo_piece";
@@ -102,6 +105,7 @@ function scryfallCardToCard(sc: ScryfallCard, quantity: number): Card {
     type,
     set: sc.set.toUpperCase(),
     rarity: sc.rarity,
+    price: pickUsdPrice(sc.prices),
   };
 }
 
