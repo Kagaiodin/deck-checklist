@@ -311,7 +311,7 @@ describe("Checklist — acquiring and row actions", () => {
     expect(p.onToggleAcquired).toHaveBeenCalledWith("c2");
   });
 
-  it("row overflow menu sets source and removes a card (desktop)", async () => {
+  it("row overflow menu sets a card source (desktop)", async () => {
     const p = setup();
     const user = u();
     await user.click(within(row("Counterspell")).getByRole("button", { name: /Card actions/ }));
