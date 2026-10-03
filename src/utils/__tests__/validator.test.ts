@@ -96,6 +96,7 @@ type ScryfallCard = {
   card_faces?: ScryfallCardFace[];
   set: string;
   rarity: "common" | "uncommon" | "rare" | "mythic" | "special" | "bonus";
+  prices?: { usd?: string | null; usd_foil?: string | null };
 };
 type BatchResponse = { data: ScryfallCard[]; not_found: { name: string }[] };
 
@@ -147,6 +148,24 @@ describe("validateDecklist", () => {
     expect(cards[0].quantity).toBe(4);
     expect(cards[0].id).toBe("abc");
     expect(cards[0].acquired).toBe(false);
+  });
+
+  it("captures the USD price on the Card", async () => {
+    const sc = makeScryCard({ id: "abc", name: "Sol Ring", prices: { usd: "1.75", usd_foil: "4.00" } });
+    mockFetch({ data: [sc], not_found: [] });
+
+    const { cards } = await validateDecklist([{ count: 1, name: "Sol Ring" }]);
+
+    expect(cards[0].price).toBe(1.75);
+  });
+
+  it("leaves price undefined when Scryfall has no price", async () => {
+    const sc = makeScryCard({ id: "abc", name: "Black Lotus", prices: { usd: null, usd_foil: null } });
+    mockFetch({ data: [sc], not_found: [] });
+
+    const { cards } = await validateDecklist([{ count: 1, name: "Black Lotus" }]);
+
+    expect(cards[0].price).toBeUndefined();
   });
 
   it("uppercases the set code", async () => {

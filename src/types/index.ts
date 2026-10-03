@@ -31,6 +31,7 @@ export interface Card {
   set?: string;
   rarity?: "common" | "uncommon" | "rare" | "mythic" | "special" | "bonus";
   manuallyTagged?: boolean;
+  price?: number; // unit price in USD from Scryfall; undefined = unpriced
 }
 
 export interface CollectionPrinting {
@@ -86,6 +87,7 @@ export interface Deck {
   isBuilt?: boolean;
   notifications?: DeckNotification[];
   extraInfo?: DeckExtraInfo;
+  pricesUpdatedAt?: number;
 }
 
 export interface ErrorQueueItem {

@@ -4,6 +4,7 @@ import "./App.css";
 import { DeckProvider, useDecks } from "./store/decks";
 import { parseDecklist } from "./utils/parser";
 import { validateDecklist, enrichDeckExtraInfo } from "./utils/validator";
+import { refreshDeckPrices, needsPriceRefresh } from "./utils/deckCost";
 import type { ValidationProgress } from "./utils/validator";
 import { useLocalStorage } from "./hooks/useLocalStorage";
 import { Checklist } from "./components/Checklist";
@@ -90,6 +91,8 @@ function AppInner() {
   const [editingFormatId, setEditingFormatId] = useState<string | null>(null);
   const [formatDraft, setFormatDraft] = useState("");
   const [enrichingDeckIds, setEnrichingDeckIds] = useState<Set<string>>(new Set());
+  const [pricingDeckIds, setPricingDeckIds] = useState<Set<string>>(new Set());
+  const pricingAttemptedRef = useRef<Set<string>>(new Set());
 
   // ── Sidebar persistence + keyboard shortcut ───────────────────────────────
   useEffect(() => {
@@ -148,6 +151,23 @@ function AppInner() {
 
 
   const activeDeck = state.decks.find(d => d.id === activeDeckId) ?? null;
+
+  // Backfill/refresh prices when a deck is opened (at most once per deck per session,
+  // so an offline failure doesn't retry in a loop). Failed batches keep their prior prices.
+  useEffect(() => {
+    if (!activeDeck) return;
+    const { id } = activeDeck;
+    if (pricingAttemptedRef.current.has(id) || !needsPriceRefresh(activeDeck, Date.now())) return;
+    pricingAttemptedRef.current.add(id);
+    setPricingDeckIds(prev => new Set(prev).add(id));
+    refreshDeckPrices(activeDeck.cards).then(({ prices, ok }) => {
+      if (Object.keys(prices).length === 0) return;
+      dispatch({ type: "SET_DECK_PRICES", payload: { deckId: id, prices, updatedAt: ok ? Date.now() : undefined } });
+    }).finally(() => {
+      setPricingDeckIds(prev => { const next = new Set(prev); next.delete(id); return next; });
+    });
+  }, [activeDeck, dispatch]);
+
   const errors = activeDeckId ? (allErrors[activeDeckId] ?? []) : [];
 
   function setErrors(updater: ErrorQueueItem[] | ((prev: ErrorQueueItem[]) => ErrorQueueItem[])) {
@@ -198,6 +218,7 @@ function AppInner() {
         cards: taggedCards,
         createdAt: Date.now(),
         isBuilt: importAsBuilt || undefined,
+        pricesUpdatedAt: taggedCards.some(c => c.price !== undefined) ? Date.now() : undefined,
       };
 
       dispatch({ type: "ADD_DECK", payload: deck });
@@ -1357,6 +1378,7 @@ function AppInner() {
                     onAddCard={handleAddCard}
                     filterCardIds={notificationFilterIds ?? undefined}
                     isEnrichmentLoading={enrichingDeckIds.has(activeDeck.id)}
+                    isPricesLoading={pricingDeckIds.has(activeDeck.id)}
                   />
                 </>
               ) : state.decks.length === 0 && !showImport ? (

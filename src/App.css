@@ -2064,6 +2064,53 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
   background: transparent; border: 1px dashed var(--text-muted);
 }
 
+/* ─── Cost-to-complete line (#107) ──────────────────────────────────────────── */
+.cost-line {
+  position: relative;
+  display: flex; flex-wrap: wrap; align-items: baseline;
+  column-gap: 0; row-gap: 2px; font-size: 13px; line-height: 1.45;
+}
+.cost-line > span:first-child { margin-right: 8px; }
+.cost-lead { color: var(--text-muted); }
+.cost-trigger {
+  font: inherit; color: inherit; background: none; border: 0; padding: 2px 3px; margin: -2px -3px;
+  border-radius: var(--radius-xs); cursor: pointer;
+  text-decoration: underline dotted var(--text-dim); text-decoration-thickness: 1px; text-underline-offset: 3px;
+}
+.cost-trigger:hover, .cost-trigger[aria-expanded="true"] { background: var(--surface-2); text-decoration-color: var(--text-muted); }
+.cost-trigger:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.cost-pop {
+  position: absolute; top: calc(100% + 6px); left: -4px; z-index: 100;
+  width: 264px; max-width: calc(100vw - 24px);
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px;
+  box-shadow: var(--shadow-menu); font-size: 13px; line-height: 1.4;
+}
+.cost-pop-head { padding: 10px 12px 8px; }
+.cost-pop-total { display: flex; align-items: baseline; gap: 6px; }
+.cost-pop-total .cost-amt { font-size: 15px; }
+.cost-pop-sub { color: var(--text-muted); font-size: 12px; margin-top: 1px; }
+.cost-pop-divider { height: 1px; background: var(--border); margin: 0 12px; }
+.cost-pop-rows { display: grid; grid-template-columns: 1fr auto; gap: 5px 12px; margin: 0; padding: 8px 12px; }
+.cost-pop-rows dt { color: var(--text); }
+.cost-pop-rows dt .n { font-family: var(--font-mono); font-variant-numeric: tabular-nums; color: var(--text-muted); margin-left: 4px; }
+.cost-pop-rows dd { margin: 0; text-align: right; font-family: var(--font-mono); font-variant-numeric: tabular-nums; color: var(--text); }
+.cost-pop-rows dd.note { font-family: inherit; color: var(--text-muted); font-size: 12px; }
+.cost-pop-foot { padding: 8px 12px 10px; color: var(--text-muted); font-size: 12px; display: flex; flex-direction: column; gap: 2px; }
+.cost-amt {
+  font-family: var(--font-mono); font-variant-numeric: tabular-nums;
+  font-weight: 600; color: var(--text);
+}
+.cost-meta { color: var(--text-muted); font-size: 12px; }
+.cost-sep { color: var(--text-dim); white-space: pre; }
+.cost-stale { color: var(--warn); display: inline-flex; align-items: center; gap: 4px; }
+.cost-stale svg, .cost-done svg { width: 12px; height: 12px; flex-shrink: 0; }
+.cost-done { color: var(--success); font-size: 12px; display: inline-flex; align-items: center; gap: 5px; margin-right: 8px; }
+.cost-loading { color: var(--text-muted); font-size: 12px; }
+.cost-loading::after {
+  content: ""; display: inline-block; width: 44px; height: 8px; margin-left: 8px;
+  vertical-align: middle; border-radius: 4px; background: var(--surface-2);
+}
+
 /* ─── Inline filter pills ───────────────────────────────────────────────────── */
 .filter-pills-row {
   display: flex; align-items: center; gap: 5px; flex-wrap: wrap;
