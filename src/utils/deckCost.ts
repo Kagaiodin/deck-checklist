@@ -25,19 +25,34 @@ export interface CostToComplete {
   unpricedCount: number; // missing copies with no price (counted as $0)
   orderedCount: number;  // copies already ordered (excluded from remaining)
   pricedCount: number;   // copies in the whole deck that carry a price, used to tell "not loaded yet" from "nothing to buy"
+  toBuyCount: number;    // missing copies tagged need_to_buy
+  toBuyCost: number;     // USD for those copies
+  untaggedCount: number; // missing copies with no source tag
+  untaggedCost: number;  // USD for those copies; toBuyCost + untaggedCost === remaining
 }
 
 export function computeCostToComplete(cards: Card[]): CostToComplete {
-  const result: CostToComplete = { remaining: 0, missingCount: 0, unpricedCount: 0, orderedCount: 0, pricedCount: 0 };
+  const result: CostToComplete = {
+    remaining: 0, missingCount: 0, unpricedCount: 0, orderedCount: 0, pricedCount: 0,
+    toBuyCount: 0, toBuyCost: 0, untaggedCount: 0, untaggedCost: 0,
+  };
   for (const card of cards) {
     if (card.price !== undefined) result.pricedCount += card.quantity;
     if (card.source === "ordered") result.orderedCount += card.quantity;
     const isMissing = !card.acquired && (card.source === undefined || card.source === "need_to_buy");
     if (!isMissing) continue;
     result.missingCount += card.quantity;
+    const cost = card.price === undefined ? 0 : card.price * card.quantity;
     if (card.price === undefined) result.unpricedCount += card.quantity;
-    else result.remaining += card.price * card.quantity;
+    if (card.source === undefined) {
+      result.untaggedCount += card.quantity;
+      result.untaggedCost += cost;
+    } else {
+      result.toBuyCount += card.quantity;
+      result.toBuyCost += cost;
+    }
   }
+  result.remaining = result.toBuyCost + result.untaggedCost;
   return result;
 }
 

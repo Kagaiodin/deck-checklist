@@ -118,6 +118,10 @@ describe("computeCostToComplete", () => {
       unpricedCount: 0,
       orderedCount: 0,
       pricedCount: 0,
+      toBuyCount: 0,
+      toBuyCost: 0,
+      untaggedCount: 0,
+      untaggedCost: 0,
     });
   });
 
@@ -131,6 +135,50 @@ describe("computeCostToComplete", () => {
 });
 
 // ── formatCostAmount ──────────────────────────────────────────────────────────
+
+describe("computeCostToComplete split", () => {
+  it("splits a mixed deck into to-buy and untagged that sum to remaining", () => {
+    const r = computeCostToComplete([
+      makeCard({ id: "a", source: "need_to_buy", price: 10, quantity: 2 }),
+      makeCard({ id: "b", price: 4.5, quantity: 3 }),
+      makeCard({ id: "c", source: "need_to_buy", price: 0.1 }),
+      makeCard({ id: "d", price: 0.2 }),
+    ]);
+    expect(r.toBuyCount).toBe(3);
+    expect(r.toBuyCost).toBeCloseTo(20.1);
+    expect(r.untaggedCount).toBe(4);
+    expect(r.untaggedCost).toBeCloseTo(13.7);
+    expect(r.toBuyCost + r.untaggedCost).toBe(r.remaining);
+    expect(r.toBuyCount + r.untaggedCount).toBe(r.missingCount);
+  });
+
+  it("reports an untagged-only deck with a zero to-buy row", () => {
+    const r = computeCostToComplete([makeCard({ id: "a", price: 5, quantity: 2 })]);
+    expect(r).toMatchObject({ toBuyCount: 0, toBuyCost: 0, untaggedCount: 2, untaggedCost: 10, remaining: 10 });
+  });
+
+  it("reports a to-buy-only deck with a zero untagged row", () => {
+    const r = computeCostToComplete([makeCard({ id: "a", source: "need_to_buy", price: 5, quantity: 2 })]);
+    expect(r).toMatchObject({ toBuyCount: 2, toBuyCost: 10, untaggedCount: 0, untaggedCost: 0, remaining: 10 });
+  });
+
+  it("excludes acquired cards from both rows", () => {
+    const r = computeCostToComplete([
+      makeCard({ id: "a", source: "need_to_buy", acquired: true, price: 50 }),
+      makeCard({ id: "b", acquired: true, price: 50 }),
+      makeCard({ id: "c", source: "need_to_buy", price: 3 }),
+    ]);
+    expect(r).toMatchObject({ toBuyCount: 1, toBuyCost: 3, untaggedCount: 0, untaggedCost: 0 });
+  });
+
+  it("counts unpriced copies in their row's count but not its cost", () => {
+    const r = computeCostToComplete([
+      makeCard({ id: "a", source: "need_to_buy", quantity: 2 }),
+      makeCard({ id: "b", price: 7 }),
+    ]);
+    expect(r).toMatchObject({ toBuyCount: 2, toBuyCost: 0, untaggedCount: 1, untaggedCost: 7, unpricedCount: 2 });
+  });
+});
 
 describe("formatCostAmount", () => {
   it("rounds to whole dollars", () => {

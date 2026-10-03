@@ -43,7 +43,18 @@ One line under the progress bar in the strip in `Checklist.tsx`, rendered by a n
 - Stale (older than 24h, i.e. refresh failed): freshness text turns `--warn` with a warning icon
 - No "est." prefix; the `~` carries the estimate
 - No new tokens. Dollar figure uses `--font-mono`
-- **Vision guard:** no deck total and no count-vs-cost bar (Variants B and C rejected because they price the owned side). Never render total − remaining as a dollar figure.
+- **Vision guard:** no deck total and no count-vs-cost bar (Variants B and C were rejected for footprint and because they add a second bar). Never render total − remaining as a dollar figure.
+
+### Breakdown popover
+Follow-up to explain where the figure comes from. The visible line is unchanged; an "incl. untagged" note was considered and rejected. Source: Open Design `cost-line-breakdown-mockup.html`.
+
+- **Trigger:** the `~$X` figure is a `<button>` (`aria-expanded`, `aria-controls` while open, dotted underline, `--surface-2` on hover/open, `:focus-visible` ring). Click, tap or Enter toggles. With a hover-capable pointer (`@media (hover: hover)`), hover opens it after ~150ms; a click on a hover-opened popover pins it. Rendered only when there is a priced total; the loading, empty and done states are unchanged.
+- **Content:** header `~$X to finish` + `N cards still missing`; rows `To buy N → ~$A` and `Untagged N → ~$B` (a row is hidden at 0, and A + B equals the headline: the second row is derived from the rounded total so rounding never breaks the sum); optional `No price found N · counted as $0` and `Ordered N · not counted` only when above 0; footer `Estimated from Scryfall's default printing, in USD` plus the freshness label, or the warn icon + `Couldn't refresh. Prices from …` when stale.
+- **Counts** are missing copies only, so the untagged count can be lower than the "N untagged" chip.
+- **Shell:** `.card-row-popover` look (`--surface-2`, 1px `--border`, 8px radius) with `var(--shadow-menu)`; 264px wide, capped at the viewport minus 24px; anchored below the trigger. No colored dots, no new red.
+- **Dismissal (WCAG 1.4.13):** Esc, outside click or touch, or clicking the trigger again closes it; it stays open while the pointer moves from trigger to popover; focus returns to the trigger on Esc.
+- **Data:** `computeCostToComplete` also returns `toBuyCount`, `toBuyCost`, `untaggedCount`, `untaggedCost` (`toBuyCost + untaggedCost === remaining`).
+- **Rules unchanged:** never show owned value, collection value, a deck total, or total minus remaining; every dollar figure keeps the `~` prefix.
 
 ## Tests (per CLAUDE.md)
 - `src/utils/__tests__/` — `computeCostToComplete` (tag rules, quantity multiplication, unpriced, ordered note), `refreshDeckPrices` (batching, failed batch keeps prior price)

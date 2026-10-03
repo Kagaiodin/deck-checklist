@@ -13,6 +13,9 @@
  * (with prices on active order cards), and collection data — enough to reach
  * every UI state including the buy list and spend meta.
  *
+ * Shots 54–58 (cost-to-complete breakdown popover) run in their own fixture-only contexts with
+ * Scryfall prices mocked; `--cost-only` runs just those.
+ *
  * Shots 17, 18, 25, 26, 26b were removed (stale selectors from pre-redesign UI).
  * Replaced by shots 37–53 covering the full orders v2 redesign flows.
  */
@@ -272,10 +275,111 @@ async function buildContext(viewport: { width: number; height: number }): Promis
   }
 }
 
+// ── Cost-to-complete breakdown popover (#107) ─────────────────────────────────
+// Isolated fixture-only context. Scryfall's price endpoint is mocked from the fixture's
+// card prices so the "fresh" shots are deterministic; for the stale shot it is aborted so
+// deck-002 keeps its old prices and reads as stale.
+async function captureCostBreakdown(): Promise<void> {
+  if (browserArg !== "fixture") {
+    console.log("\n── Cost breakdown skipped (fixture mode only) ──");
+    return;
+  }
+  console.log("\n── Cost breakdown popover ──");
+
+  const seed = JSON.parse(fs.readFileSync(seedPath, "utf-8")) as Record<string, string>;
+  const fixtureDecks = JSON.parse(seed["mtg-checklist-decks"]) as Array<{ cards: Array<{ id: string; price?: number }> }>;
+  const priceById = new Map<string, number>();
+  for (const dk of fixtureDecks) for (const c of dk.cards) if (c.price !== undefined) priceById.set(c.id, c.price);
+
+  const CORS = { "access-control-allow-origin": "*", "access-control-allow-headers": "*", "access-control-allow-methods": "POST, OPTIONS" };
+  const mockPrices = async (page: Page, mode: "ok" | "fail") => {
+    await page.route("https://api.scryfall.com/cards/collection", async route => {
+      const req = route.request();
+      if (req.method() === "OPTIONS") return route.fulfill({ status: 204, headers: CORS });
+      if (mode === "fail") return route.abort("failed");
+      const { identifiers } = JSON.parse(req.postData() ?? "{}") as { identifiers: Array<{ id: string }> };
+      const data = identifiers.map(({ id }) => ({
+        id,
+        prices: { usd: priceById.has(id) ? priceById.get(id)!.toFixed(2) : null, usd_foil: null },
+      }));
+      return route.fulfill({ status: 200, headers: CORS, contentType: "application/json", body: JSON.stringify({ data }) });
+    });
+  };
+
+  const run = async (opts: {
+    viewport: { width: number; height: number };
+    mode: "dark" | "light";
+    deckIndex: number;
+    fetchMode: "ok" | "fail";
+    name: string;
+  }) => {
+    const browser = await chromium.launch({ headless: false });
+    try {
+      const c = await browser.newContext({ viewport: opts.viewport });
+      await c.addInitScript((entries: Record<string, string>) => {
+        for (const [k, v] of Object.entries(entries)) localStorage.setItem(k, v);
+      }, seed);
+      const page = await c.newPage();
+      await mockPrices(page, opts.fetchMode);
+      await page.goto(BASE_URL);
+      try { await page.waitForLoadState("networkidle", { timeout: 10_000 }); } catch {}
+      await page.waitForTimeout(SETTLE_MS);
+      const mobile = opts.viewport.width < 600;
+      await attempt(`select deck ${opts.deckIndex} (${opts.name})`, async () => {
+        if (mobile) {
+          await page.locator(".mobile-deck-current").first().click();
+          await page.waitForTimeout(500);
+          await page.locator(".deck-picker-list .deck-item").nth(opts.deckIndex).click();
+        } else {
+          await page.locator(".deck-list .deck-item").nth(opts.deckIndex).click();
+        }
+        await page.waitForTimeout(SETTLE_MS);
+      });
+      if (opts.mode === "light") {
+        // The theme is applied through the settings UI (seeded localStorage alone doesn't switch it)
+        await attempt(`switch to light mode (${opts.name})`, async () => {
+          await click(page, ".header-overflow-btn");
+          await page.waitForTimeout(300);
+          await click(page, ".settings-btn");
+          await page.waitForTimeout(300);
+          await click(page, ".mode-segment-btn", { hasText: "Light" });
+          await page.waitForTimeout(600);
+          await page.keyboard.press("Escape");
+          await page.keyboard.press("Escape");
+          await page.waitForTimeout(300);
+        });
+      }
+      await attempt(`open cost breakdown (${opts.name})`, async () => {
+        await page.locator(".cost-trigger").first().click({ timeout: 5_000 });
+        await page.locator(".cost-pop").waitFor({ timeout: 3_000 });
+        await page.mouse.move(5, 5); // pinned by the click, so this only clears hover styling
+        await page.waitForTimeout(400);
+      });
+      await shot(page, opts.name);
+    } finally {
+      await browser.close();
+    }
+  };
+
+  const desktop = { width: 1440, height: 900 };
+  const mobile = { width: 390, height: 844 };
+  await run({ viewport: desktop, mode: "dark", deckIndex: 2, fetchMode: "ok", name: "54-desktop-cost-breakdown-open.png" });
+  await run({ viewport: desktop, mode: "light", deckIndex: 2, fetchMode: "ok", name: "55-desktop-cost-breakdown-light.png" });
+  await run({ viewport: mobile, mode: "dark", deckIndex: 2, fetchMode: "ok", name: "56-mobile-cost-breakdown-open.png" });
+  await run({ viewport: desktop, mode: "dark", deckIndex: 0, fetchMode: "ok", name: "57-desktop-cost-breakdown-unpriced-ordered.png" });
+  await run({ viewport: desktop, mode: "dark", deckIndex: 1, fetchMode: "fail", name: "58-desktop-cost-breakdown-stale.png" });
+}
+
 // ── Main ──────────────────────────────────────────────────────────────────────
 async function main(): Promise<void> {
   console.log(`\nFetchlist design review capture → ${OUT_DIR}`);
   console.log(`Source: ${browserArg === "fixture" ? `fixture (${path.basename(seedPath)})` : browserArg}\n`);
+
+  if (args.includes("--cost-only")) {
+    await captureCostBreakdown();
+    writeLog();
+    return;
+  }
 
   // Read seed data once — used both for the main context and the empty-collection sub-context
   const seedData: Record<string, string> = browserArg === "fixture" && fs.existsSync(seedPath)
@@ -964,6 +1068,11 @@ async function main(): Promise<void> {
     }
   }
 
+  await captureCostBreakdown();
+  writeLog();
+}
+
+function writeLog(): void {
   // ── Write log file ────────────────────────────────────────────────────────
   const logPayload = {
     runAt: RUN_START.toISOString(),
