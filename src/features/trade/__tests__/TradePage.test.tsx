@@ -298,7 +298,8 @@ describe("TradePage — desktop", () => {
       await waitFor(() => expect(clipboard).toHaveBeenCalled());
       expect(clipboard.mock.calls[0][0]).toContain("I give");
       expect(await screen.findByText(/Too many cards for a link/)).toBeInTheDocument();
-    });
+      // 600-card trade: slow under coverage instrumentation, so allow headroom over the 5s default.
+    }, 20_000);
 
     it("reports a blocked clipboard instead of claiming success", async () => {
       clipboard.mockRejectedValue(new Error("denied"));
