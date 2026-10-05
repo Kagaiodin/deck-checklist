@@ -43,3 +43,6 @@ design-review-screenshots/
 
 # Open Design prompt scratch files
 docs/specs/*-od-prompt.md
+
+# Test coverage output
+coverage/
