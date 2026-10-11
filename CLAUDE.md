@@ -74,12 +74,13 @@ If the latter, it's probably scope creep and should not be built.
 - `src/App.css` — component and layout styles (~2500 lines). Run `npm run css:index` for a compact `<line> <section>` list, then read only that range (offset/limit). Don't read the whole file.
 
 ## Git
-- **Never commit directly to main** — always create a feature branch first
 - Branch naming: `feat/<short-description>` or `fix/<short-description>`
 - Atomic commits — one logical change per commit
 - Commit message format: feat/fix/refactor/style: description
-- npm run build must pass before every push — no exceptions
-- npm test must pass before every push — no exceptions
+- Enforced mechanically, not by memory: hooks in `.claude/hooks/` block commit/push
+  on `main` and run build + tests before every push; CI runs `npm run verify` on PRs.
+  Create the feature branch in its own command (a hook sees the branch before a
+  compound `checkout && commit` runs).
 
 ## Work tracking
 - Active work tracked in GitHub Issues — check open issues before starting a session
