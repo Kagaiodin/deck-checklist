@@ -24,9 +24,10 @@
   files for pattern reference before writing new ones
 
 ## Test file reference
-- src/utils/__tests__/ — parser, CSV parser, validator, carrier, dualface, deck utils
-- src/store/__tests__/ — DeckProvider, decks store  
-- src/features/card-purchase/__tests__/ — BuyListSheet, useBuyFlow
+- Tests live in a `__tests__/` folder next to the code they cover (utils, store,
+  components, hooks, and each `src/features/<feature>/`). Find the nearest one
+  and copy its pattern.
+- Coverage floors are enforced in vitest.config — `npm run test:coverage` fails below them.
 
 ## Session discipline
 - One feature or fix per session — state it in the first message
@@ -70,7 +71,7 @@ If the latter, it's probably scope creep and should not be built.
 ## CSS Structure
 
 - `src/tokens.css` — all CSS custom properties: reset, `:root` (dark mode), light mode overrides, and accent variants. Import this first.
-- `src/App.css` — component and layout styles (~2005 lines). See section index comment at the top of that file for line ranges.
+- `src/App.css` — component and layout styles (~2500 lines). Run `npm run css:index` for a compact `<line> <section>` list, then read only that range (offset/limit). Don't read the whole file.
 
 ## Git
 - **Never commit directly to main** — always create a feature branch first

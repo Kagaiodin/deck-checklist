@@ -13,6 +13,7 @@
     "verify": "npm run build && npm run test:coverage",
     "preview": "npm run build && wrangler dev",
     "deploy": "npm run build && wrangler deploy",
+    "css:index": "sh scripts/css-index.sh",
     "screenshots": "tsx scripts/capture-screenshots.ts",
     "screenshots:chrome": "tsx scripts/capture-screenshots.ts --browser chrome",
     "screenshots:firefox": "tsx scripts/capture-screenshots.ts --browser firefox",

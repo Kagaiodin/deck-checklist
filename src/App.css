@@ -1,35 +1,5 @@
-/* ─── Section index ─────────────────────────────────────────────────────────
-   Theme transition       1
-   Layout                 12
-   Header overflow menu   36
-   Navigation buttons     118
-   Buttons                133
-   Import panel           148
-   Decks layout           199
-   Mobile deck bar/picker 206
-   Sidebar                275
-   Deck content area      472
-   Progress bar           508
-   Checklist / card rows  565
-   Rarity badge           674
-   Source tags            712
-   Card row selection     730
-   Bulk action bar        746
-   Edit mode              754
-   Actions menu           790
-   Proxy export bar       825
-   Display menu           836
-   Filter pills / color   902
-   Overlays / modals      927
-   Print styles           1291
-   Orders panel           1307
-   Sidebar search/fields  1574
-   Filter pills (inline)  1611
-   Import panel row       1820
-   Source tag variants    1854
-   Appearance settings    1865
-   Extra Info section     2206
-   ─────────────────────────────────────────────────────────────────────────── */
+/* Section map: run  npm run css:index  — section headers are the index.
+   Read a section with offset/limit instead of loading the whole file. */
 
 /* ─── Theme transition ──────────────────────────────────────────────────────── */
 body, .app-header, .card-row, .deck-item, .source-tag, .card-rarity,
