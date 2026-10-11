@@ -23,6 +23,8 @@ dist-ssr
 *.sln
 *.sw?
 
+# Claude Code personal permissions (settings.json and hooks/ are shared)
+**/.claude/settings.local.json
 AGENTS.md
 implementation-plan.md
 decklist_sample.txt
