@@ -10,6 +10,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
+    "verify": "npm run build && npm run test:coverage",
     "preview": "npm run build && wrangler dev",
     "deploy": "npm run build && wrangler deploy",
     "screenshots": "tsx scripts/capture-screenshots.ts",
