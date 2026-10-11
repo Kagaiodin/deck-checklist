@@ -23,8 +23,6 @@ dist-ssr
 *.sln
 *.sw?
 
-# Claude Code
-.claude/
 AGENTS.md
 implementation-plan.md
 decklist_sample.txt
