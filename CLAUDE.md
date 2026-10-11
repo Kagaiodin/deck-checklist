@@ -71,7 +71,7 @@ If the latter, it's probably scope creep and should not be built.
 ## CSS Structure
 
 - `src/tokens.css` — all CSS custom properties: reset, `:root` (dark mode), light mode overrides, and accent variants. Import this first.
-- `src/App.css` — component and layout styles (~2500 lines). Find sections with `grep -n '^/\* ───' src/App.css`, then read only that range (offset/limit). Don't read the whole file.
+- `src/App.css` — component and layout styles (~2500 lines). Run `npm run css:index` for a compact `<line> <section>` list, then read only that range (offset/limit). Don't read the whole file.
 
 ## Git
 - **Never commit directly to main** — always create a feature branch first

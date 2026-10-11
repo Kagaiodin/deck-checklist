@@ -1,4 +1,4 @@
-/* Section map: run  grep -n '^/\* ───' src/App.css  — headers are the index.
+/* Section map: run  npm run css:index  — section headers are the index.
    Read a section with offset/limit instead of loading the whole file. */
 
 /* ─── Theme transition ──────────────────────────────────────────────────────── */
