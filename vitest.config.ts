@@ -12,5 +12,15 @@ export default defineConfig({
     env: {
       VITE_GOOGLE_CLIENT_ID: "test-client-id.apps.googleusercontent.com",
     },
+    coverage: {
+      // Floors sit a few points under current coverage (Oct 2026: ~83/80/81/86)
+      // so `npm run test:coverage` fails on real regressions, not normal churn.
+      thresholds: {
+        statements: 80,
+        branches: 75,
+        functions: 77,
+        lines: 82,
+      },
+    },
   },
 });

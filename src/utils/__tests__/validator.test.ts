@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { pickCardColors, validateDecklist } from "../validator";
+import { pickCardColors, validateDecklist, enrichDeckExtraInfo } from "../validator";
 
 // ── pickCardColors ────────────────────────────────────────────────────────────
 //
@@ -97,6 +97,8 @@ type ScryfallCard = {
   set: string;
   rarity: "common" | "uncommon" | "rare" | "mythic" | "special" | "bonus";
   prices?: { usd?: string | null; usd_foil?: string | null };
+  flavor_name?: string;
+  all_parts?: { component: string; name: string; type_line: string }[];
 };
 type BatchResponse = { data: ScryfallCard[]; not_found: { name: string }[] };
 
@@ -462,5 +464,67 @@ describe("validateDecklist", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+// ── enrichDeckExtraInfo ───────────────────────────────────────────────────────
+
+describe("enrichDeckExtraInfo", () => {
+  const card = (id: string) => ({
+    id, name: id, quantity: 1, acquired: false, color: [], type: "Instant",
+  });
+
+  afterEach(() => { vi.unstubAllGlobals(); });
+
+  it("collects tokens and merges createdBy across cards", async () => {
+    const a = {
+      ...makeScryCard({ id: "a", name: "Card A" }),
+      all_parts: [{ component: "token", name: "Goblin", type_line: "Token Creature — Goblin" }],
+    };
+    const b = {
+      ...makeScryCard({ id: "b", name: "Card B" }),
+      all_parts: [
+        { component: "token", name: "Goblin", type_line: "Token Creature — Goblin" },
+        { component: "combo_piece", name: "Other", type_line: "x" },
+      ],
+    };
+    mockFetch({ data: [a, b] as ScryfallCard[], not_found: [] });
+
+    const info = await enrichDeckExtraInfo([card("a"), card("b")]);
+
+    expect(info.tokens).toEqual([
+      { name: "Goblin", typeLine: "Token Creature — Goblin", createdBy: ["Card A", "Card B"] },
+    ]);
+  });
+
+  it("does not duplicate a creator name for the same token", async () => {
+    const a = {
+      ...makeScryCard({ id: "a", name: "Card A" }),
+      all_parts: [
+        { component: "token", name: "Treasure", type_line: "Token Artifact" },
+        { component: "token", name: "Treasure", type_line: "Token Artifact" },
+      ],
+    };
+    mockFetch({ data: [a] as ScryfallCard[], not_found: [] });
+
+    const info = await enrichDeckExtraInfo([card("a")]);
+    expect(info.tokens[0].createdBy).toEqual(["Card A"]);
+  });
+
+  it("records alternate printings that have a flavor name", async () => {
+    const a = makeScryCard({ id: "a", name: "Card A", set: "spm", flavor_name: "Spidey" });
+    const b = makeScryCard({ id: "b", name: "Card B" });
+    mockFetch({ data: [a, b], not_found: [] });
+
+    const info = await enrichDeckExtraInfo([card("a"), card("b")]);
+    expect(info.altPrintings).toEqual([{ cardName: "Card A", setCode: "SPM", altName: "Spidey" }]);
+    expect(typeof info.enrichedAt).toBe("number");
+  });
+
+  it("skips batches that fail and still returns a result", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false, json: async () => ({}) })));
+    const info = await enrichDeckExtraInfo([card("a")]);
+    expect(info.tokens).toEqual([]);
+    expect(info.altPrintings).toEqual([]);
   });
 });

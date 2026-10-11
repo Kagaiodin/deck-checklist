@@ -111,4 +111,76 @@ describe("ImportBackupModal", () => {
     await waitFor(() => expect(onImport).toHaveBeenCalledWith(payload, false));
     expect(onClose).toHaveBeenCalledTimes(1);
   });
+
+  it("shows an inline error for unparseable JSON", async () => {
+    render(<ImportBackupModal {...baseProps} />);
+    uploadFile(document.querySelector('input[type="file"]')!, "{not json");
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent("File could not be read.");
+    });
+  });
+
+  it("warns about newer backup versions but still imports", async () => {
+    const onImport = vi.fn(() => ({ newDecks: 1, newCards: 0, newOrders: 0 }));
+    const showToast = vi.fn();
+    render(<ImportBackupModal {...baseProps} onImport={onImport} showToast={showToast} />);
+    uploadFile(document.querySelector('input[type="file"]')!, JSON.stringify({ version: 2, decks: [] }));
+    await waitFor(() => expect(onImport).toHaveBeenCalled());
+    expect(showToast).toHaveBeenCalledWith(expect.objectContaining({ title: "Newer backup format", variant: "warn" }));
+  });
+
+  it("toasts 'Nothing new' when every count is zero", async () => {
+    const onImport = vi.fn(() => ({ newDecks: 0, newCards: 0, newOrders: 0 }));
+    const showToast = vi.fn();
+    render(<ImportBackupModal {...baseProps} onImport={onImport} showToast={showToast} />);
+    uploadFile(document.querySelector('input[type="file"]')!, JSON.stringify({ version: 1, decks: [] }));
+    await waitFor(() => expect(showToast).toHaveBeenCalledWith(
+      expect.objectContaining({ title: "Nothing new to import", variant: "neutral" }),
+    ));
+  });
+
+  it("pluralises and includes orders in the summary", async () => {
+    const onImport = vi.fn(() => ({ newDecks: 1, newCards: 0, newOrders: 2 }));
+    const showToast = vi.fn();
+    render(<ImportBackupModal {...baseProps} onImport={onImport} showToast={showToast} />);
+    uploadFile(document.querySelector('input[type="file"]')!, JSON.stringify({ version: 1, orders: [] }));
+    await waitFor(() => expect(showToast).toHaveBeenCalledWith(
+      expect.objectContaining({ sub: "1 deck · 2 orders added" }),
+    ));
+  });
+
+  it("passes replace=true when 'Replace all local data' is checked", async () => {
+    const onImport = vi.fn(() => ({ newDecks: 1, newCards: 0, newOrders: 0 }));
+    render(<ImportBackupModal {...baseProps} onImport={onImport} />);
+    fireEvent.click(screen.getByLabelText(/Replace all local data/));
+    expect(screen.getByText("This will wipe all existing decks, collection, and orders.")).toBeInTheDocument();
+    uploadFile(document.querySelector('input[type="file"]')!, JSON.stringify({ version: 1, decks: [] }));
+    await waitFor(() => expect(onImport).toHaveBeenCalledWith({ version: 1, decks: [] }, true));
+  });
+
+  it("ignores a change event with no file selected", () => {
+    const onImport = vi.fn();
+    render(<ImportBackupModal {...baseProps} onImport={onImport} />);
+    fireEvent.change(document.querySelector('input[type="file"]')!, { target: { files: [] } });
+    expect(onImport).not.toHaveBeenCalled();
+  });
+
+  it("stays silent when the user dismisses the native picker", async () => {
+    window.showSaveFilePicker = vi.fn();
+    window.showOpenFilePicker = vi.fn().mockRejectedValue(new DOMException("cancel", "AbortError"));
+    render(<ImportBackupModal {...baseProps} />);
+    fireEvent.click(screen.getByText("Choose file"));
+    await waitFor(() => expect(window.showOpenFilePicker).toHaveBeenCalled());
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("shows an error when the native picker fails for another reason", async () => {
+    window.showSaveFilePicker = vi.fn();
+    window.showOpenFilePicker = vi.fn().mockRejectedValue(new Error("boom"));
+    render(<ImportBackupModal {...baseProps} />);
+    fireEvent.click(screen.getByText("Choose file"));
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent("File could not be read.");
+    });
+  });
 });
