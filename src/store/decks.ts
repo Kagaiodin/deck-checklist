@@ -59,16 +59,19 @@ export function deckReducer(state: DeckState, action: DeckAction): DeckState {
     case "TOGGLE_ACQUIRED":
       return {
         ...state,
-        decks: state.decks.map(d =>
-          d.id === action.payload.deckId
-            ? {
-                ...d,
-                cards: d.cards.map(c =>
-                  c.id === action.payload.cardId ? { ...c, acquired: !c.acquired } : c
-                )
-              }
-            : d
-        )
+        decks: state.decks.map(d => {
+          if (d.id !== action.payload.deckId) return d;
+          const target = d.cards.find(c => c.id === action.payload.cardId);
+          // Unchecking a card means the deck is no longer fully acquired, so it can't stay Built.
+          const unchecking = !!target?.acquired;
+          return {
+            ...d,
+            cards: d.cards.map(c =>
+              c.id === action.payload.cardId ? { ...c, acquired: !c.acquired } : c
+            ),
+            ...(unchecking && d.isBuilt ? { isBuilt: false } : {}),
+          };
+        })
       };
     case "SET_CARD_SOURCE":
       return {

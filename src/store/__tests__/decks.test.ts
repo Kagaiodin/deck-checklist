@@ -124,6 +124,39 @@ describe("TOGGLE_ACQUIRED", () => {
     });
     expect(state.decks[0].cards[0].acquired).toBe(false);
   });
+
+  it("clears isBuilt when a card is unchecked in a built deck", () => {
+    const cards = [
+      makeCard({ id: "c1", name: "Lightning Bolt", acquired: true }),
+      makeCard({ id: "c2", name: "Shock", acquired: true }),
+    ];
+    const initial = { decks: [makeDeck({ id: "d1", name: "Burn", cards, isBuilt: true })] };
+    const state = deckReducer(initial, {
+      type: "TOGGLE_ACQUIRED",
+      payload: { deckId: "d1", cardId: "c1" },
+    });
+    expect(state.decks[0].isBuilt).toBe(false);
+  });
+
+  it("keeps isBuilt when checking a card in a built deck", () => {
+    const card = makeCard({ id: "c1", name: "Lightning Bolt", acquired: false });
+    const initial = { decks: [makeDeck({ id: "d1", name: "Burn", cards: [card], isBuilt: true })] };
+    const state = deckReducer(initial, {
+      type: "TOGGLE_ACQUIRED",
+      payload: { deckId: "d1", cardId: "c1" },
+    });
+    expect(state.decks[0].isBuilt).toBe(true);
+  });
+
+  it("does not set isBuilt on a deck that was never built", () => {
+    const card = makeCard({ id: "c1", name: "Lightning Bolt", acquired: true });
+    const initial = { decks: [makeDeck({ id: "d1", name: "Burn", cards: [card] })] };
+    const state = deckReducer(initial, {
+      type: "TOGGLE_ACQUIRED",
+      payload: { deckId: "d1", cardId: "c1" },
+    });
+    expect(state.decks[0].isBuilt).toBeUndefined();
+  });
 });
 
 // ── SET_CARD_SOURCE ───────────────────────────────────────────────────────────
