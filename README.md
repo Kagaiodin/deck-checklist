@@ -23,6 +23,7 @@ A Magic: The Gathering deck acquisition tracker. Paste a decklist, validate it a
 - **React 19** + TypeScript + Vite
 - **Cloudflare Workers** + Workers Assets (handles CORS proxy for Archidekt)
 - All data stored in `localStorage` — no account or backend required
+- Optional Google Drive backup (client-side OAuth; enabled by setting `VITE_GOOGLE_CLIENT_ID`, see `.env.example`)
 
 ## Getting Started
 
