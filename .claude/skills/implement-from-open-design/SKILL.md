@@ -5,12 +5,19 @@ description: Implement a UI change from an Open Design artifact. Use when the us
 
 # Implement from an Open Design artifact
 
-Open Design (OD) is a separate design tool. Claude Code reads its output from disk; it does
-not drive OD through MCP.
+Default to reading the artifact from disk. The reason is token cost: Open Design's
+`get_artifact` returns the entry file plus every referenced sibling in one call, which is
+far more context than most changes need. A targeted local read is cheaper.
 
 1. List available artifacts: `ls "$OPEN_DESIGN_ARTIFACTS"` (env var set in `.zshrc`).
-2. Read the target file directly: `cat "$OPEN_DESIGN_ARTIFACTS/<filename>.html"`. Do not
-   pull artifacts via MCP.
+2. Read only the file you need: `cat "$OPEN_DESIGN_ARTIFACTS/<filename>.html"`.
 3. Check `docs/specs/<feature>-spec.md` and `<feature>-design-brief.md` for constraints.
 4. Implement against existing tokens in `src/tokens.css`; don't copy the artifact's inline styles.
-5. Don't run OD and Claude Code on the same problem simultaneously.
+
+## MCP tools (open-design server)
+
+- OK: `list_files` and `search_files` — small results, handy for finding a class or copy string.
+- Avoid: `get_artifact` unless you genuinely need the whole sibling bundle.
+- Never without asking: `start_run`, `create_*`, `write_file`, `delete_*`. Runs take 5–30
+  minutes and design generation is a separate step from implementation.
+- Don't run Open Design and Claude Code on the same problem simultaneously.
