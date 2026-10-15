@@ -36,6 +36,7 @@ decklist_sample.txt
 .env*
 !.env.example
 coverage/
+test-results/
 
 # Generated screenshot output
 design-review-screenshots/
