@@ -4,86 +4,32 @@
 - React/TypeScript app for Magic: The Gathering deck management and card checklists
 - Deployed on Cloudflare Workers — do not break Workers compatibility
 - State managed via DeckProvider (src/store/)
-- Entry point: src/App.tsx
 
 ## Testing
-- Runner: Vitest — `npm test` / `npm run test:watch` / `npm run test:coverage`
-- Environment: jsdom (separate from vite.config.ts — do not merge configs)
-- Component testing: @testing-library/react + @testing-library/user-event
-- Matchers: @testing-library/jest-dom (globally imported via src/test/setup.ts)
-- Coverage: @vitest/coverage-v8
-
-## Test requirements
-- All new utils → test file in src/utils/__tests__/
-- All new store logic → test file in src/store/__tests__/
-- All new components with user interaction → test file co-located in 
-  src/features/<feature>/__tests__/
-- All new hooks → test file co-located with the hook's feature folder
-- npm run test:coverage must pass before committing any new feature
-- Never skip tests because the code "seems simple" — check existing test 
-  files for pattern reference before writing new ones
-
-## Test file reference
-- Tests live in a `__tests__/` folder next to the code they cover (utils, store,
-  components, hooks, and each `src/features/<feature>/`). Find the nearest one
-  and copy its pattern.
+- `npm test` / `npm run test:watch` / `npm run test:coverage`; `npm run verify` = build + coverage (what CI runs)
+- Vitest config is separate from vite.config.ts (jsdom vs. Workers plugin) — do not merge them
+- Tests live in a `__tests__/` folder next to the code they cover (utils, store, hooks,
+  `src/features/<feature>/`). New utils, store logic, hooks, and interactive components
+  need a test; find the nearest `__tests__/` and copy its pattern.
 - Coverage floors are enforced in vitest.config — `npm run test:coverage` fails below them.
 
-## Session discipline
-- One feature or fix per session — state it in the first message
-- /compact immediately after every git commit
-- If context >70%, start a new session for the next task
-- Never pull Open Design artifacts via MCP — read local files only
-- Max 2 parallel Claude Code sessions at once
+## Design workflow
+- New feature / new page / unknown visual direction → Open Design first, then implement
+  from the local artifact (see the `implement-from-open-design` skill)
+- Existing component / layout fix / refactor → Claude Code directly
+- For visual decisions on existing components, show inline HTML mockup options and get
+  approval before touching source files
+- Tech specs: `docs/specs/<feature>-spec.md`; design briefs: `docs/specs/<feature>-design-brief.md`
 
-## Task routing
-- Existing component / layout fix / refactor → Claude Code (Warp) only
-- New feature / new page / unknown visual direction → Open Design first, 
-  then implement from the local artifact
-- Never run Open Design and Claude Code on the same problem simultaneously
+## CSS
+- `src/tokens.css` holds all custom properties; `src/App.css` is ~2500 lines — never read it
+  whole. See `.claude/rules/css.md`.
 
-## Collection page — vision check
-The app's core purpose is a sleeving/acquisition checklist: import a deck list,
-track what you're gathering or ordering, mark it built. The collection tab is
-a supporting inventory tool — it lets you upload your existing cards so decks
-auto-tag what you already own. It is NOT a portfolio or collection-value tracker.
-
-Before adding any feature to the collection page, ask: does this serve deck
-acquisition, or does it make the collection a destination in its own right?
-If the latter, it's probably scope creep and should not be built.
-
-## Implementation pattern
-- For visual decisions on existing components, generate inline HTML mockup 
-  options first — get approval before touching source files
-- Read Open Design artifact from disk before starting implementation
-
-## Design Workflow
-- Tech specs go in `docs/specs/<feature>-spec.md`
-- Design briefs go in `docs/specs/<feature>-design-brief.md`
-
-## Open Design integration
-- Artifacts folder: $OPEN_DESIGN_ARTIFACTS (set in .zshrc)
-- List available artifacts: `ls "$OPEN_DESIGN_ARTIFACTS"`
-- When implementing, read the target file directly: `cat "$OPEN_DESIGN_ARTIFACTS/<filename>.html"`
-- Never pull via MCP — read the local file
-- MCP is Open Design's tool, not Claude Code's
-
-## CSS Structure
-
-- `src/tokens.css` — all CSS custom properties: reset, `:root` (dark mode), light mode overrides, and accent variants. Import this first.
-- `src/App.css` — component and layout styles (~2500 lines). Run `npm run css:index` for a compact `<line> <section>` list, then read only that range (offset/limit). Don't read the whole file.
-
-## Git
-- Branch naming: `feat/<short-description>` or `fix/<short-description>`
-- Atomic commits — one logical change per commit
-- Commit message format: feat/fix/refactor/style: description
-- Enforced mechanically, not by memory: hooks in `.claude/hooks/` block commit/push
-  on `main` and run build + tests before every push; CI runs `npm run verify` on PRs.
-  Create the feature branch in its own command (a hook sees the branch before a
-  compound `checkout && commit` runs).
-
-## Work tracking
-- Active work tracked in GitHub Issues — check open issues before starting a session
-- When pausing a feature mid-session, add a comment to the issue with last known
-  state and the open question blocking it
-- Link to the relevant spec file in the issue body
+## Git and work tracking
+- Branches: `feat/<desc>`, `fix/<desc>`, `chore/<desc>`. Commits: `feat|fix|refactor|style|chore: description`, one logical change each.
+- Enforced mechanically: hooks in `.claude/hooks/` block commit/push on `main` and run build +
+  tests before every push; CI runs `npm run verify` on PRs. Create the feature branch in its
+  own command (a hook sees the branch before a compound `checkout && commit` runs).
+- Active work is tracked in GitHub Issues — check open issues before starting. When pausing
+  mid-feature, comment on the issue with last known state and the blocking question; link the
+  spec file in the issue body.
