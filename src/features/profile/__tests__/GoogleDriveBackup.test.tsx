@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { GoogleDriveBackup } from "../GoogleDriveBackup";
 import { disconnect } from "../../../utils/googleDrive";
 import type { Deck } from "../../../types/index";
+import { installMemoryLocalStorage, restoreLocalStorage } from "../../demo/__tests__/memoryStorage";
 
 function mockTokenClient(overrides: Partial<GoogleTokenResponse> = {}) {
   window.google = {
@@ -165,3 +166,24 @@ describe("GoogleDriveBackup", () => {
     expect(screen.getByRole("button", { name: "Reconnect" })).toBeInTheDocument();
   });
 });
+
+describe("GoogleDriveBackup — demo mode", () => {
+  beforeEach(() => {
+    mockScriptLoad();
+    mockTokenClient();
+  });
+  afterEach(() => {
+    delete (window as { google?: unknown }).google;
+    vi.restoreAllMocks();
+    restoreLocalStorage();
+  });
+
+  it("shows a disabled connect button instead of Drive actions", () => {
+    installMemoryLocalStorage().setItem("fetchlist:demo:active", "true");
+    render(<GoogleDriveBackup {...baseProps} />);
+    const btn = screen.getByRole("button", { name: /connect google drive/i });
+    expect(btn).toBeDisabled();
+    expect(btn).toHaveAttribute("title", "Exit demo mode to back up your data");
+  });
+});
+

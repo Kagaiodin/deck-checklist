@@ -3,6 +3,7 @@ import {
   supportsFileSystemAccess, getLinkedFileName, clearLinkedHandle,
   pickSaveHandle, pickOpenHandle, writeLinkedFile, readLinkedFile,
 } from "../fileSystemAccess";
+import { installMemoryLocalStorage, restoreLocalStorage } from "../../features/demo/__tests__/memoryStorage";
 
 function makeHandle(overrides: Partial<FileSystemFileHandle> = {}): FileSystemFileHandle {
   return {
@@ -117,3 +118,24 @@ describe("fileSystemAccess", () => {
     });
   });
 });
+
+describe("fileSystemAccess in demo mode", () => {
+  afterEach(() => {
+    restoreLocalStorage();
+    // @ts-expect-error — test-only cleanup of a property we may have added
+    delete window.showSaveFilePicker;
+    clearLinkedHandle();
+  });
+
+  it("refuses to write the linked file", async () => {
+    const createWritable = vi.fn();
+    window.showSaveFilePicker = vi.fn().mockResolvedValue(makeHandle({ createWritable }));
+    await pickSaveHandle("fetchlist-backup.json");
+    const storage = installMemoryLocalStorage();
+    storage.setItem("fetchlist:demo:active", "true");
+
+    await expect(writeLinkedFile("{}")).rejects.toThrow(/demo mode/i);
+    expect(createWritable).not.toHaveBeenCalled();
+  });
+});
+

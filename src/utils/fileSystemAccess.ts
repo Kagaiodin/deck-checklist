@@ -3,6 +3,8 @@
 // Unsupported browsers (Safari, Firefox, mobile) fall back to download/upload
 // in the caller — this module simply reports itself unavailable there.
 
+import { isDemoActiveNow, DEMO_BACKUP_HINT } from "../features/demo/demoMode";
+
 let linkedHandle: FileSystemFileHandle | null = null;
 
 export function supportsFileSystemAccess(): boolean {
@@ -41,6 +43,7 @@ export async function pickOpenHandle(): Promise<FileSystemFileHandle> {
 }
 
 export async function writeLinkedFile(contents: string): Promise<void> {
+  if (isDemoActiveNow()) throw new Error(`${DEMO_BACKUP_HINT}.`);
   if (!linkedHandle) throw new Error("No linked file handle");
   if (!(await ensurePermission(linkedHandle, "readwrite"))) throw new Error("Permission denied");
   const writable = await linkedHandle.createWritable();

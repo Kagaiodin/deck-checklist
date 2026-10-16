@@ -3,6 +3,7 @@ import {
   supportsGoogleDrive, getConnectedEmail, isConnected, isExpired,
   connect, disconnect, saveToDrive, loadFromDrive, DriveError,
 } from "../googleDrive";
+import { installMemoryLocalStorage, restoreLocalStorage } from "../../features/demo/__tests__/memoryStorage";
 
 function mockTokenClient(overrides: Partial<GoogleTokenResponse> = {}) {
   const requestAccessToken = vi.fn();
@@ -193,3 +194,19 @@ describe("googleDrive", () => {
     });
   });
 });
+
+describe("googleDrive in demo mode", () => {
+  afterEach(() => { vi.unstubAllGlobals(); restoreLocalStorage(); });
+
+  it("refuses to save or load so demo data can never reach a real backup", async () => {
+    const storage = installMemoryLocalStorage();
+    storage.setItem("fetchlist:demo:active", "true");
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(saveToDrive("{}")).rejects.toThrow(/demo mode/i);
+    await expect(loadFromDrive()).rejects.toThrow(/demo mode/i);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
+
