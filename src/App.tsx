@@ -23,6 +23,13 @@ import { ProfileExportImport } from "./features/profile/ProfileExportImport";
 import { ImportBackupModal } from "./features/profile/ImportBackupModal";
 import { GoogleDriveBackup } from "./features/profile/GoogleDriveBackup";
 import { ThemeToggle } from "./components/ThemeToggle";
+import { DemoBanner } from "./features/demo/DemoBanner";
+import { DemoConfirmModal } from "./features/demo/DemoConfirmModal";
+import { useDemoTabSync } from "./features/demo/useDemoTabSync";
+import { isDemoActive, isDemoActiveNow, hasRealData, DEMO_BACKUP_HINT } from "./features/demo/demoMode";
+import {
+  startDemo, leaveDemo, consumeRecoveredFlag, hasPendingLinkConfirm, clearPendingLinkConfirm,
+} from "./features/demo/demoControl";
 import { AppLogo } from "./components/AppLogo";
 import type { ToastInput } from "./features/profile/ProfileExportImport";
 import { BuyListSheet } from "./features/card-purchase/BuyListSheet";
@@ -122,6 +129,42 @@ function AppInner() {
   function handleOnboardingImport() {
     setOnboardingDismissed(true);
     setShowImport(true);
+  }
+
+  // ── Demo mode ─────────────────────────────────────────────────────────────
+  // Enter/exit write storage and reload, so this is stable for the page's lifetime.
+  const demoActive = isDemoActive(window.localStorage);
+  const [demoConfirmOpen, setDemoConfirmOpen] = useState(hasPendingLinkConfirm);
+  useDemoTabSync();
+
+  useEffect(() => {
+    if (consumeRecoveredFlag()) {
+      showToast({
+        title: "Demo mode ended",
+        sub: "Your saved copy couldn't be restored, so the sample data was cleared.",
+        variant: "warn",
+        autoDismiss: 6000,
+      });
+    }
+  }, []);
+
+  function requestSampleData() {
+    if (hasRealData(window.localStorage)) setDemoConfirmOpen(true);
+    else void loadSampleData();
+  }
+
+  async function loadSampleData() {
+    setDemoConfirmOpen(false);
+    clearPendingLinkConfirm();
+    let ok = false;
+    try {
+      ok = await startDemo("settings");
+    } catch {
+      // lazy chunk failed to load (offline, or a deploy replaced it)
+    }
+    if (!ok) {
+      showToast({ title: "Couldn't load sample data", sub: "Your data is untouched. Check your connection and storage, then try again.", variant: "warn", autoDismiss: 5000 });
+    }
   }
 
   // ── Collection (read-only, for auto-tagging on deck import) ──────────────
@@ -449,6 +492,8 @@ function AppInner() {
 
   // ── Profile export / import ───────────────────────────────────────────────
   function handleProfileImport(data: ProfileExport, replace: boolean) {
+    // Backups must never land on top of sample data (the UI disables this path too).
+    if (isDemoActiveNow()) return { newDecks: 0, newCards: 0, newOrders: 0 };
     if (replace) {
       // Replace mode — wipe all and restore from backup
       dispatch({ type: "SET_DECKS", payload: data.decks ?? [] });
@@ -696,6 +741,13 @@ function AppInner() {
 
   return (
     <div className="app">
+      {demoActive && <DemoBanner onExit={() => leaveDemo()} />}
+      {demoConfirmOpen && (
+        <DemoConfirmModal
+          onCancel={() => { setDemoConfirmOpen(false); clearPendingLinkConfirm(); }}
+          onConfirm={() => void loadSampleData()}
+        />
+      )}
       {/* ── First-run onboarding modal ────────────────────────────────────── */}
       {showOnboarding && (
         <OnboardingModal
@@ -769,7 +821,7 @@ function AppInner() {
           {overflowMenuOpen && (
             <div className="header-overflow-menu">
               <div className="overflow-menu-section">
-                <ThemeToggle />
+                <ThemeToggle onLoadSampleData={demoActive ? undefined : requestSampleData} />
               </div>
               <div className="overflow-menu-divider" />
               <a
@@ -873,7 +925,8 @@ function AppInner() {
                       + Import Deck
                     </button>
                     <div className="deck-picker-export-row">
-                      <button className="btn btn-ghost btn-sm" onClick={() => {
+                      <button className="btn btn-ghost btn-sm" disabled={demoActive} onClick={() => {
+                        if (demoActive) return;
                         // Export is fire-and-forget — no need to close the sheet
                         const filename = `fetchlist-backup-${new Date().toISOString().slice(0, 10)}.json`;
                         const payload: ProfileExport = {
@@ -889,9 +942,11 @@ function AppInner() {
                       }}>↓ Export backup</button>
                       <button
                         className={`btn btn-ghost btn-sm${importPanelOpen ? " active" : ""}`}
+                        disabled={demoActive}
                         onClick={() => setImportPanelOpen(v => !v)}
                       >↑ Import backup</button>
                     </div>
+                    {demoActive && <p className="demo-backup-hint">{DEMO_BACKUP_HINT}</p>}
                     <GoogleDriveBackup
                       decks={state.decks}
                       allErrors={allErrors}

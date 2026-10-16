@@ -1,0 +1,78 @@
+/* ── Banner ─────────────────────────────────────────────────────────────── */
+.demo-banner {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 34px;
+  padding: 4px 12px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.demo-banner-exit {
+  min-height: 28px;
+  padding: 2px 12px;
+  background: rgba(255, 255, 255, .16);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, .45);
+  border-radius: var(--radius-pill);
+  font: inherit;
+  cursor: pointer;
+}
+.demo-banner-exit:hover { background: rgba(255, 255, 255, .28); }
+
+@media (max-width: 639px) {
+  .demo-banner { min-height: 44px; font-size: 13px; }
+  .demo-banner-exit { min-height: 36px; }
+}
+
+/* ── Replace-data confirmation ──────────────────────────────────────────── */
+.demo-confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, .72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 300;
+  padding: 16px;
+}
+
+.demo-confirm {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-menu);
+  width: 100%;
+  max-width: 360px;
+  padding: 18px 20px 16px;
+}
+.demo-confirm h4 { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+.demo-confirm p { color: var(--text-muted); font-size: 13px; margin-bottom: 16px; }
+.demo-confirm-foot { display: flex; gap: 8px; justify-content: flex-end; }
+
+/* ── Settings popover entry ─────────────────────────────────────────────── */
+.settings-sample-btn {
+  display: block;
+  width: 100%;
+  padding: 6px 0;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+.settings-sample-btn:hover { color: var(--text); }
+
+/* ── Disabled backup hint ───────────────────────────────────────────────── */
+.demo-backup-hint {
+  margin: 2px 0 6px;
+  font-size: 11px;
+  color: var(--text-muted);
+}

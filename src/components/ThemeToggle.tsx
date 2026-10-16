@@ -1,3 +1,4 @@
+import "../features/demo/demo.css";
 import { useState, useEffect, useRef } from "react";
 import { useTheme, type ThemeAccent, type ThemeMode } from "../hooks/useTheme";
 
@@ -13,7 +14,12 @@ const MODES: { id: ThemeMode; label: string; icon: string }[] = [
   { id: "light", label: "Light", icon: "☀" },
 ];
 
-export function ThemeToggle() {
+interface Props {
+  /** When provided, adds a quiet "Load sample data" entry at the bottom of the popover. */
+  onLoadSampleData?: () => void;
+}
+
+export function ThemeToggle({ onLoadSampleData }: Props = {}) {
   const { mode, accent, setMode, setAccent } = useTheme();
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -101,6 +107,19 @@ export function ThemeToggle() {
               />
             ))}
           </div>
+
+          {onLoadSampleData && (
+            <>
+              <div className="settings-divider" />
+              <button
+                type="button"
+                className="settings-sample-btn"
+                onClick={() => { setOpen(false); onLoadSampleData(); }}
+              >
+                Load sample data
+              </button>
+            </>
+          )}
         </div>
       )}
     </div>

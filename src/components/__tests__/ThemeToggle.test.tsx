@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ThemeToggle } from "../ThemeToggle";
@@ -65,3 +65,25 @@ describe("ThemeToggle", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 });
+
+describe("ThemeToggle sample data entry", () => {
+  beforeEach(() => installLocalStorageMock());
+
+  it("shows no sample data entry unless a handler is provided", async () => {
+    const user = userEvent.setup();
+    render(<ThemeToggle />);
+    await user.click(screen.getByRole("button", { name: "Appearance settings" }));
+    expect(screen.queryByRole("button", { name: /load sample data/i })).not.toBeInTheDocument();
+  });
+
+  it("offers Load sample data at the bottom, closing the popover when used", async () => {
+    const user = userEvent.setup();
+    const onLoad = vi.fn();
+    render(<ThemeToggle onLoadSampleData={onLoad} />);
+    await user.click(screen.getByRole("button", { name: "Appearance settings" }));
+    await user.click(screen.getByRole("button", { name: /load sample data/i }));
+    expect(onLoad).toHaveBeenCalledOnce();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+});
+

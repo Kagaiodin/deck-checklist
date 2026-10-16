@@ -6,6 +6,8 @@ import {
 } from "../../utils/fileSystemAccess";
 import { GoogleDriveBackup } from "./GoogleDriveBackup";
 import "./ProfileExportImport.css";
+import { isDemoActiveNow, DEMO_BACKUP_HINT } from "../demo/demoMode";
+import "../demo/demo.css";
 
 export interface ToastInput {
   title: string;
@@ -39,6 +41,7 @@ export function ProfileExportImport({
 }: Props) {
   const [linkedFileName, setLinkedFileName] = useState<string | null>(getLinkedFileName());
   const fsaSupported = supportsFileSystemAccess();
+  const demo = isDemoActiveNow();
 
   // ImportBackupModal can link a new file via the FSA open picker (Tier 1)
   // during import — that handle lives at module scope, so re-sync our local
@@ -62,6 +65,7 @@ export function ProfileExportImport({
 
   // ── Export ───────────────────────────────────────────────────────────────────
   async function handleExport() {
+    if (demo) return;
     const filename = `fetchlist-backup-${new Date().toISOString().slice(0, 10)}.json`;
     const contents = JSON.stringify(buildPayload(), null, 2);
 
@@ -105,16 +109,18 @@ export function ProfileExportImport({
           </div>
         )}
         <div className="sidebar-footer">
-          <button className="btn btn-ghost btn-sm" onClick={handleExport}>
+          <button className="btn btn-ghost btn-sm" onClick={handleExport} disabled={demo}>
             ↓ Export backup
           </button>
           <button
             className={`btn btn-ghost btn-sm${importPanelOpen ? " active" : ""}`}
             onClick={onToggleImportPanel}
+            disabled={demo}
           >
             ↑ Import backup
           </button>
         </div>
+        {demo && <p className="demo-backup-hint">{DEMO_BACKUP_HINT}</p>}
         <GoogleDriveBackup
           decks={decks}
           allErrors={allErrors}
