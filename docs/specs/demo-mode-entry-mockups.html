@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en" data-mode="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Demo Mode Entry Mockups</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --accent:#6c5ce7; --accent-light:#a78bfa;
+  --bg:#0d0f1a; --surface:#151829; --surface-2:#1e2238; --border:#2d3258;
+  --text:#eceef8; --text-muted:#9ba5c9; --text-dim:#4a5280;
+  --danger:#e05353; --warn:#f4a23c;
+}
+html[data-mode="light"] {
+  --bg:#f5f3ee; --surface:#fff; --surface-2:#ededf8; --border:#c9c4b5;
+  --text:#1c1d2e; --text-muted:#464b74; --text-dim:#8891b8; --danger:#c43d3d; --warn:#c08120;
+}
+body { background:var(--bg); color:var(--text); font:14px/1.4 system-ui, sans-serif; padding:16px; }
+h1 { font-size:18px; margin-bottom:4px; }
+p.note { color:var(--text-muted); font-size:13px; margin:6px 0 12px; max-width:72ch; }
+.toggle { background:var(--surface-2); color:var(--text); border:1px solid var(--border); border-radius:8px; padding:8px 12px; cursor:pointer; margin:8px 0 20px; }
+.row { display:flex; flex-wrap:wrap; gap:28px; align-items:flex-start; }
+.label { font-size:12px; font-weight:600; color:var(--text-muted); margin-bottom:8px; max-width:240px; }
+
+/* mirrors .header-overflow-menu / .overflow-menu-item in App.css */
+.menu { width:230px; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:8px; box-shadow:0 8px 32px rgba(0,0,0,.4); display:flex; flex-direction:column; gap:2px; }
+.section { padding:4px 4px 8px; }
+.palette { width:34px; height:34px; border:1px solid var(--border); border-radius:8px; display:grid; place-items:center; color:var(--text-muted); }
+.divider { height:1px; background:var(--border); margin:2px 0 6px; }
+.item { display:flex; align-items:center; gap:8px; padding:9px 12px; border-radius:8px; color:var(--text-muted); font-size:13px; line-height:1; }
+.item:hover { background:var(--surface-2); color:var(--text); }
+.sec-label { font:600 10px/1 ui-monospace, monospace; letter-spacing:.08em; text-transform:uppercase; color:var(--text-dim); padding:6px 12px 4px; }
+.hint { font-size:11px; color:var(--text-dim); padding:0 12px 6px; line-height:1.35; }
+
+/* option C: danger zone */
+.danger { margin-top:4px; border:1px solid color-mix(in srgb, var(--danger) 45%, transparent); border-radius:8px; padding:2px 0 4px; }
+.danger .sec-label { color:var(--danger); }
+.danger .item { color:var(--danger); }
+.danger .item:hover { background:color-mix(in srgb, var(--danger) 12%, transparent); color:var(--danger); }
+</style>
+</head>
+<body>
+<h1>Demo mode entry: where it lives</h1>
+<p class="note">"Load sample data" moves out of the Appearance (palette) popover. All options sit in the ⋮ overflow menu, which exists on every breakpoint. The confirmation dialog and everything after are unchanged.</p>
+<button class="toggle" onclick="const r=document.documentElement;r.dataset.mode=r.dataset.mode==='dark'?'light':'dark'">Toggle dark / light</button>
+
+<div class="row">
+  <div>
+    <div class="label">Today (reference): nothing about data here</div>
+    <div class="menu">
+      <div class="section"><div class="palette">🎨</div></div>
+      <div class="divider"></div>
+      <div class="item">🐛 Report a bug</div>
+      <div class="item">✨ Request a feature</div>
+    </div>
+  </div>
+
+  <div>
+    <div class="label">A · Plain item, quiet, at the bottom</div>
+    <div class="menu">
+      <div class="section"><div class="palette">🎨</div></div>
+      <div class="divider"></div>
+      <div class="item">🐛 Report a bug</div>
+      <div class="item">✨ Request a feature</div>
+      <div class="divider" style="margin-top:6px"></div>
+      <div class="item">🧪 Load sample data</div>
+    </div>
+  </div>
+
+  <div>
+    <div class="label">B · "Data" section with a one-line explanation (recommended)</div>
+    <div class="menu">
+      <div class="section"><div class="palette">🎨</div></div>
+      <div class="divider"></div>
+      <div class="item">🐛 Report a bug</div>
+      <div class="item">✨ Request a feature</div>
+      <div class="divider" style="margin-top:6px"></div>
+      <div class="sec-label">Data</div>
+      <div class="item">🧪 Load sample data</div>
+      <div class="hint">Swaps in demo data. Your own data is saved and returns when you exit.</div>
+    </div>
+  </div>
+
+  <div>
+    <div class="label">C · Danger zone (red-tinted group)</div>
+    <div class="menu">
+      <div class="section"><div class="palette">🎨</div></div>
+      <div class="divider"></div>
+      <div class="item">🐛 Report a bug</div>
+      <div class="item">✨ Request a feature</div>
+      <div class="danger">
+        <div class="sec-label">Danger zone</div>
+        <div class="item">🧪 Load sample data…</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="note" style="margin-top:24px"><b>A</b> is the least UI. <b>B</b> adds a label and hint so the item is not mysterious and you do not need a dialog to learn what it does. <b>C</b> signals risk, but nothing here destroys data (the snapshot is restored on Exit) and the danger zone would hold a single item until something like "Clear all data" exists.</p>
+</body>
+</html>

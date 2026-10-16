@@ -55,20 +55,22 @@
 .demo-confirm p { color: var(--text-muted); font-size: 13px; margin-bottom: 16px; }
 .demo-confirm-foot { display: flex; gap: 8px; justify-content: flex-end; }
 
-/* ── Settings popover entry ─────────────────────────────────────────────── */
-.settings-sample-btn {
-  display: block;
+/* ── Overflow menu entry ────────────────────────────────────────────────── */
+.demo-menu-item {
   width: 100%;
-  padding: 6px 0;
   background: none;
   border: none;
-  color: var(--text-muted);
-  font: inherit;
-  font-size: 12px;
+  font-family: inherit;
   text-align: left;
   cursor: pointer;
 }
-.settings-sample-btn:hover { color: var(--text); }
+.demo-menu-hint {
+  margin: 0;
+  padding: 0 12px 6px;
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--text-dim);
+}
 
 /* ── Disabled backup hint ───────────────────────────────────────────────── */
 .demo-backup-hint {

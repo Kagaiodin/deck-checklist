@@ -25,6 +25,7 @@ import { GoogleDriveBackup } from "./features/profile/GoogleDriveBackup";
 import { ThemeToggle } from "./components/ThemeToggle";
 import { DemoBanner } from "./features/demo/DemoBanner";
 import { DemoConfirmModal } from "./features/demo/DemoConfirmModal";
+import { DemoMenuItem } from "./features/demo/DemoMenuItem";
 import { useDemoTabSync } from "./features/demo/useDemoTabSync";
 import { isDemoActive, isDemoActiveNow, hasRealData, DEMO_BACKUP_HINT } from "./features/demo/demoMode";
 import {
@@ -821,7 +822,7 @@ function AppInner() {
           {overflowMenuOpen && (
             <div className="header-overflow-menu">
               <div className="overflow-menu-section">
-                <ThemeToggle onLoadSampleData={demoActive ? undefined : requestSampleData} />
+                <ThemeToggle />
               </div>
               <div className="overflow-menu-divider" />
               <a
@@ -842,6 +843,12 @@ function AppInner() {
               >
                 ✨ Request a feature
               </a>
+              {!demoActive && (
+                <>
+                  <div className="overflow-menu-divider" style={{ marginTop: 6 }} />
+                  <DemoMenuItem onSelect={() => { setOverflowMenuOpen(false); requestSampleData(); }} />
+                </>
+              )}
             </div>
           )}
         </div>

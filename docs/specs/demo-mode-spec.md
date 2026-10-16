@@ -8,7 +8,7 @@ Let someone show the app, or send someone a link, with realistic data, without e
 
 ## Scope (v1)
 
-- Two entry points: a Settings popover item and a `?demo=true` link
+- Two entry points: a ⋮ overflow menu item and a `?demo=true` link
 - Curated decks, collection, orders, one trade
 - Persistent `Demo mode · [Exit]` banner
 - Exit restores the user's real data, or leaves a fresh user on the normal empty states
@@ -52,7 +52,7 @@ Owned by demo mode:
 
 Two entry points, both going through the same `enterDemo` path:
 
-1. **Settings popover:** "Load sample data" at the bottom, low visual weight.
+1. **⋮ overflow menu:** a plain "Load sample data" item at the bottom with a one-line hint beneath it. Not in the Appearance popover, which is only about theme. Hidden while demo is active (the banner has Exit).
 2. **Link:** `https://<site>/?demo=true`. Meant for sending to someone so they can try the app and then start using it. Read once at startup, then stripped from the URL with `history.replaceState` so a refresh or bookmark does not re-trigger it. If `demo:active` is already set, the param is ignored.
 
 No gesture or key sequence.
@@ -128,7 +128,7 @@ The fixture builder is lazy-loaded via dynamic `import()` when the user triggers
 
 | Question | Decision |
 |---|---|
-| Activation | Settings popover **and** `?demo=true` (reversed from the first grill answer so a sent link works) |
+| Activation | ⋮ overflow menu item (moved out of the Appearance popover after manual QA) **and** `?demo=true` (reversed from the first grill answer so a sent link works) |
 | Enter/exit mechanism | Write storage + reload; no live swap |
 | Bundle | Lazy-load fixture |
 | Edits during demo | Persist until Exit |

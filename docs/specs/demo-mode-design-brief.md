@@ -9,7 +9,7 @@ Make it obvious, at all times, that the viewer is looking at sample data, and ma
 ## Surfaces
 
 1. **Demo banner**: persistent strip, top of the viewport, all breakpoints. Content: `Demo mode · [Exit]`. Must be unobtrusive but never missable; it must not be dismissible.
-2. **Settings entry**: a "Load sample data" row at the bottom of the Settings popover, low visual weight.
+2. **Menu entry**: a plain "Load sample data" item at the bottom of the ⋮ overflow menu (below a divider, styled like Report a bug) with one hint line beneath: "Swaps in demo data. Your own data is saved and returns when you exit." It does not belong in the Appearance popover, which is only about theme. Mockups: `demo-mode-entry-mockups.html` (A and B combined).
 3. **Replace-data confirmation**: dialog shown only when real data exists, for both the Settings entry and the link. Copy: "Replace your data with sample data? Your data is saved and comes back when you exit." Actions: Cancel / Load sample data.
 4. **Disabled backup controls**: Drive save/load and export/import shown disabled with the hint "Exit demo mode to back up your data".
 5. **Link arrival** (`?demo=true`, fresh user): no extra screen. The banner is the only signal. Onboarding is suppressed.
@@ -36,5 +36,7 @@ Demo data content, storage logic, onboarding tour, a "Reset demo" control.
 - **Banner treatment: option A**, solid `--accent` strip with white text and an outlined-pill Exit button (translucent white fill, 1px white border). No warn tint, no dot.
 
 ## Mockups
+
+`docs/specs/demo-mode-entry-mockups.html`: where the entry lives (supersedes the Settings entry in the file below).
 
 `docs/specs/demo-mode-mockups.html`: open in a browser. Toggle dark/light with the button at the top.
