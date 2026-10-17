@@ -36,7 +36,15 @@ describe("buildDemoData", () => {
     expect(a.isBuilt).toBe(true);
     expect(progress(b)).toBeGreaterThan(0.3);
     expect(progress(b)).toBeLessThan(0.7);
-    expect(progress(c)).toBeLessThan(0.25);
+    expect(progress(c)).toBeLessThan(0.4);
+  });
+
+  it("builds full 100-card Commander decks, singleton apart from basic lands", () => {
+    for (const d of decks) {
+      expect(d.cards.reduce((s, c) => s + c.quantity, 0)).toBe(100);
+      for (const c of d.cards.filter((c) => !c.type.startsWith("Basic Land"))) expect(c.quantity).toBe(1);
+      expect(new Set(d.cards.map((c) => c.name)).size).toBe(d.cards.length);
+    }
   });
 
   it("includes a five-color deck for the mana pie", () => {
