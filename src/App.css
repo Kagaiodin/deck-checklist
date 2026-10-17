@@ -115,6 +115,11 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
   transition: background 0.12s, color 0.12s;
 }
 
+.overflow-menu-item svg {
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
 .overflow-menu-item:hover {
   background: var(--surface-2);
   color: var(--text);

@@ -23,6 +23,7 @@ import { ProfileExportImport } from "./features/profile/ProfileExportImport";
 import { ImportBackupModal } from "./features/profile/ImportBackupModal";
 import { GoogleDriveBackup } from "./features/profile/GoogleDriveBackup";
 import { ThemeToggle } from "./components/ThemeToggle";
+import { BugIcon, LightbulbIcon } from "./components/MenuIcons";
 import { DemoBanner } from "./features/demo/DemoBanner";
 import { DemoConfirmModal } from "./features/demo/DemoConfirmModal";
 import { DemoMenuItem } from "./features/demo/DemoMenuItem";
@@ -832,7 +833,8 @@ function AppInner() {
                 rel="noopener noreferrer"
                 onClick={() => setOverflowMenuOpen(false)}
               >
-                🐛 Report a bug
+                <BugIcon />
+                Report a bug
               </a>
               <a
                 className="overflow-menu-item"
@@ -841,7 +843,8 @@ function AppInner() {
                 rel="noopener noreferrer"
                 onClick={() => setOverflowMenuOpen(false)}
               >
-                ✨ Request a feature
+                <LightbulbIcon />
+                Request a feature
               </a>
               {!demoActive && (
                 <>
