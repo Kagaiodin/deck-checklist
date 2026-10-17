@@ -1,3 +1,4 @@
+import { FlaskIcon } from "../../components/MenuIcons";
 import "./demo.css";
 
 interface Props {
@@ -14,7 +15,8 @@ export function DemoMenuItem({ onSelect }: Props) {
         aria-describedby="demo-menu-hint"
         onClick={onSelect}
       >
-        🧪 Load sample data
+        <FlaskIcon />
+        Load sample data
       </button>
       <p className="demo-menu-hint" id="demo-menu-hint">
         Swaps in demo data. Your own data is saved and returns when you exit.
