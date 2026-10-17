@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en" data-mode="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Demo Mode Mockups</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --accent:#6c5ce7; --accent-hover:#8b7cf8; --accent-light:#a78bfa; --accent-deep:#4c3dbf;
+  --bg:#0d0f1a; --surface:#151829; --surface-2:#1e2238; --surface-3:#252a42; --border:#2d3258; --border-dim:#222540;
+  --text:#eceef8; --text-muted:#9ba5c9; --text-dim:#4a5280;
+  --danger:#e05353; --warn:#f4a23c; --success:#4ade80;
+  --radius:8px; --radius-sm:4px; --radius-pill:99px;
+  --shadow-menu:0 4px 20px rgba(0,0,0,.50);
+  --accent-tint-12: color-mix(in srgb, var(--accent) 12%, transparent);
+  --accent-tint-35: color-mix(in srgb, var(--accent) 35%, transparent);
+}
+html[data-mode="light"] {
+  --bg:#f5f3ee; --surface:#fff; --surface-2:#ededf8; --surface-3:#e0dff5; --border:#c9c4b5; --border-dim:#e3dfd3;
+  --text:#1c1d2e; --text-muted:#464b74; --text-dim:#8891b8;
+  --danger:#c43d3d; --warn:#c08120; --success:#2f9d75;
+  --shadow-menu:0 4px 20px rgba(0,0,0,.12);
+}
+body { background:var(--bg); color:var(--text); font:14px/1.4 system-ui, sans-serif; padding:16px; }
+h1 { font-size:18px; margin-bottom:4px; }
+h2 { font-size:13px; text-transform:uppercase; letter-spacing:.06em; color:var(--text-muted); margin:28px 0 10px; }
+p.note { color:var(--text-muted); font-size:13px; margin-bottom:10px; max-width:70ch; }
+.toggle { margin:8px 0 0; background:var(--surface-2); color:var(--text); border:1px solid var(--border); border-radius:var(--radius); padding:8px 12px; cursor:pointer; min-height:36px; }
+.row { display:flex; flex-wrap:wrap; gap:20px; align-items:flex-start; }
+.frame { border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; background:var(--bg); }
+.frame.desktop { width:560px; max-width:100%; }
+.frame.mobile  { width:300px; }
+.label { font-size:12px; color:var(--text-muted); margin-bottom:6px; font-weight:600; }
+
+/* fake app chrome */
+.app { display:flex; min-height:150px; }
+.side { width:90px; background:var(--surface); border-right:1px solid var(--border); padding:10px; font-size:11px; color:var(--text-muted); }
+.side b { display:block; color:var(--text); margin-bottom:8px; }
+.main { flex:1; padding:12px; }
+.card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:10px; margin-bottom:8px; font-size:12px; }
+.bar { height:6px; border-radius:99px; background:var(--surface-3); margin-top:6px; overflow:hidden; }
+.bar i { display:block; height:100%; width:82%; background:linear-gradient(90deg,var(--accent-deep),var(--accent),var(--accent-light)); }
+
+/* ── Banner options ── */
+.demo-banner { display:flex; align-items:center; justify-content:center; gap:10px; padding:6px 12px; min-height:34px; font-size:12px; font-weight:600; }
+.demo-banner button { font:inherit; cursor:pointer; min-height:28px; }
+.frame.mobile .demo-banner { min-height:44px; font-size:13px; }
+.frame.mobile .demo-banner button { min-height:36px; }
+
+/* A: solid accent strip */
+.opt-a { background:var(--accent); color:#fff; }
+.opt-a button { background:rgba(255,255,255,.16); color:#fff; border:1px solid rgba(255,255,255,.45); border-radius:var(--radius-pill); padding:2px 12px; }
+
+/* B: warn-tinted strip — "this is not your data" */
+.opt-b { background:color-mix(in srgb, var(--warn) 16%, var(--surface)); color:var(--text); border-bottom:1px solid color-mix(in srgb, var(--warn) 55%, transparent); }
+.opt-b .dot { width:8px; height:8px; border-radius:50%; background:var(--warn); }
+.opt-b button { background:none; color:var(--text); border:1px solid var(--warn); border-radius:var(--radius-pill); padding:2px 12px; }
+
+/* C: neutral low-key strip */
+.opt-c { background:var(--surface-2); color:var(--text-muted); border-bottom:1px dashed var(--border); font-weight:500; }
+.opt-c button { background:none; border:none; color:var(--accent-light); text-decoration:underline; padding:2px 4px; }
+
+/* ── Settings popover ── */
+.pop { width:240px; background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow-menu); padding:6px; }
+.pop .item { padding:9px 10px; border-radius:var(--radius-sm); font-size:13px; color:var(--text); }
+.pop hr { border:none; border-top:1px solid var(--border-dim); margin:6px 0; }
+.pop .quiet { color:var(--text-muted); font-size:12px; display:flex; justify-content:space-between; }
+.pop .quiet small { color:var(--text-dim); }
+.pop .item.disabled { opacity:.45; }
+.hint { font-size:11px; color:var(--text-muted); padding:2px 10px 8px; }
+
+/* ── Dialog ── */
+.scrim { background:rgba(0,0,0,.55); padding:24px; border-radius:var(--radius); }
+.dialog { width:340px; max-width:100%; margin:0 auto; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:18px; box-shadow:var(--shadow-menu); }
+.dialog h3 { font-size:15px; margin-bottom:6px; }
+.dialog p { color:var(--text-muted); font-size:13px; margin-bottom:16px; }
+.dialog .actions { display:flex; gap:8px; justify-content:flex-end; }
+.btn { font:inherit; font-size:13px; border-radius:var(--radius); padding:8px 14px; min-height:36px; cursor:pointer; border:1px solid var(--border); background:var(--surface-2); color:var(--text); }
+.btn.primary { background:var(--accent); border-color:var(--accent); color:#fff; }
+</style>
+</head>
+<body>
+<h1>Demo mode — mockups</h1>
+<p class="note">Spec: <code>demo-mode-spec.md</code>. Pick a banner option (A, B or C). The other surfaces are single proposals.</p>
+<button class="toggle" onclick="const r=document.documentElement;r.dataset.mode=r.dataset.mode==='dark'?'light':'dark'">Toggle dark / light</button>
+
+<h2>1 · Banner options</h2>
+<p class="note">Same content in every option: <b>Demo mode · Exit</b>. The strip sits above the existing layout and is not dismissible.</p>
+
+<div class="row">
+  <div>
+    <div class="label">A · Accent strip (brand color, strongest presence)</div>
+    <div class="frame desktop">
+      <div class="demo-banner opt-a">Demo mode · sample data <button>Exit</button></div>
+      <div class="app"><div class="side"><b>Fetchlist</b>Decks<br>Collection<br>Orders</div>
+        <div class="main"><div class="card">Atraxa, Praetors' Voice<div class="bar"><i></i></div></div><div class="card">Korvold, Fae-Cursed King</div></div></div>
+    </div>
+  </div>
+  <div>
+    <div class="label">A · mobile</div>
+    <div class="frame mobile">
+      <div class="demo-banner opt-a">Demo mode <button>Exit</button></div>
+      <div class="main"><div class="card">Atraxa, Praetors' Voice<div class="bar"><i></i></div></div></div>
+    </div>
+  </div>
+</div>
+
+<div class="row" style="margin-top:20px">
+  <div>
+    <div class="label">B · Warn-tinted strip (reads as "not your data")</div>
+    <div class="frame desktop">
+      <div class="demo-banner opt-b"><span class="dot"></span>Demo mode · sample data <button>Exit</button></div>
+      <div class="app"><div class="side"><b>Fetchlist</b>Decks<br>Collection<br>Orders</div>
+        <div class="main"><div class="card">Atraxa, Praetors' Voice<div class="bar"><i></i></div></div><div class="card">Korvold, Fae-Cursed King</div></div></div>
+    </div>
+  </div>
+  <div>
+    <div class="label">B · mobile</div>
+    <div class="frame mobile">
+      <div class="demo-banner opt-b"><span class="dot"></span>Demo mode <button>Exit</button></div>
+      <div class="main"><div class="card">Atraxa, Praetors' Voice<div class="bar"><i></i></div></div></div>
+    </div>
+  </div>
+</div>
+
+<div class="row" style="margin-top:20px">
+  <div>
+    <div class="label">C · Neutral low-key strip (least intrusive)</div>
+    <div class="frame desktop">
+      <div class="demo-banner opt-c">Demo mode · sample data · <button>Exit</button></div>
+      <div class="app"><div class="side"><b>Fetchlist</b>Decks<br>Collection<br>Orders</div>
+        <div class="main"><div class="card">Atraxa, Praetors' Voice<div class="bar"><i></i></div></div><div class="card">Korvold, Fae-Cursed King</div></div></div>
+    </div>
+  </div>
+  <div>
+    <div class="label">C · mobile</div>
+    <div class="frame mobile">
+      <div class="demo-banner opt-c">Demo mode · <button>Exit</button></div>
+      <div class="main"><div class="card">Atraxa, Praetors' Voice<div class="bar"><i></i></div></div></div>
+    </div>
+  </div>
+</div>
+
+<h2>2 · Settings entry and disabled backup controls</h2>
+<div class="row">
+  <div>
+    <div class="label">Normal: entry at the bottom, quiet</div>
+    <div class="pop">
+      <div class="item">Theme</div>
+      <div class="item">Export profile</div>
+      <div class="item">Import backup</div>
+      <hr>
+      <div class="item quiet">Load sample data <small>demo</small></div>
+    </div>
+  </div>
+  <div>
+    <div class="label">In demo mode: backup actions disabled</div>
+    <div class="pop">
+      <div class="item">Theme</div>
+      <div class="item disabled">Export profile</div>
+      <div class="item disabled">Import backup</div>
+      <div class="item disabled">Save to Drive</div>
+      <div class="hint">Exit demo mode to back up your data.</div>
+    </div>
+  </div>
+</div>
+
+<h2>3 · Replace-data confirmation (only when real data exists)</h2>
+<div class="scrim">
+  <div class="dialog" role="dialog" aria-label="Replace your data">
+    <h3>Replace your data with sample data?</h3>
+    <p>Your data is saved and comes back when you exit demo mode.</p>
+    <div class="actions"><button class="btn">Cancel</button><button class="btn primary">Load sample data</button></div>
+  </div>
+</div>
+
+<h2>4 · Link arrival (fresh user, <code>?demo=true</code>)</h2>
+<p class="note">No extra screen. The user lands in the app with the banner shown and onboarding suppressed. After Exit they see the normal empty states, which must offer a clear first action (import a deck).</p>
+</body>
+</html>

@@ -7,6 +7,7 @@ import {
 import { DriveConflictModal } from "./DriveConflictModal";
 import type { ToastInput } from "./ProfileExportImport";
 import "./GoogleDriveBackup.css";
+import { isDemoActiveNow, DEMO_BACKUP_HINT } from "../demo/demoMode";
 
 interface Props {
   decks: Deck[];
@@ -69,6 +70,16 @@ export function GoogleDriveBackup({
   }, [lastSync]);
 
   if (!supportsGoogleDrive()) return null;
+
+  if (isDemoActiveNow()) {
+    return (
+      <div className={`gdrive gdrive--${variant}`}>
+        <button type="button" className="btn btn-secondary btn-sm gdrive-btn-block" disabled title={DEMO_BACKUP_HINT}>
+          {driveIcon} Connect Google Drive
+        </button>
+      </div>
+    );
+  }
 
   function buildPayload(): ProfileExport {
     return {

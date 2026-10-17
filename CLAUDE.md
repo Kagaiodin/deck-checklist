@@ -13,6 +13,12 @@
   need a test; find the nearest `__tests__/` and copy its pattern.
 - Coverage floors are enforced in vitest.config — `npm run test:coverage` fails below them.
 
+## Demo mode
+- Demo data lives in `src/features/demo/demoData.ts`; the localStorage keys it swaps are `MANAGED_KEYS` in `demoMode.ts`.
+- When adding a feature, a new persisted localStorage key, or a data-shape change, consider the demo: does it need sample data,
+  a new managed key (so it is isolated from real data and backups), or an update to `demoData.test.ts`? Say so in the PR.
+- Demo decks must stay full 100-card Commander lists (singleton apart from basics).
+
 ## Design workflow
 - New feature / new page / unknown visual direction → Open Design first, then implement
   from the local artifact (see the `implement-from-open-design` skill)

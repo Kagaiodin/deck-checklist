@@ -11,6 +11,8 @@
 // app-private folder the user can't browse — holding one file,
 // fetchlist-backup.json.
 
+import { isDemoActiveNow, DEMO_BACKUP_HINT } from "../features/demo/demoMode";
+
 const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
 const SCOPES = "https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/userinfo.email";
 const BACKUP_FILENAME = "fetchlist-backup.json";
@@ -142,7 +144,13 @@ async function findBackupFile(): Promise<{ id: string; modifiedTime: string } | 
   return file;
 }
 
+// Sample data must never overwrite a real backup, and a real backup must never land on sample data.
+function requireDemoOff(): void {
+  if (isDemoActiveNow()) throw new DriveError("unknown", `${DEMO_BACKUP_HINT}.`);
+}
+
 export async function saveToDrive(contents: string): Promise<void> {
+  requireDemoOff();
   requireToken();
   try {
     const existing = cachedFileId ? { id: cachedFileId } : await findBackupFile();
@@ -178,6 +186,7 @@ export async function saveToDrive(contents: string): Promise<void> {
 }
 
 export async function loadFromDrive(): Promise<{ contents: string; modifiedTime: string } | null> {
+  requireDemoOff();
   requireToken();
   try {
     const file = await findBackupFile();

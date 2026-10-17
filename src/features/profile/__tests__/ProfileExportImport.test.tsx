@@ -2,6 +2,7 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { ProfileExportImport } from "../ProfileExportImport";
 import { clearLinkedHandle } from "../../../utils/fileSystemAccess";
+import { installMemoryLocalStorage, restoreLocalStorage } from "../../demo/__tests__/memoryStorage";
 
 const originalCreateElement = document.createElement.bind(document);
 
@@ -95,3 +96,30 @@ describe("ProfileExportImport — File System Access save/load", () => {
     expect(showToast).not.toHaveBeenCalled();
   });
 });
+
+describe("ProfileExportImport — demo mode", () => {
+  afterEach(() => { vi.restoreAllMocks(); restoreLocalStorage(); });
+
+  it("disables export and import and explains why, without downloading anything", () => {
+    installMemoryLocalStorage().setItem("fetchlist:demo:active", "true");
+    const clickSpy = mockAnchorClick();
+
+    render(<ProfileExportImport {...baseProps} />);
+
+    const exportBtn = screen.getByText("↓ Export backup");
+    const importBtn = screen.getByText("↑ Import backup");
+    expect(exportBtn).toBeDisabled();
+    expect(importBtn).toBeDisabled();
+    expect(screen.getByText("Exit demo mode to back up your data")).toBeInTheDocument();
+    fireEvent.click(exportBtn);
+    expect(clickSpy).not.toHaveBeenCalled();
+  });
+
+  it("leaves the controls enabled outside demo mode", () => {
+    installMemoryLocalStorage();
+    render(<ProfileExportImport {...baseProps} />);
+    expect(screen.getByText("↓ Export backup")).toBeEnabled();
+    expect(screen.queryByText("Exit demo mode to back up your data")).not.toBeInTheDocument();
+  });
+});
+
