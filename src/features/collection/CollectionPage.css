@@ -184,6 +184,9 @@
 }
 
 /* ── Empty states ───────────────────────────────────────────────── */
+/* Same breathing room as the Orders empty state, so the card isn't jammed under the header. */
+.collection-empty-wrap { padding: 80px 20px 100px; }
+
 .collection-empty-search {
   font-size: 13px; color: var(--text-muted); padding: 24px 16px; text-align: center;
 }
