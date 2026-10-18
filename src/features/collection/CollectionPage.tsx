@@ -441,18 +441,20 @@ export function CollectionPage({ decks, onCollectionChange, onOpenTrade }: Colle
 
         {/* Empty state */}
         {!collectionMeta && !collectionError && (
-          <EmptyState
-            icon={
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="6" width="13" height="15" rx="2"/>
-                <rect x="8" y="3" width="13" height="15" rx="2"/>
-              </svg>
-            }
-            title="No cards yet"
-            body="Import your collection from Moxfield or add cards manually."
-            primary={{ label: "Upload CSV", onClick: () => csvInputRef.current?.click() }}
-            secondary={{ label: "+ Add card", onClick: () => setQuickAddOpen(true) }}
-          />
+          <div className="collection-empty-wrap">
+            <EmptyState
+              icon={
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="6" width="13" height="15" rx="2"/>
+                  <rect x="8" y="3" width="13" height="15" rx="2"/>
+                </svg>
+              }
+              title="No cards yet"
+              body="Import your collection from Moxfield or add cards manually."
+              primary={{ label: "Upload CSV", onClick: () => csvInputRef.current?.click() }}
+              secondary={{ label: "+ Add card", onClick: () => setQuickAddOpen(true) }}
+            />
+          </div>
         )}
 
         {/* Main list */}
