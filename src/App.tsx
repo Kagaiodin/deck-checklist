@@ -50,8 +50,10 @@ function orderLabelForNotification(order: Order): string {
 const ONBOARDING_KEY = "fetchlist:onboarding:dismissed";
 const COLLECTION_KEY = "mtg-checklist-collection-v2";
 
-/** A `/#trade=…` share link opens the Trade page (nested under Collection) instead of the default tab. */
-const openedWithTradeLink = () => extractPayload(window.location.hash) !== null;
+const isTradePath = () => /^\/trade\/?$/.test(window.location.pathname);
+
+/** `/trade` or a `/#trade=…` share link opens the Trade page (nested under Collection) instead of the default tab. */
+const openedWithTradeLink = () => isTradePath() || extractPayload(window.location.hash) !== null;
 
 /**
  * The Collection as it is right now. AppInner's own copy is only refreshed on reload
@@ -675,6 +677,8 @@ function AppInner() {
 
   function closeTrade() {
     clearTradeHash();
+    // Otherwise a reload on `/trade` would reopen Trade.
+    if (isTradePath()) window.history.replaceState(null, "", "/" + window.location.search);
     setTradeOpen(false);
   }
 

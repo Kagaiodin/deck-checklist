@@ -21,9 +21,11 @@ beforeEach(() => {
   });
   vi.stubGlobal("scrollTo", vi.fn());
   window.location.hash = "";
+  window.history.replaceState(null, "", "/");
 });
 afterEach(() => {
   window.location.hash = "";
+  window.history.replaceState(null, "", "/");
   vi.unstubAllGlobals();
 });
 
@@ -105,5 +107,16 @@ describe("Trade route", () => {
     await screen.findByText(/Shared trade — prices as of/);
     await userEvent.click(within(screen.getByRole("navigation", { name: "Breadcrumb" })).getByRole("button", { name: "Collection" }));
     await waitFor(() => expect(window.location.hash).toBe(""));
+  });
+
+  it("opens straight into Trade on /trade, and leaves /trade when going back", async () => {
+    window.history.replaceState(null, "", "/trade");
+    render(<App />);
+    // PersistenceWrapper remounts the app once decks load; wait it out before grabbing the breadcrumb.
+    await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
+    expect(screen.getByRole("heading", { level: 1, name: "Trade" })).toBeInTheDocument();
+    await userEvent.click(within(screen.getByRole("navigation", { name: "Breadcrumb" })).getByRole("button", { name: "Collection" }));
+    expect(screen.queryByRole("heading", { name: "Trade" })).not.toBeInTheDocument();
+    expect(window.location.pathname).toBe("/");
   });
 });
