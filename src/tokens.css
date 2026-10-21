@@ -24,6 +24,12 @@ html { overflow-x: hidden; } /* catch-all: prevents root scroll container from f
   --warn:    #f4a23c;
   --success: #4ade80;
   --good:    var(--success); /* backward-compat alias */
+  --ok:      var(--success);
+
+  /* Soft tints — status badges, banners, hover fills. Derived, so light mode follows the base colors. */
+  --ok-soft:     color-mix(in srgb, var(--success) 14%, transparent);
+  --warn-soft:   color-mix(in srgb, var(--warn) 14%, transparent);
+  --danger-soft: color-mix(in srgb, var(--danger) 14%, transparent);
 
   /* Type */
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -110,6 +116,8 @@ html[data-mode="light"] {
   --success: #2f9d75;  /* #4ade80 washes out on white */
   --warn:    #c08120;  /* #f4a23c looks peach on cream */
   --danger:  #c43d3d;  /* #e05353 reads pink, not red */
+  --ok-soft:   color-mix(in srgb, var(--success) 16%, transparent);
+  --warn-soft: color-mix(in srgb, var(--warn) 16%, transparent);
 
   /* Rarity — darker fg for AA/AAA on white */
   --rar-common-fg:   #464b74;

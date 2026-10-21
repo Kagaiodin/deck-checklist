@@ -93,8 +93,8 @@
   transition: background .15s, border-color .15s;
 }
 .import-backup-replace-row.is-destructive {
-  background: rgba(224, 83, 83, .06);
-  border-color: rgba(224, 83, 83, .4);
+  background: color-mix(in srgb, var(--danger) 6%, transparent);
+  border-color: color-mix(in srgb, var(--danger) 40%, transparent);
 }
 .import-backup-replace-row input[type="checkbox"] {
   accent-color: var(--accent);
@@ -122,8 +122,8 @@
 .import-backup-error {
   font-size: 12px;
   color: var(--danger);
-  background: rgba(224, 83, 83, .07);
-  border: 1px solid rgba(224, 83, 83, .22);
+  background: color-mix(in srgb, var(--danger) 7%, transparent);
+  border: 1px solid color-mix(in srgb, var(--danger) 22%, transparent);
   border-radius: 6px;
   padding: 8px 10px;
   line-height: 1.5;
