@@ -755,6 +755,7 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
                 <li
                   key={card.id}
                   className={`card-row${card.acquired ? " acquired" : ""}${isSelected ? " selected" : ""}${editMode ? " edit-mode-row" : ""}`}
+                  data-contrast-dimmed={card.acquired ? "" : undefined}
                   onClick={
                     editMode ? undefined :
                     selectMode ? () => toggleSelect(card.id) :

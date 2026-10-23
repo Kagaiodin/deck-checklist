@@ -156,7 +156,7 @@ export function CostLine({ cards, pricesUpdatedAt, isLoading, now: nowOverride }
 
   const separated = notes.map((note, i) => (
     <span key={i} className="cost-meta">
-      {i > 0 && <span className="cost-sep" aria-hidden="true"> · </span>}
+      {i > 0 && <span className="cost-sep" aria-hidden="true" data-contrast-exempt> · </span>}
       {note}
     </span>
   ));

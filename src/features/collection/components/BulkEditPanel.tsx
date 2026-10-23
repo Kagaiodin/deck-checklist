@@ -99,7 +99,7 @@ export function BulkEditPanel({
             )}
           </span>
         ) : (
-          <span className="bulk-preview-empty">—</span>
+          <span className="bulk-preview-empty" data-contrast-exempt>—</span>
         )}
       </div>
 
