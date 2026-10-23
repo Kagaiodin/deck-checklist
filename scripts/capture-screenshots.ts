@@ -11,7 +11,7 @@
  *       # start in a given mode/accent and write to a different folder (for before/after diffs)
  *   npx tsx scripts/capture-screenshots.ts --local --contrast
  *       # also audit text contrast on every shot; writes contrast-report.json. Report only, never fails the run.
- *   npx tsx scripts/capture-screenshots.ts --local --contrast-gate
+ *   npx tsx scripts/capture-screenshots.ts --local --contrast-gate --headless
  *       # same audit, but exits 1 if any pair is under AA (or a shot failed, which would shrink coverage). This is
  *       # what CI runs via `npm run test:contrast`.
  *
@@ -40,6 +40,8 @@ const flagValue = (name: string): string | undefined => {
   return i !== -1 ? argv[i + 1] : undefined;
 };
 
+/** The script opens a visible browser by default; CI has no display, so `--headless` turns that off. */
+const HEADLESS = argv.includes("--headless");
 const CONTRAST_GATE = argv.includes("--contrast-gate");
 const CONTRAST = CONTRAST_GATE || argv.includes("--contrast");
 const contrastHits: ContrastHit[] = [];
@@ -268,7 +270,7 @@ async function buildContext(viewport: { width: number; height: number }): Promis
   persistent: boolean;
 }> {
   if (browserArg === "fixture") {
-    const browser = await chromium.launch({ headless: false });
+    const browser = await chromium.launch({ headless: HEADLESS });
     const ctx = await browser.newContext({ viewport });
     await seedFromFixture(ctx);
     return { ctx, persistent: false };
@@ -280,7 +282,7 @@ async function buildContext(viewport: { width: number; height: number }): Promis
     if (Object.keys(data).length === 0) {
       console.warn("  No data found for this origin in Firefox — screenshots will show empty state");
     }
-    const browser = await chromium.launch({ headless: false });
+    const browser = await chromium.launch({ headless: HEADLESS });
     const ctx = await browser.newContext({ viewport });
     if (Object.keys(data).length > 0) {
       await ctx.addInitScript((entries: Record<string, string>) => {
@@ -293,7 +295,7 @@ async function buildContext(viewport: { width: number; height: number }): Promis
   // chrome — try persistent profile, fall back to fixture
   try {
     const ctx = await chromium.launchPersistentContext(CHROME_PROFILE, {
-      headless: false,
+      headless: HEADLESS,
       viewport,
       args: ["--disable-extensions", "--no-first-run", "--disable-sync"],
     });
@@ -302,7 +304,7 @@ async function buildContext(viewport: { width: number; height: number }): Promis
   } catch (err) {
     console.warn("Chrome profile unavailable:", err instanceof Error ? err.message : err);
     console.log("Falling back to fixture seed…");
-    const browser = await chromium.launch({ headless: false });
+    const browser = await chromium.launch({ headless: HEADLESS });
     const ctx = await browser.newContext({ viewport });
     await seedFromFixture(ctx);
     return { ctx, persistent: false };
@@ -347,7 +349,7 @@ async function captureCostBreakdown(): Promise<void> {
     fetchMode: "ok" | "fail";
     name: string;
   }) => {
-    const browser = await chromium.launch({ headless: false });
+    const browser = await chromium.launch({ headless: HEADLESS });
     try {
       const c = await browser.newContext({ viewport: opts.viewport });
       await c.addInitScript((entries: Record<string, string>) => {
@@ -865,7 +867,7 @@ async function main(): Promise<void> {
 
     // 27 — Empty collection state (separate context, no collection keys in seed)
     {
-      const emptyBrowser = await chromium.launch({ headless: false });
+      const emptyBrowser = await chromium.launch({ headless: HEADLESS });
       try {
         const emptyCtx2 = await emptyBrowser.newContext({ viewport: { width: 1440, height: 900 } });
         const emptySeed = Object.fromEntries(
@@ -1044,7 +1046,7 @@ async function main(): Promise<void> {
     // ── Empty state shots (separate contexts) ──────────────────────────────
     // 52 — Desktop orders empty state
     {
-      const emptyBrowser = await chromium.launch({ headless: false });
+      const emptyBrowser = await chromium.launch({ headless: HEADLESS });
       try {
         const emptyCtx3 = await emptyBrowser.newContext({ viewport: { width: 1440, height: 900 } });
         const emptySeed3 = Object.fromEntries(
@@ -1071,7 +1073,7 @@ async function main(): Promise<void> {
 
     // 53 — Mobile orders empty state
     {
-      const emptyBrowser = await chromium.launch({ headless: false });
+      const emptyBrowser = await chromium.launch({ headless: HEADLESS });
       try {
         const emptyCtx4 = await emptyBrowser.newContext({ viewport: { width: 390, height: 844 } });
         const emptySeed4 = Object.fromEntries(

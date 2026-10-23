@@ -26,7 +26,7 @@ for combo in $combos; do
   mode=${combo%:*}; accent=${combo#*:}
   echo "── contrast: $mode $accent"
   npx tsx scripts/capture-screenshots.ts --local --theme "$mode" --accent "$accent" \
-    --contrast-gate --out "${TMPDIR:-/tmp}/contrast-gate/$mode-$accent" || status=1
+    --contrast-gate --headless --out "${TMPDIR:-/tmp}/contrast-gate/$mode-$accent" || status=1
 done
 
 [ -n "$server_pid" ] && kill "$server_pid" 2>/dev/null
