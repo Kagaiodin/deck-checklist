@@ -3,7 +3,7 @@
 /* ── Scrim + sheet shell ────────────────────────────────────────────────────── */
 .nos-scrim {
   position: fixed; inset: 0; z-index: 300;
-  background: rgba(0, 0, 0, 0.55);
+  background: var(--scrim);
   backdrop-filter: blur(2px);
   display: flex; justify-content: flex-end;
 }
@@ -337,7 +337,7 @@
 
 /* ── Mobile ─────────────────────────────────────────────────────────────────── */
 @media (max-width: 640px) {
-  .nos-scrim { align-items: flex-end; background: rgba(0, 0, 0, 0.6); }
+  .nos-scrim { align-items: flex-end; background: var(--scrim); }
   .nos-sheet {
     width: 100%; border-left: 0;
     border-top: 1px solid var(--border);

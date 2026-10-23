@@ -293,7 +293,7 @@ code { font-family: var(--font-mono); display: inline-flex; border-radius: 4px; 
 /* Picker overlay — backdrop */
 .deck-picker-overlay {
   position: fixed; inset: 0; z-index: 400;
-  background: rgba(0,0,0,.6);
+  background: var(--scrim);
   display: flex; flex-direction: column; justify-content: flex-end;
 }
 
@@ -888,7 +888,7 @@ code { font-family: var(--font-mono); display: inline-flex; border-radius: 4px; 
 /* ── Mobile bottom sheet ────────────────────────────────────────────────── */
 .card-row-sheet-scrim {
   position: fixed; inset: 0; z-index: 300;
-  background: rgba(5,6,14,.6);
+  background: var(--scrim);
   backdrop-filter: blur(2px);
   display: flex; align-items: flex-end;
   opacity: 0; transition: opacity 220ms ease;
@@ -1273,7 +1273,7 @@ code { font-family: var(--font-mono); display: inline-flex; border-radius: 4px; 
 .mobile-sheet-backdrop {
   display: none;
   position: fixed; inset: 0; z-index: 399;
-  background: rgba(0,0,0,.45);
+  background: var(--scrim);
 }
 @media (max-width: 639px) {
   .mobile-sheet-backdrop { display: block; }

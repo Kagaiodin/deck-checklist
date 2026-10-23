@@ -250,7 +250,7 @@ button.tr-chip:hover { border-color: var(--border); color: var(--text); }
   display: inline-flex; align-items: center; gap: 12px; padding: 10px 12px 10px 16px; border-radius: var(--radius);
   background: var(--surface-3); color: var(--text); box-shadow: var(--shadow-menu); font-size: 13px; border: 1px solid var(--border);
 }
-.tr-scrim { position: fixed; inset: 0; background: rgba(5, 6, 12, .55); z-index: 70; display: grid; place-items: center; padding: 24px; }
+.tr-scrim { position: fixed; inset: 0; background: var(--scrim); z-index: 70; display: grid; place-items: center; padding: 24px; }
 .tr-sheet {
   background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow-menu);
   display: flex; flex-direction: column; overflow: hidden; width: 100%; max-width: 560px; max-height: calc(100vh - 48px); color: var(--text);
