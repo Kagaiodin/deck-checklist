@@ -16,6 +16,9 @@ html { overflow-x: hidden; } /* catch-all: prevents root scroll container from f
   --accent-deep:  #4c3dbf;
   /* Text/icons on a solid --accent fill. Set per accent × mode so every pair clears 4.5:1. */
   --on-accent:    #ffffff;
+  /* Accent as small text (links, active labels, counts). Dark: the bright variant. Light: set per accent below,
+     since --accent-light stays bright for gradients. >= 4.5:1 on --surface, --surface-2 and the accent tints. */
+  --accent-text:  var(--accent-light);
   --grad-progress: linear-gradient(90deg,
     var(--accent-deep) 0%, var(--accent) 50%, var(--accent-light) 100%);
 
@@ -34,10 +37,10 @@ html { overflow-x: hidden; } /* catch-all: prevents root scroll container from f
   /* ── Text ── */
   --text:       #eceef8;
   --text-muted: #9ba5c9;
-  --text-dim:   #4a5280;
+  --text-dim:   #8189b0;  /* 5.14:1 on --surface, 4.58:1 on --surface-2 */
 
   /* ── Status ── */
-  --danger:  #e05353;
+  --danger:  #eb6767;  /* was #e05353: 4.1:1 on --surface-2 and its tint; this is 4.97:1 / 4.78:1 */
   /* --danger is for text and icons. Solid danger buttons/badges fill with --danger-fill so --on-danger
      (white) clears AA: 5.14:1 in both modes (white on dark --danger itself is only 3.80:1). */
   --danger-fill: #c43d3d;
@@ -70,9 +73,9 @@ html { overflow-x: hidden; } /* catch-all: prevents root scroll container from f
   --mana-w-bg: #e8e4d0; --mana-w-fg: #5c4a1e;
   --mana-u-bg: #1a56a0; --mana-u-fg: #c8e0f8;
   --mana-b-bg: #2a2432; --mana-b-fg: #b8a8c8;
-  --mana-r-bg: #c0392b; --mana-r-fg: #fdd8d4;
+  --mana-r-bg: #c0392b; --mana-r-fg: #ffffff;
   --mana-g-bg: #1a6b3a; --mana-g-fg: #b8e8c8;
-  --mana-c-bg: #6b7280; --mana-c-fg: #e5e7eb;
+  --mana-c-bg: #6b7280; --mana-c-fg: #ffffff;
   --mana-m-pie: conic-gradient(
     var(--mana-w-bg) 0deg 71.75deg,
     var(--mana-u-bg) 72.25deg 143.75deg,
@@ -90,6 +93,11 @@ html { overflow-x: hidden; } /* catch-all: prevents root scroll container from f
   --src-borrow-fg:   #fb923c; --src-borrow-bg:   rgba(249,115,22,.18);
   --src-binder-fg:   #2dd4bf; --src-binder-bg:   rgba(20,184,166,.18);
   --src-storage-fg:  #94a3b8; --src-storage-bg:  rgba(148,163,184,.18);
+
+  /* ── State ── */
+  /* Opacity for completed (acquired) rows and cancelled orders. 0.85 keeps --text-dim at >= 3:1 on --surface-2
+     in both modes. An intentional below-AA exception, documented under DL-CONTRAST-01. */
+  --completed-opacity: 0.85;
 
   /* ── Type ── */
   --font-sans: system-ui, sans-serif;
@@ -130,12 +138,14 @@ html[data-mode="light"] {
   --text:       #1c1d2e;
   --text-muted: #464b74;
   --text-dim:   #736d5e;  /* warm neutral; 5.15:1 on --surface, 4.64:1 on --bg */
+  --accent-text: #433cc3;  /* fallback if no accent attribute; the per-accent blocks below override */
 
   /* ── Status — dark-mode values are too bright/pale on cream ── */
-  --success: #2f9d75;  /* #4ade80 washes out on white */
-  --warn:    #c08120;  /* #f4a23c looks peach on cream */
-  --danger:  #c43d3d;  /* #e05353 reads pink, not red */
-  --danger-fill: var(--danger);
+  /* Text-safe: each is >= 4.5:1 on --surface, --surface-2 and on its own soft tint over either. */
+  --success: #14614a;  /* was #2f9d75 (2.8:1 on its tint) */
+  --warn:    #835209;  /* was #c08120 (2.8:1 on its tint) */
+  --danger:  #a62929;  /* was #c43d3d (4.1:1 on its tint) */
+  --danger-fill: #c43d3d;  /* solid fills keep the old red; white on it is 5.14:1 */
   --pip-edge: #7d7868;
 
   /* ── Tints ── */
@@ -150,11 +160,11 @@ html[data-mode="light"] {
   --rar-special-fg:  #6d28d9; --rar-special-bg:  rgba(192,132,252,.10);
 
   /* ── Source tags — darker fg for readability on near-white ── */
-  --src-owned-fg:   #15803d; --src-owned-bg:   rgba(34,197,94,.13);
+  --src-owned-fg:   #146c34; --src-owned-bg:   rgba(34,197,94,.13);
   --src-ordered-fg: #1d4ed8; --src-ordered-bg: rgba(59,130,246,.13);
   --src-proxy-fg:   #7c3aed; --src-proxy-bg:   rgba(168,85,247,.13);
   --src-deck-fg:    #92400e; --src-deck-bg:    rgba(234,179,8,.13);
-  --src-buy-fg:     #dc2626; --src-buy-bg:     rgba(239,68,68,.13);
+  --src-buy-fg:     #b81b1b; --src-buy-bg:     rgba(239,68,68,.13);
   --src-borrow-fg:  #c2410c; --src-borrow-bg:  rgba(249,115,22,.13);
   --src-binder-fg:  #0f766e; --src-binder-bg:  rgba(20,184,166,.13);
   --src-storage-fg: #475569; --src-storage-bg: rgba(148,163,184,.13);
@@ -199,13 +209,15 @@ html[data-mode="light"][data-accent="indigo"] {
   --accent-light: #6c5ce7;
   --accent-deep:  #3730a3;
   --on-accent:    #ffffff;  /* 6.29:1 */
+  --accent-text:  #433cc3;  /* 6.35:1 on --surface-2, 4.92:1 on its 18% tint */
 }
 html[data-mode="light"][data-accent="sapphire"] {
   --accent:       #2563eb;
-  --accent-hover: #3b82f6;
+  --accent-hover: #2c6def;  /* hover must keep white >= 4.5:1; #3b82f6 was 3.68:1 */
   --accent-light: #3b82f6;
   --accent-deep:  #1d4ed8;
   --on-accent:    #ffffff;  /* 5.17:1 */
+  --accent-text:  #1d4db7;  /* 6.07:1 on --surface-2, 4.79:1 on its 18% tint */
 }
 html[data-mode="light"][data-accent="emerald"] {
   --accent:       #059669;
@@ -213,11 +225,13 @@ html[data-mode="light"][data-accent="emerald"] {
   --accent-light: #10b981;
   --accent-deep:  #047857;
   --on-accent:    #0d0f1a;  /* 5.06:1 (white is 3.77:1) */
+  --accent-text:  #046347;  /* 5.90:1 on --surface-2, 4.84:1 on its 18% tint (--accent is only 3.05:1) */
 }
 html[data-mode="light"][data-accent="ember"] {
   --accent:       #b45309;
-  --accent-hover: #d97706;
+  --accent-hover: #bb5908;  /* white is 4.62:1 here; #d97706 was 3.19:1 */
   --accent-light: #d97706;
   --accent-deep:  #92400e;
   --on-accent:    #ffffff;  /* 5.02:1 */
+  --accent-text:  #8c4107;  /* 5.91:1 on --surface-2, 4.70:1 on its 18% tint */
 }
