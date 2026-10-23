@@ -8,7 +8,7 @@
   min-height: 34px;
   padding: 4px 12px;
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
   font-size: 12px;
   font-weight: 600;
 }
@@ -16,14 +16,14 @@
 .demo-banner-exit {
   min-height: 28px;
   padding: 2px 12px;
-  background: rgba(255, 255, 255, .16);
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, .45);
+  background: color-mix(in srgb, var(--on-accent) 16%, transparent);
+  color: var(--on-accent);
+  border: 1px solid color-mix(in srgb, var(--on-accent) 45%, transparent);
   border-radius: var(--radius-pill);
   font: inherit;
   cursor: pointer;
 }
-.demo-banner-exit:hover { background: rgba(255, 255, 255, .28); }
+.demo-banner-exit:hover { background: color-mix(in srgb, var(--on-accent) 28%, transparent); }
 
 @media (max-width: 639px) {
   .demo-banner { min-height: 44px; font-size: 13px; }
