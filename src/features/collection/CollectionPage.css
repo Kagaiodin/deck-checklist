@@ -128,7 +128,7 @@
 .sort-popover {
   position: absolute; top: calc(100% + 4px); right: 0; z-index: 40;
   background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--radius); box-shadow: 0 8px 24px rgba(0,0,0,.4);
+  border-radius: var(--radius); box-shadow: var(--shadow-menu);
   display: flex; flex-direction: column; overflow: hidden; min-width: 130px;
 }
 .sort-option {
@@ -177,7 +177,7 @@
 }
 .collection-stats-num { color: var(--text); font-weight: 500; }
 .collection-filename-chip {
-  font-family: ui-monospace, monospace; font-size: 11px;
+  font-family: var(--font-mono); font-size: 11px;
   color: var(--text-muted); background: var(--surface-2);
   border: 1px solid var(--border);
   padding: 1px 7px; border-radius: 4px;
@@ -213,12 +213,12 @@
 }
 .collection-quick-add-input { width: 100%; margin: 0 !important; }
 .collection-quick-add-input.success-flash {
-  border-color: var(--good); transition: border-color 0.6s ease;
+  border-color: var(--ok); transition: border-color 0.6s ease;
 }
 .collection-quick-add-suggestions {
   position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 50;
   list-style: none; background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--radius); box-shadow: 0 8px 24px rgba(0,0,0,.4); overflow: hidden;
+  border-radius: var(--radius); box-shadow: var(--shadow-menu); overflow: hidden;
 }
 .collection-quick-add-suggestion {
   padding: 8px 12px; font-size: 13px; color: var(--text-muted);
@@ -411,7 +411,7 @@
   display: flex; align-items: center; gap: 6px; width: 100%; padding: 3px 0;
 }
 .collection-printing-set-chip {
-  font-family: ui-monospace, monospace; font-size: 10px; font-weight: 600;
+  font-family: var(--font-mono); font-size: 10px; font-weight: 600;
   color: var(--accent-light); background: var(--accent-tint-12);
   border: 1px solid var(--accent-tint-20);
   padding: 1px 5px; border-radius: 3px; line-height: 1.4; white-space: nowrap;
@@ -420,7 +420,7 @@
   font-variant-numeric: tabular-nums; color: var(--text); font-weight: 500;
 }
 .collection-printing-cn {
-  font-family: ui-monospace, monospace; font-size: 11px; color: var(--text-muted);
+  font-family: var(--font-mono); font-size: 11px; color: var(--text-muted);
 }
 .collection-printing-foil { color: var(--accent-light); font-size: 11px; }
 .collection-printing-edit-btn {
@@ -505,7 +505,7 @@
 .bulk-tab.active { background: var(--surface-2); color: var(--text); }
 .bulk-tab.active.danger { background: color-mix(in srgb, var(--danger) 12%, transparent); color: var(--danger); }
 .bulk-tab-sub { font-size: 10px; opacity: .65; font-weight: 400; }
-.bulk-textarea { font-family: ui-monospace, monospace !important; font-size: 13px !important; min-height: 100px; resize: none; }
+.bulk-textarea { font-family: var(--font-mono) !important; font-size: 13px !important; min-height: 100px; resize: none; }
 .bulk-preview-line {
   display: flex; align-items: center; justify-content: space-between;
   font-size: 12px; padding: 0 2px;
@@ -529,7 +529,7 @@
 .bulk-warn {
   display: flex; align-items: flex-start; gap: 8px; padding: 9px 12px;
   background: color-mix(in srgb, var(--danger) 7%, transparent); border: 1px solid color-mix(in srgb, var(--danger) 25%, transparent);
-  border-radius: 6px; font-size: 12px; color: var(--danger);
+  border-radius: var(--radius-md); font-size: 12px; color: var(--danger);
 }
 .bulk-warn-ico { font-size: 15px; line-height: 1; flex-shrink: 0; }
 .bulk-warn strong { color: var(--text); display: block; margin-bottom: 2px; }
@@ -541,7 +541,7 @@
   z-index: 500; display: flex; align-items: center; gap: 12px;
   padding: 10px 16px; min-width: 260px; max-width: 360px;
   background: var(--surface-2); border: 1px solid var(--border);
-  border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,.35); overflow: hidden;
+  border-radius: 10px; box-shadow: var(--shadow-menu); overflow: hidden;
 }
 .undo-toast-message { flex: 1; font-size: 13px; color: var(--text); }
 .undo-toast-btn {

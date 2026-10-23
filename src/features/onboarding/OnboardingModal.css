@@ -2,7 +2,7 @@
 .onboarding-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, .72);
+  background: var(--scrim);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -15,7 +15,7 @@
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, .45);
+  box-shadow: var(--shadow-modal);
   width: 100%;
   max-width: 480px;
   padding: 28px 28px 24px;
@@ -35,7 +35,7 @@
   right: 12px;
   width: 28px;
   height: 28px;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   border: none;
   background: transparent;
   color: var(--text-muted);
@@ -109,7 +109,7 @@
 }
 .onboarding-feat-icon--green {
   background: var(--ok-soft);
-  color: var(--good);
+  color: var(--ok);
 }
 .onboarding-feat-icon--blue {
   background: var(--src-ordered-bg);

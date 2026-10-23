@@ -28,7 +28,7 @@
 
 /* ── Offer panel ──────────────────────────────────────────────────────────── */
 .tr-offer {
-  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
   display: flex; flex-direction: column; min-height: 520px; position: relative; overflow: hidden;
 }
 .tr-offer::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 2px; background: var(--accent); opacity: .9; }
@@ -153,7 +153,7 @@ button.tr-chip:hover { border-color: var(--border); color: var(--text); }
 
 /* ── Control panel ────────────────────────────────────────────────────────── */
 .tr-ctrl {
-  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
   display: flex; flex-direction: column; position: sticky; top: 16px; /* the app header sits outside the scroller */
 }
 .tr-ctrl--sheet { border: 0; border-radius: 0; position: static; overflow: auto; }
@@ -208,7 +208,7 @@ button.tr-chip:hover { border-color: var(--border); color: var(--text); }
 .tr-meter-marker {
   position: absolute; top: 50%; left: var(--share); width: 16px; height: 16px; margin: -8px 0 0 -8px;
   background: var(--band); border: 2px solid var(--surface); border-radius: 3px; transform: rotate(45deg);
-  box-shadow: 0 0 0 1px var(--band), 0 2px 8px rgba(0, 0, 0, .35);
+  box-shadow: 0 0 0 1px var(--band), var(--shadow-sticky);
   transition: left 420ms cubic-bezier(.3, 1.4, .5, 1), background .2s;
 }
 .tr-meter[data-band="empty"] .tr-meter-fill, .tr-meter[data-band="empty"] .tr-meter-marker { opacity: 0; }
@@ -239,7 +239,7 @@ button.tr-chip:hover { border-color: var(--border); color: var(--text); }
 
 /* ── Banner / toast / sheets / dialog ─────────────────────────────────────── */
 .tr-banner {
-  display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px 16px; border-radius: 12px;
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px 16px; border-radius: var(--radius-lg);
   background: var(--accent-tint-10); border: 1px solid var(--accent-tint-35); margin-bottom: 16px; font-size: 13px;
 }
 .tr-banner svg { color: var(--accent-light); flex: none; }
@@ -250,9 +250,9 @@ button.tr-chip:hover { border-color: var(--border); color: var(--text); }
   display: inline-flex; align-items: center; gap: 12px; padding: 10px 12px 10px 16px; border-radius: var(--radius);
   background: var(--surface-3); color: var(--text); box-shadow: var(--shadow-menu); font-size: 13px; border: 1px solid var(--border);
 }
-.tr-scrim { position: fixed; inset: 0; background: rgba(5, 6, 12, .55); z-index: 70; display: grid; place-items: center; padding: 24px; }
+.tr-scrim { position: fixed; inset: 0; background: var(--scrim); z-index: 70; display: grid; place-items: center; padding: 24px; }
 .tr-sheet {
-  background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow-menu);
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-menu);
   display: flex; flex-direction: column; overflow: hidden; width: 100%; max-width: 560px; max-height: calc(100vh - 48px); color: var(--text);
 }
 .tr-sheet-head { display: flex; align-items: center; gap: 8px; padding: 14px 16px; border-bottom: 1px solid var(--border); }
@@ -313,7 +313,7 @@ button.tr-chip:hover { border-color: var(--border); color: var(--text); }
 .tr-meterbar .open svg { transform: rotate(-90deg); }
 .tr-tabs { display: flex; gap: 4px; padding: 6px; margin: 8px 12px; background: var(--surface-2); border-radius: 10px; }
 .tr-tabs button { flex: 1; min-height: 40px; border: 0; border-radius: 7px; background: transparent; color: var(--text-muted); font: inherit; font-weight: 600; font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; }
-.tr-tabs button[aria-selected="true"] { background: var(--surface); color: var(--text); box-shadow: 0 1px 3px rgba(0, 0, 0, .2); }
+.tr-tabs button[aria-selected="true"] { background: var(--surface); color: var(--text); box-shadow: var(--shadow-sticky); }
 .tr-tabs .tr-mono { font-size: 11px; color: var(--text-muted); }
 .tr-bottom-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; display: flex; gap: 8px; padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); border-top: 1px solid var(--border); background: var(--surface); }
 .tr-bottom-bar .btn { flex: 1; min-height: 44px; }

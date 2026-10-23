@@ -2,101 +2,71 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { overflow-x: hidden; } /* catch-all: prevents root scroll container from forming */
 
+/* tokens.css is the only place for colour, shadow, scrim, radius and font values. Sections, in order:
+   accent · surfaces · text · status · tints · rarity · mana · source tags · type · radii · shadows.
+   The :root block is dark mode; html[data-mode="light"] overrides only what differs, in the same order. */
+
 :root {
   color-scheme: light dark; /* unchanged from the retired index.css: native controls still follow the OS in dark mode */
 
-  /* Accent family */
+  /* ── Accent ── */
   --accent:       #6c5ce7;
   --accent-hover: #8b7cf8;
   --accent-light: #a78bfa;
   --accent-deep:  #4c3dbf;
   /* Text/icons on a solid --accent fill. Set per accent × mode so every pair clears 4.5:1. */
   --on-accent:    #ffffff;
+  --grad-progress: linear-gradient(90deg,
+    var(--accent-deep) 0%, var(--accent) 50%, var(--accent-light) 100%);
 
-  /* Surfaces */
+  /* ── Surfaces and borders ── */
   --bg:        #0d0f1a;
   --surface:   #151829;
   --surface-2: #1e2238;
-  --border:    #2d3258;
+  --surface-3: #252a42;
+  /* Menus, popovers and sheets: one step above the card they float over. */
+  --surface-raised: var(--surface-2);
+  --surface-raised-hover: var(--surface-3);
+  --border:        #2d3258;
+  --border-dim:    #222540;
+  --border-strong: #3a4070;
 
-  /* Text */
+  /* ── Text ── */
   --text:       #eceef8;
   --text-muted: #9ba5c9;
+  --text-dim:   #4a5280;
 
-  /* Status */
+  /* ── Status ── */
   --danger:  #e05353;
   /* --danger is for text and icons. Solid danger buttons/badges fill with --danger-fill so --on-danger
      (white) clears AA: 5.14:1 in both modes (white on dark --danger itself is only 3.80:1). */
   --danger-fill: #c43d3d;
   --on-danger: #ffffff;
-
-  /* Edge on mana pips. --mana-b-bg is ~1.04:1 against --surface-2, so every pip gets a ring that reads on
-     --surface, --surface-2 and --surface-3: 4.72 / 4.21 / 3.79:1 here, 4.41 / 3.57 / 3.13:1 in light (vs the
-     parchment surfaces PR 3 lands). */
-  --pip-edge: #7a83a8;
   --warn:    #f4a23c;
   --success: #4ade80;
-  --good:    var(--success); /* backward-compat alias */
   --ok:      var(--success);
+  /* Edge on mana pips. --mana-b-bg is ~1.04:1 against --surface-2, so every pip gets a ring that reads on
+     --surface, --surface-2 and --surface-3: 4.72 / 4.21 / 3.79:1 here, 4.41 / 3.57 / 3.13:1 in light. */
+  --pip-edge: #7a83a8;
 
-  /* Soft tints — status badges, banners, hover fills. Derived, so light mode follows the base colors. */
+  /* ── Tints — status badges, banners, hover fills. Derived, so light mode follows the base colors. ── */
   --ok-soft:     color-mix(in srgb, var(--success) 14%, transparent);
   --warn-soft:   color-mix(in srgb, var(--warn) 14%, transparent);
   --danger-soft: color-mix(in srgb, var(--danger) 14%, transparent);
-
-  /* Type */
-  --font-sans: system-ui, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-
-  /* Radii */
-  --radius:      8px;
-  --radius-md:   6px;
-  --radius-lg:   12px;
-  --radius-sm:   4px;
-  --radius-xs:   3px;
-  --radius-pill: 99px;
-
-  /* Gradients (derive from accent vars) */
-  --grad-progress: linear-gradient(90deg,
-    var(--accent-deep) 0%, var(--accent) 50%, var(--accent-light) 100%);
-
-  /* Shadows */
-  --shadow-sticky: 0 1px 12px rgba(0,0,0,.40);
-  --shadow-menu:   0 4px 20px rgba(0,0,0,.50);
-  --shadow-modal:  0 8px 24px rgba(0,0,0,.45);
-  --shadow-sheet:  0 -4px 32px rgba(0,0,0,.50);
-
-  /* Backdrop behind modals and sheets */
-  --scrim: rgba(5,6,14,.6);
-
-  /* Additional surfaces */
-  --surface-3: #252a42;
-  /* Menus, popovers and sheets: one step above the card they float over. */
-  --surface-raised: var(--surface-2);
-  --surface-raised-hover: var(--surface-3);
-
-  /* Accent dim (⋯ button active state background) */
-  --accent-dim: color-mix(in srgb, var(--accent) 15%, transparent);
-
-  /* Dim variants */
-  --border-dim:    #222540;
-  --border-strong: #3a4070;
-  --text-dim:      #4a5280;
-
-  /* Accent tints */
+  --accent-dim:  color-mix(in srgb, var(--accent) 15%, transparent); /* ⋯ button active state */
   --accent-tint-10: color-mix(in srgb, var(--accent) 10%, transparent);
   --accent-tint-12: color-mix(in srgb, var(--accent) 12%, transparent);
   --accent-tint-20: color-mix(in srgb, var(--accent) 20%, transparent);
   --accent-tint-35: color-mix(in srgb, var(--accent) 35%, transparent);
 
-  /* Rarity */
-  --rar-common-fg:   #9ba5c9;
+  /* ── Rarity ── */
+  --rar-common-fg:   var(--text-muted);
   --rar-uncommon-fg: #7cb9e8; --rar-uncommon-bg: rgba(124,185,232,.09);
   --rar-rare-fg:     #d4a017; --rar-rare-bg:     rgba(212,160,23,.09);
   --rar-mythic-fg:   #e8721a; --rar-mythic-bg:   rgba(232,114,26,.09);
   --rar-special-fg:  #c084fc; --rar-special-bg:  rgba(192,132,252,.09);
 
-  /* Mana color pills */
+  /* ── Mana color pills ── */
   --mana-w-bg: #e8e4d0; --mana-w-fg: #5c4a1e;
   --mana-u-bg: #1a56a0; --mana-u-fg: #c8e0f8;
   --mana-b-bg: #2a2432; --mana-b-fg: #b8a8c8;
@@ -111,7 +81,7 @@ html { overflow-x: hidden; } /* catch-all: prevents root scroll container from f
     var(--mana-g-bg) 288.25deg 360deg
   );
 
-  /* Source tags */
+  /* ── Source tags ── */
   --src-owned-fg:    #4ade80; --src-owned-bg:    rgba(34,197,94,.18);
   --src-ordered-fg:  #60a5fa; --src-ordered-bg:  rgba(59,130,246,.18);
   --src-proxy-fg:    #c084fc; --src-proxy-bg:    rgba(168,85,247,.18);
@@ -120,46 +90,66 @@ html { overflow-x: hidden; } /* catch-all: prevents root scroll container from f
   --src-borrow-fg:   #fb923c; --src-borrow-bg:   rgba(249,115,22,.18);
   --src-binder-fg:   #2dd4bf; --src-binder-bg:   rgba(20,184,166,.18);
   --src-storage-fg:  #94a3b8; --src-storage-bg:  rgba(148,163,184,.18);
+
+  /* ── Type ── */
+  --font-sans: system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  /* ── Radii ── */
+  --radius:      8px;
+  --radius-md:   6px;
+  --radius-lg:   12px;
+  --radius-sm:   4px;
+  --radius-xs:   3px;
+  --radius-pill: 99px;
+
+  /* ── Shadows and scrim ── */
+  --shadow-sticky: 0 1px 12px rgba(0,0,0,.40);
+  --shadow-menu:   0 4px 20px rgba(0,0,0,.50);
+  --shadow-modal:  0 8px 24px rgba(0,0,0,.45);
+  --shadow-sheet:  0 -4px 32px rgba(0,0,0,.50);
+  --scrim: rgba(5,6,14,.6); /* backdrop behind modals and sheets, both modes */
 }
 
 /* ─── Light mode ────────────────────────────────────────────────────────────── */
 html[data-mode="light"] {
   color-scheme: light;
+
+  /* ── Surfaces and borders ── */
   --bg:         #f5f3ee;  /* warm paper — cards need to lift off bg */
   --surface:    #ffffff;
   --surface-2:  #ebe7db;  /* parchment — warm, so lavender only comes from the accent */
-  --border:     #c9c4b5;  /* strong enough for the 2px stripe to read */
-  --text:       #1c1d2e;
-  --text-muted: #464b74;
-
-  --shadow-sticky: 0 1px 12px rgba(0,0,0,.07);
-  --shadow-menu:   0 4px 20px rgba(0,0,0,.12);
-  --shadow-modal:  0 8px 24px rgba(0,0,0,.11);
-  --shadow-sheet:  0 -4px 32px rgba(0,0,0,.12);
-  --surface-3: #dfd9c9;
+  --surface-3:  #dfd9c9;
   --surface-raised: var(--surface);
   --surface-raised-hover: var(--surface-2);
+  --border:        #c9c4b5;  /* strong enough for the 2px stripe to read */
   --border-dim:    #e3dfd3;  /* hairline — light dividers inside cards */
   --border-strong: #b3ad9c;
+
+  /* ── Text ── */
+  --text:       #1c1d2e;
+  --text-muted: #464b74;
   --text-dim:   #736d5e;  /* warm neutral; 5.15:1 on --surface, 4.64:1 on --bg */
 
-  /* Semantic state — dark-mode values are too bright/pale on cream */
+  /* ── Status — dark-mode values are too bright/pale on cream ── */
   --success: #2f9d75;  /* #4ade80 washes out on white */
   --warn:    #c08120;  /* #f4a23c looks peach on cream */
   --danger:  #c43d3d;  /* #e05353 reads pink, not red */
   --danger-fill: var(--danger);
   --pip-edge: #7d7868;
-  --ok-soft:   color-mix(in srgb, var(--success) 16%, transparent);
-  --warn-soft: color-mix(in srgb, var(--warn) 16%, transparent);
 
-  /* Rarity — darker fg for AA/AAA on white */
-  --rar-common-fg:   #464b74;
+  /* ── Tints ── */
+  --ok-soft:     color-mix(in srgb, var(--success) 16%, transparent);
+  --warn-soft:   color-mix(in srgb, var(--warn) 16%, transparent);
+  --danger-soft: color-mix(in srgb, var(--danger) 16%, transparent);
+
+  /* ── Rarity — darker fg for AA/AAA on white ── */
   --rar-uncommon-fg: #1d4ed8; --rar-uncommon-bg: rgba(59,130,246,.10);
   --rar-rare-fg:     #92400e; --rar-rare-bg:     rgba(212,160,23,.10);
   --rar-mythic-fg:   #c2410c; --rar-mythic-bg:   rgba(232,114,26,.10);
   --rar-special-fg:  #6d28d9; --rar-special-bg:  rgba(192,132,252,.10);
 
-  /* Source tags — darker fg for readability on near-white */
+  /* ── Source tags — darker fg for readability on near-white ── */
   --src-owned-fg:   #15803d; --src-owned-bg:   rgba(34,197,94,.13);
   --src-ordered-fg: #1d4ed8; --src-ordered-bg: rgba(59,130,246,.13);
   --src-proxy-fg:   #7c3aed; --src-proxy-bg:   rgba(168,85,247,.13);
@@ -168,6 +158,12 @@ html[data-mode="light"] {
   --src-borrow-fg:  #c2410c; --src-borrow-bg:  rgba(249,115,22,.13);
   --src-binder-fg:  #0f766e; --src-binder-bg:  rgba(20,184,166,.13);
   --src-storage-fg: #475569; --src-storage-bg: rgba(148,163,184,.13);
+
+  /* ── Shadows — lighter than dark mode ── */
+  --shadow-sticky: 0 1px 12px rgba(0,0,0,.07);
+  --shadow-menu:   0 4px 20px rgba(0,0,0,.12);
+  --shadow-modal:  0 8px 24px rgba(0,0,0,.11);
+  --shadow-sheet:  0 -4px 32px rgba(0,0,0,.12);
 }
 
 /* ─── Accent variants ───────────────────────────────────────────────────────── */

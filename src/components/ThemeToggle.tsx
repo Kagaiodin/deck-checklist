@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useTheme, type ThemeAccent, type ThemeMode } from "../hooks/useTheme";
 
+// Literal hexes on purpose: each swatch previews its own accent, so it can't read the live --accent. Keep in step with the
+// accent blocks in tokens.css.
 const ACCENTS: { id: ThemeAccent; darkColor: string; lightColor: string; label: string }[] = [
   { id: "indigo",   darkColor: "#6c5ce7", lightColor: "#4f46e5", label: "Indigo"   },
   { id: "sapphire", darkColor: "#3b82f6", lightColor: "#2563eb", label: "Sapphire" },

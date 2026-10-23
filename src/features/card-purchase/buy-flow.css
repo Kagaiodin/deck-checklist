@@ -60,7 +60,7 @@
 .buy-sheet-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: var(--scrim);
   backdrop-filter: blur(2px);
   z-index: 200;
   display: flex;
@@ -72,13 +72,13 @@
 .buy-sheet {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   width: 100%;
   max-width: 480px;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.04);
+  box-shadow: var(--shadow-modal), 0 0 0 1px color-mix(in srgb, var(--text) 4%, transparent);
 }
 
 /* Drag handle hidden on desktop */
@@ -101,7 +101,7 @@
     border-right: none;
     border-bottom: none;
     max-height: 88dvh;
-    box-shadow: 0 -4px 32px rgba(0, 0, 0, 0.5);
+    box-shadow: var(--shadow-sheet);
   }
 
   .buy-sheet-handle {
@@ -406,7 +406,7 @@
   border-radius: var(--radius);
   padding: 10px 12px;
   margin-top: 8px;
-  font-family: ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-size: 11px;
   color: var(--text-muted);
   max-height: 90px;
@@ -465,7 +465,7 @@
   border-radius: var(--radius);
   padding: 10px 12px;
   margin-top: 8px;
-  font-family: ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-size: 11px;
   color: var(--text-muted);
   height: 110px;

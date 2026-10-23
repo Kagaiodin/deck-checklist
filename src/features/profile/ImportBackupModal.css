@@ -9,7 +9,7 @@
 .import-backup-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, .72);
+  background: var(--scrim);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -24,7 +24,7 @@
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, .45);
+  box-shadow: var(--shadow-modal);
   width: 100%;
   max-width: 380px;
   padding: 20px 20px 16px;
@@ -43,7 +43,7 @@
   right: 10px;
   width: 26px;
   height: 26px;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   border: none;
   background: transparent;
   color: var(--text-muted);
@@ -73,7 +73,7 @@
   margin: 0 0 16px;
 }
 .import-backup-hint code {
-  font-family: ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-size: 11px;
   background: var(--surface-2);
   padding: 1px 4px;
@@ -88,7 +88,7 @@
   padding: 10px;
   background: var(--surface-2);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   margin-bottom: 16px;
   transition: background .15s, border-color .15s;
 }
@@ -124,7 +124,7 @@
   color: var(--danger);
   background: color-mix(in srgb, var(--danger) 7%, transparent);
   border: 1px solid color-mix(in srgb, var(--danger) 22%, transparent);
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   padding: 8px 10px;
   line-height: 1.5;
   margin: 0 0 16px;

@@ -9,6 +9,8 @@
  *   npx tsx scripts/capture-screenshots.ts --seed path/to/seed.json  # custom fixture
  *   npx tsx scripts/capture-screenshots.ts --local --theme light --accent sapphire --out shots/light-sapphire
  *       # start in a given mode/accent and write to a different folder (for before/after diffs)
+ *   npx tsx scripts/capture-screenshots.ts --local --contrast
+ *       # also audit text contrast on every shot; writes contrast-report.json. Report only, never fails the run.
  *
  * The fixture at scripts/fixtures/design-seed.json is the default seed.
  * It contains 3 decks at varying completion, active + received + cancelled orders
@@ -27,12 +29,17 @@ import { DatabaseSync } from "node:sqlite";
 import path from "path";
 import fs from "fs";
 import os from "os";
+import { auditContrast, type ContrastHit } from "./contrast-audit";
 
 const argv = process.argv.slice(2);
 const flagValue = (name: string): string | undefined => {
   const i = argv.indexOf(name);
   return i !== -1 ? argv[i + 1] : undefined;
 };
+
+const CONTRAST = argv.includes("--contrast");
+const contrastHits: ContrastHit[] = [];
+const contrastTotals = { checked: 0, skipped: 0 };
 
 const OUT_DIR = path.resolve(process.cwd(), flagValue("--out") ?? "design-review-screenshots");
 
@@ -102,6 +109,12 @@ async function shot(page: Page, name: string): Promise<void> {
   const warnings = pendingWarnings.splice(0); // claim + clear
   try {
     await page.screenshot({ path: path.join(OUT_DIR, name), fullPage: false });
+    if (CONTRAST) {
+      const c = await auditContrast(page, name);
+      contrastHits.push(...c.hits);
+      contrastTotals.checked += c.checked;
+      contrastTotals.skipped += c.skipped;
+    }
     const durationMs = Date.now() - t0;
     const dirty = warnings.length > 0;
     console.log(`  ${dirty ? "⚠" : "✓"}  ${name}${dirty ? `  (${warnings.length} step warning${warnings.length !== 1 ? "s" : ""})` : ""}`);
@@ -1138,6 +1151,26 @@ function writeLog(): void {
   if (failed === 0 && dirty === 0) {
     console.log("All shots clean ✓");
   }
+
+  if (CONTRAST) writeContrastReport();
+}
+
+function writeContrastReport(): void {
+  const reportPath = path.join(OUT_DIR, "contrast-report.json");
+  fs.writeFileSync(reportPath, JSON.stringify({ ...contrastTotals, hits: contrastHits }, null, 2));
+  // One line per distinct element/colour pair, listing the screens it appears on.
+  const grouped = new Map<string, { hit: ContrastHit; screens: string[] }>();
+  for (const h of contrastHits) {
+    const key = `${h.el}|${h.fg}|${h.bg}|${h.size}`;
+    const g = grouped.get(key);
+    if (g) g.screens.push(h.screen);
+    else grouped.set(key, { hit: h, screens: [h.screen] });
+  }
+  console.log(`Contrast (report only): ${grouped.size} distinct pairs under AA, ${contrastTotals.checked} text elements checked, ${contrastTotals.skipped} skipped (covered / over an image).`);
+  for (const { hit: h, screens } of [...grouped.values()].sort((a, b) => a.hit.ratio - b.hit.ratio)) {
+    console.log(`  ${h.ratio.toFixed(2)}:1 (need ${h.required})  ${h.el}  ${h.fg} on ${h.bg}  ${h.size}px  "${h.text}"  ×${screens.length} shots, e.g. ${screens[0]}`);
+  }
+  console.log(`Report: ${reportPath}\n`);
 }
 
 main().catch(err => {
