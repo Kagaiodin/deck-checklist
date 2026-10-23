@@ -743,6 +743,9 @@ async function main(): Promise<void> {
         await click(page, ".buy-sheet-btn-accent", { hasText: "Choose vendor" });
         await page.waitForTimeout(SETTLE_MS);
       });
+      // The "Choose vendor" click leaves the pointer over the last option, which would show its hover border.
+      await page.mouse.move(5, 5);
+      await page.waitForTimeout(300);
       await shot(page, "20-desktop-buy-flow-vendor.png");
       await attempt("close vendor picker", () => closeSheet(page));
     } else {

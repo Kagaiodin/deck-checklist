@@ -136,9 +136,9 @@
   gap: 8px;
 }
 .import-backup-btn-danger {
-  background: var(--danger);
-  border-color: var(--danger);
-  color: #fff;
+  background: var(--danger-fill);
+  border-color: var(--danger-fill);
+  color: var(--on-danger);
 }
 .import-backup-btn-danger:hover:not(:disabled) {
   filter: brightness(1.1);

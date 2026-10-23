@@ -73,7 +73,7 @@
 }
 .nos-step.current { color: var(--text); }
 .nos-step.current .nos-step-num {
-  background: var(--accent); border-color: var(--accent); color: #fff;
+  background: var(--accent); border-color: var(--accent); color: var(--on-accent);
 }
 .nos-step-line {
   flex: 0 0 14px; height: 1px;

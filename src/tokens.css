@@ -25,7 +25,15 @@ html { overflow-x: hidden; } /* catch-all: prevents root scroll container from f
 
   /* Status */
   --danger:  #e05353;
-  --on-danger: #ffffff; /* 3.80:1 on dark --danger (below AA for body text); 5.14:1 on light */
+  /* --danger is for text and icons. Solid danger buttons/badges fill with --danger-fill so --on-danger
+     (white) clears AA: 5.14:1 in both modes (white on dark --danger itself is only 3.80:1). */
+  --danger-fill: #c43d3d;
+  --on-danger: #ffffff;
+
+  /* Edge on mana pips. --mana-b-bg is ~1.04:1 against --surface-2, so every pip gets a ring that reads on
+     --surface, --surface-2 and --surface-3: 4.72 / 4.21 / 3.79:1 here, 4.41 / 3.57 / 3.13:1 in light (vs the
+     parchment surfaces PR 3 lands). */
+  --pip-edge: #7a83a8;
   --warn:    #f4a23c;
   --success: #4ade80;
   --good:    var(--success); /* backward-compat alias */
@@ -134,6 +142,8 @@ html[data-mode="light"] {
   --success: #2f9d75;  /* #4ade80 washes out on white */
   --warn:    #c08120;  /* #f4a23c looks peach on cream */
   --danger:  #c43d3d;  /* #e05353 reads pink, not red */
+  --danger-fill: var(--danger);
+  --pip-edge: #7d7868;
   --ok-soft:   color-mix(in srgb, var(--success) 16%, transparent);
   --warn-soft: color-mix(in srgb, var(--warn) 16%, transparent);
 

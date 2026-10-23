@@ -65,7 +65,7 @@
   font-size: 12px;
 }
 .sidebar-footer .btn-ghost.active {
-  background: rgba(255, 255, 255, .06);
+  background: var(--surface-2);
   color: var(--text);
 }
 
@@ -94,7 +94,7 @@
   border-left: 3px solid var(--success);
   pointer-events: all;
 }
-.toast--warn    { border-left-color: #facc15; }
+.toast--warn    { border-left-color: var(--warn); }
 .toast--neutral { border-left-color: var(--border); }
 .toast-body     { flex: 1; }
 .toast-title    { font-size: 13px; font-weight: 600; color: var(--text); }
@@ -125,6 +125,6 @@
     border-left-width: 0;
     border-top: 3px solid var(--success);
   }
-  .toast--warn    { border-top-color: #facc15; }
+  .toast--warn    { border-top-color: var(--warn); }
   .toast--neutral { border-top-color: var(--border); }
 }
