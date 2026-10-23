@@ -132,7 +132,7 @@
 .orders-listmeta-sep { color: var(--ocard-hairline); }
 
 .orders-overdue-meta {
-  color: var(--danger);
+  color: var(--danger-text);
   font-size: 13px; font-weight: 550; line-height: 1.4;
   margin-bottom: 10px;
 }
@@ -172,9 +172,9 @@
   border-color: color-mix(in srgb, var(--danger) 30%, transparent);
 }
 
-.ocard.state-cancelled {
-  opacity: var(--completed-opacity);
-}
+.ocard.state-cancelled .ocard-pill,
+.ocard.state-cancelled .ocard-mob-status-pill { background: var(--surface-2); color: var(--text-muted); }
+.ocard.state-cancelled .ocard-vendor-name { color: var(--ocard-dim); }
 .ocard.state-cancelled .ocard-vendor-name {
   text-decoration: line-through;
   text-decoration-color: var(--ocard-dim);
@@ -233,7 +233,7 @@
 .ocard-actions .btn-recv {
   background: var(--ok-soft);
   border: 1px solid var(--ok-soft);
-  color: var(--ok);
+  color: var(--ok-text);
 }
 .ocard-actions .btn-recv:hover {
   background: var(--ok-soft); filter: brightness(0.92);
@@ -266,9 +266,9 @@
 .ocard-eta-when {
   font-size: 13px; color: var(--text-muted);
 }
-.ocard-eta-when.late { color: var(--danger); font-weight: 600; }
-.ocard-eta-when.warn { color: var(--warn); font-weight: 600; }
-.ocard-eta-when.ok   { color: var(--ok); }
+.ocard-eta-when.late { color: var(--danger-text); font-weight: 600; }
+.ocard-eta-when.warn { color: var(--warn-text); font-weight: 600; }
+.ocard-eta-when.ok   { color: var(--ok-text); }
 .ocard-eta-when.dim  { color: var(--ocard-dim); }
 .ocard-eta-exp {
   font-size: 12.5px; line-height: 1.3; color: var(--ocard-dim);
@@ -283,9 +283,9 @@
   letter-spacing: 0.07em; text-transform: uppercase;
   white-space: nowrap; flex-shrink: 0;
 }
-.ocard-pill.late     { background: var(--danger-soft); color: var(--danger); }
-.ocard-pill.warn     { background: var(--warn-soft);   color: var(--warn); }
-.ocard-pill.ok       { background: var(--ok-soft);     color: var(--ok); }
+.ocard-pill.late     { background: var(--danger-soft); color: var(--danger-text); }
+.ocard-pill.warn     { background: var(--warn-soft);   color: var(--warn-text); }
+.ocard-pill.ok       { background: var(--ok-soft);     color: var(--ok-text); }
 .ocard-pill.muted    { background: var(--ocard-hairline); color: var(--text-muted); }
 
 /* Tracking chip */
@@ -435,7 +435,7 @@
   font-family: var(--font-mono); font-size: 11px;
 }
 .tl-sub.late {
-  color: var(--danger); font-weight: 550;
+  color: var(--danger-text); font-weight: 550;
 }
 
 /* ── Panel actions ──────────────────────────────────────────────────────────── */
@@ -446,7 +446,7 @@
 .ocard-panel-actions .btn-recv {
   background: var(--ok-soft);
   border: 1px solid var(--ok-soft);
-  color: var(--ok);
+  color: var(--ok-text);
 }
 .ocard-panel-actions .btn-recv:hover { background: var(--ok-soft); filter: brightness(0.92); }
 
@@ -456,7 +456,7 @@ html[data-mode="light"] .li-qty {
   border-color: color-mix(in srgb, var(--accent) 50%, transparent);
 }
 .ocard-delete-btn {
-  margin-left: auto; color: var(--danger) !important;
+  margin-left: auto; color: var(--danger-text) !important;
 }
 .ocard-delete-btn:hover {
   background: var(--danger-soft) !important;
@@ -574,9 +574,9 @@ html[data-mode="light"] .li-qty {
   font-size: 12.5px; font-weight: 500; line-height: 1; align-self: flex-start;
 }
 .ocard-mob-status-pill.active   { background: var(--accent-soft); color: var(--text); }
-.ocard-mob-status-pill.warn     { background: var(--warn-soft);   color: var(--warn); }
-.ocard-mob-status-pill.late     { background: var(--danger-soft); color: var(--danger); }
-.ocard-mob-status-pill.ok       { background: var(--ok-soft);     color: var(--ok); }
+.ocard-mob-status-pill.warn     { background: var(--warn-soft);   color: var(--warn-text); }
+.ocard-mob-status-pill.late     { background: var(--danger-soft); color: var(--danger-text); }
+.ocard-mob-status-pill.ok       { background: var(--ok-soft);     color: var(--ok-text); }
 .ocard-mob-status-pill.muted    { background: var(--ocard-hairline); color: var(--text-muted); }
 
 .ocard-mob-tracking-cta {

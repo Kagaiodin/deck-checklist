@@ -12,8 +12,7 @@
  *  - checkboxes, radios and other non-text inputs
  *  - anything inside [data-contrast-exempt] (decorative glyphs: separators, chevrons, arrows, empty-state dashes)
  *
- * Content inside [data-contrast-dimmed] (completed rows, cancelled orders) is held to 3:1 instead of 4.5:1.
- * That is an intentional below-AA exception; see DL-CONTRAST-01 in docs/specs/design-rules-ci-spec.md.
+ * See DL-CONTRAST-01 in docs/specs/design-rules-ci-spec.md.
  *
  * The page-side code is a string, not a function, so tsx/esbuild can't inject helpers into it that
  * don't exist in the browser.
@@ -112,8 +111,7 @@ const AUDIT_SRC = `(async () => {
     const painted = over(fg, bg);
     const size = parseFloat(cs.fontSize), weight = parseInt(cs.fontWeight, 10) || 400;
     const large = size >= 24 || (size >= 18.5 && weight >= 700);
-    const dimmed = !!el.closest("[data-contrast-dimmed]");
-    const required = large || dimmed ? 3 : 4.5;
+    const required = large ? 3 : 4.5;
     checked++;
     const ratioV = ratio(painted, bg);
     if (ratioV >= required) return;

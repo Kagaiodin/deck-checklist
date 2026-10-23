@@ -93,7 +93,7 @@
   flex-shrink: 0;
 }
 .gdrive-disconnect:hover {
-  color: var(--danger);
+  color: var(--danger-text);
 }
 
 .gdrive-actions {
@@ -135,7 +135,7 @@
 }
 .gdrive-notice-icon {
   flex-shrink: 0;
-  color: var(--warn);
+  color: var(--warn-text);
   margin-top: 1px;
 }
 .gdrive-notice-icon.is-offline {

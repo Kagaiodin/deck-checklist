@@ -190,11 +190,8 @@ never reports.
   2. *Decorative elements* — separators (`·`), chevrons, arrows, empty-state dashes, unavailable alpha-rail
      letters. Mark the element `data-contrast-exempt`. It must carry no information that isn't available
      elsewhere (an `aria-hidden` or a visible equivalent). Don't use it for real labels.
-  3. *Completed / cancelled content dimmed with opacity* — checked-off (`acquired`) card rows and cancelled
-     orders. Mark the container `data-contrast-dimmed`; text inside must reach **3:1**, not 4.5:1. This is an
-     **intentional below-AA exception**: the dimming is the state signal (alongside strikethrough and the
-     status stripe), and it is driven by one token, `--completed-opacity` (0.85, chosen so `--text-dim` stays
-     >= 3:1 on `--surface-2` in both modes). Lowering that token means re-checking the 3:1 floor.
+  Completed (`acquired`) rows and cancelled orders are not exempt: they fade by colour (`--text-dim` text,
+  neutral status pill, muted checkbox and mana dots, strikethrough) at full opacity, so they hold 4.5:1.
 - Not judged, and counted so the report says so: elements covered at their centre (content behind a scrim or
   open popover) and text over a gradient/image backdrop.
 - **Gate.** `npm run test:contrast` (`scripts/contrast-gate.sh`) starts the dev server, runs

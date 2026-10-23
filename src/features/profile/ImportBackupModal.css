@@ -115,13 +115,13 @@
   font-size: 11px;
 }
 .is-destructive .import-backup-replace-label small {
-  color: var(--danger);
+  color: var(--danger-text);
 }
 
 /* ── Inline error ────────────────────────────────────────────────────────────── */
 .import-backup-error {
   font-size: 12px;
-  color: var(--danger);
+  color: var(--danger-text);
   background: color-mix(in srgb, var(--danger) 7%, transparent);
   border: 1px solid color-mix(in srgb, var(--danger) 22%, transparent);
   border-radius: var(--radius-md);

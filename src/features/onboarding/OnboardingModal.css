@@ -109,7 +109,7 @@
 }
 .onboarding-feat-icon--green {
   background: var(--ok-soft);
-  color: var(--ok);
+  color: var(--ok-text);
 }
 .onboarding-feat-icon--blue {
   background: var(--src-ordered-bg);

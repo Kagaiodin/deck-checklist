@@ -48,6 +48,12 @@ html { overflow-x: hidden; } /* catch-all: prevents root scroll container from f
   --warn:    #f4a23c;
   --success: #4ade80;
   --ok:      var(--success);
+  /* *-text is for text only; the base tokens are for fills, dots, stripes and bars (>= 3:1 non-text).
+     In dark mode the base values already clear 4.5:1 for text, so they alias. */
+  --success-text: var(--success);
+  --warn-text:    var(--warn);
+  --danger-text:  var(--danger);
+  --ok-text:      var(--success-text);
   /* Edge on mana pips. --mana-b-bg is ~1.04:1 against --surface-2, so every pip gets a ring that reads on
      --surface, --surface-2 and --surface-3: 4.72 / 4.21 / 3.79:1 here, 4.41 / 3.57 / 3.13:1 in light. */
   --pip-edge: #7a83a8;
@@ -94,11 +100,6 @@ html { overflow-x: hidden; } /* catch-all: prevents root scroll container from f
   --src-binder-fg:   #2dd4bf; --src-binder-bg:   rgba(20,184,166,.18);
   --src-storage-fg:  #94a3b8; --src-storage-bg:  rgba(148,163,184,.18);
 
-  /* ── State ── */
-  /* Opacity for completed (acquired) rows and cancelled orders. 0.85 keeps --text-dim at >= 3:1 on --surface-2
-     in both modes. An intentional below-AA exception, documented under DL-CONTRAST-01. */
-  --completed-opacity: 0.85;
-
   /* ── Type ── */
   --font-sans: system-ui, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -141,10 +142,14 @@ html[data-mode="light"] {
   --accent-text: #433cc3;  /* fallback if no accent attribute; the per-accent blocks below override */
 
   /* ── Status — dark-mode values are too bright/pale on cream ── */
-  /* Text-safe: each is >= 4.5:1 on --surface, --surface-2 and on its own soft tint over either. */
-  --success: #14614a;  /* was #2f9d75 (2.8:1 on its tint) */
-  --warn:    #835209;  /* was #c08120 (2.8:1 on its tint) */
-  --danger:  #a62929;  /* was #c43d3d (4.1:1 on its tint) */
+  /* Base tokens are for fills, dots, stripes and bars (>= 3:1 non-text). */
+  --success: #2f9d75;
+  --warn:    #c08120;
+  --danger:  #c43d3d;
+  /* Text-only: each is >= 4.5:1 on --surface, --surface-2 and on its own soft tint over either. */
+  --success-text: #14614a;  /* 2.8:1 on its tint with the base --success */
+  --warn-text:    #835209;  /* 2.8:1 on its tint with the base --warn */
+  --danger-text:  #a62929;  /* 4.1:1 on its tint with the base --danger */
   --danger-fill: #c43d3d;  /* solid fills keep the old red; white on it is 5.14:1 */
   --pip-edge: #7d7868;
 

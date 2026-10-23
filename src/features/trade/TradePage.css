@@ -45,7 +45,7 @@
 .tr-foot-line { display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: var(--text-muted); min-height: 28px; gap: 8px; }
 .tr-foot-line--total { color: var(--text); font-weight: 700; font-size: 15px; }
 .tr-foot-line .tr-mono { color: var(--text); }
-.tr-foot-warn { color: var(--warn); display: inline-flex; gap: 6px; align-items: center; }
+.tr-foot-warn { color: var(--warn-text); display: inline-flex; gap: 6px; align-items: center; }
 .tr-cash-line { display: flex; align-items: center; gap: 8px; padding: 8px 14px; border-top: 1px dashed var(--border); font-size: 13px; }
 .tr-cash-ico { width: 34px; height: 24px; border-radius: var(--radius-sm); display: grid; place-items: center; background: var(--surface-2); color: var(--text-muted); }
 
@@ -59,7 +59,7 @@ button.tr-chip { cursor: pointer; }
 button.tr-chip:hover { border-color: var(--border); color: var(--text); }
 .tr-chip svg { width: 12px; height: 12px; }
 .tr-chip--override { background: var(--accent-tint-12); color: var(--accent-text); border-color: var(--accent-tint-35); }
-.tr-chip--warn { background: color-mix(in srgb, var(--warn) 14%, transparent); color: var(--warn); }
+.tr-chip--warn { background: color-mix(in srgb, var(--warn) 14%, transparent); color: var(--warn-text); }
 .tr-chip--deck { background: var(--src-deck-bg); color: var(--src-deck-fg); }
 .tr-set-chip { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); white-space: nowrap; display: inline-flex; align-items: center; gap: 5px; }
 .tr-set-chip::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--rar-common-fg); }
@@ -132,7 +132,7 @@ button.tr-chip:hover { border-color: var(--border); color: var(--text); }
 .tr-menu-item:hover, .tr-menu-item:focus-visible { background: var(--surface-3); }
 .tr-menu-item svg { color: var(--text-muted); }
 .tr-menu-item .hint { margin-left: auto; color: var(--text-muted); font-size: 12px; font-family: var(--font-mono); }
-.tr-menu-item--danger, .tr-menu-item--danger svg { color: var(--danger); }
+.tr-menu-item--danger, .tr-menu-item--danger svg { color: var(--danger-text); }
 .tr-menu-sep { height: 1px; background: var(--border); margin: 4px 0; }
 .tr-bd { display: grid; grid-template-columns: 1fr auto; gap: 6px 16px; padding: 6px 8px; font-size: 12px; }
 .tr-bd dt { color: var(--text-muted); }
@@ -178,7 +178,7 @@ button.tr-chip:hover { border-color: var(--border); color: var(--text); }
 .tr-fresh--idle .dot { background: var(--text-dim); }
 .tr-warn-line {
   display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: var(--radius);
-  background: color-mix(in srgb, var(--warn) 12%, transparent); color: var(--warn); font-size: 12px; margin-top: 8px;
+  background: color-mix(in srgb, var(--warn) 12%, transparent); color: var(--warn-text); font-size: 12px; margin-top: 8px;
 }
 .tr-warn-line button { margin-left: auto; border: 0; background: transparent; color: inherit; font: inherit; font-weight: 700; font-size: 12px; text-decoration: underline; text-underline-offset: 2px; padding: 4px; cursor: pointer; }
 .tr-tool-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
@@ -190,10 +190,10 @@ button.tr-chip:hover { border-color: var(--border); color: var(--text); }
 @keyframes tr-spin { to { transform: rotate(360deg); } }
 
 /* ── Fairness meter ───────────────────────────────────────────────────────── */
-.tr-meter { --share: 50%; --band: var(--text-muted); }
-.tr-meter[data-band="fair"]     { --band: var(--success); }
-.tr-meter[data-band="leaning"]  { --band: var(--warn); }
-.tr-meter[data-band="lopsided"] { --band: var(--danger); }
+.tr-meter { --share: 50%; --band: var(--text-muted); --band-text: var(--text-muted); }
+.tr-meter[data-band="fair"]     { --band: var(--success); --band-text: var(--success-text); }
+.tr-meter[data-band="leaning"]  { --band: var(--warn); --band-text: var(--warn-text); }
+.tr-meter[data-band="lopsided"] { --band: var(--danger); --band-text: var(--danger-text); }
 .tr-meter-sides { display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; }
 .tr-meter-track { position: relative; height: 18px; border-radius: var(--radius-pill); background: var(--surface-2); border: 1px solid var(--border); }
 .tr-meter-zone { position: absolute; top: 0; bottom: 0; }
@@ -215,7 +215,7 @@ button.tr-chip:hover { border-color: var(--border); color: var(--text); }
 .tr-meter-verdict { display: flex; align-items: center; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
 .tr-band-pill {
   display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 12px 0 8px; border-radius: var(--radius-pill);
-  font-weight: 700; font-size: 13px; color: var(--band); background: color-mix(in srgb, var(--band) 14%, transparent);
+  font-weight: 700; font-size: 13px; color: var(--band-text); background: color-mix(in srgb, var(--band) 14%, transparent);
   border: 1px solid color-mix(in srgb, var(--band) 35%, transparent); animation: tr-bump .45s ease;
 }
 @keyframes tr-bump { 30% { transform: scale(1.08); } }
@@ -283,7 +283,7 @@ button.tr-chip:hover { border-color: var(--border); color: var(--text); }
 .tr-dialog { max-width: 440px; }
 .tr-dialog p { font-size: 14px; color: var(--text-muted); margin-bottom: 8px; }
 .tr-dialog-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; padding: 12px 16px 16px; }
-.tr-btn-destructive { background: color-mix(in srgb, var(--danger) 16%, transparent); color: var(--danger); border: 1px solid color-mix(in srgb, var(--danger) 30%, transparent); }
+.tr-btn-destructive { background: color-mix(in srgb, var(--danger) 16%, transparent); color: var(--danger-text); border: 1px solid color-mix(in srgb, var(--danger) 30%, transparent); }
 .tr-error-card { max-width: 520px; margin: 48px auto; }
 
 /* ── Mobile (10R): sticky verdict bar + Mine/Theirs tabs + controls sheet ── */

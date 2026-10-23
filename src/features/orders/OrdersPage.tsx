@@ -340,7 +340,6 @@ function OCard({
   return (
     <div
       className={`ocard ${stateClass}${isExpanded ? " expanded" : ""}`}
-      data-contrast-dimmed={order.status === "cancelled" ? "" : undefined}
       onClick={e => {
         const target = e.target as HTMLElement;
         if (target.closest("button") || target.closest("a")) return;
