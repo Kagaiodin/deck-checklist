@@ -136,7 +136,7 @@ html[data-mode="light"] {
   --surface-3: #dfd9c9;
   --border-dim:    #e3dfd3;  /* hairline — light dividers inside cards */
   --border-strong: #b3ad9c;
-  --text-dim:   #8891b8;
+  --text-dim:   #736d5e;  /* warm neutral; 5.15:1 on --surface, 4.64:1 on --bg */
 
   /* Semantic state — dark-mode values are too bright/pale on cream */
   --success: #2f9d75;  /* #4ade80 washes out on white */
