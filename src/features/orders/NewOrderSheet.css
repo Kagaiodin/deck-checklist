@@ -35,13 +35,13 @@
 .nos-vendor-tag {
   font: 11.5px/1 var(--font-mono);
   color: var(--text-muted); padding: 3px 7px;
-  background: var(--border-dim); border-radius: 6px;
+  background: var(--border-dim); border-radius: var(--radius-md);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px;
 }
 .nos-close {
   background: transparent; border: 0; cursor: pointer;
   color: var(--text-muted); font-size: 15px;
-  width: 28px; height: 28px; border-radius: 6px;
+  width: 28px; height: 28px; border-radius: var(--radius-md);
   display: grid; place-items: center; flex-shrink: 0;
   transition: background 0.1s, color 0.1s;
 }
@@ -195,7 +195,7 @@
 }
 .nos-source-btn {
   flex: 1; background: transparent; border: 0;
-  color: var(--text-muted); padding: 6px 10px; border-radius: 6px;
+  color: var(--text-muted); padding: 6px 10px; border-radius: var(--radius-md);
   font: inherit; font-size: 12px; cursor: pointer;
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   transition: background 0.1s, color 0.1s;

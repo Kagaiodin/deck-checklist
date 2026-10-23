@@ -35,7 +35,7 @@
   right: 12px;
   width: 28px;
   height: 28px;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   border: none;
   background: transparent;
   color: var(--text-muted);
@@ -109,7 +109,7 @@
 }
 .onboarding-feat-icon--green {
   background: var(--ok-soft);
-  color: var(--good);
+  color: var(--ok);
 }
 .onboarding-feat-icon--blue {
   background: var(--src-ordered-bg);

@@ -213,7 +213,7 @@
 }
 .collection-quick-add-input { width: 100%; margin: 0 !important; }
 .collection-quick-add-input.success-flash {
-  border-color: var(--good); transition: border-color 0.6s ease;
+  border-color: var(--ok); transition: border-color 0.6s ease;
 }
 .collection-quick-add-suggestions {
   position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 50;
@@ -529,7 +529,7 @@
 .bulk-warn {
   display: flex; align-items: flex-start; gap: 8px; padding: 9px 12px;
   background: color-mix(in srgb, var(--danger) 7%, transparent); border: 1px solid color-mix(in srgb, var(--danger) 25%, transparent);
-  border-radius: 6px; font-size: 12px; color: var(--danger);
+  border-radius: var(--radius-md); font-size: 12px; color: var(--danger);
 }
 .bulk-warn-ico { font-size: 15px; line-height: 1; flex-shrink: 0; }
 .bulk-warn strong { color: var(--text); display: block; margin-bottom: 2px; }

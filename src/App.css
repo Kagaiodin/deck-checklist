@@ -99,7 +99,7 @@ code { font-family: var(--font-mono); display: inline-flex; border-radius: 4px; 
   min-width: 200px;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   padding: 8px;
   box-shadow: var(--shadow-menu);
   z-index: 500;
@@ -411,7 +411,7 @@ code { font-family: var(--font-mono); display: inline-flex; border-radius: 4px; 
 .sidebar-search {
   flex: 1; min-width: 0; padding: 5px 8px;
   background: var(--surface-2); border: 1px solid var(--border);
-  border-radius: 6px; font-size: 12px; color: var(--text);
+  border-radius: var(--radius-md); font-size: 12px; color: var(--text);
   font-family: inherit;
 }
 .sidebar-search:focus { outline: none; border-color: var(--accent); }
@@ -430,7 +430,7 @@ code { font-family: var(--font-mono); display: inline-flex; border-radius: 4px; 
 
 /* ── Deck avatar (visible in rail) ── */
 .deck-av {
-  width: 28px; height: 28px; border-radius: 6px;
+  width: 28px; height: 28px; border-radius: var(--radius-md);
   background: var(--surface-2); border: 1px solid var(--border);
   display: flex; align-items: center; justify-content: center;
   font-size: 12px; font-weight: 600; color: var(--text-muted);
@@ -491,7 +491,7 @@ code { font-family: var(--font-mono); display: inline-flex; border-radius: 4px; 
 .deck-sidebar.sidebar-collapsed .new-deck-btn {
   display: flex; align-items: center; justify-content: center;
   width: 32px; height: 32px; padding: 0; flex-shrink: 0;
-  background: none; border: 1px solid var(--border); border-radius: 6px;
+  background: none; border: 1px solid var(--border); border-radius: var(--radius-md);
   color: var(--text-muted); cursor: pointer;
   transition: color 0.12s, background 0.12s, border-color 0.12s;
 }
@@ -635,14 +635,14 @@ code { font-family: var(--font-mono); display: inline-flex; border-radius: 4px; 
 .error-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
 .error-row {
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
-  padding: 6px 10px; background: var(--surface); border-radius: 6px;
+  padding: 6px 10px; background: var(--surface); border-radius: var(--radius-md);
 }
 .error-name { font-size: 13px; color: var(--text); flex: 1; }
 .error-actions { display: flex; gap: 6px; }
 
 .remap-form { display: flex; gap: 6px; align-items: center; width: 100%; }
 .remap-input {
-  flex: 1; padding: 4px 8px; border-radius: 6px;
+  flex: 1; padding: 4px 8px; border-radius: var(--radius-md);
   background: var(--surface-2); border: 1px solid var(--border); color: var(--text); font-size: 13px;
 }
 .remap-input:focus { outline: none; border-color: var(--accent); }
@@ -692,7 +692,7 @@ code { font-family: var(--font-mono); display: inline-flex; border-radius: 4px; 
 .checklist-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; margin-left: auto; }
 .control-label { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); cursor: pointer; }
 .control-select {
-  padding: 8px 10px; border-radius: 6px;
+  padding: 8px 10px; border-radius: var(--radius-md);
   background: var(--surface-2); border: 1px solid var(--border); color: var(--text); font-size: 14px;
 }
 .toggle-label input[type="checkbox"] { accent-color: var(--accent); width: 18px; height: 18px; }
@@ -1451,7 +1451,7 @@ code { font-family: var(--font-mono); display: inline-flex; border-radius: 4px; 
 .empty-card {
   background: var(--surface);
   border: 1px solid var(--border-dim);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   padding: 32px 28px;
   max-width: 400px;
   margin: 0 auto;
@@ -1804,7 +1804,7 @@ code { font-family: var(--font-mono); display: inline-flex; border-radius: 4px; 
   padding: 3px;
 }
 .order-filter-tab {
-  flex: 1; background: none; border: none; border-radius: 6px;
+  flex: 1; background: none; border: none; border-radius: var(--radius-md);
   padding: 6px 8px; font-size: 12px; font-weight: 500;
   color: var(--text-muted); cursor: pointer;
   display: flex; align-items: center; justify-content: center; gap: 6px;
@@ -1828,7 +1828,7 @@ code { font-family: var(--font-mono); display: inline-flex; border-radius: 4px; 
 .order-row-stripe { background: var(--text-muted); }
 .order-row-active    .order-row-stripe { background: var(--src-ordered-fg); }
 .order-row-late      .order-row-stripe { background: var(--danger); }
-.order-row-received  .order-row-stripe { background: var(--good); }
+.order-row-received  .order-row-stripe { background: var(--ok); }
 .order-row-cancelled .order-row-stripe { background: var(--src-storage-fg); }
 .order-row-cancelled { opacity: .75; }
 
@@ -1847,7 +1847,7 @@ code { font-family: var(--font-mono); display: inline-flex; border-radius: 4px; 
 }
 .order-status-active    { background: var(--src-ordered-bg);   color: var(--src-ordered-fg); }
 .order-status-late      { background: color-mix(in srgb, var(--danger) 18%, transparent);    color: var(--danger); border: 1px solid color-mix(in srgb, var(--danger) 30%, transparent); }
-.order-status-received  { background: color-mix(in srgb, var(--success) 18%, transparent);   color: var(--good); }
+.order-status-received  { background: color-mix(in srgb, var(--success) 18%, transparent);   color: var(--ok); }
 .order-status-cancelled { background: var(--src-storage-bg);  color: var(--src-storage-fg); }
 
 .order-row-eta { display: flex; flex-direction: column; gap: 2px; }
@@ -1861,7 +1861,7 @@ code { font-family: var(--font-mono); display: inline-flex; border-radius: 4px; 
 .order-tracking-link {
   display: inline-flex; align-items: center; gap: 4px;
   color: var(--accent-light); text-decoration: none;
-  border: 1px solid var(--border); padding: 3px 8px; border-radius: 6px;
+  border: 1px solid var(--border); padding: 3px 8px; border-radius: var(--radius-md);
   background: var(--surface-2); font-size: 11px;
   transition: border-color .12s;
   max-width: 100%; overflow: hidden;
@@ -1880,7 +1880,7 @@ code { font-family: var(--font-mono); display: inline-flex; border-radius: 4px; 
 .btn-quiet { background: transparent; color: var(--text-muted); border: 1px solid var(--border); }
 .btn-quiet:hover:not(:disabled) { color: var(--text); border-color: var(--accent); }
 
-.order-row-received-summary { font-size: 11px; color: var(--good); }
+.order-row-received-summary { font-size: 11px; color: var(--ok); }
 .order-row-impact { font-size: 11px; color: var(--warn); }
 
 /* ─── Part A: Details panel (A-3) ───────────────────────────────────────────── */
