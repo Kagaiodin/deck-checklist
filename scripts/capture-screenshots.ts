@@ -7,6 +7,8 @@
  *   npx tsx scripts/capture-screenshots.ts --browser firefox  # reads Firefox SQLite
  *   npx tsx scripts/capture-screenshots.ts --local            # target localhost:5173
  *   npx tsx scripts/capture-screenshots.ts --seed path/to/seed.json  # custom fixture
+ *   npx tsx scripts/capture-screenshots.ts --local --theme light --accent sapphire --out shots/light-sapphire
+ *       # start in a given mode/accent and write to a different folder (for before/after diffs)
  *
  * The fixture at scripts/fixtures/design-seed.json is the default seed.
  * It contains 3 decks at varying completion, active + received + cancelled orders
@@ -26,7 +28,22 @@ import path from "path";
 import fs from "fs";
 import os from "os";
 
-const OUT_DIR = path.resolve(process.cwd(), "design-review-screenshots");
+const argv = process.argv.slice(2);
+const flagValue = (name: string): string | undefined => {
+  const i = argv.indexOf(name);
+  return i !== -1 ? argv[i + 1] : undefined;
+};
+
+const OUT_DIR = path.resolve(process.cwd(), flagValue("--out") ?? "design-review-screenshots");
+
+/** Mode the run starts in; the toggle-and-restore steps return here rather than assuming dark. */
+const START_MODE = flagValue("--theme") === "light" ? "Light" : "Dark";
+
+/** Theme keys layered over every fixture seed, so a whole run can start in a given mode/accent. */
+const themeOverrides: Record<string, string> = {
+  ...(flagValue("--theme") ? { "fl-theme-mode": flagValue("--theme")! } : {}),
+  ...(flagValue("--accent") ? { "fl-theme-accent": flagValue("--accent")! } : {}),
+};
 const CHROME_PROFILE = "/Users/codyparker/Library/Application Support/Google/Chrome";
 const SETTLE_MS = 1000;
 
@@ -172,7 +189,7 @@ async function seedFromFixture(ctx: BrowserContext): Promise<void> {
     console.warn(`  Seed file not found: ${seedPath} — launching with empty state`);
     return;
   }
-  const raw = JSON.parse(fs.readFileSync(seedPath, "utf-8")) as Record<string, string>;
+  const raw = { ...(JSON.parse(fs.readFileSync(seedPath, "utf-8")) as Record<string, string>), ...themeOverrides };
   await ctx.addInitScript((entries: Record<string, string>) => {
     for (const [k, v] of Object.entries(entries)) {
       localStorage.setItem(k, v);
@@ -286,7 +303,7 @@ async function captureCostBreakdown(): Promise<void> {
   }
   console.log("\n── Cost breakdown popover ──");
 
-  const seed = JSON.parse(fs.readFileSync(seedPath, "utf-8")) as Record<string, string>;
+  const seed = { ...(JSON.parse(fs.readFileSync(seedPath, "utf-8")) as Record<string, string>), ...themeOverrides };
   const fixtureDecks = JSON.parse(seed["mtg-checklist-decks"]) as Array<{ cards: Array<{ id: string; price?: number }> }>;
   const priceById = new Map<string, number>();
   for (const dk of fixtureDecks) for (const c of dk.cards) if (c.price !== undefined) priceById.set(c.id, c.price);
@@ -383,7 +400,7 @@ async function main(): Promise<void> {
 
   // Read seed data once — used both for the main context and the empty-collection sub-context
   const seedData: Record<string, string> = browserArg === "fixture" && fs.existsSync(seedPath)
-    ? JSON.parse(fs.readFileSync(seedPath, "utf-8"))
+    ? { ...JSON.parse(fs.readFileSync(seedPath, "utf-8")), ...themeOverrides }
     : {};
 
   const { ctx, persistent } = await buildContext({ width: 1440, height: 900 });
@@ -502,7 +519,7 @@ async function main(): Promise<void> {
     await shot(page, "07-desktop-theme-light.png");
     // Restore dark + close menus
     await attempt("restore dark mode", async () => {
-      await click(page, ".mode-segment-btn", { hasText: "Dark" });
+      await click(page, ".mode-segment-btn", { hasText: START_MODE });
       await page.waitForTimeout(300);
       await page.keyboard.press("Escape");
       await page.keyboard.press("Escape");
@@ -677,7 +694,7 @@ async function main(): Promise<void> {
     await page.waitForTimeout(300);
     await attempt("open theme settings for dark restore", () => click(page, ".settings-btn"));
     await page.waitForTimeout(300);
-    await attempt("switch back to dark mode", () => click(page, ".mode-segment-btn", { hasText: "Dark" }));
+    await attempt("switch back to dark mode", () => click(page, ".mode-segment-btn", { hasText: START_MODE }));
     await page.waitForTimeout(300);
     await page.keyboard.press("Escape");
     await page.waitForTimeout(150);

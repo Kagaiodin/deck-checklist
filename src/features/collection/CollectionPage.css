@@ -277,7 +277,7 @@
 .collection-confirm-actions { display: flex; gap: 8px; }
 .import-error {
   font-size: 13px; color: var(--danger); padding: 8px 16px;
-  border-bottom: 1px solid rgba(224,83,83,.25);
+  border-bottom: 1px solid color-mix(in srgb, var(--danger) 25%, transparent);
 }
 
 /* ── Virtual list + alpha rail wrapper ─────────────────────────── */
@@ -469,7 +469,7 @@
 .collection-detail-footer-left { display: flex; gap: 6px; }
 .collection-remove-all-btn { color: var(--text-muted) !important; }
 .collection-remove-all-btn:hover {
-  color: var(--danger) !important; background: rgba(224,83,83,.08) !important;
+  color: var(--danger) !important; background: color-mix(in srgb, var(--danger) 8%, transparent) !important;
 }
 
 /* ── Bulk edit panel ────────────────────────────────────────────── */
@@ -503,7 +503,7 @@
 }
 .bulk-tab:hover { background: var(--surface-2); color: var(--text); }
 .bulk-tab.active { background: var(--surface-2); color: var(--text); }
-.bulk-tab.active.danger { background: rgba(224,83,83,.12); color: var(--danger); }
+.bulk-tab.active.danger { background: color-mix(in srgb, var(--danger) 12%, transparent); color: var(--danger); }
 .bulk-tab-sub { font-size: 10px; opacity: .65; font-weight: 400; }
 .bulk-textarea { font-family: ui-monospace, monospace !important; font-size: 13px !important; min-height: 100px; resize: none; }
 .bulk-preview-line {
@@ -513,7 +513,7 @@
 .bulk-preview-lbl { color: var(--text-muted); }
 .bulk-preview-empty { color: var(--border); }
 .bulk-preview-counts { display: flex; align-items: center; }
-.bulk-preview-new     { color: #4ade80; font-weight: 500; }
+.bulk-preview-new     { color: var(--success); font-weight: 500; }
 .bulk-preview-set     { color: var(--accent-light); font-weight: 500; }
 .bulk-preview-removed { color: var(--danger); font-weight: 500; }
 .bulk-preview-sep     { color: var(--text-muted); }
@@ -523,12 +523,12 @@
   font-size: 11px; color: var(--text-muted); text-transform: uppercase;
   letter-spacing: .06em; flex-shrink: 0;
 }
-.bulk-clear-btn { color: var(--danger) !important; border-color: rgba(224,83,83,.3) !important; }
-.bulk-clear-btn:hover { background: rgba(224,83,83,.08) !important; }
+.bulk-clear-btn { color: var(--danger) !important; border-color: color-mix(in srgb, var(--danger) 30%, transparent) !important; }
+.bulk-clear-btn:hover { background: color-mix(in srgb, var(--danger) 8%, transparent) !important; }
 .bulk-clear-confirm { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 12px; color: var(--text-muted); }
 .bulk-warn {
   display: flex; align-items: flex-start; gap: 8px; padding: 9px 12px;
-  background: rgba(224,83,83,.07); border: 1px solid rgba(224,83,83,.25);
+  background: color-mix(in srgb, var(--danger) 7%, transparent); border: 1px solid color-mix(in srgb, var(--danger) 25%, transparent);
   border-radius: 6px; font-size: 12px; color: var(--danger);
 }
 .bulk-warn-ico { font-size: 15px; line-height: 1; flex-shrink: 0; }

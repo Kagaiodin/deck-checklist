@@ -108,7 +108,7 @@
   margin-top: 1px;
 }
 .onboarding-feat-icon--green {
-  background: rgba(74, 222, 128, .14);
+  background: var(--ok-soft);
   color: var(--good);
 }
 .onboarding-feat-icon--blue {

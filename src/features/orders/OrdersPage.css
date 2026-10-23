@@ -14,10 +14,6 @@
   --ocard-muted:     var(--text-muted);
   --ocard-dim:       var(--text-dim);
   --ocard-mono:      ui-monospace, "JetBrains Mono", "SF Mono", Menlo, monospace;
-  --ok:              var(--success);
-  --ok-soft:         rgba(74, 222, 128, 0.14);
-  --warn-soft:       rgba(244, 162, 60, 0.14);
-  --danger-soft:     rgba(224, 83, 83, 0.14);
   --accent-soft:     var(--accent-tint-12);
   --accent-border-clr: var(--accent-tint-35);
 }
@@ -455,18 +451,12 @@
 }
 .ocard-panel-actions .btn-recv:hover { background: var(--ok-soft); filter: brightness(0.92); }
 
-/* ── Light mode overrides — orders-specific surface + soft-tint tuning ──────
-   Global semantic tokens (--ok/--warn/--danger) are corrected in tokens.css.
-   Here we tune the orders-local shims that use hardcoded rgba values.       */
+/* ── Light mode overrides — orders-specific surface tuning ───────────────────
+   Semantic tokens and their soft tints live in tokens.css.                  */
 html[data-mode="light"] .orders-panel {
   /* Warm card states matching design's --card-hover / --card-expanded */
   --ocard-hover:    #f7f5ef;
   --ocard-expanded: #eeece4;
-
-  /* Soft tints re-derived from the corrected global state colors */
-  --ok-soft:     rgba(47, 157, 117, 0.16);   /* from --ok: #2f9d75 */
-  --warn-soft:   rgba(192, 129, 32, 0.16);   /* from --warn: #c08120 */
-  --danger-soft: rgba(196, 61, 61, 0.14);    /* from --danger: #c43d3d */
 }
 
 /* ×N quantity badges — accent-soft (12% tint) is too faint on white */

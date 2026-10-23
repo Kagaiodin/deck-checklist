@@ -7,8 +7,24 @@ body, .app-header, .card-row, .deck-item, .source-tag, .card-rarity,
   transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
 
-body { background: var(--bg); color: var(--text); font-family: system-ui, sans-serif; font-size: 14px; -webkit-text-size-adjust: 100%; }
+body {
+  background: var(--bg); color: var(--text); font-family: system-ui, sans-serif; font-size: 14px; -webkit-text-size-adjust: 100%;
+  /* Carried over from the retired Vite-template index.css: it set these as absolute lengths on :root
+     (145% of an 18px root, 16px at <=1024px), so every element without its own line-height inherited them. */
+  line-height: 26.1px; letter-spacing: .18px;
+  font-synthesis: none; text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+}
+@media (max-width: 1024px) { body { line-height: 23.2px; } }
 @media (min-width: 1024px) { body { font-size: 15px; } }
+#root { width: 100%; min-height: 100svh; display: flex; flex-direction: column; }
+
+/* Element defaults carried over from the retired index.css so headings and <code> render as before. */
+h1, h2 { font-weight: 500; color: var(--text); }
+h1 { font-size: 56px; letter-spacing: -1.68px; margin: 32px 0; }
+h2 { font-size: 24px; line-height: 118%; letter-spacing: -0.24px; margin: 0 0 8px; }
+@media (max-width: 1024px) { h1 { font-size: 36px; margin: 20px 0; } h2 { font-size: 20px; } }
+code { font-family: var(--font-mono); display: inline-flex; border-radius: 4px; color: var(--text); font-size: 15px; line-height: 135%; padding: 4px 8px; background: var(--surface-2); }
 
 /* ─── Layout ────────────────────────────────────────────────────────────────── */
 .app { display: flex; flex-direction: column; height: 100dvh; overflow: hidden; } /* height: 100dvh so flex children get a definite height; overflow:hidden contains content within viewport */
@@ -172,7 +188,7 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 .btn-secondary:hover:not(:disabled) { border-color: var(--accent); }
 .btn-ghost { background: transparent; color: var(--text-muted); }
 .btn-ghost:hover:not(:disabled) { color: var(--text); }
-.btn-danger-soft { background: rgba(224,83,83,.2); color: var(--danger); border: 1px solid rgba(224,83,83,.3); }
+.btn-danger-soft { background: color-mix(in srgb, var(--danger) 20%, transparent); color: var(--danger); border: 1px solid color-mix(in srgb, var(--danger) 30%, transparent); }
 .btn-sm { padding: 4px 10px; font-size: 12px; }
 
 /* ─── Import panel ──────────────────────────────────────────────────────────── */
@@ -428,7 +444,7 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 }
 .deck-av-dot.done { background: var(--success); }
 .deck-item.active .deck-av {
-  background: var(--accent-tint-20, rgba(108,92,231,.2));
+  background: var(--accent-tint-20);
   border-color: var(--accent);
   color: var(--accent-light);
 }
@@ -440,7 +456,7 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 .deck-sidebar.sidebar-collapsed .deck-item.active .deck-av {
   background: transparent;
   border: 2px solid var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-tint-20, rgba(108,92,231,.2));
+  box-shadow: 0 0 0 3px var(--accent-tint-20);
 }
 .deck-sidebar.sidebar-collapsed .deck-av-dot { opacity: 1; }
 
@@ -610,7 +626,7 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 
 /* ─── Error queue ───────────────────────────────────────────────────────────── */
 .error-queue {
-  background: rgba(224,83,83,.08); border: 1px solid rgba(224,83,83,.3);
+  background: color-mix(in srgb, var(--danger) 8%, transparent); border: 1px solid color-mix(in srgb, var(--danger) 30%, transparent);
   border-radius: var(--radius); padding: 16px; display: flex; flex-direction: column; gap: 10px;
 }
 .error-queue-title { font-size: 14px; font-weight: 600; color: var(--danger); }
@@ -842,8 +858,8 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
   background: transparent;
 }
 .pop-status-opt.active { border-color: currentColor; }
-.pop-pill-owned   { background: rgba(74,222,128,.15); color: #4ade80; }
-.pop-pill-need    { background: rgba(224,83,83,.15);  color: var(--danger); }
+.pop-pill-owned   { background: color-mix(in srgb, var(--success) 15%, transparent); color: var(--success); }
+.pop-pill-need    { background: color-mix(in srgb, var(--danger) 15%, transparent);  color: var(--danger); }
 .pop-pill-ordered { background: rgba(96,165,250,.15); color: #60a5fa; }
 .pop-pill-proxy   { background: rgba(192,132,252,.15); color: #c084fc; }
 .pop-divider { height: 1px; background: var(--border); margin: 0 10px; }
@@ -860,14 +876,14 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
   font-size: 13px; flex-shrink: 0;
 }
 .pop-icon-blue { background: rgba(96,165,250,.15); }
-.pop-icon-red  { background: rgba(224,83,83,.15); }
+.pop-icon-red  { background: color-mix(in srgb, var(--danger) 15%, transparent); }
 .pop-confirm { padding: 12px 12px 10px; }
 .pop-confirm-text { font-size: 12px; color: var(--text-muted); margin-bottom: 10px; line-height: 1.5; }
 .pop-confirm-text strong { color: var(--danger); font-weight: 600; }
 .pop-confirm-actions { display: flex; gap: 6px; }
 .pop-btn { flex: 1; padding: 6px 10px; border-radius: 5px; font-size: 12px; font-weight: 600; cursor: pointer; border: none; }
 .pop-btn-cancel { background: var(--surface-3); color: var(--text-muted); }
-.pop-btn-danger { background: rgba(224,83,83,.2); color: var(--danger); border: 1px solid rgba(224,83,83,.3); }
+.pop-btn-danger { background: color-mix(in srgb, var(--danger) 20%, transparent); color: var(--danger); border: 1px solid color-mix(in srgb, var(--danger) 30%, transparent); }
 
 /* ── Mobile bottom sheet ────────────────────────────────────────────────── */
 .card-row-sheet-scrim {
@@ -909,8 +925,8 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
   background: transparent;
 }
 .sheet-status-opt.active { border-color: currentColor; }
-.sheet-status-owned   { background: rgba(74,222,128,.15); color: #4ade80; }
-.sheet-status-need    { background: rgba(224,83,83,.15);  color: var(--danger); }
+.sheet-status-owned   { background: color-mix(in srgb, var(--success) 15%, transparent); color: var(--success); }
+.sheet-status-need    { background: color-mix(in srgb, var(--danger) 15%, transparent);  color: var(--danger); }
 .sheet-status-ordered { background: rgba(96,165,250,.15); color: #60a5fa; }
 .sheet-status-proxy   { background: rgba(192,132,252,.15); color: #c084fc; }
 .sheet-divider { height: 1px; background: var(--border); margin: 4px 16px; }
@@ -928,7 +944,7 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 }
 .sheet-icon-blue   { background: rgba(96,165,250,.15); }
 .sheet-icon-purple { background: rgba(192,132,252,.15); }
-.sheet-icon-red    { background: rgba(224,83,83,.15); }
+.sheet-icon-red    { background: color-mix(in srgb, var(--danger) 15%, transparent); }
 .sheet-action-body { flex: 1; display: flex; flex-direction: column; gap: 1px; }
 .sheet-action-label { font-size: 14px; color: var(--text); font-weight: 500; }
 .sheet-action-desc  { font-size: 12px; color: var(--text-muted); }
@@ -939,7 +955,7 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 .sheet-confirm-actions { display: flex; gap: 10px; }
 .sheet-confirm-btn { flex: 1; padding: 12px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; border: none; }
 .sheet-confirm-cancel { background: var(--surface-3); color: var(--text-muted); }
-.sheet-confirm-remove { background: rgba(224,83,83,.2); color: var(--danger); border: 1px solid rgba(224,83,83,.3); }
+.sheet-confirm-remove { background: color-mix(in srgb, var(--danger) 20%, transparent); color: var(--danger); border: 1px solid color-mix(in srgb, var(--danger) 30%, transparent); }
 
 .card-checkbox { accent-color: var(--accent); width: 18px; height: 18px; cursor: pointer; flex-shrink: 0; }
 
@@ -1029,7 +1045,7 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 .source-picker-clear {
   border-bottom: 1px solid var(--border); color: var(--danger); font-size: 11px;
 }
-.source-picker-clear:hover { background: rgba(224,83,83,.1); color: var(--danger); }
+.source-picker-clear:hover { background: color-mix(in srgb, var(--danger) 10%, transparent); color: var(--danger); }
 
 /* ─── Card row selection ────────────────────────────────────────────────────── */
 .card-row.selected { background: var(--accent-tint-10); border-bottom-color: var(--accent-tint-35); }
@@ -1829,8 +1845,8 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
   padding: 2px 8px; border-radius: 999px; white-space: nowrap;
 }
 .order-status-active    { background: rgba(59,130,246,.18);   color: #60a5fa; }
-.order-status-late      { background: rgba(224,83,83,.18);    color: #e05353; border: 1px solid rgba(224,83,83,.3); }
-.order-status-received  { background: rgba(74,222,128,.18);   color: var(--good); }
+.order-status-late      { background: color-mix(in srgb, var(--danger) 18%, transparent);    color: var(--danger); border: 1px solid color-mix(in srgb, var(--danger) 30%, transparent); }
+.order-status-received  { background: color-mix(in srgb, var(--success) 18%, transparent);   color: var(--good); }
 .order-status-cancelled { background: rgba(148,163,184,.12);  color: #94a3b8; }
 
 .order-row-eta { display: flex; flex-direction: column; gap: 2px; }
@@ -1928,7 +1944,7 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 .clr-g { background: #1a6b3a; }
 
 /* Delete confirm inline */
-.deck-item.confirming-delete { background: rgba(224,83,83,.08); }
+.deck-item.confirming-delete { background: color-mix(in srgb, var(--danger) 8%, transparent); }
 .deck-delete-confirm {
   display: flex; align-items: center; gap: 5px; flex-shrink: 0;
 }
@@ -2335,7 +2351,7 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
   border-radius: 4px;
 }
 .checklist-jump-link:hover {
-  color: var(--text-primary);
+  color: var(--text);
   background: var(--surface-3);
 }
 
@@ -2431,8 +2447,8 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
   cursor: default;
 }
 .token-chip:hover {
-  border-color: var(--border-strong, var(--border));
-  color: var(--text-primary);
+  border-color: var(--border-strong);
+  color: var(--text);
 }
 .token-chip::before {
   content: '';
@@ -2474,7 +2490,7 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 .token-chip-tooltip-card {
   font-size: 12px;
   font-weight: 500;
-  color: var(--text-primary);
+  color: var(--text);
 }
 .token-chip-tooltip-link {
   margin-top: 6px;
@@ -2490,7 +2506,7 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
   border-radius: 50%;
   flex-shrink: 0;
 }
-.ei-dot-creature { background: #4ade80; }
+.ei-dot-creature { background: var(--success); }
 .ei-dot-artifact { background: var(--text-muted); }
 .ei-dot-emblem   { background: #c084fc; }
 .ei-dot-copy     { background: #60a5fa; }

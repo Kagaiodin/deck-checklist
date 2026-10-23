@@ -3,11 +3,15 @@
 html { overflow-x: hidden; } /* catch-all: prevents root scroll container from forming */
 
 :root {
+  color-scheme: light dark; /* unchanged from the retired index.css: native controls still follow the OS in dark mode */
+
   /* Accent family */
   --accent:       #6c5ce7;
   --accent-hover: #8b7cf8;
   --accent-light: #a78bfa;
   --accent-deep:  #4c3dbf;
+  /* Text/icons on a solid --accent fill. Set per accent × mode so every pair clears 4.5:1. */
+  --on-accent:    #ffffff;
 
   /* Surfaces */
   --bg:        #0d0f1a;
@@ -21,15 +25,25 @@ html { overflow-x: hidden; } /* catch-all: prevents root scroll container from f
 
   /* Status */
   --danger:  #e05353;
+  --on-danger: #ffffff; /* 3.80:1 on dark --danger (below AA for body text); 5.14:1 on light */
   --warn:    #f4a23c;
   --success: #4ade80;
   --good:    var(--success); /* backward-compat alias */
+  --ok:      var(--success);
+
+  /* Soft tints — status badges, banners, hover fills. Derived, so light mode follows the base colors. */
+  --ok-soft:     color-mix(in srgb, var(--success) 14%, transparent);
+  --warn-soft:   color-mix(in srgb, var(--warn) 14%, transparent);
+  --danger-soft: color-mix(in srgb, var(--danger) 14%, transparent);
 
   /* Type */
+  --font-sans: system-ui, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
   /* Radii */
   --radius:      8px;
+  --radius-md:   6px;
+  --radius-lg:   12px;
   --radius-sm:   4px;
   --radius-xs:   3px;
   --radius-pill: 99px;
@@ -41,20 +55,27 @@ html { overflow-x: hidden; } /* catch-all: prevents root scroll container from f
   /* Shadows */
   --shadow-sticky: 0 1px 12px rgba(0,0,0,.40);
   --shadow-menu:   0 4px 20px rgba(0,0,0,.50);
+  --shadow-modal:  0 8px 24px rgba(0,0,0,.45);
+  --shadow-sheet:  0 -4px 32px rgba(0,0,0,.50);
+
+  /* Backdrop behind modals and sheets */
+  --scrim: rgba(5,6,14,.6);
 
   /* Additional surfaces */
   --surface-3: #252a42;
 
   /* Accent dim (⋯ button active state background) */
-  --accent-dim: rgba(108,92,231,.15);
+  --accent-dim: color-mix(in srgb, var(--accent) 15%, transparent);
 
   /* Dim variants */
-  --border-dim: #222540;
-  --text-dim:   #4a5280;
+  --border-dim:    #222540;
+  --border-strong: #3a4070;
+  --text-dim:      #4a5280;
 
   /* Accent tints */
   --accent-tint-10: color-mix(in srgb, var(--accent) 10%, transparent);
   --accent-tint-12: color-mix(in srgb, var(--accent) 12%, transparent);
+  --accent-tint-20: color-mix(in srgb, var(--accent) 20%, transparent);
   --accent-tint-35: color-mix(in srgb, var(--accent) 35%, transparent);
 
   /* Rarity */
@@ -102,14 +123,19 @@ html[data-mode="light"] {
 
   --shadow-sticky: 0 1px 12px rgba(0,0,0,.07);
   --shadow-menu:   0 4px 20px rgba(0,0,0,.12);
+  --shadow-modal:  0 8px 24px rgba(0,0,0,.11);
+  --shadow-sheet:  0 -4px 32px rgba(0,0,0,.12);
   --surface-3: #e0dff5;
-  --border-dim: #e3dfd3;  /* hairline — light dividers inside cards */
+  --border-dim:    #e3dfd3;  /* hairline — light dividers inside cards */
+  --border-strong: #b3ad9c;
   --text-dim:   #8891b8;
 
   /* Semantic state — dark-mode values are too bright/pale on cream */
   --success: #2f9d75;  /* #4ade80 washes out on white */
   --warn:    #c08120;  /* #f4a23c looks peach on cream */
   --danger:  #c43d3d;  /* #e05353 reads pink, not red */
+  --ok-soft:   color-mix(in srgb, var(--success) 16%, transparent);
+  --warn-soft: color-mix(in srgb, var(--warn) 16%, transparent);
 
   /* Rarity — darker fg for AA/AAA on white */
   --rar-common-fg:   #464b74;
@@ -135,18 +161,21 @@ html[data-accent="sapphire"] {
   --accent-hover: #60a5fa;
   --accent-light: #93c5fd;
   --accent-deep:  #1d4ed8;
+  --on-accent:    #0d0f1a;  /* 5.19:1 (white is 3.68:1) */
 }
 html[data-accent="emerald"] {
   --accent:       #10b981;
   --accent-hover: #34d399;
   --accent-light: #6ee7b7;
   --accent-deep:  #059669;
+  --on-accent:    #0d0f1a;  /* 7.52:1 (white is 2.54:1) */
 }
 html[data-accent="ember"] {
   --accent:       #f59e0b;
   --accent-hover: #fbbf24;
   --accent-light: #fde68a;
   --accent-deep:  #d97706;
+  --on-accent:    #0d0f1a;  /* 8.89:1 (white is 2.15:1) */
 }
 
 /* ─── Light mode accent overrides — AA/AAA contrast on white surfaces ────────
@@ -158,22 +187,26 @@ html[data-mode="light"][data-accent="indigo"] {
   --accent-hover: #6c5ce7;
   --accent-light: #6c5ce7;
   --accent-deep:  #3730a3;
+  --on-accent:    #ffffff;  /* 6.29:1 */
 }
 html[data-mode="light"][data-accent="sapphire"] {
   --accent:       #2563eb;
   --accent-hover: #3b82f6;
   --accent-light: #3b82f6;
   --accent-deep:  #1d4ed8;
+  --on-accent:    #ffffff;  /* 5.17:1 */
 }
 html[data-mode="light"][data-accent="emerald"] {
   --accent:       #059669;
   --accent-hover: #10b981;
   --accent-light: #10b981;
   --accent-deep:  #047857;
+  --on-accent:    #0d0f1a;  /* 5.06:1 (white is 3.77:1) */
 }
 html[data-mode="light"][data-accent="ember"] {
   --accent:       #b45309;
   --accent-hover: #d97706;
   --accent-light: #d97706;
   --accent-deep:  #92400e;
+  --on-accent:    #ffffff;  /* 5.02:1 */
 }
