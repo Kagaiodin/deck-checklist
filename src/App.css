@@ -8,7 +8,7 @@ body, .app-header, .card-row, .deck-item, .source-tag, .card-rarity,
 }
 
 body {
-  background: var(--bg); color: var(--text); font-family: system-ui, sans-serif; font-size: 14px; -webkit-text-size-adjust: 100%;
+  background: var(--bg); color: var(--text); font-family: var(--font-sans); font-size: 14px; -webkit-text-size-adjust: 100%;
   /* Carried over from the retired Vite-template index.css: it set these as absolute lengths on :root
      (145% of an 18px root, 16px at <=1024px), so every element without its own line-height inherited them. */
   line-height: 26.1px; letter-spacing: .18px;
@@ -210,7 +210,7 @@ code { font-family: var(--font-mono); display: inline-flex; border-radius: 4px; 
 }
 .deck-name-input:focus, .import-textarea:focus { outline: none; border-color: var(--accent); }
 .deck-name-input::placeholder, .import-textarea::placeholder { color: var(--text-muted); }
-.import-textarea { font-family: monospace; resize: vertical; }
+.import-textarea { font-family: var(--font-mono); resize: vertical; }
 
 /* ─── Import format helper ──────────────────────────────────────────────────── */
 .import-formats { display: flex; flex-direction: column; gap: 8px; }
@@ -1872,7 +1872,7 @@ code { font-family: var(--font-mono); display: inline-flex; border-radius: 4px; 
   padding: 1px 5px; border-radius: 3px; font-weight: 600; letter-spacing: .03em;
 }
 .order-tracking-link .tn-tail {
-  font-family: ui-monospace, monospace; font-size: 10px; color: var(--text-muted);
+  font-family: var(--font-mono); font-size: 10px; color: var(--text-muted);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 

@@ -22,7 +22,7 @@
 }
 
 .drive-conflict-kicker {
-  font-family: ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-size: 10px;
   letter-spacing: .08em;
   text-transform: uppercase;
@@ -103,7 +103,7 @@
   color: var(--text);
 }
 .drive-conflict-opt-when {
-  font-family: ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-size: 11.5px;
   color: var(--text-muted);
 }

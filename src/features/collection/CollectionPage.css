@@ -177,7 +177,7 @@
 }
 .collection-stats-num { color: var(--text); font-weight: 500; }
 .collection-filename-chip {
-  font-family: ui-monospace, monospace; font-size: 11px;
+  font-family: var(--font-mono); font-size: 11px;
   color: var(--text-muted); background: var(--surface-2);
   border: 1px solid var(--border);
   padding: 1px 7px; border-radius: 4px;
@@ -411,7 +411,7 @@
   display: flex; align-items: center; gap: 6px; width: 100%; padding: 3px 0;
 }
 .collection-printing-set-chip {
-  font-family: ui-monospace, monospace; font-size: 10px; font-weight: 600;
+  font-family: var(--font-mono); font-size: 10px; font-weight: 600;
   color: var(--accent-light); background: var(--accent-tint-12);
   border: 1px solid var(--accent-tint-20);
   padding: 1px 5px; border-radius: 3px; line-height: 1.4; white-space: nowrap;
@@ -420,7 +420,7 @@
   font-variant-numeric: tabular-nums; color: var(--text); font-weight: 500;
 }
 .collection-printing-cn {
-  font-family: ui-monospace, monospace; font-size: 11px; color: var(--text-muted);
+  font-family: var(--font-mono); font-size: 11px; color: var(--text-muted);
 }
 .collection-printing-foil { color: var(--accent-light); font-size: 11px; }
 .collection-printing-edit-btn {
@@ -505,7 +505,7 @@
 .bulk-tab.active { background: var(--surface-2); color: var(--text); }
 .bulk-tab.active.danger { background: color-mix(in srgb, var(--danger) 12%, transparent); color: var(--danger); }
 .bulk-tab-sub { font-size: 10px; opacity: .65; font-weight: 400; }
-.bulk-textarea { font-family: ui-monospace, monospace !important; font-size: 13px !important; min-height: 100px; resize: none; }
+.bulk-textarea { font-family: var(--font-mono) !important; font-size: 13px !important; min-height: 100px; resize: none; }
 .bulk-preview-line {
   display: flex; align-items: center; justify-content: space-between;
   font-size: 12px; padding: 0 2px;

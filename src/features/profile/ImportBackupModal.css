@@ -73,7 +73,7 @@
   margin: 0 0 16px;
 }
 .import-backup-hint code {
-  font-family: ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-size: 11px;
   background: var(--surface-2);
   padding: 1px 4px;

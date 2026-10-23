@@ -33,7 +33,7 @@
   letter-spacing: -0.005em; color: var(--text);
 }
 .nos-vendor-tag {
-  font: 11.5px/1 ui-monospace, "JetBrains Mono", "SF Mono", Menlo, monospace;
+  font: 11.5px/1 var(--font-mono);
   color: var(--text-muted); padding: 3px 7px;
   background: var(--border-dim); border-radius: 6px;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px;
@@ -52,7 +52,7 @@
   display: flex; align-items: center; gap: 0;
   padding: 10px 20px 11px;
   border-bottom: 1px solid var(--border-dim);
-  font: 10.5px/1 ui-monospace, "JetBrains Mono", "SF Mono", Menlo, monospace;
+  font: 10.5px/1 var(--font-mono);
   letter-spacing: 0.08em; text-transform: uppercase;
   flex-shrink: 0;
 }
@@ -119,12 +119,12 @@
 .nos-vmain { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
 .nos-vname { font-weight: 600; font-size: 13.5px; color: var(--text); }
 .nos-vtag {
-  font: 11px/1 ui-monospace, monospace;
+  font: 11px/1 var(--font-mono);
   color: var(--text-muted); padding: 2px 6px;
   background: var(--border-dim); border-radius: 4px;
 }
 .nos-vmeta {
-  font: 11.5px/1 ui-monospace, monospace;
+  font: 11.5px/1 var(--font-mono);
   color: var(--text-muted); white-space: nowrap;
 }
 .nos-radio {
@@ -183,7 +183,7 @@
 .nos-results li:first-child .nos-result { border-top: 0; }
 .nos-result:hover { background: var(--surface-2); }
 .nos-result-name { flex: 1; }
-.nos-result-sub { font: 11px/1 ui-monospace, monospace; color: var(--text-muted); }
+.nos-result-sub { font: 11px/1 var(--font-mono); color: var(--text-muted); }
 .nos-result-free .nos-result-name { color: var(--text-muted); }
 .nos-result-add { color: var(--accent); font-weight: 600; font-size: 15px; margin-left: auto; }
 
@@ -203,7 +203,7 @@
 .nos-source-btn.active { background: var(--accent-tint-12); color: var(--text); }
 .nos-source-btn:hover:not(.active) { color: var(--text); }
 .nos-source-n {
-  color: var(--text-muted); font: 10.5px/1 ui-monospace, monospace;
+  color: var(--text-muted); font: 10.5px/1 var(--font-mono);
 }
 
 /* ── Buy list empty state ────────────────────────────────────────────────────── */
@@ -230,7 +230,7 @@
   display: grid; grid-template-columns: 1fr 52px 90px 22px;
   gap: 8px; padding: 6px 12px;
   border-bottom: 1px solid var(--border-dim);
-  font: 10px/1 ui-monospace, monospace;
+  font: 10px/1 var(--font-mono);
   color: var(--text-muted); letter-spacing: 0.1em; text-transform: uppercase;
   background: var(--surface-2);
 }
@@ -249,17 +249,17 @@
   width: 100%; padding: 4px 6px;
   background: var(--surface-2); border: 1px solid var(--border);
   border-radius: 5px; color: var(--text);
-  font: 11.5px/1 ui-monospace, monospace; text-align: right; outline: 0;
+  font: 11.5px/1 var(--font-mono); text-align: right; outline: 0;
   font-variant-numeric: tabular-nums;
 }
 .nos-qty-input:focus { border-color: var(--accent-tint-35); }
 .nos-price-wrap { display: flex; align-items: center; gap: 2px; }
-.nos-price-pfx { font: 11px/1 ui-monospace, monospace; color: var(--text-dim); flex-shrink: 0; }
+.nos-price-pfx { font: 11px/1 var(--font-mono); color: var(--text-dim); flex-shrink: 0; }
 .nos-price-input {
   flex: 1; min-width: 0; padding: 4px 6px;
   background: var(--surface-2); border: 1px solid var(--border);
   border-radius: 5px; color: var(--text);
-  font: 11.5px/1 ui-monospace, monospace; text-align: right; outline: 0;
+  font: 11.5px/1 var(--font-mono); text-align: right; outline: 0;
   font-variant-numeric: tabular-nums;
 }
 .nos-price-input:focus { border-color: var(--accent-tint-35); }
@@ -272,7 +272,7 @@
 .nos-remove:hover { color: var(--danger); background: var(--danger-soft); }
 
 .nos-selsum {
-  color: var(--text-muted); font: 11.5px/1 ui-monospace, monospace;
+  color: var(--text-muted); font: 11.5px/1 var(--font-mono);
   margin: 0; padding: 2px;
 }
 
@@ -282,7 +282,7 @@
   margin-bottom: 11px;
 }
 .nos-field label {
-  font: 10.5px/1 ui-monospace, monospace;
+  font: 10.5px/1 var(--font-mono);
   color: var(--text-dim); letter-spacing: 0.1em; text-transform: uppercase;
 }
 .nos-field input, .nos-field select {
@@ -314,7 +314,7 @@
 .nos-sum-row {
   display: flex; justify-content: space-between; align-items: baseline;
   padding: 5px 0; border-top: 1px solid var(--border-dim);
-  font: 11.5px/1.4 ui-monospace, monospace; color: var(--text-muted);
+  font: 11.5px/1.4 var(--font-mono); color: var(--text-muted);
 }
 .nos-sum-row:first-child { border-top: 0; }
 .nos-sum-v { color: var(--text); }
