@@ -154,7 +154,7 @@
   transition: color 0.1s, border-color 0.1s;
 }
 .nos-vendor-other:hover { color: var(--text); border-color: var(--border); }
-.nos-other-plus { color: var(--accent); font-size: 14px; }
+.nos-other-plus { color: var(--accent-text); font-size: 14px; }
 
 /* ── Card search ─────────────────────────────────────────────────────────────── */
 .nos-search-wrap { position: relative; margin-bottom: 12px; }
@@ -185,7 +185,7 @@
 .nos-result-name { flex: 1; }
 .nos-result-sub { font: 11px/1 var(--font-mono); color: var(--text-muted); }
 .nos-result-free .nos-result-name { color: var(--text-muted); }
-.nos-result-add { color: var(--accent); font-weight: 600; font-size: 15px; margin-left: auto; }
+.nos-result-add { color: var(--accent-text); font-weight: 600; font-size: 15px; margin-left: auto; }
 
 /* ── Source toggle ───────────────────────────────────────────────────────────── */
 .nos-source-toggle {
@@ -318,7 +318,7 @@
 }
 .nos-sum-row:first-child { border-top: 0; }
 .nos-sum-v { color: var(--text); }
-.nos-sum-accent { color: var(--accent); font-weight: 600; }
+.nos-sum-accent { color: var(--accent-text); font-weight: 600; }
 
 /* ── Footer ─────────────────────────────────────────────────────────────────── */
 .nos-foot {

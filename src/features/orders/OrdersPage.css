@@ -173,7 +173,7 @@
 }
 
 .ocard.state-cancelled {
-  opacity: 0.62;
+  opacity: var(--completed-opacity);
 }
 .ocard.state-cancelled .ocard-vendor-name {
   text-decoration: line-through;
@@ -297,7 +297,7 @@
   text-decoration: none; white-space: nowrap;
   transition: background 0.12s, border-color 0.12s;
 }
-.ocard-tracking .carrier { color: var(--accent); font-weight: 600; letter-spacing: 0.04em; }
+.ocard-tracking .carrier { color: var(--accent-text); font-weight: 600; letter-spacing: 0.04em; }
 .ocard-tracking .arrow   { color: var(--ocard-dim); }
 .ocard-tracking:hover { background: var(--surface-2); border-color: var(--border); }
 .ocard-tracking-empty {
@@ -476,7 +476,7 @@ html[data-mode="light"] .li-qty {
 }
 .li:first-child { border-top: 0; }
 .li-qty {
-  font: 11.5px/1 var(--font-mono); color: var(--accent);
+  font: 11.5px/1 var(--font-mono); color: var(--accent-text);
   background: var(--accent-soft); border: 1px solid var(--accent-border-clr);
   border-radius: 4px; padding: 3px 0; text-align: center;
 }
@@ -496,11 +496,11 @@ html[data-mode="light"] .li-qty {
   color: var(--text); font-weight: 600;
   font-family: var(--font-mono); font-variant-numeric: tabular-nums;
 }
-.orders-spend-meta { color: var(--accent); font-family: var(--font-mono); }
+.orders-spend-meta { color: var(--accent-text); font-family: var(--font-mono); }
 
 /* ── Linked deck ────────────────────────────────────────────────────────────── */
 .ocard-linked-deck {
-  font-size: 13px; color: var(--accent);
+  font-size: 13px; color: var(--accent-text);
   padding: 8px 10px;
   background: var(--accent-soft); border: 1px solid var(--accent-border-clr);
   border-radius: 8px;
@@ -589,7 +589,7 @@ html[data-mode="light"] .li-qty {
   font: 10.5px/1 var(--font-mono); color: var(--ocard-dim);
   letter-spacing: 0.16em; text-transform: uppercase; margin-bottom: 4px;
 }
-.ocard-mob-cta-v { font-size: 13px; font-weight: 500; line-height: 1; color: var(--accent); }
+.ocard-mob-cta-v { font-size: 13px; font-weight: 500; line-height: 1; color: var(--accent-text); }
 .ocard-mob-cta-arrow { margin-left: auto; color: var(--ocard-dim); font-size: 18px; }
 
 .ocard-mob-section { display: flex; flex-direction: column; gap: 10px; }
