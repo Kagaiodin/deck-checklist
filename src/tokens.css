@@ -71,6 +71,9 @@ html { overflow-x: hidden; } /* catch-all: prevents root scroll container from f
 
   /* Additional surfaces */
   --surface-3: #252a42;
+  /* Menus, popovers and sheets: one step above the card they float over. */
+  --surface-raised: var(--surface-2);
+  --surface-raised-hover: var(--surface-3);
 
   /* Accent dim (⋯ button active state background) */
   --accent-dim: color-mix(in srgb, var(--accent) 15%, transparent);
@@ -124,7 +127,7 @@ html[data-mode="light"] {
   color-scheme: light;
   --bg:         #f5f3ee;  /* warm paper — cards need to lift off bg */
   --surface:    #ffffff;
-  --surface-2:  #ededf8;
+  --surface-2:  #ebe7db;  /* parchment — warm, so lavender only comes from the accent */
   --border:     #c9c4b5;  /* strong enough for the 2px stripe to read */
   --text:       #1c1d2e;
   --text-muted: #464b74;
@@ -133,10 +136,12 @@ html[data-mode="light"] {
   --shadow-menu:   0 4px 20px rgba(0,0,0,.12);
   --shadow-modal:  0 8px 24px rgba(0,0,0,.11);
   --shadow-sheet:  0 -4px 32px rgba(0,0,0,.12);
-  --surface-3: #e0dff5;
+  --surface-3: #dfd9c9;
+  --surface-raised: var(--surface);
+  --surface-raised-hover: var(--surface-2);
   --border-dim:    #e3dfd3;  /* hairline — light dividers inside cards */
   --border-strong: #b3ad9c;
-  --text-dim:   #8891b8;
+  --text-dim:   #736d5e;  /* warm neutral; 5.15:1 on --surface, 4.64:1 on --bg */
 
   /* Semantic state — dark-mode values are too bright/pale on cream */
   --success: #2f9d75;  /* #4ade80 washes out on white */

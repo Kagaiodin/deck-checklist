@@ -8,12 +8,10 @@
 .orders-panel {
   --ocard-bg:        var(--surface);
   --ocard-hover:     var(--surface-2);
-  --ocard-expanded:  var(--bg);
   --ocard-hairline:  var(--border-dim);
   --ocard-border-strong: var(--surface-3);
   --ocard-muted:     var(--text-muted);
   --ocard-dim:       var(--text-dim);
-  --ocard-mono:      ui-monospace, "JetBrains Mono", "SF Mono", Menlo, monospace;
   --accent-soft:     var(--accent-tint-12);
   --accent-border-clr: var(--accent-tint-35);
 }
@@ -57,9 +55,9 @@
 }
 
 .orders-count {
-  font: 12px/1 var(--ocard-mono);
+  font: 12px/1 var(--font-mono);
   font-variant-numeric: tabular-nums;
-  color: var(--ocard-dim);
+  color: var(--ocard-muted);
   background: var(--ocard-hairline);
   border: 1px solid var(--border);
   padding: 3px 8px; border-radius: 6px;
@@ -83,7 +81,7 @@
   background: transparent; border: 0; outline: 0;
   color: var(--text); font: inherit; font-size: 13px; width: 100%;
 }
-.orders-search input::placeholder { color: var(--ocard-dim); }
+.orders-search input::placeholder { color: var(--ocard-muted); }
 
 @media (max-width: 640px) {
   .orders-search { display: none; }
@@ -115,13 +113,13 @@
   color: var(--text);
 }
 .orders-chip .n {
-  font: 11px/1 var(--ocard-mono); color: var(--ocard-dim);
+  font: 11px/1 var(--font-mono); color: var(--ocard-dim);
 }
 .orders-chip.active .n { color: var(--text-muted); }
 
 /* ── Sub-meta line ──────────────────────────────────────────────────────────── */
 .num {
-  font-family: var(--ocard-mono);
+  font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
 }
 
@@ -183,6 +181,7 @@
 }
 
 .ocard:hover {
+  --ocard-dim: var(--text-muted);  /* --text-dim is under 4.5:1 on the hover fill */
   background: var(--ocard-hover);
   border-color: var(--ocard-border-strong);
 }
@@ -280,7 +279,7 @@
 .ocard-pill {
   display: inline-flex; align-items: center;
   padding: 2px 7px; border-radius: 999px;
-  font: 10.5px/1.2 var(--ocard-mono);
+  font: 10.5px/1.2 var(--font-mono);
   letter-spacing: 0.07em; text-transform: uppercase;
   white-space: nowrap; flex-shrink: 0;
 }
@@ -294,7 +293,7 @@
   display: inline-flex; align-items: center; gap: 5px;
   padding: 3px 7px; border-radius: 6px;
   background: var(--ocard-hairline); border: 1px solid var(--border);
-  font: 11.5px/1 var(--ocard-mono); color: var(--text-muted);
+  font: 11.5px/1 var(--font-mono); color: var(--text-muted);
   text-decoration: none; white-space: nowrap;
   transition: background 0.12s, border-color 0.12s;
 }
@@ -381,7 +380,7 @@
 .ocard-panel-section { display: flex; flex-direction: column; gap: 10px; }
 
 .panel-h {
-  font: 10.5px/1 var(--ocard-mono);
+  font: 10.5px/1 var(--font-mono);
   color: var(--ocard-dim);
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -421,7 +420,7 @@
 .tl-dot.pending { background: transparent; border: 1.5px solid var(--ocard-dim); }
 
 .tl-when {
-  font: 11px/1.4 var(--ocard-mono); color: var(--ocard-dim);
+  font: 11px/1.4 var(--font-mono); color: var(--ocard-dim);
   padding-top: 2px; white-space: nowrap;
 }
 .tl-what {
@@ -433,7 +432,7 @@
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .tl-sub.mono {
-  font-family: var(--ocard-mono); font-size: 11px;
+  font-family: var(--font-mono); font-size: 11px;
 }
 .tl-sub.late {
   color: var(--danger); font-weight: 550;
@@ -450,14 +449,6 @@
   color: var(--ok);
 }
 .ocard-panel-actions .btn-recv:hover { background: var(--ok-soft); filter: brightness(0.92); }
-
-/* ── Light mode overrides — orders-specific surface tuning ───────────────────
-   Semantic tokens and their soft tints live in tokens.css.                  */
-html[data-mode="light"] .orders-panel {
-  /* Warm card states matching design's --card-hover / --card-expanded */
-  --ocard-hover:    #f7f5ef;
-  --ocard-expanded: #eeece4;
-}
 
 /* ×N quantity badges — accent-soft (12% tint) is too faint on white */
 html[data-mode="light"] .li-qty {
@@ -485,14 +476,14 @@ html[data-mode="light"] .li-qty {
 }
 .li:first-child { border-top: 0; }
 .li-qty {
-  font: 11.5px/1 var(--ocard-mono); color: var(--accent);
+  font: 11.5px/1 var(--font-mono); color: var(--accent);
   background: var(--accent-soft); border: 1px solid var(--accent-border-clr);
   border-radius: 4px; padding: 3px 0; text-align: center;
 }
 .li-name { font-size: 13px; color: var(--text); }
 .ocard-lineitems.has-prices .li { grid-template-columns: 28px 1fr auto; }
 .li-price {
-  font: 11.5px/1 var(--ocard-mono); color: var(--text-muted);
+  font: 11.5px/1 var(--font-mono); color: var(--text-muted);
   font-variant-numeric: tabular-nums; text-align: right;
 }
 .li-subtotal {
@@ -503,9 +494,9 @@ html[data-mode="light"] .li-qty {
 }
 .li-subtotal-v {
   color: var(--text); font-weight: 600;
-  font-family: var(--ocard-mono); font-variant-numeric: tabular-nums;
+  font-family: var(--font-mono); font-variant-numeric: tabular-nums;
 }
-.orders-spend-meta { color: var(--accent); font-family: var(--ocard-mono); }
+.orders-spend-meta { color: var(--accent); font-family: var(--font-mono); }
 
 /* ── Linked deck ────────────────────────────────────────────────────────────── */
 .ocard-linked-deck {
@@ -595,7 +586,7 @@ html[data-mode="light"] .li-qty {
   background: var(--surface); text-decoration: none; color: var(--text);
 }
 .ocard-mob-cta-k {
-  font: 10.5px/1 var(--ocard-mono); color: var(--ocard-dim);
+  font: 10.5px/1 var(--font-mono); color: var(--ocard-dim);
   letter-spacing: 0.16em; text-transform: uppercase; margin-bottom: 4px;
 }
 .ocard-mob-cta-v { font-size: 13px; font-weight: 500; line-height: 1; color: var(--accent); }
