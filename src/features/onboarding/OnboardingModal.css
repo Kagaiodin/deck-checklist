@@ -15,7 +15,7 @@
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, .45);
+  box-shadow: var(--shadow-modal);
   width: 100%;
   max-width: 480px;
   padding: 28px 28px 24px;

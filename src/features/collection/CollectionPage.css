@@ -128,7 +128,7 @@
 .sort-popover {
   position: absolute; top: calc(100% + 4px); right: 0; z-index: 40;
   background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--radius); box-shadow: 0 8px 24px rgba(0,0,0,.4);
+  border-radius: var(--radius); box-shadow: var(--shadow-menu);
   display: flex; flex-direction: column; overflow: hidden; min-width: 130px;
 }
 .sort-option {
@@ -218,7 +218,7 @@
 .collection-quick-add-suggestions {
   position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 50;
   list-style: none; background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--radius); box-shadow: 0 8px 24px rgba(0,0,0,.4); overflow: hidden;
+  border-radius: var(--radius); box-shadow: var(--shadow-menu); overflow: hidden;
 }
 .collection-quick-add-suggestion {
   padding: 8px 12px; font-size: 13px; color: var(--text-muted);
@@ -541,7 +541,7 @@
   z-index: 500; display: flex; align-items: center; gap: 12px;
   padding: 10px 16px; min-width: 260px; max-width: 360px;
   background: var(--surface-2); border: 1px solid var(--border);
-  border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,.35); overflow: hidden;
+  border-radius: 10px; box-shadow: var(--shadow-menu); overflow: hidden;
 }
 .undo-toast-message { flex: 1; font-size: 13px; color: var(--text); }
 .undo-toast-btn {
