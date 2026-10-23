@@ -36,6 +36,12 @@ jobs:
   contrast:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
+    # Playwright's official image already holds Chromium and its system libraries. `playwright install --with-deps`
+    # ran apt-get on the runner and took 10 minutes when the Ubuntu mirror was slow. Keep the tag equal to the
+    # `playwright` version in package-lock.json; a mismatch fails fast with "Executable doesn't exist".
+    container:
+      image: mcr.microsoft.com/playwright:v1.60.0-noble
+      options: --ipc=host
     strategy:
       fail-fast: false
       matrix:
@@ -54,7 +60,5 @@ jobs:
           cache: npm
 
       - run: npm ci
-
-      - run: npx playwright install --with-deps chromium
 
       - run: npm run test:contrast -- ${{ matrix.mode }} ${{ matrix.accent }}
