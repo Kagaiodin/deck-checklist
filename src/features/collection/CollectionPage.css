@@ -178,8 +178,8 @@
 .collection-stats-num { color: var(--text); font-weight: 500; }
 .collection-filename-chip {
   font-family: ui-monospace, monospace; font-size: 11px;
-  color: var(--accent-light); background: var(--accent-tint-12);
-  border: 1px solid var(--accent-tint-35);
+  color: var(--text-muted); background: var(--surface-2);
+  border: 1px solid var(--border);
   padding: 1px 7px; border-radius: 4px;
 }
 
