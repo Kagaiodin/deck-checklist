@@ -14,6 +14,8 @@
  *   npx tsx scripts/capture-screenshots.ts --local --contrast-gate --headless
  *       # same audit, but exits 1 if any pair is under AA (or a shot failed, which would shrink coverage). This is
  *       # what CI runs via `npm run test:contrast`.
+ *   --verbose   print per-shot progress and every contrast pair (default: one digest line, detail in
+ *               capture-log.json and contrast-report.txt/.json in the output folder)
  *
  * The fixture at scripts/fixtures/design-seed.json is the default seed.
  * It contains 3 decks at varying completion, active + received + cancelled orders
@@ -42,6 +44,9 @@ const flagValue = (name: string): string | undefined => {
 
 /** The script opens a visible browser by default; CI has no display, so `--headless` turns that off. */
 const HEADLESS = argv.includes("--headless");
+/** Quiet by default (one digest line per run, failures and the worst contrast pairs); `--verbose` restores per-shot progress. */
+const VERBOSE = argv.includes("--verbose");
+const log = (...a: unknown[]): void => { if (VERBOSE) console.log(...a); };
 const CONTRAST_GATE = argv.includes("--contrast-gate");
 const CONTRAST = CONTRAST_GATE || argv.includes("--contrast");
 const contrastHits: ContrastHit[] = [];
@@ -123,7 +128,7 @@ async function shot(page: Page, name: string): Promise<void> {
     }
     const durationMs = Date.now() - t0;
     const dirty = warnings.length > 0;
-    console.log(`  ${dirty ? "⚠" : "✓"}  ${name}${dirty ? `  (${warnings.length} step warning${warnings.length !== 1 ? "s" : ""})` : ""}`);
+    log(`  ${dirty ? "⚠" : "✓"}  ${name}${dirty ? `  (${warnings.length} step warning${warnings.length !== 1 ? "s" : ""})` : ""}`);
     shotLog.push({ name, ok: true, ts: new Date().toISOString(), durationMs, warnings });
   } catch (e) {
     const durationMs = Date.now() - t0;
@@ -141,7 +146,7 @@ async function attempt(label: string, fn: () => Promise<void>): Promise<boolean>
     return true;
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    console.warn(`  ⚠  ${label}: ${msg.split("\n")[0]}`);
+    log(`  ⚠  ${label}: ${msg.split("\n")[0]}`);
     pendingWarnings.push({ label, ok: false, error: msg });
     return false;
   }
@@ -214,7 +219,7 @@ async function seedFromFixture(ctx: BrowserContext): Promise<void> {
       localStorage.setItem(k, v);
     }
   }, raw);
-  console.log(`  Seeded ${Object.keys(raw).length} localStorage keys from ${path.basename(seedPath)}`);
+  log(`  Seeded ${Object.keys(raw).length} localStorage keys from ${path.basename(seedPath)}`);
 }
 
 // ── Firefox localStorage reader ───────────────────────────────────────────────
@@ -254,7 +259,7 @@ function readFirefoxLocalStorage(origin: string): Record<string, string> {
 
     const result: Record<string, string> = {};
     for (const row of rows) result[row.key] = row.value;
-    console.log(`  Read ${rows.length} keys from Firefox (${dbPath})`);
+    log(`  Read ${rows.length} keys from Firefox (${dbPath})`);
     return result;
   } catch (e) {
     console.warn("  Firefox SQLite read failed:", e instanceof Error ? e.message : e);
@@ -277,7 +282,7 @@ async function buildContext(viewport: { width: number; height: number }): Promis
   }
 
   if (browserArg === "firefox") {
-    console.log("Reading localStorage from Firefox profile…");
+    log("Reading localStorage from Firefox profile…");
     const data = readFirefoxLocalStorage(BASE_URL);
     if (Object.keys(data).length === 0) {
       console.warn("  No data found for this origin in Firefox — screenshots will show empty state");
@@ -299,11 +304,11 @@ async function buildContext(viewport: { width: number; height: number }): Promis
       viewport,
       args: ["--disable-extensions", "--no-first-run", "--disable-sync"],
     });
-    console.log("Using Chrome profile:", CHROME_PROFILE);
+    log("Using Chrome profile:", CHROME_PROFILE);
     return { ctx, persistent: true };
   } catch (err) {
     console.warn("Chrome profile unavailable:", err instanceof Error ? err.message : err);
-    console.log("Falling back to fixture seed…");
+    log("Falling back to fixture seed…");
     const browser = await chromium.launch({ headless: HEADLESS });
     const ctx = await browser.newContext({ viewport });
     await seedFromFixture(ctx);
@@ -317,10 +322,10 @@ async function buildContext(viewport: { width: number; height: number }): Promis
 // deck-002 keeps its old prices and reads as stale.
 async function captureCostBreakdown(): Promise<void> {
   if (browserArg !== "fixture") {
-    console.log("\n── Cost breakdown skipped (fixture mode only) ──");
+    log("\n── Cost breakdown skipped (fixture mode only) ──");
     return;
   }
-  console.log("\n── Cost breakdown popover ──");
+  log("\n── Cost breakdown popover ──");
 
   const seed = { ...(JSON.parse(fs.readFileSync(seedPath, "utf-8")) as Record<string, string>), ...themeOverrides };
   const fixtureDecks = JSON.parse(seed["mtg-checklist-decks"]) as Array<{ cards: Array<{ id: string; price?: number }> }>;
@@ -408,8 +413,8 @@ async function captureCostBreakdown(): Promise<void> {
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 async function main(): Promise<void> {
-  console.log(`\nFetchlist design review capture → ${OUT_DIR}`);
-  console.log(`Source: ${browserArg === "fixture" ? `fixture (${path.basename(seedPath)})` : browserArg}\n`);
+  log(`\nFetchlist design review capture → ${OUT_DIR}`);
+  log(`Source: ${browserArg === "fixture" ? `fixture (${path.basename(seedPath)})` : browserArg}\n`);
 
   if (args.includes("--cost-only")) {
     await captureCostBreakdown();
@@ -429,7 +434,7 @@ async function main(): Promise<void> {
 
     // ── DESKTOP (1440×900) ──────────────────────────────────────────────────
     await page.setViewportSize({ width: 1440, height: 900 });
-    console.log("── Desktop 1440×900 ──");
+    log("── Desktop 1440×900 ──");
 
     // Navigate once — capture onboarding if present, then dismiss
     await page.goto(BASE_URL);
@@ -932,7 +937,7 @@ async function main(): Promise<void> {
 
     // ── MOBILE (390×844) ───────────────────────────────────────────────────
     await page.setViewportSize({ width: 390, height: 844 });
-    console.log("\n── Mobile 390×844 ──");
+    log("\n── Mobile 390×844 ──");
 
     await gotoAndSettle(page, BASE_URL);
     await attempt("nav to Decks (mobile)", () => clickNav(page, "Decks"));
@@ -1019,7 +1024,7 @@ async function main(): Promise<void> {
 
     // ── TABLET (768×1024) ──────────────────────────────────────────────────
     await page.setViewportSize({ width: 768, height: 1024 });
-    console.log("\n── Tablet 768×1024 ──");
+    log("\n── Tablet 768×1024 ──");
 
     await gotoAndSettle(page, BASE_URL);
     await attempt("nav to Decks (tablet)", () => clickNav(page, "Decks"));
@@ -1131,9 +1136,14 @@ function writeLog(): void {
   // ── Console summary ───────────────────────────────────────────────────────
   const { total, succeeded, failed, dirty } = logPayload.summary;
 
-  console.log(`\n${"─".repeat(56)}`);
-  console.log(`Capture complete: ${succeeded}/${total} succeeded, ${failed} failed, ${dirty} dirty`);
-  console.log(`Log: ${logPath}\n`);
+  // Quiet by default: everything above this point is a pass/fail digest, and detail lives in the files.
+  const label = `${flagValue("--theme") ?? "dark"}/${flagValue("--accent") ?? "default"}`;
+  const contrastNote = CONTRAST ? ` · contrast ${distinctContrastPairs().size} pairs under AA (${contrastTotals.checked} checked)` : "";
+  console.log(`${label}  ${succeeded}/${total} shots · ${failed} failed · ${dirty} dirty${contrastNote} → ${OUT_DIR}`);
+  if (VERBOSE) {
+    console.log(`\n${"─".repeat(56)}`);
+    console.log(`Log: ${logPath}\n`);
+  }
 
   if (failed > 0) {
     console.log("Failed shots:");
@@ -1154,10 +1164,6 @@ function writeLog(): void {
     console.log("");
   }
 
-  if (failed === 0 && dirty === 0) {
-    console.log("All shots clean ✓");
-  }
-
   if (CONTRAST) writeContrastReport();
   if (CONTRAST_GATE && (contrastHits.length > 0 || failed > 0)) {
     console.error(`Contrast gate failed: ${contrastHits.length} hit records, ${failed} failed shots.`);
@@ -1165,10 +1171,8 @@ function writeLog(): void {
   }
 }
 
-function writeContrastReport(): void {
-  const reportPath = path.join(OUT_DIR, "contrast-report.json");
-  fs.writeFileSync(reportPath, JSON.stringify({ ...contrastTotals, hits: contrastHits }, null, 2));
-  // One line per distinct element/colour pair, listing the screens it appears on.
+/** One entry per distinct element/colour pair, listing the screens it appears on. */
+function distinctContrastPairs(): Map<string, { hit: ContrastHit; screens: string[] }> {
   const grouped = new Map<string, { hit: ContrastHit; screens: string[] }>();
   for (const h of contrastHits) {
     const key = `${h.el}|${h.fg}|${h.bg}|${h.size}`;
@@ -1176,11 +1180,24 @@ function writeContrastReport(): void {
     if (g) g.screens.push(h.screen);
     else grouped.set(key, { hit: h, screens: [h.screen] });
   }
-  console.log(`Contrast${CONTRAST_GATE ? " (gate)" : " (report only)"}: ${grouped.size} distinct pairs under AA, ${contrastTotals.checked} text elements checked, ${contrastTotals.skipped} skipped (covered / over an image).`);
-  for (const { hit: h, screens } of [...grouped.values()].sort((a, b) => a.hit.ratio - b.hit.ratio)) {
-    console.log(`  ${h.ratio.toFixed(2)}:1 (need ${h.required})  ${h.el}  ${h.fg} on ${h.bg}  ${h.size}px  "${h.text}"  ×${screens.length} shots, e.g. ${screens[0]}`);
-  }
-  console.log(`Report: ${reportPath}\n`);
+  return grouped;
+}
+
+/** Console lines for the worst pairs only; the full list is in contrast-report.txt. */
+const CONTRAST_CONSOLE_LINES = 10;
+
+function writeContrastReport(): void {
+  const reportPath = path.join(OUT_DIR, "contrast-report.json");
+  fs.writeFileSync(reportPath, JSON.stringify({ ...contrastTotals, hits: contrastHits }, null, 2));
+  const lines = [...distinctContrastPairs().values()]
+    .sort((a, b) => a.hit.ratio - b.hit.ratio)
+    .map(({ hit: h, screens }) => `  ${h.ratio.toFixed(2)}:1 (need ${h.required})  ${h.el}  ${h.fg} on ${h.bg}  ${h.size}px  "${h.text}"  ×${screens.length} shots, e.g. ${screens[0]}`);
+  const textPath = path.join(OUT_DIR, "contrast-report.txt");
+  fs.writeFileSync(textPath, `${lines.join("\n")}${lines.length ? "\n" : ""}`);
+  const shown = VERBOSE ? lines : lines.slice(0, CONTRAST_CONSOLE_LINES);
+  for (const l of shown) console.log(l);
+  if (shown.length < lines.length) console.log(`  … ${lines.length - shown.length} more in ${textPath}`);
+  log(`Contrast${CONTRAST_GATE ? " (gate)" : " (report only)"}: ${contrastTotals.skipped} elements skipped (covered / over an image). Report: ${reportPath}\n`);
 }
 
 main().catch(err => {
