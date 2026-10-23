@@ -17,7 +17,8 @@
     "screenshots": "tsx scripts/capture-screenshots.ts",
     "screenshots:chrome": "tsx scripts/capture-screenshots.ts --browser chrome",
     "screenshots:firefox": "tsx scripts/capture-screenshots.ts --browser firefox",
-    "screenshots:local": "tsx scripts/capture-screenshots.ts --local"
+    "screenshots:local": "tsx scripts/capture-screenshots.ts --local",
+    "test:contrast": "sh scripts/contrast-gate.sh"
   },
   "dependencies": {
     "react": "^19.2.5",

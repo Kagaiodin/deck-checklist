@@ -11,6 +11,9 @@
  *       # start in a given mode/accent and write to a different folder (for before/after diffs)
  *   npx tsx scripts/capture-screenshots.ts --local --contrast
  *       # also audit text contrast on every shot; writes contrast-report.json. Report only, never fails the run.
+ *   npx tsx scripts/capture-screenshots.ts --local --contrast-gate
+ *       # same audit, but exits 1 if any pair is under AA (or a shot failed, which would shrink coverage). This is
+ *       # what CI runs via `npm run test:contrast`.
  *
  * The fixture at scripts/fixtures/design-seed.json is the default seed.
  * It contains 3 decks at varying completion, active + received + cancelled orders
@@ -37,7 +40,8 @@ const flagValue = (name: string): string | undefined => {
   return i !== -1 ? argv[i + 1] : undefined;
 };
 
-const CONTRAST = argv.includes("--contrast");
+const CONTRAST_GATE = argv.includes("--contrast-gate");
+const CONTRAST = CONTRAST_GATE || argv.includes("--contrast");
 const contrastHits: ContrastHit[] = [];
 const contrastTotals = { checked: 0, skipped: 0 };
 
@@ -1153,6 +1157,10 @@ function writeLog(): void {
   }
 
   if (CONTRAST) writeContrastReport();
+  if (CONTRAST_GATE && (contrastHits.length > 0 || failed > 0)) {
+    console.error(`Contrast gate failed: ${contrastHits.length} hit records, ${failed} failed shots.`);
+    process.exitCode = 1;
+  }
 }
 
 function writeContrastReport(): void {
@@ -1166,7 +1174,7 @@ function writeContrastReport(): void {
     if (g) g.screens.push(h.screen);
     else grouped.set(key, { hit: h, screens: [h.screen] });
   }
-  console.log(`Contrast (report only): ${grouped.size} distinct pairs under AA, ${contrastTotals.checked} text elements checked, ${contrastTotals.skipped} skipped (covered / over an image).`);
+  console.log(`Contrast${CONTRAST_GATE ? " (gate)" : " (report only)"}: ${grouped.size} distinct pairs under AA, ${contrastTotals.checked} text elements checked, ${contrastTotals.skipped} skipped (covered / over an image).`);
   for (const { hit: h, screens } of [...grouped.values()].sort((a, b) => a.hit.ratio - b.hit.ratio)) {
     console.log(`  ${h.ratio.toFixed(2)}:1 (need ${h.required})  ${h.el}  ${h.fg} on ${h.bg}  ${h.size}px  "${h.text}"  ×${screens.length} shots, e.g. ${screens[0]}`);
   }
