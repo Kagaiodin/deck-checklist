@@ -11,7 +11,7 @@ html { overflow-x: hidden; } /* catch-all: prevents root scroll container from f
 
   /* ── Accent ── */
   --accent:       #6c5ce7;
-  --accent-hover: #8b7cf8;
+  --accent-hover: #7060e9;  /* white on it is 4.63:1; #8b7cf8 was 3.31:1 */
   --accent-light: #a78bfa;
   --accent-deep:  #4c3dbf;
   /* Text/icons on a solid --accent fill. Set per accent × mode so every pair clears 4.5:1. */
