@@ -31,6 +31,7 @@ export function AlphaRail({ letterIndexMap, activeLetter, onJump }: AlphaRailPro
       {LETTERS.split("").map(letter => (
         <span
           key={letter}
+          data-contrast-exempt={!letterIndexMap.has(letter) ? "" : undefined}
           className={[
             "alpha-rail-item",
             !letterIndexMap.has(letter) ? "empty" : "",

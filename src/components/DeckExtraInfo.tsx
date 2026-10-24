@@ -41,7 +41,7 @@ export function DeckExtraInfo({ extraInfo, isLoading }: Props) {
         onClick={() => setOpen(o => !o)}
         aria-expanded={open}
       >
-        <span className={`ei-chevron${open ? " open" : ""}`}>▶</span>
+        <span className={`ei-chevron${open ? " open" : ""}`} data-contrast-exempt>▶</span>
         <span className="ei-title">Extra Info</span>
         {!open && summaryParts.length > 0 && (
           <span className="ei-summary">

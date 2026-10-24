@@ -10,6 +10,9 @@
  *  - text over a background-image/gradient (no single backdrop colour)
  *  - disabled controls (WCAG exempts them) and fully transparent elements (hover-only buttons at rest)
  *  - checkboxes, radios and other non-text inputs
+ *  - anything inside [data-contrast-exempt] (decorative glyphs: separators, chevrons, arrows, empty-state dashes)
+ *
+ * See DL-CONTRAST-01 in docs/specs/design-rules-ci-spec.md.
  *
  * The page-side code is a string, not a function, so tsx/esbuild can't inject helpers into it that
  * don't exist in the browser.
@@ -35,7 +38,10 @@ export interface ContrastResult {
   skipped: number;
 }
 
-const AUDIT_SRC = `(() => {
+const AUDIT_SRC = `(async () => {
+  // Let hover/fade transitions settle: a mid-fade frame reports a blended colour nobody sees at rest.
+  const settling = document.getAnimations().filter((a) => a.effect && a.effect.getComputedTiming().iterations !== Infinity);
+  await Promise.race([Promise.allSettled(settling.map((a) => a.finished)), new Promise((r) => setTimeout(r, 1500))]);
   const probe = document.createElement("canvas").getContext("2d", { willReadFrequently: true });
   probe.canvas.width = probe.canvas.height = 1;
   // Resolve any CSS colour (rgb, color(srgb ...), color-mix results) to {r,g,b,a} by painting it on
@@ -95,6 +101,7 @@ const AUDIT_SRC = `(() => {
     if (cs.visibility === "hidden" || cs.display === "none" || el.disabled || el.getAttribute("aria-disabled") === "true") return;
     const top = document.elementFromPoint(Math.min(Math.max(r.left + r.width / 2, 0), innerWidth - 1), Math.min(Math.max(r.top + r.height / 2, 0), innerHeight - 1));
     if (!top || !(el.contains(top) || top.contains(el))) { skipped++; return; }
+    if (el.closest("[data-contrast-exempt]")) return;
     const bg = backdrop(el);
     if (!bg) { skipped++; return; }
     const opacity = opacityOf(el);

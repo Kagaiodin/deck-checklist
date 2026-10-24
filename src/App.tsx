@@ -1383,13 +1383,13 @@ function AppInner() {
                               {activeDeck.format ? activeDeck.format.toUpperCase() : "+ format"}
                             </button>
                           )}
-                          <span className="deck-meta-sep">·</span>
+                          <span className="deck-meta-sep" data-contrast-exempt>·</span>
                           <span className="deck-meta-stat">{activeDeck.cards.reduce((s, c) => s + c.quantity, 0)} cards</span>
-                          <span className="deck-meta-sep">·</span>
+                          <span className="deck-meta-sep" data-contrast-exempt>·</span>
                           <span className="deck-meta-stat">imported {formatRelativeDate(activeDeck.createdAt)}</span>
                           {activeDeck.url && (
                             <>
-                              <span className="deck-meta-sep">·</span>
+                              <span className="deck-meta-sep" data-contrast-exempt>·</span>
                               <a
                                 href={activeDeck.url.startsWith("http") ? activeDeck.url : `https://${activeDeck.url}`}
                                 target="_blank"

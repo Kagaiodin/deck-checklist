@@ -37,7 +37,7 @@
 .linked-file-chip-change {
   background: none;
   border: none;
-  color: var(--accent);
+  color: var(--accent-text);
   cursor: pointer;
   font-size: 11px;
   padding: 0;

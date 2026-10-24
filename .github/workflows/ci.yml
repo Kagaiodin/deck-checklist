@@ -30,3 +30,35 @@ jobs:
       # Typecheck + production build, then tests with coverage floors.
       # The logic lives in package.json so other CI systems can call the same script.
       - run: npm run verify
+
+  # DL-CONTRAST-01: every visible text pair on the captured screens must be >= AA (docs/specs/design-rules-ci-spec.md).
+  # One job per theme × accent; the logic lives in `npm run test:contrast`.
+  contrast:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    # Playwright's official image already holds Chromium and its system libraries. `playwright install --with-deps`
+    # ran apt-get on the runner and took 10 minutes when the Ubuntu mirror was slow. Keep the tag equal to the
+    # `playwright` version in package-lock.json; a mismatch fails fast with "Executable doesn't exist".
+    container:
+      image: mcr.microsoft.com/playwright:v1.60.0-noble
+      options: --ipc=host
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { mode: dark,  accent: indigo }
+          - { mode: light, accent: indigo }
+          - { mode: dark,  accent: ember }
+          - { mode: light, accent: sapphire }
+    name: contrast (${{ matrix.mode }} ${{ matrix.accent }})
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run test:contrast -- ${{ matrix.mode }} ${{ matrix.accent }}

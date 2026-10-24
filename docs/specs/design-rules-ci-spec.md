@@ -174,23 +174,32 @@ definitions introducing *new raw values* are the smell. Baseline: the `--ocard-*
 `--ok/--warn-soft/--danger-soft/--accent-soft/--accent-border-clr` in OrdersPage.css, and all
 of index.css's `:root` (which pre-work deletes anyway).
 
-### DL-CONTRAST-01 — text contrast against the painted backdrop (Layer 2, report → error)
+### DL-CONTRAST-01 — text contrast against the painted backdrop (Layer 2, error — gated in CI)
 
 For every visible text element on a captured state (including the popover, sheet and hover states
 `scripts/capture-screenshots.ts` opens), compute `color` against the backdrop actually painted behind it
-(ancestor `background-color`s composited bottom-up, alpha and ancestor `opacity` included) and flag
+(ancestor `background-color`s composited bottom-up, alpha and ancestor `opacity` included) and fail
 anything under WCAG AA: **4.5:1**, or **3:1** for large text (>= 24px, or >= 18.5px bold). Input and
-textarea values and `::placeholder` count; disabled controls are exempt.
+textarea values and `::placeholder` count. Transitions are allowed to settle first, so a mid-fade frame
+never reports.
 
-- States it must cover: dark indigo, light indigo, light sapphire (a non-indigo accent, so
-  `--on-accent` pairs are exercised).
-- Not judged, and counted so the report says so: elements covered at their centre (content behind a
-  scrim or open popover) and text over a gradient/image backdrop.
-- **Status: report only.** Implemented today as `npx tsx scripts/capture-screenshots.ts --local --contrast`
-  (page-side logic in `scripts/contrast-audit.ts`), which prints the distinct failing pairs and writes
-  `contrast-report.json` beside the screenshots. When `scripts/assert-design.ts` exists this becomes one
-  of its assertions: keep the same audit function, key the baseline by `state:selectorPath:fg/bg`, and
-  flip to error once the report is empty or baselined.
+- States it covers: dark indigo, light indigo, dark ember, light sapphire (two accents × both modes, so
+  the `--on-accent` and `--accent-text` pairs are all exercised).
+- **Exemptions** (the only ones; everything else must pass):
+  1. *Disabled controls* — exempt under WCAG; skipped automatically.
+  2. *Decorative elements* — separators (`·`), chevrons, arrows, empty-state dashes, unavailable alpha-rail
+     letters. Mark the element `data-contrast-exempt`. It must carry no information that isn't available
+     elsewhere (an `aria-hidden` or a visible equivalent). Don't use it for real labels.
+  Completed (`acquired`) rows and cancelled orders are not exempt: they fade by colour (`--text-dim` text,
+  neutral status pill, muted checkbox and mana dots, strikethrough) at full opacity, so they hold 4.5:1.
+- Not judged, and counted so the report says so: elements covered at their centre (content behind a scrim or
+  open popover) and text over a gradient/image backdrop.
+- **Gate.** `npm run test:contrast` (`scripts/contrast-gate.sh`) starts the dev server, runs
+  `capture-screenshots.ts --local --contrast-gate` per combination and exits 1 on any hit or failed shot.
+  `.github/workflows/ci.yml` runs it as a `contrast` matrix job (one per combination). Without `--contrast-gate`
+  the same flag set (`--contrast`) is report-only and writes `contrast-report.json` beside the screenshots.
+  Page-side logic: `scripts/contrast-audit.ts`. When `scripts/assert-design.ts` exists this becomes one of its
+  assertions, reusing the same audit function.
 
 ## 5. Pre-work (small, do first — shrinks the baseline before freezing it)
 

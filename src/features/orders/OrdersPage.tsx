@@ -378,6 +378,7 @@ function OCard({
 
         <button
           className={`ocard-chev${isExpanded ? " open" : ""}`}
+          data-contrast-exempt
           onClick={e => { e.stopPropagation(); onExpand(); }}
           aria-label={isExpanded ? "Collapse" : "Expand"}
         >
@@ -398,7 +399,7 @@ function OCard({
               {isWarnTomorrow && <span className="ocard-pill warn">Arrives tomorrow</span>}
               {eta.cls === "late" && order.expectedArrival && (
                 <>
-                  <span className="ocard-eta-dot">·</span>
+                  <span className="ocard-eta-dot" data-contrast-exempt>·</span>
                   <span className="ocard-eta-exp">Expected {formatShortDate(order.expectedArrival)}</span>
                 </>
               )}
@@ -421,7 +422,7 @@ function OCard({
         </div>
 
         {order.status === "cancelled" ? (
-          <span className="ocard-tracking-empty">—</span>
+          <span className="ocard-tracking-empty" data-contrast-exempt>—</span>
         ) : order.trackingNumber && order.carrier ? (
           <a
             className="ocard-tracking"
@@ -431,7 +432,7 @@ function OCard({
           >
             <span className="carrier">{CARRIER_NAMES[order.carrier]}</span>
             {tnTail}
-            <span className="arrow">↗</span>
+            <span className="arrow" data-contrast-exempt>↗</span>
           </a>
         ) : order.status === "active" ? (
           <span className="ocard-tracking-empty">No tracking</span>
