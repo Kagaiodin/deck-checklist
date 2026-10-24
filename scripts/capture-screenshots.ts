@@ -14,6 +14,12 @@
  *   npx tsx scripts/capture-screenshots.ts --local --contrast-gate --headless
  *       # same audit, but exits 1 if any pair is under AA (or a shot failed, which would shrink coverage). This is
  *       # what CI runs via `npm run test:contrast`.
+ *   --only 24,42,59
+ *               capture just these shots (the number before the first "-" in the file name, so `44b` matches
+ *               44b-*.png but `44` does not). Navigation and setup steps still run, since later shots depend on
+ *               them, but only the listed shots are screenshotted and, with --contrast, audited. The isolated
+ *               cost-breakdown (54-58) and trade-autocomplete (59) contexts are skipped unless listed. Exits 1 if
+ *               an id matches no shot.
  *   --verbose   print per-shot progress and every contrast pair (default: one digest line, detail in
  *               capture-log.json and contrast-report.txt/.json in the output folder)
  *
@@ -116,7 +122,17 @@ let pendingWarnings: AttemptRecord[] = [];
 
 const RUN_START = new Date();
 
+/** `--only 24,42,59`: shot ids to capture (empty = all). An id is the file name up to the first "-". */
+const ONLY = (flagValue("--only") ?? "").split(",").map(s => s.trim()).filter(Boolean);
+const wanted = (name: string): boolean => ONLY.length === 0 || ONLY.includes(name.split("-")[0]);
+const onlyCaptured = new Set<string>();
+
 async function shot(page: Page, name: string): Promise<void> {
+  if (!wanted(name)) {
+    pendingWarnings = [];
+    return;
+  }
+  onlyCaptured.add(name.split("-")[0]);
   const t0 = Date.now();
   const warnings = pendingWarnings.splice(0); // claim + clear
   try {
@@ -355,6 +371,7 @@ async function captureCostBreakdown(): Promise<void> {
     fetchMode: "ok" | "fail";
     name: string;
   }) => {
+    if (!wanted(opts.name)) return;
     const browser = await chromium.launch({ headless: HEADLESS });
     try {
       const c = await browser.newContext({ viewport: opts.viewport });
@@ -419,6 +436,7 @@ async function captureTradeAutocomplete(): Promise<void> {
     log("\n── Trade autocomplete skipped (fixture mode only) ──");
     return;
   }
+  if (!wanted("59-")) return;
   log("\n── Trade autocomplete ──");
   const seed = { ...(JSON.parse(fs.readFileSync(seedPath, "utf-8")) as Record<string, string>), ...themeOverrides };
   const browser = await chromium.launch({ headless: HEADLESS });
@@ -1206,6 +1224,12 @@ function writeLog(): void {
       }
     }
     console.log("");
+  }
+
+  const unmatched = ONLY.filter(id => !onlyCaptured.has(id));
+  if (unmatched.length > 0) {
+    console.error(`--only: no shot matched ${unmatched.join(", ")}`);
+    process.exitCode = 1;
   }
 
   if (CONTRAST) writeContrastReport();
