@@ -176,6 +176,8 @@ of index.css's `:root` (which pre-work deletes anyway).
 
 ### DL-CONTRAST-01 — text contrast against the painted backdrop (Layer 2, error — gated in CI)
 
+**Status: gate (was report-only). Gated since #138; baseline 0 failing pairs in all four themes, confirmed 2026-10-23.**
+
 For every visible text element on a captured state (including the popover, sheet and hover states
 `scripts/capture-screenshots.ts` opens), compute `color` against the backdrop actually painted behind it
 (ancestor `background-color`s composited bottom-up, alpha and ancestor `opacity` included) and fail
