@@ -624,3 +624,9 @@ html[data-mode="light"] .li-qty {
   .orders-empty-actions { flex-direction: column; }
   .orders-empty-actions .btn { width: 100%; justify-content: center; }
 }
+
+/* Light mode: accent tint means active/selected only, so idle deck links sit on white. */
+html[data-mode="light"] .ocard-linked-deck {
+  background: var(--surface);
+  border-color: var(--border);
+}
