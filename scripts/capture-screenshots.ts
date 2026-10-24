@@ -22,6 +22,7 @@
  * (with prices on active order cards), and collection data — enough to reach
  * every UI state including the buy list and spend meta.
  *
+ * Shot 59 (trade autocomplete selected row) runs in its own fixture-only context with Scryfall autocomplete mocked.
  * Shots 54–58 (cost-to-complete breakdown popover) run in their own fixture-only contexts with
  * Scryfall prices mocked; `--cost-only` runs just those.
  *
@@ -409,6 +410,48 @@ async function captureCostBreakdown(): Promise<void> {
   await run({ viewport: mobile, mode: "dark", deckIndex: 2, fetchMode: "ok", name: "56-mobile-cost-breakdown-open.png" });
   await run({ viewport: desktop, mode: "dark", deckIndex: 0, fetchMode: "ok", name: "57-desktop-cost-breakdown-unpriced-ordered.png" });
   await run({ viewport: desktop, mode: "dark", deckIndex: 1, fetchMode: "fail", name: "58-desktop-cost-breakdown-stale.png" });
+}
+
+// ── Trade autocomplete selected row (59) ──────────────────────────────────────
+// Isolated fixture-only context. Scryfall's autocomplete endpoint is mocked so the suggestion list is deterministic.
+async function captureTradeAutocomplete(): Promise<void> {
+  if (browserArg !== "fixture") {
+    log("\n── Trade autocomplete skipped (fixture mode only) ──");
+    return;
+  }
+  log("\n── Trade autocomplete ──");
+  const seed = { ...(JSON.parse(fs.readFileSync(seedPath, "utf-8")) as Record<string, string>), ...themeOverrides };
+  const browser = await chromium.launch({ headless: HEADLESS });
+  try {
+    const c = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    await c.addInitScript((entries: Record<string, string>) => {
+      for (const [k, v] of Object.entries(entries)) localStorage.setItem(k, v);
+    }, seed);
+    const page = await c.newPage();
+    await page.route("https://api.scryfall.com/cards/autocomplete**", route => route.fulfill({
+      status: 200,
+      headers: { "access-control-allow-origin": "*" },
+      contentType: "application/json",
+      body: JSON.stringify({ object: "catalog", data: ["Sol Ring", "Sol Talisman", "Solemn Simulacrum", "Solitude", "Sol'kanar the Swamp King"] }),
+    }));
+    await page.goto(`${BASE_URL}/trade`);
+    try { await page.waitForLoadState("networkidle", { timeout: 10_000 }); } catch {}
+    await page.waitForTimeout(SETTLE_MS);
+    await attempt("open trade card search", async () => {
+      await page.getByRole("button", { name: "Search cards" }).first().click({ timeout: 5_000 });
+      await page.locator("#tr-search-q").waitFor({ timeout: 3_000 });
+    });
+    await attempt("type sol and select the first suggestion", async () => {
+      await page.locator("#tr-search-q").pressSequentially("sol", { delay: 40 });
+      await page.locator(".tr-ac li").first().waitFor({ timeout: 5_000 });
+      await page.keyboard.press("ArrowDown"); // active starts on the first row, so this moves to the second
+      await page.locator('.tr-ac li[aria-selected="true"]').waitFor({ timeout: 2_000 });
+      await page.waitForTimeout(400);
+    });
+    await shot(page, "59-desktop-trade-autocomplete.png");
+  } finally {
+    await browser.close();
+  }
 }
 
 // ── Main ──────────────────────────────────────────────────────────────────────
@@ -1113,6 +1156,7 @@ async function main(): Promise<void> {
   }
 
   await captureCostBreakdown();
+  await captureTradeAutocomplete();
   writeLog();
 }
 
