@@ -50,6 +50,8 @@
 - Enforced mechanically: hooks in `.claude/hooks/` block commit/push on `main` and run build +
   tests before every push; CI runs `npm run verify` on PRs. Create the feature branch in its
   own command (a hook sees the branch before a compound `checkout && commit` runs).
+- After every merge, switch to `main`, pull, and delete the merged branch (local and remote). If there is more
+  work to do, create a new branch; never keep working on a merged one.
 - Active work is tracked in GitHub Issues — check open issues before starting. When pausing
   mid-feature, comment on the issue with last known state and the blocking question; link the
   spec file in the issue body.
