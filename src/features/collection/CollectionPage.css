@@ -136,7 +136,7 @@
   background: none; border: none; cursor: pointer; color: var(--text-muted);
   font-family: inherit; transition: background 0.1s, color 0.1s;
 }
-.sort-option:hover { background: var(--surface-2); color: var(--text); }
+.sort-option:hover { background: var(--hover-fill); color: var(--text); }
 .sort-option.active { color: var(--accent-text); background: var(--accent-tint-12); }
 
 /* Overflow ⋯ button and menu */
@@ -163,7 +163,7 @@
   background: none; border: none; cursor: pointer; color: var(--text-muted);
   font-family: inherit; transition: background 0.1s, color 0.1s;
 }
-.collection-overflow-item:hover { background: var(--surface-2); color: var(--text); }
+.collection-overflow-item:hover { background: var(--hover-fill); color: var(--text); }
 /* Quiet entry to the Trade calculator: below a separator, no icon or badge */
 .collection-overflow-divider { height: 1px; background: var(--border); margin: 4px 0; }
 .collection-overflow-item--stacked { display: flex; flex-direction: column; gap: 2px; }
@@ -340,7 +340,7 @@
   background: none; border: none; cursor: pointer;
   width: 100%; text-align: left; font: inherit; color: inherit; gap: 12px;
 }
-.collection-row-summary:hover .collection-card-name { color: var(--accent-text); }
+.collection-row-summary:hover { background: var(--hover-fill); }
 
 .collection-row-left {
   display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1;

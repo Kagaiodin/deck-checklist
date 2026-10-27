@@ -7,7 +7,7 @@
 /* ── Local token shims (using existing app tokens) ──────────────────────────── */
 .orders-panel {
   --ocard-bg:        var(--surface);
-  --ocard-hover:     var(--surface-2);
+  --ocard-hover:     var(--hover-fill);
   --ocard-hairline:  var(--border-dim);
   --ocard-border-strong: var(--surface-3);
   --ocard-muted:     var(--text-muted);
