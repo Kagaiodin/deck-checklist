@@ -562,6 +562,7 @@ export function CollectionPage({ decks, onCollectionChange, onOpenTrade }: Colle
             <div className="collection-list-wrap">
               {setMode ? (
                 <GroupedVirtuoso
+                  key="grouped"
                   ref={groupedListRef}
                   style={{ height: "100%" }}
                   groupCounts={groupCounts}
