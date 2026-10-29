@@ -30,6 +30,8 @@ html { overflow-x: hidden; } /* catch-all: prevents root scroll container from f
   /* Menus, popovers and sheets: one step above the card they float over. */
   --surface-raised: var(--surface-2);
   --surface-raised-hover: var(--surface-3);
+  /* Hover fill for rows and menu items. Light mode needs a tint that reads on both white and paper. */
+  --hover-fill: var(--surface-2);
   --border:        #2d3258;
   --border-dim:    #222540;
   --border-strong: #3a4070;
@@ -130,7 +132,8 @@ html[data-mode="light"] {
   --surface-2:  #ebe7db;  /* parchment — warm, so lavender only comes from the accent */
   --surface-3:  #dfd9c9;
   --surface-raised: var(--surface);
-  --surface-raised-hover: var(--surface-2);
+  --hover-fill: rgba(28,29,46,.06);
+  --surface-raised-hover: var(--hover-fill);
   --border:        #c9c4b5;  /* strong enough for the 2px stripe to read */
   --border-dim:    #e3dfd3;  /* hairline — light dividers inside cards */
   --border-strong: #b3ad9c;

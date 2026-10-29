@@ -70,6 +70,7 @@ button.tr-chip:hover { border-color: var(--border); color: var(--text); }
   padding: 10px 14px; border-bottom: 1px solid var(--border-dim); position: relative; transition: background .12s;
 }
 .tr-row:hover, .tr-row:focus-within { background: color-mix(in srgb, var(--surface-2) 55%, transparent); }
+html[data-mode="light"] .tr-row:hover, html[data-mode="light"] .tr-row:focus-within { background: var(--hover-fill); }
 .tr-row--flash { animation: tr-rowflash 1.2s ease; }
 @keyframes tr-rowflash { 0%, 40% { background: color-mix(in srgb, var(--warn) 16%, transparent); } }
 .tr-thumb { width: 36px; height: 50px; border-radius: 3px; object-fit: cover; background: var(--surface-3); display: block; }

@@ -112,7 +112,7 @@
   background: var(--border);
   transition: background 0.12s;
 }
-.nos-vrow:hover { background: var(--surface-2); }
+.nos-vrow:hover { background: var(--hover-fill); }
 .nos-vrow.selected { background: var(--accent-tint-12); border-color: var(--accent-tint-35); }
 .nos-vrow.selected::before { background: var(--accent); }
 
@@ -181,7 +181,7 @@
   color: var(--text); font: inherit; font-size: 12.5px; cursor: pointer; text-align: left;
 }
 .nos-results li:first-child .nos-result { border-top: 0; }
-.nos-result:hover { background: var(--surface-2); }
+.nos-result:hover { background: var(--hover-fill); }
 .nos-result-name { flex: 1; }
 .nos-result-sub { font: 11px/1 var(--font-mono); color: var(--text-muted); }
 .nos-result-free .nos-result-name { color: var(--text-muted); }
