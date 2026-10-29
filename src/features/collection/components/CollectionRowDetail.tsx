@@ -7,17 +7,24 @@ interface CollectionRowDetailProps {
   committed: CommittedInfo;
   hasDeckContext: boolean;
   editingPrinting: EditingPrinting | null;
-  onAddCopy: (name: string) => void;
+  /** Set-group mode: index of each shown printing in the card's full list. */
+  indices?: number[];
+  fullCount?: number;
+  groupSet?: string | null;
+  onAddCopy: (name: string, idx?: number) => void;
   onStartEdit: (ep: EditingPrinting) => void;
   onEditField: (ep: EditingPrinting) => void;
   onCommitEdit: () => void;
   onCancelEdit: () => void;
-  onRemove: (name: string) => void;
+  onRemove: (name: string, indices?: number[]) => void;
 }
 
 export function CollectionRowDetail({
   name,
   printings,
+  indices,
+  fullCount,
+  groupSet,
   committed,
   hasDeckContext,
   editingPrinting,
@@ -29,7 +36,9 @@ export function CollectionRowDetail({
   onRemove,
 }: CollectionRowDetailProps) {
   const ep = editingPrinting;
-  const isAddingNew = ep?.key === name && ep?.idx === printings.length;
+  const origIdx = (i: number) => indices?.[i] ?? i;
+  const newIdx = fullCount ?? printings.length;
+  const isAddingNew = ep?.key === name && ep?.idx === newIdx;
 
   function startEditExisting(p: CollectionPrinting, i: number) {
     onStartEdit({
@@ -43,7 +52,7 @@ export function CollectionRowDetail({
   }
 
   function startNewPrinting() {
-    onStartEdit({ key: name, idx: printings.length, qty: "1", set: "", cn: "", foil: false });
+    onStartEdit({ key: name, idx: newIdx, qty: "1", set: groupSet ?? "", cn: "", foil: false });
   }
 
   function renderEditForm(epRow: EditingPrinting) {
@@ -115,7 +124,7 @@ export function CollectionRowDetail({
           {p.foil && <span className="collection-printing-foil">Foil</span>}
           <button
             className="collection-printing-edit-btn"
-            onClick={() => startEditExisting(p, i)}
+            onClick={() => startEditExisting(p, origIdx(i))}
             aria-label={`Edit ${label}`}
           >
             Edit
@@ -149,7 +158,7 @@ export function CollectionRowDetail({
         </span>
         <ul className="collection-printings">
           {printings.map((p, i) => {
-            const isEditingThis = ep?.key === name && ep?.idx === i;
+            const isEditingThis = ep?.key === name && ep?.idx === origIdx(i);
             return isEditingThis && ep ? renderEditForm(ep) : renderPrintingView(p, i);
           })}
           {isAddingNew && ep && renderEditForm(ep)}
@@ -159,7 +168,7 @@ export function CollectionRowDetail({
       {/* Action bar */}
       <div className="collection-detail-footer">
         <div className="collection-detail-footer-left">
-          <button className="btn btn-ghost btn-sm" onClick={() => onAddCopy(name)}>
+          <button className="btn btn-ghost btn-sm" onClick={() => (indices ? onAddCopy(name, indices[0]) : onAddCopy(name))}>
             + Add copy
           </button>
           <button
@@ -170,7 +179,7 @@ export function CollectionRowDetail({
             + Printing
           </button>
         </div>
-        <button className="btn btn-ghost btn-sm collection-remove-all-btn" onClick={() => onRemove(name)}>
+        <button className="btn btn-ghost btn-sm collection-remove-all-btn" onClick={() => (indices ? onRemove(name, indices) : onRemove(name))}>
           Remove all
         </button>
       </div>

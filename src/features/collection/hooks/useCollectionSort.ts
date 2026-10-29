@@ -33,7 +33,7 @@ export function useCollectionSort(
         return { name, printings, total: printings.reduce((s, p) => s + p.quantity, 0) };
       })
       .sort((a, b) => {
-        if (collectionSort === "name-asc")  return a.name.localeCompare(b.name);
+        if (collectionSort === "name-asc" || collectionSort === "set") return a.name.localeCompare(b.name);
         if (collectionSort === "name-desc") return b.name.localeCompare(a.name);
         if (collectionSort === "qty-desc")  return b.total - a.total || a.name.localeCompare(b.name);
         return a.total - b.total || a.name.localeCompare(b.name); // qty-asc

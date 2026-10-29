@@ -1,10 +1,11 @@
 import type { CollectionSortKey } from "../../../types/collection";
 
-const SORT_OPTIONS: { value: CollectionSortKey; label: string }[] = [
+const SORT_OPTIONS: { value: CollectionSortKey; label: string; divider?: boolean }[] = [
   { value: "name-asc",  label: "Name A→Z" },
   { value: "name-desc", label: "Name Z→A" },
   { value: "qty-desc",  label: "Qty ↓" },
   { value: "qty-asc",   label: "Qty ↑" },
+  { value: "set",       label: "Group by set", divider: true },
 ];
 
 interface SortPopoverProps {
@@ -19,7 +20,7 @@ export function SortPopover({ collectionSort, onSortChange, onClose }: SortPopov
       {SORT_OPTIONS.map(opt => (
         <button
           key={opt.value}
-          className={`sort-option${collectionSort === opt.value ? " active" : ""}`}
+          className={`sort-option${collectionSort === opt.value ? " active" : ""}${opt.divider ? " sort-option--divider" : ""}`}
           onClick={() => { onSortChange(opt.value); onClose(); }}
         >
           {opt.label}

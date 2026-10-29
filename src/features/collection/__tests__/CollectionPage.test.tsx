@@ -32,6 +32,31 @@ vi.mock("react-virtuoso", async () => {
         </div>
       );
     }),
+    GroupedVirtuoso: React.forwardRef(function FakeGroupedVirtuoso(
+      props: {
+        groupCounts: number[];
+        groupContent: (gi: number) => React.ReactNode;
+        itemContent: (i: number, gi: number, d: unknown, ctx: unknown) => React.ReactNode;
+        context: unknown;
+      },
+      ref: React.Ref<unknown>,
+    ) {
+      React.useImperativeHandle(ref, () => ({ scrollToIndex: virtuoso.scrollToIndex }));
+      let next = 0;
+      return (
+        <div data-testid="grouped-virtuoso">
+          {props.groupCounts.map((count, gi) => (
+            <div key={gi}>
+              {props.groupContent(gi)}
+              {Array.from({ length: count }, () => {
+                const i = next++;
+                return <div key={i}>{props.itemContent(i, gi, undefined, props.context)}</div>;
+              })}
+            </div>
+          ))}
+        </div>
+      );
+    }),
   };
 });
 
@@ -480,5 +505,81 @@ describe("CollectionPage — overflow, trade and alpha rail", () => {
     await user.click(screen.getAllByText("Qty ↓")[0]);
     expect(document.querySelector(".alpha-rail")).toBeNull();
     expect(names()[0]).toBe("L Card");
+  });
+});
+
+describe("CollectionPage — group by set", () => {
+  const setCollection = (): Collection => ({
+    "sol ring": [{ quantity: 1, set: "c21", collectorNumber: "5" }, { quantity: 2, set: "cmm", collectorNumber: "9" }],
+    "counterspell": [{ quantity: 1, set: "cmm", collectorNumber: "3", foil: true }],
+    "island": [{ quantity: 3 }],
+  });
+  const groupBySet = async () => {
+    await u().click(screen.getByTitle("Name A→Z"));
+    await u().click(screen.getAllByText("Group by set")[0]);
+  };
+  const header = (code: string) => screen.getByRole("button", { name: new RegExp(`^${code}`) });
+
+  it("groups printings under set headers with counts, Unknown last, and no alpha rail", async () => {
+    setup({ collection: { ...setCollection(), ...Object.fromEntries("abcdefghijkl".split("").map(l => [`${l} card`, [{ quantity: 1, set: "zzz" }]])) } });
+    await groupBySet();
+    const headers = screen.getAllByRole("button", { expanded: true }).filter(b => b.classList.contains("collection-set-header"));
+    expect(headers.map(h => h.querySelector(".collection-set-code")!.textContent)).toEqual(["C21", "CMM", "ZZZ", "Unknown set"]);
+    expect(header("CMM")).toHaveTextContent("2 cards (3 copies)");
+    expect(document.querySelector(".alpha-rail")).toBeNull();
+  });
+
+  it("toggles a group with aria-expanded and keeps its counts", async () => {
+    setup({ collection: setCollection() });
+    await groupBySet();
+    expect(screen.getAllByText("Counterspell")).toHaveLength(1);
+    await u().click(header("CMM"));
+    expect(header("CMM")).toHaveAttribute("aria-expanded", "false");
+    expect(header("CMM")).toHaveTextContent("2 cards (3 copies)");
+    expect(screen.queryByText("Counterspell")).toBeNull();
+  });
+
+  it("Collapse all / Expand all toggles every group", async () => {
+    setup({ collection: setCollection() });
+    await groupBySet();
+    await u().click(screen.getAllByRole("button", { name: "Collapse all" })[0]);
+    expect(document.querySelectorAll('.collection-set-header[aria-expanded="false"]')).toHaveLength(3);
+    await u().click(screen.getAllByRole("button", { name: "Expand all" })[0]);
+    expect(document.querySelectorAll('.collection-set-header[aria-expanded="false"]')).toHaveLength(0);
+  });
+
+  it("an active search forces groups open and the collapsed state returns when cleared", async () => {
+    setup({ collection: setCollection() });
+    await groupBySet();
+    await u().click(header("CMM"));
+    const search = screen.getAllByPlaceholderText(/Search/)[0];
+    await u().type(search, "counter");
+    expect(header("CMM")).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByText("Counterspell")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Collapse all" })).toBeNull();
+    await u().clear(search);
+    expect(header("CMM")).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("switching sort clears collapse state", async () => {
+    setup({ collection: setCollection() });
+    await groupBySet();
+    await u().click(header("CMM"));
+    await u().click(screen.getByTitle("Group by set"));
+    await u().click(screen.getAllByText("Name A→Z")[0]);
+    await groupBySet();
+    expect(header("CMM")).toHaveAttribute("aria-expanded", "true");
+  });
+
+  it("Remove all in a group only removes that set's printings", async () => {
+    const store = installStorage({ collection: setCollection(), meta });
+    render(<CollectionPage decks={[]} onCollectionChange={vi.fn()} />);
+    await groupBySet();
+    const rows = [...document.querySelectorAll('[data-collection-key="sol ring"]')];
+    expect(rows).toHaveLength(2); // one per set
+    await u().click(within(rows[1] as HTMLElement).getByRole("button", { expanded: false }));
+    await u().click(within(rows[1] as HTMLElement).getByRole("button", { name: "Remove all" }));
+    const saved = JSON.parse(store.get(COLLECTION_KEY)!);
+    expect(saved["sol ring"]).toEqual([{ quantity: 1, set: "c21", collectorNumber: "5" }]);
   });
 });
