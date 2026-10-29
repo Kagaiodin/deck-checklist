@@ -66,7 +66,21 @@ A **Group by set** option in the collection sort popover. When active, the list 
 
 ## Design handoff
 
-Existing component and small change, so no Open Design run. Before touching source, show an inline HTML mockup of the set header for approval: sticky behavior, count text, chevron, collapsed state, and mobile width. Take colors and spacing from `src/tokens.css`.
+Existing component and small change, so no Open Design run. An inline HTML mockup of the set header was shown and **approved** (2026-10-29). Use only tokens from `src/tokens.css`.
+
+### Approved design
+
+- **Header:** full-width `<button>`, sticky at the top of the list, `min-height: 40px`, `padding: 6px 16px`. Fill `--surface-2` (`--surface-3` on hover), `border-bottom: 1px solid var(--border)`. Visible `:focus-visible` ring (`2px solid var(--accent)`, inset).
+- **Chevron:** 14px, `--text-muted`, points down when expanded and rotates to point right when collapsed (`aria-expanded="false"`), 0.12s transition.
+- **Set code:** mono (`--font-mono`), caps, 13px, weight 700, letter-spacing `.04em`.
+- **Counts:** right-aligned, 12px, tabular numerals, `--text-muted`. Unique cards are bold in `--text`: `**47** cards (52 copies)`. Counts stay visible when the group is collapsed.
+- **Unknown set:** plain-text header (sans, weight 600, `--text-muted`, no letter-spacing), always last.
+- **Collapse all / Expand all:** text-only button (`--accent-text`, 12px, 28px tall, `--hover-fill` on hover) to the left of the sort button, in the same controls row. Shown only in set mode and hidden while a search is active.
+- **Sort popover:** "Group by set" is a fifth option, separated from the four existing options by a `--border-dim` top divider.
+- **Rows:** unchanged. Existing `.collection-row` styles, with the subtitle showing the set code and rarity.
+- **Mobile (375px):** same layout. The counts text must still fit on one line next to the chevron and code; check the longest realistic case (e.g. `1,204 cards (1,830 copies)`) at 375px and shorten to `1,204 · 1,830` if it wraps.
+
+Reference mockup (not in the repo): `set-header-mockup/index.html` in the session scratchpad. This section is the source of truth.
 
 ## Non-goals / follow-ups
 
