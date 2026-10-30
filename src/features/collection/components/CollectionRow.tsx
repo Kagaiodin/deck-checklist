@@ -92,7 +92,7 @@ export function CollectionRow({
         </div>
         <div className="collection-row-right">
           {freeCount > 0 && (
-            <span className="collection-card-free">{freeCount} free</span>
+            <span className="collection-card-free">{freeCount} unassigned</span>
           )}
           <span
             className="collection-card-qty-big"

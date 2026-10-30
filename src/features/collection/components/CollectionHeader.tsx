@@ -13,7 +13,7 @@ function relativeTime(timestamp: number): string {
 const FILTER_LABELS: Record<CollectionFilterKey, string> = {
   all:       "All",
   "in-deck": "In decks",
-  free:      "Free",
+  free:      "Unassigned",
   foils:     "Foils",
 };
 
