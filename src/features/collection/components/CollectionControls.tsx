@@ -5,7 +5,7 @@ import { SortPopover, SORT_OPTIONS } from "./SortPopover";
 const FILTER_LABELS: Record<CollectionFilterKey, string> = {
   all:       "All",
   "in-deck": "In a deck",
-  free:      "Free",
+  free:      "Unassigned",
   foils:     "Foils",
 };
 
