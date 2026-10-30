@@ -19,7 +19,8 @@
     "screenshots:firefox": "tsx scripts/capture-screenshots.ts --browser firefox",
     "screenshots:local": "tsx scripts/capture-screenshots.ts --local",
     "screenshots:diff": "tsx scripts/shot-diff.ts",
-    "test:contrast": "sh scripts/contrast-gate.sh"
+    "test:contrast": "sh scripts/contrast-gate.sh",
+    "test:e2e": "sh scripts/e2e-set-grouping.sh"
   },
   "dependencies": {
     "react": "^19.2.5",

@@ -12,8 +12,16 @@ interface CollectionRowProps {
   hasDeckContext: boolean;
   editingPrinting: EditingPrinting | null;
   onToggleExpand: (name: string) => void;
-  onAddCopy: (name: string) => void;
-  onRemove: (name: string) => void;
+  /** Set-group mode: the id this row expands under (a card repeats across groups). */
+  rowKey?: string;
+  /** Set-group mode: index of each shown printing in the card's full list. */
+  indices?: number[];
+  /** Set-group mode: length of the card's full printings list. */
+  fullCount?: number;
+  /** Set-group mode: set code shown in the subtitle and prefilled on new printings. */
+  groupSet?: string | null;
+  onAddCopy: (name: string, idx?: number) => void;
+  onRemove: (name: string, indices?: number[]) => void;
   onStartEdit: (ep: EditingPrinting) => void;
   onEditField: (ep: EditingPrinting) => void;
   onCommitEdit: () => void;
@@ -29,6 +37,10 @@ export function CollectionRow({
   printings,
   total,
   rarity,
+  rowKey = name,
+  indices,
+  fullCount,
+  groupSet,
   isExpanded,
   committed,
   hasDeckContext,
@@ -52,9 +64,9 @@ export function CollectionRow({
     freeCount > 0 ? "free" : (rarity ?? null);
 
   // Subtitle: omit each segment when count is 0
-  const subtitleParts: string[] = [
-    `${printings.length} printing${printings.length !== 1 ? "s" : ""}`,
-  ];
+  const subtitleParts: string[] = groupSet !== undefined
+    ? [groupSet ?? "No set", ...(rarity ? [rarity] : [])]
+    : [`${printings.length} printing${printings.length !== 1 ? "s" : ""}`];
   if (foilCount > 0) subtitleParts.push(`${foilCount} foil`);
   if (hasDeckContext && committed.deckCount > 0) {
     subtitleParts.push(`${committed.deckCount} deck${committed.deckCount !== 1 ? "s" : ""}`);
@@ -71,7 +83,7 @@ export function CollectionRow({
 
       <button
         className="collection-row-summary"
-        onClick={() => onToggleExpand(name)}
+        onClick={() => onToggleExpand(rowKey)}
         aria-expanded={isExpanded}
       >
         <div className="collection-row-left">
@@ -95,6 +107,9 @@ export function CollectionRow({
         <CollectionRowDetail
           name={name}
           printings={printings}
+          indices={indices}
+          fullCount={fullCount}
+          groupSet={groupSet}
           committed={committed}
           hasDeckContext={hasDeckContext}
           editingPrinting={editingPrinting}

@@ -39,6 +39,8 @@ interface CollectionHeaderProps {
   pillCounts: Record<CollectionFilterKey, number>;
   collectionSort: CollectionSortKey;
   onSortChange: (key: CollectionSortKey) => void;
+  /** Set-group mode only: shows the Collapse all / Expand all button. */
+  groupToggle?: { allCollapsed: boolean; onToggle: () => void };
 }
 
 export function CollectionHeader({
@@ -60,7 +62,13 @@ export function CollectionHeader({
   pillCounts,
   collectionSort,
   onSortChange,
+  groupToggle,
 }: CollectionHeaderProps) {
+  const groupToggleBtn = groupToggle && (
+    <button className="collection-group-toggle" onClick={groupToggle.onToggle}>
+      {groupToggle.allCollapsed ? "Expand all" : "Collapse all"}
+    </button>
+  );
   const [sortOpen, setSortOpen]         = useState(false);
   const [overflowOpen, setOverflowOpen] = useState(false);
 
@@ -126,6 +134,7 @@ export function CollectionHeader({
           </div>
 
           <div className="collection-topbar-actions">
+            {groupToggleBtn}
             <div className="collection-sort-wrap" ref={sortRef}>
               <button
                 className={`collection-sort-btn${sortOpen ? " active" : ""}`}
@@ -245,6 +254,7 @@ export function CollectionHeader({
               onChange={e => onSearchChange(e.target.value)}
             />
           </div>
+          {groupToggleBtn}
           <div className="collection-sort-wrap" ref={mobileSortRef}>
             <button
               className={`collection-sort-btn collection-sort-btn--icon${sortOpen ? " active" : ""}`}

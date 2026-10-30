@@ -7,7 +7,7 @@
  * collection feature.
  */
 
-export type CollectionSortKey = "name-asc" | "name-desc" | "qty-desc" | "qty-asc";
+export type CollectionSortKey = "name-asc" | "name-desc" | "qty-desc" | "qty-asc" | "set";
 
 export type CollectionFilterKey = "all" | "in-deck" | "free" | "foils";
 

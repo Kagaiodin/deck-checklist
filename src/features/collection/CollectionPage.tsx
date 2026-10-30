@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { Virtuoso, type VirtuosoHandle } from "react-virtuoso";
+import { Virtuoso, GroupedVirtuoso, type VirtuosoHandle, type GroupedVirtuosoHandle } from "react-virtuoso";
 import "./CollectionPage.css";
 import type { Card, Collection, CollectionMeta, CollectionPrinting, Deck } from "../../types/index";
-import type { CollectionFilterKey, CommittedInfo, EditingPrinting } from "../../types/collection";
+import type { CollectionFilterKey, CollectionSortKey, CommittedInfo, EditingPrinting } from "../../types/collection";
 import { useLocalStorage } from "../../hooks/useLocalStorage";
 import { parseCollectionCSV } from "../../utils/csvParser";
+import { groupCollectionBySet, type SetGroupRow } from "../../utils/collectionGroups";
 
 import { useCommittedInfo }    from "./hooks/useCommittedInfo";
 import { useCollectionStats }  from "./hooks/useCollectionStats";
@@ -30,13 +31,15 @@ interface CRowData {
   hasDeckContext:  boolean;
   rarityMap:       Record<string, Card["rarity"] | undefined>;
   toggleExpand:    (name: string) => void;
-  onAddCopy:       (name: string) => void;
-  onRemove:        (name: string) => void;
+  onAddCopy:       (name: string, idx?: number) => void;
+  onRemove:        (name: string, indices?: number[]) => void;
   onStartEdit:     (ep: EditingPrinting) => void;
   onCommitEdit:    () => void;
   onCancelEdit:    () => void;
   onEditField:     (ep: EditingPrinting) => void;
   getCommitted:    (name: string) => CommittedInfo;
+  /** Full printings count per card, for new-printing indices in set mode. */
+  fullCounts:      Record<string, number>;
 }
 
 function CollectionRowItem(
@@ -52,6 +55,38 @@ function CollectionRowItem(
       total={total}
       rarity={data.rarityMap[name]}
       isExpanded={data.expandedKey === name}
+      committed={data.getCommitted(name)}
+      hasDeckContext={data.hasDeckContext}
+      editingPrinting={data.editingPrinting}
+      onToggleExpand={data.toggleExpand}
+      onAddCopy={data.onAddCopy}
+      onRemove={data.onRemove}
+      onStartEdit={data.onStartEdit}
+      onEditField={data.onEditField}
+      onCommitEdit={data.onCommitEdit}
+      onCancelEdit={data.onCancelEdit}
+    />
+  );
+}
+
+/** Row inside a set group. Expands under its own id so a card repeated across groups opens once. */
+function GroupedRowItem(
+  _index: number,
+  item: SetGroupRow & { set: string | null },
+  data: CRowData,
+) {
+  const { name, printings, total, indices, set } = item;
+  return (
+    <CollectionRow
+      name={name}
+      printings={printings}
+      total={total}
+      rowKey={`${set ?? ""}|${name}`}
+      indices={indices}
+      fullCount={data.fullCounts[name]}
+      groupSet={set}
+      rarity={data.rarityMap[name]}
+      isExpanded={data.expandedKey === `${set ?? ""}|${name}`}
       committed={data.getCommitted(name)}
       hasDeckContext={data.hasDeckContext}
       editingPrinting={data.editingPrinting}
@@ -96,9 +131,12 @@ export function CollectionPage({ decks, onCollectionChange, onOpenTrade }: Colle
   const [firstVisibleIdx,   setFirstVisibleIdx]    = useState(0);
   const [pendingCsvFile,    setPendingCsvFile]     = useState<File | null>(null);
   const [editingPrinting,   setEditingPrinting]    = useState<EditingPrinting | null>(null);
+  // Collapsed set codes ("" = the no-set group). Resets when the sort changes.
+  const [collapsedSets,     setCollapsedSets]      = useState<Set<string>>(new Set());
 
   const csvInputRef       = useRef<HTMLInputElement>(null);
   const collectionListRef = useRef<VirtuosoHandle>(null);
+  const groupedListRef    = useRef<GroupedVirtuosoHandle>(null);
   const snapshotRef       = useRef<{ collection: Collection; meta: CollectionMeta | null } | null>(null);
   const toastTimerRef     = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -133,14 +171,53 @@ export function CollectionPage({ decks, onCollectionChange, onOpenTrade }: Colle
   const { totalCards, uniqueCards, deckCardTotal } =
     useCollectionStats(collection, getCommittedInfo);
 
-  const { collectionSort, setCollectionSort, collectionFiltered } =
+  const { collectionSort, setCollectionSort: setSortKey, collectionFiltered } =
     useCollectionSort(collection, collectionSearch);
+
+  function setCollectionSort(key: CollectionSortKey) {
+    setSortKey(key);
+    setCollapsedSets(new Set());
+  }
 
   const deckCardNames = new Set(decks.flatMap(d => d.cards.map(c => c.name.toLowerCase())));
 
   const { collectionPillFiltered, pillCounts } = useCollectionFilter(
     collectionFiltered, collectionFilter, deckCardNames, getCommittedInfo,
   );
+
+  // ── Group by set ───────────────────────────────────────────────────────────
+  const setMode = collectionSort === "set";
+  const searching = collectionSearch.trim() !== "";
+  const setGroups = useMemo(
+    () => setMode
+      ? groupCollectionBySet(collectionPillFiltered, collectionFilter === "foils" ? p => !!p.foil : undefined)
+      : [],
+    [setMode, collectionPillFiltered, collectionFilter],
+  );
+  const isOpen = (set: string | null) => searching || !collapsedSets.has(set ?? "");
+  const visibleRows = useMemo(
+    () => setGroups.flatMap(g => (isOpen(g.set) ? g.rows.map(r => ({ ...r, set: g.set })) : [])),
+    [setGroups, collapsedSets, searching], // eslint-disable-line react-hooks/exhaustive-deps
+  );
+  const groupCounts = setGroups.map(g => (isOpen(g.set) ? g.rows.length : 0));
+  const allCollapsed = setGroups.length > 0 && setGroups.every(g => collapsedSets.has(g.set ?? ""));
+  const fullCounts = useMemo(() => {
+    const m: Record<string, number> = {};
+    for (const { name, printings } of collectionFiltered) m[name] = printings.length;
+    return m;
+  }, [collectionFiltered]);
+
+  function toggleGroup(set: string | null) {
+    setCollapsedSets(prev => {
+      const next = new Set(prev);
+      const k = set ?? "";
+      if (!next.delete(k)) next.add(k);
+      return next;
+    });
+  }
+  function toggleAllGroups() {
+    setCollapsedSets(allCollapsed ? new Set() : new Set(setGroups.map(g => g.set ?? "")));
+  }
 
   const alphaSort = collectionSort === "name-asc" || collectionSort === "name-desc";
   const letterIndexMap = new Map<string, number>();
@@ -156,6 +233,7 @@ export function CollectionPage({ decks, onCollectionChange, onOpenTrade }: Colle
   // ── Scroll to top on filter/search/sort change ─────────────────────────────
   useEffect(() => {
     collectionListRef.current?.scrollToIndex(0);
+    groupedListRef.current?.scrollToIndex(0);
     setFirstVisibleIdx(0);
   }, [collectionFilter, collectionSearch, collectionSort]);
 
@@ -226,10 +304,13 @@ export function CollectionPage({ decks, onCollectionChange, onOpenTrade }: Colle
     onCollectionChange(updated);
   }
 
-  function handleIncrement(key: string) {
+  function handleIncrement(key: string, idx?: number) {
     const updated = { ...collection };
     const printings = Array.isArray(updated[key]) ? [...updated[key]] : [];
-    const gi = printings.findIndex(p => !p.set && !p.collectorNumber && !p.foil);
+    // Set mode passes the shown printing; otherwise bump the generic one.
+    const gi = idx !== undefined && printings[idx]
+      ? idx
+      : printings.findIndex(p => !p.set && !p.collectorNumber && !p.foil);
     if (gi >= 0) {
       printings[gi] = { ...printings[gi], quantity: printings[gi].quantity + 1 };
     } else {
@@ -262,9 +343,12 @@ export function CollectionPage({ decks, onCollectionChange, onOpenTrade }: Colle
     mutateCollection(updated);
   }
 
-  function handleRemove(key: string) {
+  function handleRemove(key: string, indices?: number[]) {
     const updated = { ...collection };
-    delete updated[key];
+    const remaining = indices && Array.isArray(updated[key])
+      ? updated[key].filter((_, i) => !indices.includes(i))
+      : [];
+    if (remaining.length > 0) { updated[key] = remaining; } else { delete updated[key]; }
     mutateCollection(updated);
   }
 
@@ -350,6 +434,7 @@ export function CollectionPage({ decks, onCollectionChange, onOpenTrade }: Colle
     onCancelEdit:    cbCancelEdit,
     onEditField:     cbEditField,
     getCommitted:    getCommittedInfo,
+    fullCounts,
   };
 
   // ── Render ─────────────────────────────────────────────────────────────────
@@ -384,6 +469,9 @@ export function CollectionPage({ decks, onCollectionChange, onOpenTrade }: Colle
           pillCounts={pillCounts}
           collectionSort={collectionSort}
           onSortChange={setCollectionSort}
+          groupToggle={setMode && !searching && setGroups.length > 0
+            ? { allCollapsed, onToggle: toggleAllGroups }
+            : undefined}
         />
 
         {quickAddOpen && (
@@ -472,6 +560,37 @@ export function CollectionPage({ decks, onCollectionChange, onOpenTrade }: Colle
               )}
 
             <div className="collection-list-wrap">
+              {setMode ? (
+                <GroupedVirtuoso
+                  key="grouped"
+                  ref={groupedListRef}
+                  style={{ height: "100%" }}
+                  groupCounts={groupCounts}
+                  context={rowData}
+                  groupContent={gi => {
+                    const g = setGroups[gi];
+                    const open = isOpen(g.set);
+                    return (
+                      <button
+                        className={`collection-set-header${g.set === null ? " collection-set-header--unknown" : ""}`}
+                        aria-expanded={open}
+                        onClick={() => toggleGroup(g.set)}
+                      >
+                        <svg className="collection-set-chevron" viewBox="0 0 14 14" width="14" height="14" aria-hidden>
+                          <path d="M3 5l4 4 4-4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                        <span className="collection-set-code">{g.set ?? "Unknown set"}</span>
+                        <span className="collection-set-counts">
+                          <strong>{g.cards.toLocaleString()}</strong> {g.cards === 1 ? "card" : "cards"} ({g.copies.toLocaleString()} {g.copies === 1 ? "copy" : "copies"})
+                        </span>
+                      </button>
+                    );
+                  }}
+                  itemContent={(index, _gi, _d, ctx) => GroupedRowItem(index, visibleRows[index], ctx as CRowData)}
+                  className="collection-vlist"
+                  overscan={4}
+                />
+              ) : (
               <Virtuoso
                 ref={collectionListRef}
                 style={{ height: "100%" }}
@@ -482,6 +601,7 @@ export function CollectionPage({ decks, onCollectionChange, onOpenTrade }: Colle
                 className="collection-vlist"
                 overscan={4}
               />
+              )}
 
               {alphaSort && collectionPillFiltered.length > 10 && (
                 <AlphaRail
