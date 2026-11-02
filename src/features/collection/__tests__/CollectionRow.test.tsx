@@ -82,13 +82,13 @@ describe("CollectionRow — free chip", () => {
         hasDeckContext={true}
       />
     );
-    expect(screen.getByText("2 free")).toBeInTheDocument();
+    expect(screen.getByText("2 unassigned")).toBeInTheDocument();
   });
 
   it("hides free chip when hasDeckContext is false, even if copies are uncommitted", () => {
     // Without deck context committed.total=0, but amber is gated on hasDeckContext.
     render(<CollectionRow {...baseProps} total={3} hasDeckContext={false} committed={noneCommitted} />);
-    expect(screen.queryByText(/free/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/unassigned/)).not.toBeInTheDocument();
   });
 
   it("hides free chip when all copies are committed", () => {
@@ -100,7 +100,7 @@ describe("CollectionRow — free chip", () => {
         hasDeckContext={true}
       />
     );
-    expect(screen.queryByText(/free/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/unassigned/)).not.toBeInTheDocument();
   });
 });
 

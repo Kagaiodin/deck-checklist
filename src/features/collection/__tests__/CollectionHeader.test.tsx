@@ -83,7 +83,7 @@ describe("CollectionHeader", () => {
     const { onFilterChange, container } = setup({ collectionFilter: "free" });
     const desktop = container.querySelector(".collection-filter-chips--inline") as HTMLElement;
     expect(within(desktop).getByRole("button", { name: /In decks\s*10/ })).toBeInTheDocument();
-    expect(within(desktop).getByRole("button", { name: /Free\s*20/ })).toHaveClass("active");
+    expect(within(desktop).getByRole("button", { name: /Unassigned\s*20/ })).toHaveClass("active");
     expect(within(desktop).getByRole("button", { name: /All\s*1,200/ })).toBeInTheDocument();
     await userEvent.setup({ delay: null }).click(within(desktop).getByRole("button", { name: /Foils/ }));
     expect(onFilterChange).toHaveBeenCalledWith("foils");

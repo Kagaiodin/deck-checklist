@@ -166,7 +166,7 @@ describe("CollectionPage — rendering", () => {
   it("shows free counts and deck membership when decks are loaded", async () => {
     setup({ decks: [deck([{ name: "Lightning Bolt", quantity: 3, rarity: "rare" }])] });
     const row = screen.getByText("Lightning Bolt").closest(".collection-row") as HTMLElement;
-    expect(row).toHaveTextContent("1 free");
+    expect(row).toHaveTextContent("1 unassigned");
     expect(row).toHaveTextContent("1 deck");
     await u().click(within(row).getByRole("button", { name: /Lightning Bolt/ }));
     expect(row).toHaveTextContent("3 in deck");
