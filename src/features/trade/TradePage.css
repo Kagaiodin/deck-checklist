@@ -264,7 +264,7 @@ html[data-mode="light"] .tr-row:hover, html[data-mode="light"] .tr-row:focus-wit
 .tr-ac { list-style: none; margin-top: 6px; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
 .tr-ac li { padding: 9px 12px; cursor: pointer; font-size: 14px; }
 .tr-ac li + li { border-top: 1px solid var(--border-dim); }
-.tr-ac li[aria-selected="true"] { background: var(--surface-3); }
+.tr-ac li[aria-selected="true"] { background: var(--accent-tint-12); color: var(--accent-text); }
 .tr-prints { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; margin-top: 8px; }
 .tr-print {
   border: 1px solid var(--border); background: var(--surface-2); border-radius: var(--radius); padding: 6px;

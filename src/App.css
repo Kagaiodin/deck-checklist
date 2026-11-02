@@ -2578,5 +2578,4 @@ html[data-mode="light"] .orders-search,
 html[data-mode="light"] .tr-num-input,
 html[data-mode="light"] .tr-text-input { background: var(--surface); }
 html[data-mode="light"] .order-filter-tab.active,
-html[data-mode="light"] .bulk-tab.active:not(.danger),
-html[data-mode="light"] .tr-ac li[aria-selected="true"] { background: var(--accent-tint-12); color: var(--accent-text); }
+html[data-mode="light"] .bulk-tab.active:not(.danger) { background: var(--accent-tint-12); color: var(--accent-text); }
