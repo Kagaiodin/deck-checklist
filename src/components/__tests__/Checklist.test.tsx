@@ -600,6 +600,13 @@ describe("Checklist — commander", () => {
     expect(document.querySelector(".progress-strip-count")).toHaveTextContent("1 / 11 fetched");
   });
 
+  it("wires the overflow menu action to onToggleCommander", async () => {
+    const { onToggleCommander } = setup();
+    await u().click(within(row("Sol Ring")).getByRole("button", { name: /Card actions/ }));
+    await u().click(screen.getByRole("menuitem", { name: "Set as commander" }));
+    expect(onToggleCommander).toHaveBeenCalledWith("c1");
+  });
+
   it("applies filters to the commander row", async () => {
     setup({}, deck({ commanderIds: ["c4"] }));
     await u().type(screen.getByPlaceholderText("Search cards…"), "Sol");

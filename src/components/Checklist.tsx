@@ -553,6 +553,10 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
               currentStatus={card.source}
               onSetSource={onSetSource}
               onRemoveCard={onRemoveCard}
+              quantity={card.quantity}
+              isCommander={commanderIds.includes(card.id)}
+              commanderCapReached={commanderCount >= MAX_COMMANDERS}
+              onToggleCommander={onToggleCommander}
             />
           )}
           {editMode && (
