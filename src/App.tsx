@@ -406,6 +406,12 @@ function AppInner() {
     );
   }
 
+  function handleCreateBlankDeck() {
+    const id = crypto.randomUUID();
+    dispatch({ type: "ADD_DECK", payload: { id, name: "New deck", cards: [], createdAt: Date.now() } });
+    setActiveDeckId(id);
+  }
+
   // ── Order handlers ────────────────────────────────────────────────────────
   function handleCreateOrder(order: Order, vendor: string) {
     setOrders(prev => [order, ...prev]);
@@ -937,6 +943,13 @@ function AppInner() {
                       onClick={() => { setDeckPickerOpen(false); setShowImport(true); }}
                     >
                       + Import Deck
+                    </button>
+                    <button
+                      className="btn btn-ghost"
+                      style={{ width: "100%" }}
+                      onClick={() => { setDeckPickerOpen(false); handleCreateBlankDeck(); }}
+                    >
+                      + Create blank deck
                     </button>
                     <div className="deck-picker-export-row">
                       <button className="btn btn-ghost btn-sm" disabled={demoActive} onClick={() => {
@@ -1474,11 +1487,7 @@ function AppInner() {
                     }}
                     secondary={{
                       label: "Create blank deck",
-                      onClick: () => {
-                        const id = crypto.randomUUID();
-                        dispatch({ type: "ADD_DECK", payload: { id, name: "New deck", cards: [], createdAt: Date.now() } });
-                        setActiveDeckId(id);
-                      },
+                      onClick: handleCreateBlankDeck,
                     }}
                   />
                 </div>
