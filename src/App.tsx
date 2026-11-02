@@ -1,3 +1,4 @@
+import { commanderToastTitle } from "./utils/commander";
 import { useState, useEffect, useRef } from "react";
 import "./tokens.css";
 import "./App.css";
@@ -359,8 +360,7 @@ function AppInner() {
     if (!deck || !card) return;
     const was = deck.commanderIds?.includes(cardId) ?? false;
     dispatch({ type: "TOGGLE_COMMANDER", payload: { deckId: activeDeckId, cardId } });
-    const short = card.name.split(",")[0];
-    showToast({ title: `${short} ${was ? "removed as" : "set as"} commander`, variant: "success", autoDismiss: 2500 });
+    showToast({ title: commanderToastTitle(card.name, was), variant: "success", autoDismiss: 2500 });
   }
 
   function handleDismissCommanderPrompt() {
