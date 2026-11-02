@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useId } from "react";
 import { createPortal } from "react-dom";
 import type { AcquisitionSource } from "../types/index";
 
@@ -21,15 +21,20 @@ interface Props {
   currentStatus: AcquisitionSource | undefined;
   onSetSource: (cardId: string, source: AcquisitionSource | undefined) => void;
   onRemoveCard: (cardId: string) => void;
+  quantity?: number;
+  isCommander?: boolean;
+  commanderCapReached?: boolean;
+  onToggleCommander?: (cardId: string) => void;
 }
 
-export function CardRowOverflowMenu({ cardId, cardName, currentStatus, onSetSource, onRemoveCard }: Props) {
+export function CardRowOverflowMenu({ cardId, cardName, currentStatus, onSetSource, onRemoveCard, quantity = 1, isCommander = false, commanderCapReached = false, onToggleCommander }: Props) {
   const [open, setOpen] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [flipUp, setFlipUp] = useState(false);
   const [popStyle, setPopStyle] = useState<React.CSSProperties>({});
   const btnRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
+  const hintId = `cmdr-hint-${useId()}`;
 
   const close = useCallback(() => {
     setOpen(false);
@@ -106,6 +111,17 @@ export function CardRowOverflowMenu({ cardId, cardName, currentStatus, onSetSour
     );
   }
 
+  const showCommanderAction = !!onToggleCommander && (isCommander || quantity === 1);
+  const commanderBlocked = !isCommander && commanderCapReached;
+
+  function handleCommanderClick(e: React.MouseEvent) {
+    e.stopPropagation();
+    if (commanderBlocked) return;
+    onToggleCommander?.(cardId);
+    close();
+    btnRef.current?.focus();
+  }
+
   function handleRemoveClick(e: React.MouseEvent) {
     e.stopPropagation();
     setShowConfirm(true);
@@ -169,6 +185,29 @@ export function CardRowOverflowMenu({ cardId, cardName, currentStatus, onSetSour
                 <span className="pop-action-icon pop-icon-blue">↗</span>
                 View all printings
               </button>
+              {showCommanderAction && (
+                <button
+                  role="menuitem"
+                  className="pop-action"
+                  aria-disabled={commanderBlocked || undefined}
+                  aria-describedby={commanderBlocked ? hintId : undefined}
+                  onClick={handleCommanderClick}
+                >
+                  <span className={`pop-action-icon ${commanderBlocked ? "pop-icon-locked" : "pop-icon-neutral"}`}>
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      {commanderBlocked ? (
+                        <><rect x="3.5" y="7" width="9" height="6.5" rx="1.2" /><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2" /></>
+                      ) : (
+                        <><path d="M2 12.5h12M2.5 11 1.5 5l3.7 3L8 3.5 10.8 8l3.7-3-1 6z" />{isCommander && <path d="M2 2l12 12" />}</>
+                      )}
+                    </svg>
+                  </span>
+                  <span className="pop-action-text">
+                    {isCommander ? "Remove commander" : "Set as commander"}
+                    {commanderBlocked && <span className="pop-action-hint" id={hintId}>Remove a commander first</span>}
+                  </span>
+                </button>
+              )}
               <div className="pop-divider" />
               <button role="menuitem" className="pop-action danger" onClick={handleRemoveClick}>
                 <span className="pop-action-icon pop-icon-red">✕</span>

@@ -2579,3 +2579,27 @@ html[data-mode="light"] .tr-num-input,
 html[data-mode="light"] .tr-text-input { background: var(--surface); }
 html[data-mode="light"] .order-filter-tab.active,
 html[data-mode="light"] .bulk-tab.active:not(.danger) { background: var(--accent-tint-12); color: var(--accent-text); }
+
+/* ── Commander designation (#31) ───────────────────────────────────────────── */
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+.cmd-nudge { display: flex; align-items: center; gap: 8px; min-height: 36px; padding: 0 4px 0 8px; }
+.cmd-nudge-text { flex: 1; margin: 0; font-size: 13px; line-height: 1.4; color: var(--text-muted); }
+.nudge-glyph { display: inline-flex; align-items: center; height: 18px; padding: 0 5px; border: 1px solid var(--border); border-radius: 5px; color: var(--text); font-size: 11px; line-height: 1; letter-spacing: .05em; vertical-align: 1px; }
+.cmd-nudge-x { width: 32px; height: 32px; border-radius: 5px; border: 1px solid transparent; background: transparent; color: var(--text-muted); display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; cursor: pointer; padding: 9px; }
+.cmd-nudge-x:hover { background: var(--hover-fill); color: var(--text); }
+.cmd-nudge-x:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+@media (max-width: 639px) {
+  .cmd-nudge { min-height: 44px; padding: 0 0 0 8px; }
+  .cmd-nudge-x { width: 44px; height: 44px; padding: 0; border-radius: var(--radius); }
+}
+.pop-icon-neutral, .sheet-icon-neutral { background: var(--surface-3); color: var(--text); }
+.pop-action:focus-visible, .sheet-action:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.pop-action-text { display: flex; flex-direction: column; gap: 1px; line-height: 1.25; }
+.pop-action-hint { font-size: 11px; color: var(--text-muted); }
+.pop-action[aria-disabled="true"], .sheet-action[aria-disabled="true"] { cursor: not-allowed; }
+.pop-action[aria-disabled="true"] { color: var(--text-muted); }
+.pop-action[aria-disabled="true"]:hover { background: transparent; }
+.sheet-action[aria-disabled="true"] .sheet-action-label { color: var(--text-muted); }
+.pop-icon-locked, .sheet-icon-locked { background: transparent; border: 1px dashed var(--border-strong); color: var(--text-muted); }
+.cmd-advisory { display: flex; align-items: flex-start; gap: 8px; margin: 2px 0 0; padding: 2px 8px; font-size: 12px; line-height: 1.45; color: var(--warn-text); }
+.cmd-advisory svg { flex-shrink: 0; margin-top: 2px; }

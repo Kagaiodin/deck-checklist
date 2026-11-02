@@ -117,3 +117,42 @@ describe("CardRowOverflowMenu", () => {
     expect(screen.queryByRole("menu")).not.toBeInTheDocument();
   });
 });
+
+describe("CardRowOverflowMenu — commander action", () => {
+  function setupCmdr(over: Partial<React.ComponentProps<typeof CardRowOverflowMenu>> = {}) {
+    const onToggleCommander = vi.fn();
+    render(<CardRowOverflowMenu cardId="c1" cardName="Sol Ring" currentStatus={undefined}
+      onSetSource={vi.fn()} onRemoveCard={vi.fn()} onToggleCommander={onToggleCommander} {...over} />);
+    return { onToggleCommander, open: () => userEvent.setup().click(screen.getByRole("button", { name: "Card actions for Sol Ring" })) };
+  }
+
+  it("offers Set as commander and toggles it", async () => {
+    const { onToggleCommander, open } = setupCmdr();
+    await open();
+    await userEvent.setup().click(screen.getByRole("menuitem", { name: "Set as commander" }));
+    expect(onToggleCommander).toHaveBeenCalledWith("c1");
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+  });
+
+  it("flips the label for a commander, even at quantity above 1", async () => {
+    const { open } = setupCmdr({ isCommander: true, quantity: 2, commanderCapReached: true });
+    await open();
+    expect(screen.getByRole("menuitem", { name: "Remove commander" })).not.toHaveAttribute("aria-disabled");
+  });
+
+  it("is hidden for quantity above 1", async () => {
+    const { open } = setupCmdr({ quantity: 2 });
+    await open();
+    expect(screen.queryByRole("menuitem", { name: /commander/ })).not.toBeInTheDocument();
+  });
+
+  it("is disabled with a hint at the cap and does nothing", async () => {
+    const { onToggleCommander, open } = setupCmdr({ commanderCapReached: true });
+    await open();
+    const item = screen.getByRole("menuitem", { name: /Set as commander/ });
+    expect(item).toHaveAttribute("aria-disabled", "true");
+    expect(item).toHaveAccessibleDescription("Remove a commander first");
+    await userEvent.setup().click(item);
+    expect(onToggleCommander).not.toHaveBeenCalled();
+  });
+});

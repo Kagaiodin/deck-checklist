@@ -26,7 +26,11 @@ type DeckAction =
   | { type: "SET_DECKS"; payload: Deck[] }
   | { type: "SET_EXTRA_INFO"; payload: { deckId: string; extraInfo: DeckExtraInfo } }
   | { type: "SET_DECK_PRICES"; payload: { deckId: string; prices: Record<string, number | null>; updatedAt?: number } }
-  | { type: "TOGGLE_DECK_BUILT"; payload: string };
+  | { type: "TOGGLE_DECK_BUILT"; payload: string }
+  | { type: "TOGGLE_COMMANDER"; payload: { deckId: string; cardId: string } }
+  | { type: "DISMISS_COMMANDER_PROMPT"; payload: { deckId: string } };
+
+export const MAX_COMMANDERS = 2;
 
 // Exported for unit testing
 export function deckReducer(state: DeckState, action: DeckAction): DeckState {
@@ -53,7 +57,15 @@ export function deckReducer(state: DeckState, action: DeckAction): DeckState {
       return {
         ...state,
         decks: state.decks.map(d =>
-          d.id === action.payload.deckId ? { ...d, cards: action.payload.cards } : d
+          d.id === action.payload.deckId
+            ? {
+                ...d,
+                cards: action.payload.cards,
+                ...(d.commanderIds
+                  ? { commanderIds: d.commanderIds.filter(id => action.payload.cards.some(c => c.id === id)) }
+                  : {}),
+              }
+            : d
         )
       };
     case "TOGGLE_ACQUIRED":
@@ -118,8 +130,36 @@ export function deckReducer(state: DeckState, action: DeckAction): DeckState {
         ...state,
         decks: state.decks.map(d =>
           d.id === action.payload.deckId
-            ? { ...d, cards: d.cards.filter(c => c.id !== action.payload.cardId) }
+            ? {
+                ...d,
+                cards: d.cards.filter(c => c.id !== action.payload.cardId),
+                ...(d.commanderIds?.includes(action.payload.cardId)
+                  ? { commanderIds: d.commanderIds.filter(id => id !== action.payload.cardId) }
+                  : {}),
+              }
             : d
+        )
+      };
+    case "TOGGLE_COMMANDER":
+      return {
+        ...state,
+        decks: state.decks.map(d => {
+          if (d.id !== action.payload.deckId) return d;
+          const { cardId } = action.payload;
+          const ids = d.commanderIds ?? [];
+          if (ids.includes(cardId)) {
+            return { ...d, commanderIds: ids.filter(id => id !== cardId) };
+          }
+          const card = d.cards.find(c => c.id === cardId);
+          if (!card || card.quantity !== 1 || ids.length >= MAX_COMMANDERS) return d;
+          return { ...d, commanderIds: [...ids, cardId] };
+        })
+      };
+    case "DISMISS_COMMANDER_PROMPT":
+      return {
+        ...state,
+        decks: state.decks.map(d =>
+          d.id === action.payload.deckId ? { ...d, commanderPromptDismissed: true } : d
         )
       };
     case "UPDATE_CARD_QUANTITY":

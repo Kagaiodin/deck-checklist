@@ -352,6 +352,22 @@ function AppInner() {
     dispatch({ type: "REMOVE_CARD", payload: { deckId: activeDeckId, cardId } });
   }
 
+  function handleToggleCommander(cardId: string) {
+    if (!activeDeckId) return;
+    const deck = state.decks.find(d => d.id === activeDeckId);
+    const card = deck?.cards.find(c => c.id === cardId);
+    if (!deck || !card) return;
+    const was = deck.commanderIds?.includes(cardId) ?? false;
+    dispatch({ type: "TOGGLE_COMMANDER", payload: { deckId: activeDeckId, cardId } });
+    const short = card.name.split(",")[0];
+    showToast({ title: `${short} ${was ? "removed as" : "set as"} commander`, variant: "success", autoDismiss: 2500 });
+  }
+
+  function handleDismissCommanderPrompt() {
+    if (!activeDeckId) return;
+    dispatch({ type: "DISMISS_COMMANDER_PROMPT", payload: { deckId: activeDeckId } });
+  }
+
   function handleUpdateQuantity(cardId: string, quantity: number) {
     if (!activeDeckId) return;
     dispatch({ type: "UPDATE_CARD_QUANTITY", payload: { deckId: activeDeckId, cardId, quantity } });
@@ -776,14 +792,14 @@ function AppInner() {
         />
       )}
       {/* ── Toast container ───────────────────────────────────────────────── */}
-      <div className="toast-container">
+      <div className="toast-container" role="status" aria-live="polite">
         {toasts.map(t => (
           <div key={t.id} className={`toast${t.variant === "warn" ? " toast--warn" : t.variant === "neutral" ? " toast--neutral" : ""}`}>
             <div className="toast-body">
               <div className="toast-title">{t.title}</div>
               {t.sub && <div className="toast-sub">{t.sub}</div>}
             </div>
-            <button className="toast-close" onClick={() => setToasts(prev => prev.filter(x => x.id !== t.id))}>×</button>
+            <button className="toast-close" aria-label="Dismiss notification" onClick={() => setToasts(prev => prev.filter(x => x.id !== t.id))}>×</button>
           </div>
         ))}
       </div>
@@ -1456,6 +1472,8 @@ function AppInner() {
                     onSetSource={handleSetSource}
                     onBulkSetSource={handleBulkSetSource}
                     onRemoveCard={handleRemoveCard}
+                    onToggleCommander={handleToggleCommander}
+                    onDismissCommanderPrompt={handleDismissCommanderPrompt}
                     onUpdateQuantity={handleUpdateQuantity}
                     onAddCard={handleAddCard}
                     filterCardIds={notificationFilterIds ?? undefined}

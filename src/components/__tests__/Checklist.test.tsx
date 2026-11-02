@@ -51,6 +51,8 @@ function setup(over: Partial<React.ComponentProps<typeof Checklist>> = {}, d: De
     onSetSource: vi.fn(),
     onBulkSetSource: vi.fn(),
     onRemoveCard: vi.fn(),
+    onToggleCommander: vi.fn(),
+    onDismissCommanderPrompt: vi.fn(),
     onUpdateQuantity: vi.fn(),
     onAddCard: vi.fn(async () => ({ success: true })),
     ...over,
@@ -582,5 +584,66 @@ describe("Checklist — coachmark", () => {
     unmount();
     setup({}, deck({ cards: [] }));
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+});
+
+describe("Checklist — commander", () => {
+  afterEach(() => { vi.unstubAllGlobals(); });
+
+  it("pins commanders in a Commander section above the groups, without duplicating them", () => {
+    setup({}, deck({ commanderIds: ["c4"] }));
+    const section = document.querySelector(".commander-group")!;
+    expect(section).toHaveTextContent("COMMANDER");
+    expect(within(section as HTMLElement).getByText("Atraxa, Praetors' Voice")).toBeInTheDocument();
+    expect(screen.getAllByText("Atraxa, Praetors' Voice", { selector: ".row-name" })).toHaveLength(1);
+    expect(document.querySelector(".card-group")).toBe(section);
+    expect(document.querySelector(".progress-strip-count")).toHaveTextContent("1 / 11 fetched");
+  });
+
+  it("applies filters to the commander row", async () => {
+    setup({}, deck({ commanderIds: ["c4"] }));
+    await u().type(screen.getByPlaceholderText("Search cards…"), "Sol");
+    expect(document.querySelector(".commander-group")).not.toBeInTheDocument();
+    expect(rowNames()).toEqual(["Sol Ring"]);
+  });
+
+  it("shows the nudge for a Commander-format deck with no commander, and dismisses it", async () => {
+    const { onDismissCommanderPrompt } = setup({}, deck({ format: "EDH" }));
+    expect(screen.getByText(/No commander set/)).toBeInTheDocument();
+    await u().click(screen.getByRole("button", { name: "Dismiss commander hint" }));
+    expect(onDismissCommanderPrompt).toHaveBeenCalled();
+  });
+
+  it("uses tap copy on touch devices", () => {
+    stubMedia(true);
+    setup({}, deck({ format: "commander" }));
+    expect(screen.getByText("No commander set. Tap a card, then Set as commander.")).toBeInTheDocument();
+  });
+
+  it.each([
+    ["dismissed", { format: "commander", commanderPromptDismissed: true }],
+    ["commander set", { format: "commander", commanderIds: ["c4"] }],
+    ["non-commander format", { format: "Standard" }],
+    ["no format", {}],
+  ])("hides the nudge when %s", (_l, over) => {
+    setup({}, deck(over as Partial<Deck>));
+    expect(screen.queryByText(/No commander set/)).not.toBeInTheDocument();
+  });
+
+  it("includes the commander row in select-all", async () => {
+    setup({ selectMode: true }, deck({ commanderIds: ["c4"] }));
+    const selectAll = document.querySelector(".commander-group .card-row-select-all")!;
+    expect(selectAll).toBeInTheDocument();
+    await u().click(selectAll);
+    expect(row("Atraxa, Praetors' Voice").querySelector<HTMLInputElement>(".card-checkbox")!.checked).toBe(true);
+  });
+
+  it("shows the partner advisory only for an unrecognized pair", async () => {
+    const mk = (name: string, keywords: string[]) => ({ name, keywords, oracle_text: "", type_line: "Legendary Creature" });
+    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, json: async () => ({ data: [mk("Sol Ring", []), mk("Counterspell", [])], not_found: [] }) })));
+    const { clearPartnerCache } = await import("../../utils/partnerCheck");
+    clearPartnerCache();
+    setup({}, deck({ commanderIds: ["c1", "c3"] }));
+    expect(await screen.findByText(/may not be a legal partner pair/)).toBeInTheDocument();
   });
 });

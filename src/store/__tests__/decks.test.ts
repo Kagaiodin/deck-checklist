@@ -564,3 +564,53 @@ describe("SET_DECK_PRICES", () => {
     expect(state.decks[0].cards[0]).toMatchObject({ source: "need_to_buy", quantity: 3, acquired: true, price: 5 });
   });
 });
+
+// ── Commander designation ─────────────────────────────────────────────────────
+
+describe("TOGGLE_COMMANDER", () => {
+  const cards = [
+    makeCard({ id: "c1", name: "A" }), makeCard({ id: "c2", name: "B" }),
+    makeCard({ id: "c3", name: "C" }), makeCard({ id: "c4", name: "Four", quantity: 4 }),
+  ];
+  const toggle = (state: { decks: Deck[] }, cardId: string) =>
+    deckReducer(state, { type: "TOGGLE_COMMANDER", payload: { deckId: "d1", cardId } });
+  const base = () => ({ decks: [makeDeck({ id: "d1", name: "D", cards })] });
+
+  it("adds and removes a commander", () => {
+    const on = toggle(base(), "c1");
+    expect(on.decks[0].commanderIds).toEqual(["c1"]);
+    expect(toggle(on, "c1").decks[0].commanderIds).toEqual([]);
+  });
+
+  it("caps at two commanders", () => {
+    const s = toggle(toggle(toggle(base(), "c1"), "c2"), "c3");
+    expect(s.decks[0].commanderIds).toEqual(["c1", "c2"]);
+  });
+
+  it("still allows removing at the cap", () => {
+    const s = toggle(toggle(toggle(base(), "c1"), "c2"), "c1");
+    expect(s.decks[0].commanderIds).toEqual(["c2"]);
+  });
+
+  it("ignores quantity above 1 and unknown cards", () => {
+    expect(toggle(base(), "c4").decks[0].commanderIds).toBeUndefined();
+    expect(toggle(base(), "nope").decks[0].commanderIds).toBeUndefined();
+  });
+
+  it("REMOVE_CARD drops the id from commanderIds", () => {
+    const s = deckReducer(toggle(base(), "c1"), { type: "REMOVE_CARD", payload: { deckId: "d1", cardId: "c1" } });
+    expect(s.decks[0].commanderIds).toEqual([]);
+  });
+
+  it("SET_CARDS prunes commander ids no longer present", () => {
+    const s = deckReducer(toggle(base(), "c1"), { type: "SET_CARDS", payload: { deckId: "d1", cards: [cards[1]] } });
+    expect(s.decks[0].commanderIds).toEqual([]);
+  });
+});
+
+describe("DISMISS_COMMANDER_PROMPT", () => {
+  it("sets the flag", () => {
+    const s = deckReducer({ decks: [makeDeck({ id: "d1", name: "D" })] }, { type: "DISMISS_COMMANDER_PROMPT", payload: { deckId: "d1" } });
+    expect(s.decks[0].commanderPromptDismissed).toBe(true);
+  });
+});
