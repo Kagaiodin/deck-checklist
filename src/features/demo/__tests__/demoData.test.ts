@@ -47,6 +47,15 @@ describe("buildDemoData", () => {
     }
   });
 
+  it("designates commanders on decks A and B, leaving C to show the nudge", () => {
+    const [a, b, c] = decks;
+    for (const d of [a, b]) {
+      expect(d.commanderIds).toHaveLength(1);
+      expect(d.cards.some((x) => x.id === d.commanderIds![0])).toBe(true);
+    }
+    expect(c.commanderIds).toBeUndefined();
+  });
+
   it("includes a five-color deck for the mana pie", () => {
     expect(decks.some((d) => getDeckColorIdentity(d).length === 5)).toBe(true);
   });

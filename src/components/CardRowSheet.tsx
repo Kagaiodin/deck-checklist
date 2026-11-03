@@ -29,9 +29,12 @@ interface Props {
   onClose: () => void;
   onSetSource: (cardId: string, source: AcquisitionSource | undefined) => void;
   onRemoveCard: (cardId: string) => void;
+  isCommander?: boolean;
+  commanderCapReached?: boolean;
+  onToggleCommander?: (cardId: string) => void;
 }
 
-export function CardRowSheet({ card, deckId: _deckId, onClose, onSetSource, onRemoveCard }: Props) {
+export function CardRowSheet({ card, deckId: _deckId, onClose, onSetSource, onRemoveCard, isCommander = false, commanderCapReached = false, onToggleCommander }: Props) {
   const [visible, setVisible] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const sheetRef = useRef<HTMLDivElement>(null);
@@ -111,6 +114,15 @@ export function CardRowSheet({ card, deckId: _deckId, onClose, onSetSource, onRe
       "_blank",
       "noopener,noreferrer"
     );
+  }
+
+  const showCommanderAction = !!onToggleCommander && (isCommander || card.quantity === 1);
+  const commanderBlocked = !isCommander && commanderCapReached;
+
+  function handleCommanderClick() {
+    if (commanderBlocked) return;
+    onToggleCommander?.(card.id);
+    handleClose();
   }
 
   function handleRemoveConfirm() {
@@ -210,6 +222,31 @@ export function CardRowSheet({ card, deckId: _deckId, onClose, onSetSource, onRe
                 </span>
                 <span className="sheet-action-chevron">›</span>
               </button>
+
+              {showCommanderAction && (
+                <>
+                  <div className="sheet-divider" />
+                  <button
+                    className="sheet-action"
+                    aria-disabled={commanderBlocked || undefined}
+                    onClick={handleCommanderClick}
+                  >
+                    <span className={`sheet-action-icon ${commanderBlocked ? "sheet-icon-locked" : "sheet-icon-neutral"}`}>
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        {commanderBlocked ? (
+                          <><rect x="3.5" y="7" width="9" height="6.5" rx="1.2" /><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2" /></>
+                        ) : (
+                          <><path d="M2 12.5h12M2.5 11 1.5 5l3.7 3L8 3.5 10.8 8l3.7-3-1 6z" />{isCommander && <path d="M2 2l12 12" />}</>
+                        )}
+                      </svg>
+                    </span>
+                    <span className="sheet-action-body">
+                      <span className="sheet-action-label">{isCommander ? "Remove commander" : "Set as commander"}</span>
+                      {commanderBlocked && <span className="sheet-action-desc">Remove a commander first</span>}
+                    </span>
+                  </button>
+                </>
+              )}
 
               <div className="sheet-divider" />
 

@@ -88,6 +88,10 @@ export interface Deck {
   notifications?: DeckNotification[];
   extraInfo?: DeckExtraInfo;
   pricesUpdatedAt?: number;
+  /** Up to 2 IDs of cards in `cards` designated as commander(s). */
+  commanderIds?: string[];
+  /** True once the user dismissed the "no commander set" nudge for this deck. */
+  commanderPromptDismissed?: boolean;
 }
 
 export interface ErrorQueueItem {

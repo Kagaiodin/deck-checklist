@@ -305,6 +305,8 @@ export function buildDemoData(now: number): DemoValues {
     { id: "demo-deck-c", name: "Korvold Sacrifice", format: "commander", createdAt: now - 3 * DAY, pricesUpdatedAt: now - 3_600_000, cards: makeCards("c", DECK_C) },
   ];
   const [a, b, c] = decks;
+  a.commanderIds = [cardId(a, "Selvala, Heart of the Wilds")];
+  b.commanderIds = [cardId(b, "The Ur-Dragon")];
   const priceOf = (deck: Deck, name: string) => deck.cards.find((x) => x.name === name)!.price;
   const line = (deck: Deck, name: string) => ({
     deckId: deck.id,

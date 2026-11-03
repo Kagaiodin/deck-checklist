@@ -7,6 +7,9 @@ import { CardRowSheet } from "./CardRowSheet";
 import { DeckExtraInfo } from "./DeckExtraInfo";
 import { CostLine } from "./CostLine";
 import { useMediaQuery } from "../hooks/useMediaQuery";
+import { usePartnerCheck } from "../hooks/usePartnerCheck";
+import { isCommanderFormat } from "../utils/commander";
+import { MAX_COMMANDERS } from "../store/decks";
 
 
 const SEGMENT_SOURCES: Array<{ key: AcquisitionSource | "untagged"; color: string; bg: string; label: string }> = [
@@ -29,6 +32,8 @@ interface Props {
   onSetSource: (cardId: string, source: AcquisitionSource | undefined) => void;
   onBulkSetSource: (cardIds: string[], source: AcquisitionSource | undefined) => void;
   onRemoveCard: (cardId: string) => void;
+  onToggleCommander: (cardId: string) => void;
+  onDismissCommanderPrompt: () => void;
   onUpdateQuantity: (cardId: string, quantity: number) => void;
   onAddCard: (name: string) => Promise<{ success: boolean; error?: string }>;
   /** When set, only cards whose IDs are in this array are shown (used by notification "Show cards"). */
@@ -231,7 +236,7 @@ function AddCardRow({ onAdd }: { onAdd: (name: string) => Promise<{ success: boo
 }
 
 // ─── Main Checklist component ─────────────────────────────────────────────────
-export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetSource, onBulkSetSource, onRemoveCard, onUpdateQuantity, onAddCard, filterCardIds, isEnrichmentLoading, isPricesLoading }: Props) {
+export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetSource, onBulkSetSource, onRemoveCard, onToggleCommander, onDismissCommanderPrompt, onUpdateQuantity, onAddCard, filterCardIds, isEnrichmentLoading, isPricesLoading }: Props) {
   const [groupBy, setGroupBy] = useState<GroupBy>("none");
   const [showMissingOnly, setShowMissingOnly] = useState(false);
   const [search, setSearch] = useState("");
@@ -304,7 +309,15 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
       return 0;
     });
 
-  const groups = groupCards(visibleCards, groupBy);
+  const commanderIds = deck.commanderIds ?? [];
+  const commanderCount = deck.cards.filter(c => commanderIds.includes(c.id)).length;
+  const commanderCards = visibleCards.filter(c => commanderIds.includes(c.id));
+  const groups = groupCards(visibleCards.filter(c => !commanderIds.includes(c.id)), groupBy);
+  const partnerFlagged = usePartnerCheck(
+    commanderCount === 2 ? deck.cards.filter(c => commanderIds.includes(c.id)) : []
+  );
+  const showCommanderNudge =
+    commanderCount === 0 && !deck.commanderPromptDismissed && isCommanderFormat(deck.format);
 
   const totalCards = deck.cards.reduce((sum, c) => sum + c.quantity, 0);
   const acquiredCards = deck.cards.filter(c => c.acquired).reduce((sum, c) => sum + c.quantity, 0);
@@ -439,6 +452,126 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
   }, [editMode]);
 
   const selectedCount = selectedIds.size;
+
+  function renderRow(card: Card) {
+    const isSelected = selectedIds.has(card.id);
+    const isEditingQty = editingQtyId === card.id;
+    const setChipClass = `row-set-chip${card.rarity ? ` card-rarity-${card.rarity}` : ""}`;
+
+    return (
+      <li
+        key={card.id}
+        className={`card-row${card.acquired ? " acquired" : ""}${isSelected ? " selected" : ""}${editMode ? " edit-mode-row" : ""}`}
+        onClick={
+          editMode ? undefined :
+          selectMode ? () => toggleSelect(card.id) :
+          isTouchDevice ? (e) => {
+            if ((e.target as HTMLElement).closest('input[type="checkbox"]')) return;
+            setSheetCard(card);
+          } : undefined
+        }
+      >
+        {/* Checkbox */}
+        {!editMode && (
+          <input
+            type="checkbox"
+            checked={selectMode ? isSelected : card.acquired}
+            onChange={selectMode ? () => toggleSelect(card.id) : () => onToggleAcquired(card.id)}
+            onClick={e => e.stopPropagation()}
+            className="card-checkbox"
+          />
+        )}
+
+        {/* Quantity — editable in edit mode */}
+        {editMode ? (
+          isEditingQty ? (
+            <input
+              type="number"
+              className="qty-edit-input"
+              value={qtyDraft}
+              min={1}
+              max={99}
+              autoFocus
+              onChange={e => setQtyDraft(e.target.value)}
+              onBlur={() => commitQty(card.id)}
+              onKeyDown={e => {
+                if (e.key === "Enter") commitQty(card.id);
+                if (e.key === "Escape") setEditingQtyId(null);
+              }}
+              onClick={e => e.stopPropagation()}
+            />
+          ) : (
+            <button
+              className="card-qty qty-edit-btn"
+              onClick={e => { e.stopPropagation(); startEditQty(card); }}
+              title="Click to edit quantity"
+            >
+              {card.quantity}×
+            </button>
+          )
+        ) : (
+          <span className="card-qty">{card.quantity}×</span>
+        )}
+
+        {/* Card name */}
+        <div className="row-name-group">
+          <span className="row-name">{card.name}</span>
+        </div>
+
+        {/* Desktop meta: type + color identity (hidden on mobile) */}
+        <div className="row-meta">
+          <span className="row-meta-type">{extractMainType(card.type)}</span>
+          <div className="row-meta-colors">
+            {card.color.length === 0 ? (
+              <span className="color-pip color-pip-C" title="Colorless" />
+            ) : (
+              card.color.map(c => (
+                <span key={c} className={`color-pip color-pip-${c}`} title={COLOR_LABELS[c] ?? c} />
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Right cluster: set chip → pill slot → ⋯ */}
+        <div className="row-right">
+          {card.set && card.rarity && (
+            <span className={setChipClass}>
+              {card.set} · {rarityLabel(card.rarity)}
+            </span>
+          )}
+          <div className="pill-slot">
+            {card.source && (
+              <span className={`row-status-pill source-tag-${card.source}`}>
+                {sourceLabel(card.source)}
+              </span>
+            )}
+          </div>
+          {!editMode && !selectMode && !isTouchDevice && (
+            <CardRowOverflowMenu
+              cardId={card.id}
+              cardName={card.name}
+              currentStatus={card.source}
+              onSetSource={onSetSource}
+              onRemoveCard={onRemoveCard}
+              quantity={card.quantity}
+              isCommander={commanderIds.includes(card.id)}
+              commanderCapReached={commanderCount >= MAX_COMMANDERS}
+              onToggleCommander={onToggleCommander}
+            />
+          )}
+          {editMode && (
+            <button
+              className="card-remove-btn"
+              onClick={e => { e.stopPropagation(); onRemoveCard(card.id); }}
+              title="Remove card"
+            >
+              ×
+            </button>
+          )}
+        </div>
+      </li>
+    );
+  }
 
   return (
     <div className={`checklist${editMode ? " edit-mode" : ""}`}>
@@ -716,6 +849,55 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
         </div>
       )}
 
+      {/* ── Commander slot: pinned section, or a dismissible nudge ── */}
+      {commanderCards.length > 0 && (
+        <section className="card-group commander-group" aria-label="Commander">
+          <div className="group-title">
+            COMMANDER
+            <span className="group-count">{commanderCards.reduce((n, c) => n + c.quantity, 0)}</span>
+          </div>
+          <ul className="card-list">
+            {selectMode && !editMode && (
+              <li className="card-row card-row-select-all" onClick={toggleSelectAll}>
+                <input
+                  type="checkbox"
+                  checked={allSelected}
+                  onChange={toggleSelectAll}
+                  onClick={e => e.stopPropagation()}
+                  className="card-checkbox"
+                />
+                <span className="card-select-all-label">Select all</span>
+              </li>
+            )}
+            {commanderCards.map(renderRow)}
+          </ul>
+          {partnerFlagged && (
+            <p className="cmd-advisory" role="note">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M8 2 1.5 13.5h13z"/><path d="M8 6.5v3.2M8 11.7v.1"/></svg>
+              <span>
+                These two may not be a legal partner pair.
+                <br />
+                Partner, Friends forever, Background, and Doctor&apos;s companion pairings only.
+              </span>
+            </p>
+          )}
+        </section>
+      )}
+      {showCommanderNudge && (
+        <div className="cmd-nudge" role="note">
+          <p className="cmd-nudge-text">
+            {isTouchDevice ? (
+              "No commander set. Tap a card, then Set as commander."
+            ) : (
+              <>No commander set. Use <span className="nudge-glyph" aria-hidden="true">···</span><span className="sr-only">the more-actions button</span> on a card to make it your commander.</>
+            )}
+          </p>
+          <button className="cmd-nudge-x" type="button" aria-label="Dismiss commander hint" onClick={onDismissCommanderPrompt}>
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true"><path d="M2.5 2.5l7 7M9.5 2.5l-7 7"/></svg>
+          </button>
+        </div>
+      )}
+
       {groups.map(([groupName, cards]) => {
         const isCollapsed = groupBy !== "none" && collapsedGroups.has(groupName);
         return (
@@ -746,121 +928,7 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
               </li>
             )}
 
-            {cards.map(card => {
-              const isSelected = selectedIds.has(card.id);
-              const isEditingQty = editingQtyId === card.id;
-              const setChipClass = `row-set-chip${card.rarity ? ` card-rarity-${card.rarity}` : ""}`;
-
-              return (
-                <li
-                  key={card.id}
-                  className={`card-row${card.acquired ? " acquired" : ""}${isSelected ? " selected" : ""}${editMode ? " edit-mode-row" : ""}`}
-                  onClick={
-                    editMode ? undefined :
-                    selectMode ? () => toggleSelect(card.id) :
-                    isTouchDevice ? (e) => {
-                      if ((e.target as HTMLElement).closest('input[type="checkbox"]')) return;
-                      setSheetCard(card);
-                    } : undefined
-                  }
-                >
-                  {/* Checkbox */}
-                  {!editMode && (
-                    <input
-                      type="checkbox"
-                      checked={selectMode ? isSelected : card.acquired}
-                      onChange={selectMode ? () => toggleSelect(card.id) : () => onToggleAcquired(card.id)}
-                      onClick={e => e.stopPropagation()}
-                      className="card-checkbox"
-                    />
-                  )}
-
-                  {/* Quantity — editable in edit mode */}
-                  {editMode ? (
-                    isEditingQty ? (
-                      <input
-                        type="number"
-                        className="qty-edit-input"
-                        value={qtyDraft}
-                        min={1}
-                        max={99}
-                        autoFocus
-                        onChange={e => setQtyDraft(e.target.value)}
-                        onBlur={() => commitQty(card.id)}
-                        onKeyDown={e => {
-                          if (e.key === "Enter") commitQty(card.id);
-                          if (e.key === "Escape") setEditingQtyId(null);
-                        }}
-                        onClick={e => e.stopPropagation()}
-                      />
-                    ) : (
-                      <button
-                        className="card-qty qty-edit-btn"
-                        onClick={e => { e.stopPropagation(); startEditQty(card); }}
-                        title="Click to edit quantity"
-                      >
-                        {card.quantity}×
-                      </button>
-                    )
-                  ) : (
-                    <span className="card-qty">{card.quantity}×</span>
-                  )}
-
-                  {/* Card name */}
-                  <div className="row-name-group">
-                    <span className="row-name">{card.name}</span>
-                  </div>
-
-                  {/* Desktop meta: type + color identity (hidden on mobile) */}
-                  <div className="row-meta">
-                    <span className="row-meta-type">{extractMainType(card.type)}</span>
-                    <div className="row-meta-colors">
-                      {card.color.length === 0 ? (
-                        <span className="color-pip color-pip-C" title="Colorless" />
-                      ) : (
-                        card.color.map(c => (
-                          <span key={c} className={`color-pip color-pip-${c}`} title={COLOR_LABELS[c] ?? c} />
-                        ))
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Right cluster: set chip → pill slot → ⋯ */}
-                  <div className="row-right">
-                    {card.set && card.rarity && (
-                      <span className={setChipClass}>
-                        {card.set} · {rarityLabel(card.rarity)}
-                      </span>
-                    )}
-                    <div className="pill-slot">
-                      {card.source && (
-                        <span className={`row-status-pill source-tag-${card.source}`}>
-                          {sourceLabel(card.source)}
-                        </span>
-                      )}
-                    </div>
-                    {!editMode && !selectMode && !isTouchDevice && (
-                      <CardRowOverflowMenu
-                        cardId={card.id}
-                        cardName={card.name}
-                        currentStatus={card.source}
-                        onSetSource={onSetSource}
-                        onRemoveCard={onRemoveCard}
-                      />
-                    )}
-                    {editMode && (
-                      <button
-                        className="card-remove-btn"
-                        onClick={e => { e.stopPropagation(); onRemoveCard(card.id); }}
-                        title="Remove card"
-                      >
-                        ×
-                      </button>
-                    )}
-                  </div>
-                </li>
-              );
-            })}
+            {cards.map(renderRow)}
 
           </ul>}
         </div>
@@ -898,6 +966,9 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
           onClose={() => setSheetCard(null)}
           onSetSource={onSetSource}
           onRemoveCard={(cardId) => { onRemoveCard(cardId); setSheetCard(null); }}
+          isCommander={commanderIds.includes(sheetCard.id)}
+          commanderCapReached={commanderCount >= MAX_COMMANDERS}
+          onToggleCommander={onToggleCommander}
         />
       )}
     </div>

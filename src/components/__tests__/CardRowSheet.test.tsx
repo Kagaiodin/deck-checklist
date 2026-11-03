@@ -145,3 +145,42 @@ describe("CardRowSheet", () => {
     expect(p.onClose).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("CardRowSheet — commander action", () => {
+  beforeEach(() => { vi.useFakeTimers(); configure({ defaultHidden: true }); });
+  afterEach(() => { vi.useRealTimers(); configure({ defaultHidden: false }); document.body.style.overflow = ""; });
+
+  function setupCmdr(over: Partial<React.ComponentProps<typeof CardRowSheet>> = {}, cardOver: Partial<Card> = {}) {
+    const props = { card: { ...card, ...cardOver }, deckId: "d1", onClose: vi.fn(), onSetSource: vi.fn(), onRemoveCard: vi.fn(), onToggleCommander: vi.fn(), ...over };
+    render(<CardRowSheet {...props} />);
+    act(() => { vi.advanceTimersByTime(50); });
+    return props;
+  }
+
+  it("toggles the commander and closes", () => {
+    const p = setupCmdr();
+    fireEvent.click(screen.getByRole("button", { name: /Set as commander/ }));
+    expect(p.onToggleCommander).toHaveBeenCalledWith("c1");
+    act(() => { vi.advanceTimersByTime(300); });
+    expect(p.onClose).toHaveBeenCalled();
+  });
+
+  it("shows Remove commander for a commander", () => {
+    setupCmdr({ isCommander: true });
+    expect(screen.getByRole("button", { name: /Remove commander/ })).toBeInTheDocument();
+  });
+
+  it("is hidden for quantity above 1", () => {
+    setupCmdr({}, { quantity: 3 });
+    expect(screen.queryByRole("button", { name: /commander/ })).not.toBeInTheDocument();
+  });
+
+  it("is disabled with a hint at the cap", () => {
+    const p = setupCmdr({ commanderCapReached: true });
+    const btn = screen.getByRole("button", { name: /Set as commander/ });
+    expect(btn).toHaveAttribute("aria-disabled", "true");
+    expect(screen.getByText("Remove a commander first")).toBeInTheDocument();
+    fireEvent.click(btn);
+    expect(p.onToggleCommander).not.toHaveBeenCalled();
+  });
+});
