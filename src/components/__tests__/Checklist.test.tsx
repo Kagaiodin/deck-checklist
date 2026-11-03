@@ -328,6 +328,31 @@ describe("Checklist — acquiring and row actions", () => {
   });
 });
 
+describe("Checklist — right-click", () => {
+  beforeEach(() => stubMedia(false));
+
+  it("right-click on a row opens its actions popover and suppresses the browser menu", () => {
+    setup();
+    const notPrevented = fireEvent.contextMenu(row("Counterspell"));
+    expect(notPrevented).toBe(false);
+    expect(screen.getByRole("menu", { name: /Card actions for Counterspell/ })).toBeInTheDocument();
+  });
+
+  it("right-click on the checkbox keeps the native menu", () => {
+    setup();
+    const notPrevented = fireEvent.contextMenu(within(row("Counterspell")).getByRole("checkbox"));
+    expect(notPrevented).toBe(true);
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+  });
+
+  it("right-click while open does not toggle it closed", () => {
+    setup();
+    fireEvent.contextMenu(row("Counterspell"));
+    fireEvent.contextMenu(row("Counterspell"));
+    expect(screen.getByRole("menu")).toBeInTheDocument();
+  });
+});
+
 describe("Checklist — touch devices", () => {
   beforeEach(() => stubMedia(true));
 

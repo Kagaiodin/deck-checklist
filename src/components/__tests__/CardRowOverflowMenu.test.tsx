@@ -118,6 +118,44 @@ describe("CardRowOverflowMenu", () => {
   });
 });
 
+describe("CardRowOverflowMenu — keyboard and focus", () => {
+  it("arrow keys move through all items and wrap; left/right stay in the status group", async () => {
+    const { trigger } = setup();
+    const user = userEvent.setup();
+    await user.click(trigger);
+    const owned = screen.getByRole("menuitemradio", { name: "Owned" });
+    expect(owned).toHaveFocus();
+    await user.keyboard("{ArrowRight}");
+    expect(screen.getByRole("menuitemradio", { name: "Need" })).toHaveFocus();
+    await user.keyboard("{ArrowLeft}{ArrowLeft}");
+    expect(screen.getByRole("menuitemradio", { name: "Proxy" })).toHaveFocus(); // wraps
+    await user.keyboard("{ArrowDown}");
+    expect(screen.getByRole("menuitem", { name: /View all printings/ })).toHaveFocus();
+    await user.keyboard("{ArrowRight}"); // no horizontal movement outside the status group
+    expect(screen.getByRole("menuitem", { name: /View all printings/ })).toHaveFocus();
+    await user.keyboard("{End}");
+    expect(screen.getByRole("menuitem", { name: /Remove from deck/ })).toHaveFocus();
+    await user.keyboard("{ArrowDown}");
+    expect(owned).toHaveFocus(); // wraps to first
+    await user.keyboard("{ArrowUp}");
+    expect(screen.getByRole("menuitem", { name: /Remove from deck/ })).toHaveFocus();
+  });
+
+  it("returns focus to the trigger on Escape, toggle and View all printings", async () => {
+    vi.spyOn(window, "open").mockReturnValue(null);
+    const { trigger } = setup();
+    const user = userEvent.setup();
+    await user.click(trigger);
+    await user.keyboard("{Escape}");
+    expect(trigger).toHaveFocus();
+
+    await user.click(trigger);
+    await user.click(screen.getByRole("menuitem", { name: /View all printings/ }));
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
+  });
+});
+
 describe("CardRowOverflowMenu — commander action", () => {
   function setupCmdr(over: Partial<React.ComponentProps<typeof CardRowOverflowMenu>> = {}) {
     const onToggleCommander = vi.fn();
