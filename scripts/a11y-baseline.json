@@ -1,0 +1,1214 @@
+[
+  {
+    "key": "aria-allowed-attr | 34-desktop-profile-import | .import-backup-backdrop",
+    "issue": 172
+  },
+  {
+    "key": "label | 02-desktop-decks-selected | .acquired.card-row:nth-child(1) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 02-desktop-decks-selected | .acquired.card-row:nth-child(11) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 02-desktop-decks-selected | .acquired.card-row:nth-child(12) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 02-desktop-decks-selected | .acquired.card-row:nth-child(2) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 02-desktop-decks-selected | .acquired.card-row:nth-child(3) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 02-desktop-decks-selected | .acquired.card-row:nth-child(4) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 02-desktop-decks-selected | .acquired.card-row:nth-child(5) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 02-desktop-decks-selected | .card-row:nth-child(10) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 02-desktop-decks-selected | .card-row:nth-child(13) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 02-desktop-decks-selected | .card-row:nth-child(14) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 02-desktop-decks-selected | .card-row:nth-child(15) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 02-desktop-decks-selected | .card-row:nth-child(6) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 02-desktop-decks-selected | .card-row:nth-child(7) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 02-desktop-decks-selected | .card-row:nth-child(8) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 02-desktop-decks-selected | .card-row:nth-child(9) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 03-desktop-decks-missing-only | .card-row:nth-child(1) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 03-desktop-decks-missing-only | .card-row:nth-child(2) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 03-desktop-decks-missing-only | .card-row:nth-child(3) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 03-desktop-decks-missing-only | .card-row:nth-child(4) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 03-desktop-decks-missing-only | .card-row:nth-child(5) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 03-desktop-decks-missing-only | .card-row:nth-child(6) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 03-desktop-decks-missing-only | .card-row:nth-child(7) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 03-desktop-decks-missing-only | .card-row:nth-child(8) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 06-desktop-buy-list-open | .acquired.card-row:nth-child(1) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 06-desktop-buy-list-open | .acquired.card-row:nth-child(11) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 06-desktop-buy-list-open | .acquired.card-row:nth-child(12) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 06-desktop-buy-list-open | .acquired.card-row:nth-child(2) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 06-desktop-buy-list-open | .acquired.card-row:nth-child(3) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 06-desktop-buy-list-open | .acquired.card-row:nth-child(4) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 06-desktop-buy-list-open | .acquired.card-row:nth-child(5) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 06-desktop-buy-list-open | .card-row:nth-child(10) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 06-desktop-buy-list-open | .card-row:nth-child(13) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 06-desktop-buy-list-open | .card-row:nth-child(14) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 06-desktop-buy-list-open | .card-row:nth-child(15) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 06-desktop-buy-list-open | .card-row:nth-child(6) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 06-desktop-buy-list-open | .card-row:nth-child(7) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 06-desktop-buy-list-open | .card-row:nth-child(8) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 06-desktop-buy-list-open | .card-row:nth-child(9) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 07-desktop-theme-light | .acquired.card-row:nth-child(1) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 07-desktop-theme-light | .acquired.card-row:nth-child(11) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 07-desktop-theme-light | .acquired.card-row:nth-child(12) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 07-desktop-theme-light | .acquired.card-row:nth-child(2) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 07-desktop-theme-light | .acquired.card-row:nth-child(3) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 07-desktop-theme-light | .acquired.card-row:nth-child(4) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 07-desktop-theme-light | .acquired.card-row:nth-child(5) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 07-desktop-theme-light | .card-row:nth-child(10) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 07-desktop-theme-light | .card-row:nth-child(13) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 07-desktop-theme-light | .card-row:nth-child(14) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 07-desktop-theme-light | .card-row:nth-child(15) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 07-desktop-theme-light | .card-row:nth-child(6) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 07-desktop-theme-light | .card-row:nth-child(7) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 07-desktop-theme-light | .card-row:nth-child(8) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 07-desktop-theme-light | .card-row:nth-child(9) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 10-mobile-deck-selected | .acquired.card-row:nth-child(1) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 10-mobile-deck-selected | .acquired.card-row:nth-child(11) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 10-mobile-deck-selected | .acquired.card-row:nth-child(12) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 10-mobile-deck-selected | .acquired.card-row:nth-child(2) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 10-mobile-deck-selected | .acquired.card-row:nth-child(3) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 10-mobile-deck-selected | .acquired.card-row:nth-child(4) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 10-mobile-deck-selected | .acquired.card-row:nth-child(5) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 10-mobile-deck-selected | .card-row:nth-child(10) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 10-mobile-deck-selected | .card-row:nth-child(13) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 10-mobile-deck-selected | .card-row:nth-child(14) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 10-mobile-deck-selected | .card-row:nth-child(15) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 10-mobile-deck-selected | .card-row:nth-child(6) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 10-mobile-deck-selected | .card-row:nth-child(7) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 10-mobile-deck-selected | .card-row:nth-child(8) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 10-mobile-deck-selected | .card-row:nth-child(9) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 13-mobile-nav | .acquired.card-row:nth-child(1) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 13-mobile-nav | .acquired.card-row:nth-child(11) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 13-mobile-nav | .acquired.card-row:nth-child(12) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 13-mobile-nav | .acquired.card-row:nth-child(2) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 13-mobile-nav | .acquired.card-row:nth-child(3) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 13-mobile-nav | .acquired.card-row:nth-child(4) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 13-mobile-nav | .acquired.card-row:nth-child(5) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 13-mobile-nav | .card-row:nth-child(10) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 13-mobile-nav | .card-row:nth-child(13) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 13-mobile-nav | .card-row:nth-child(14) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 13-mobile-nav | .card-row:nth-child(15) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 13-mobile-nav | .card-row:nth-child(6) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 13-mobile-nav | .card-row:nth-child(7) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 13-mobile-nav | .card-row:nth-child(8) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 13-mobile-nav | .card-row:nth-child(9) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 14-mobile-buy-list | .acquired.card-row:nth-child(1) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 14-mobile-buy-list | .acquired.card-row:nth-child(11) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 14-mobile-buy-list | .acquired.card-row:nth-child(12) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 14-mobile-buy-list | .acquired.card-row:nth-child(2) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 14-mobile-buy-list | .acquired.card-row:nth-child(3) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 14-mobile-buy-list | .acquired.card-row:nth-child(4) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 14-mobile-buy-list | .acquired.card-row:nth-child(5) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 14-mobile-buy-list | .card-row:nth-child(10) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 14-mobile-buy-list | .card-row:nth-child(13) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 14-mobile-buy-list | .card-row:nth-child(14) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 14-mobile-buy-list | .card-row:nth-child(15) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 14-mobile-buy-list | .card-row:nth-child(6) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 14-mobile-buy-list | .card-row:nth-child(7) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 14-mobile-buy-list | .card-row:nth-child(8) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 14-mobile-buy-list | .card-row:nth-child(9) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 20-desktop-buy-flow-vendor | .acquired.card-row:nth-child(1) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 20-desktop-buy-flow-vendor | .acquired.card-row:nth-child(11) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 20-desktop-buy-flow-vendor | .acquired.card-row:nth-child(12) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 20-desktop-buy-flow-vendor | .acquired.card-row:nth-child(2) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 20-desktop-buy-flow-vendor | .acquired.card-row:nth-child(3) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 20-desktop-buy-flow-vendor | .acquired.card-row:nth-child(4) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 20-desktop-buy-flow-vendor | .acquired.card-row:nth-child(5) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 20-desktop-buy-flow-vendor | .card-row:nth-child(10) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 20-desktop-buy-flow-vendor | .card-row:nth-child(13) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 20-desktop-buy-flow-vendor | .card-row:nth-child(14) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 20-desktop-buy-flow-vendor | .card-row:nth-child(15) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 20-desktop-buy-flow-vendor | .card-row:nth-child(6) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 20-desktop-buy-flow-vendor | .card-row:nth-child(7) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 20-desktop-buy-flow-vendor | .card-row:nth-child(8) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 20-desktop-buy-flow-vendor | .card-row:nth-child(9) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 22-desktop-source-picker | .acquired.card-row:nth-child(1) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 22-desktop-source-picker | .acquired.card-row:nth-child(11) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 22-desktop-source-picker | .acquired.card-row:nth-child(12) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 22-desktop-source-picker | .acquired.card-row:nth-child(2) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 22-desktop-source-picker | .acquired.card-row:nth-child(3) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 22-desktop-source-picker | .acquired.card-row:nth-child(4) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 22-desktop-source-picker | .acquired.card-row:nth-child(5) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 22-desktop-source-picker | .card-row:nth-child(10) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 22-desktop-source-picker | .card-row:nth-child(13) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 22-desktop-source-picker | .card-row:nth-child(14) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 22-desktop-source-picker | .card-row:nth-child(15) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 22-desktop-source-picker | .card-row:nth-child(6) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 22-desktop-source-picker | .card-row:nth-child(7) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 22-desktop-source-picker | .card-row:nth-child(8) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 22-desktop-source-picker | .card-row:nth-child(9) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 23-desktop-bulk-tag | .acquired.card-row:nth-child(12) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 23-desktop-bulk-tag | .acquired.card-row:nth-child(13) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 23-desktop-bulk-tag | .acquired.card-row:nth-child(2) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 23-desktop-bulk-tag | .acquired.card-row:nth-child(3) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 23-desktop-bulk-tag | .acquired.card-row:nth-child(4) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 23-desktop-bulk-tag | .acquired.card-row:nth-child(5) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 23-desktop-bulk-tag | .acquired.card-row:nth-child(6) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 23-desktop-bulk-tag | .card-row-select-all > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 23-desktop-bulk-tag | .card-row:nth-child(10) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 23-desktop-bulk-tag | .card-row:nth-child(11) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 23-desktop-bulk-tag | .card-row:nth-child(14) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 23-desktop-bulk-tag | .card-row:nth-child(15) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 23-desktop-bulk-tag | .card-row:nth-child(16) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 23-desktop-bulk-tag | .card-row:nth-child(7) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 23-desktop-bulk-tag | .card-row:nth-child(8) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 23-desktop-bulk-tag | .card-row:nth-child(9) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 24-desktop-edit-mode | .add-card-qty",
+    "issue": 171
+  },
+  {
+    "key": "label | 28-desktop-deck-rename | .acquired.card-row:nth-child(1) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 28-desktop-deck-rename | .acquired.card-row:nth-child(11) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 28-desktop-deck-rename | .acquired.card-row:nth-child(12) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 28-desktop-deck-rename | .acquired.card-row:nth-child(2) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 28-desktop-deck-rename | .acquired.card-row:nth-child(3) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 28-desktop-deck-rename | .acquired.card-row:nth-child(4) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 28-desktop-deck-rename | .acquired.card-row:nth-child(5) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 28-desktop-deck-rename | .card-row:nth-child(10) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 28-desktop-deck-rename | .card-row:nth-child(13) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 28-desktop-deck-rename | .card-row:nth-child(14) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 28-desktop-deck-rename | .card-row:nth-child(15) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 28-desktop-deck-rename | .card-row:nth-child(6) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 28-desktop-deck-rename | .card-row:nth-child(7) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 28-desktop-deck-rename | .card-row:nth-child(8) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 28-desktop-deck-rename | .card-row:nth-child(9) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 28-desktop-deck-rename | .rename-input",
+    "issue": 171
+  },
+  {
+    "key": "label | 29-desktop-deck-format-edit | .acquired.card-row:nth-child(1) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 29-desktop-deck-format-edit | .acquired.card-row:nth-child(11) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 29-desktop-deck-format-edit | .acquired.card-row:nth-child(12) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 29-desktop-deck-format-edit | .acquired.card-row:nth-child(2) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 29-desktop-deck-format-edit | .acquired.card-row:nth-child(3) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 29-desktop-deck-format-edit | .acquired.card-row:nth-child(4) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 29-desktop-deck-format-edit | .acquired.card-row:nth-child(5) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 29-desktop-deck-format-edit | .card-row:nth-child(10) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 29-desktop-deck-format-edit | .card-row:nth-child(13) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 29-desktop-deck-format-edit | .card-row:nth-child(14) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 29-desktop-deck-format-edit | .card-row:nth-child(15) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 29-desktop-deck-format-edit | .card-row:nth-child(6) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 29-desktop-deck-format-edit | .card-row:nth-child(7) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 29-desktop-deck-format-edit | .card-row:nth-child(8) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 29-desktop-deck-format-edit | .card-row:nth-child(9) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 30-desktop-export-dropdown | .acquired.card-row:nth-child(1) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 30-desktop-export-dropdown | .acquired.card-row:nth-child(11) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 30-desktop-export-dropdown | .acquired.card-row:nth-child(12) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 30-desktop-export-dropdown | .acquired.card-row:nth-child(2) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 30-desktop-export-dropdown | .acquired.card-row:nth-child(3) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 30-desktop-export-dropdown | .acquired.card-row:nth-child(4) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 30-desktop-export-dropdown | .acquired.card-row:nth-child(5) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 30-desktop-export-dropdown | .card-row:nth-child(10) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 30-desktop-export-dropdown | .card-row:nth-child(13) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 30-desktop-export-dropdown | .card-row:nth-child(14) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 30-desktop-export-dropdown | .card-row:nth-child(15) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 30-desktop-export-dropdown | .card-row:nth-child(6) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 30-desktop-export-dropdown | .card-row:nth-child(7) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 30-desktop-export-dropdown | .card-row:nth-child(8) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 30-desktop-export-dropdown | .card-row:nth-child(9) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 32-desktop-overflow-menu | .acquired.card-row:nth-child(1) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 32-desktop-overflow-menu | .acquired.card-row:nth-child(11) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 32-desktop-overflow-menu | .acquired.card-row:nth-child(12) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 32-desktop-overflow-menu | .acquired.card-row:nth-child(2) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 32-desktop-overflow-menu | .acquired.card-row:nth-child(3) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 32-desktop-overflow-menu | .acquired.card-row:nth-child(4) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 32-desktop-overflow-menu | .acquired.card-row:nth-child(5) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 32-desktop-overflow-menu | .card-row:nth-child(10) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 32-desktop-overflow-menu | .card-row:nth-child(13) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 32-desktop-overflow-menu | .card-row:nth-child(14) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 32-desktop-overflow-menu | .card-row:nth-child(15) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 32-desktop-overflow-menu | .card-row:nth-child(6) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 32-desktop-overflow-menu | .card-row:nth-child(7) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 32-desktop-overflow-menu | .card-row:nth-child(8) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 32-desktop-overflow-menu | .card-row:nth-child(9) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 34-desktop-profile-import | .acquired.card-row:nth-child(1) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 34-desktop-profile-import | .acquired.card-row:nth-child(11) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 34-desktop-profile-import | .acquired.card-row:nth-child(12) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 34-desktop-profile-import | .acquired.card-row:nth-child(2) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 34-desktop-profile-import | .acquired.card-row:nth-child(3) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 34-desktop-profile-import | .acquired.card-row:nth-child(4) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 34-desktop-profile-import | .acquired.card-row:nth-child(5) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 34-desktop-profile-import | .card-row:nth-child(10) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 34-desktop-profile-import | .card-row:nth-child(13) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 34-desktop-profile-import | .card-row:nth-child(14) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 34-desktop-profile-import | .card-row:nth-child(15) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 34-desktop-profile-import | .card-row:nth-child(6) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 34-desktop-profile-import | .card-row:nth-child(7) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 34-desktop-profile-import | .card-row:nth-child(8) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 34-desktop-profile-import | .card-row:nth-child(9) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 35-desktop-sidebar-rail | .acquired.card-row:nth-child(1) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 35-desktop-sidebar-rail | .acquired.card-row:nth-child(11) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 35-desktop-sidebar-rail | .acquired.card-row:nth-child(12) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 35-desktop-sidebar-rail | .acquired.card-row:nth-child(2) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 35-desktop-sidebar-rail | .acquired.card-row:nth-child(3) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 35-desktop-sidebar-rail | .acquired.card-row:nth-child(4) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 35-desktop-sidebar-rail | .acquired.card-row:nth-child(5) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 35-desktop-sidebar-rail | .card-row:nth-child(10) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 35-desktop-sidebar-rail | .card-row:nth-child(13) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 35-desktop-sidebar-rail | .card-row:nth-child(14) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 35-desktop-sidebar-rail | .card-row:nth-child(15) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 35-desktop-sidebar-rail | .card-row:nth-child(6) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 35-desktop-sidebar-rail | .card-row:nth-child(7) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 35-desktop-sidebar-rail | .card-row:nth-child(8) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 35-desktop-sidebar-rail | .card-row:nth-child(9) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 36-desktop-extra-info | .acquired.card-row:nth-child(1) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 36-desktop-extra-info | .acquired.card-row:nth-child(11) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 36-desktop-extra-info | .acquired.card-row:nth-child(12) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 36-desktop-extra-info | .acquired.card-row:nth-child(2) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 36-desktop-extra-info | .acquired.card-row:nth-child(3) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 36-desktop-extra-info | .acquired.card-row:nth-child(4) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 36-desktop-extra-info | .acquired.card-row:nth-child(5) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 36-desktop-extra-info | .card-row:nth-child(10) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 36-desktop-extra-info | .card-row:nth-child(13) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 36-desktop-extra-info | .card-row:nth-child(14) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 36-desktop-extra-info | .card-row:nth-child(15) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 36-desktop-extra-info | .card-row:nth-child(6) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 36-desktop-extra-info | .card-row:nth-child(7) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 36-desktop-extra-info | .card-row:nth-child(8) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 36-desktop-extra-info | .card-row:nth-child(9) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 39-desktop-orders-new-sheet-step2-filled | .nos-qty-input",
+    "issue": 171
+  },
+  {
+    "key": "label | 40-desktop-orders-new-sheet-step3 | input[value=\"2026-11-03\"]",
+    "issue": 171
+  },
+  {
+    "key": "label | 40-desktop-orders-new-sheet-step3 | input[value=\"2026-11-08\"]",
+    "issue": 171
+  },
+  {
+    "key": "label | 54-desktop-cost-breakdown-open | .acquired > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 54-desktop-cost-breakdown-open | .card-row:nth-child(1) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 54-desktop-cost-breakdown-open | .card-row:nth-child(2) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 54-desktop-cost-breakdown-open | .card-row:nth-child(3) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 54-desktop-cost-breakdown-open | .card-row:nth-child(5) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 54-desktop-cost-breakdown-open | .card-row:nth-child(6) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 54-desktop-cost-breakdown-open | .card-row:nth-child(7) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 55-desktop-cost-breakdown-light | .acquired > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 55-desktop-cost-breakdown-light | .card-row:nth-child(1) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 55-desktop-cost-breakdown-light | .card-row:nth-child(2) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 55-desktop-cost-breakdown-light | .card-row:nth-child(3) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 55-desktop-cost-breakdown-light | .card-row:nth-child(5) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 55-desktop-cost-breakdown-light | .card-row:nth-child(6) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 55-desktop-cost-breakdown-light | .card-row:nth-child(7) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 56-mobile-cost-breakdown-open | .acquired > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 56-mobile-cost-breakdown-open | .card-row:nth-child(1) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 56-mobile-cost-breakdown-open | .card-row:nth-child(2) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 56-mobile-cost-breakdown-open | .card-row:nth-child(3) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 56-mobile-cost-breakdown-open | .card-row:nth-child(5) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 56-mobile-cost-breakdown-open | .card-row:nth-child(6) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 56-mobile-cost-breakdown-open | .card-row:nth-child(7) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 57-desktop-cost-breakdown-unpriced-ordered | .acquired.card-row:nth-child(1) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 57-desktop-cost-breakdown-unpriced-ordered | .acquired.card-row:nth-child(11) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 57-desktop-cost-breakdown-unpriced-ordered | .acquired.card-row:nth-child(12) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 57-desktop-cost-breakdown-unpriced-ordered | .acquired.card-row:nth-child(2) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 57-desktop-cost-breakdown-unpriced-ordered | .acquired.card-row:nth-child(3) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 57-desktop-cost-breakdown-unpriced-ordered | .acquired.card-row:nth-child(4) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 57-desktop-cost-breakdown-unpriced-ordered | .acquired.card-row:nth-child(5) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 57-desktop-cost-breakdown-unpriced-ordered | .card-row:nth-child(10) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 57-desktop-cost-breakdown-unpriced-ordered | .card-row:nth-child(13) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 57-desktop-cost-breakdown-unpriced-ordered | .card-row:nth-child(14) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 57-desktop-cost-breakdown-unpriced-ordered | .card-row:nth-child(15) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 57-desktop-cost-breakdown-unpriced-ordered | .card-row:nth-child(6) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 57-desktop-cost-breakdown-unpriced-ordered | .card-row:nth-child(7) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 57-desktop-cost-breakdown-unpriced-ordered | .card-row:nth-child(8) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 57-desktop-cost-breakdown-unpriced-ordered | .card-row:nth-child(9) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 58-desktop-cost-breakdown-stale | .acquired.card-row:nth-child(1) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 58-desktop-cost-breakdown-stale | .acquired.card-row:nth-child(11) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 58-desktop-cost-breakdown-stale | .acquired.card-row:nth-child(2) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 58-desktop-cost-breakdown-stale | .acquired.card-row:nth-child(4) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 58-desktop-cost-breakdown-stale | .acquired.card-row:nth-child(5) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 58-desktop-cost-breakdown-stale | .acquired.card-row:nth-child(6) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 58-desktop-cost-breakdown-stale | .acquired.card-row:nth-child(7) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 58-desktop-cost-breakdown-stale | .acquired.card-row:nth-child(8) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 58-desktop-cost-breakdown-stale | .acquired.card-row:nth-child(9) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 58-desktop-cost-breakdown-stale | .card-row:nth-child(10) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 58-desktop-cost-breakdown-stale | .card-row:nth-child(12) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  },
+  {
+    "key": "label | 58-desktop-cost-breakdown-stale | .card-row:nth-child(3) > .card-checkbox[type=\"checkbox\"]",
+    "issue": 170
+  }
+]
