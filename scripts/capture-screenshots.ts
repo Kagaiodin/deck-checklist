@@ -992,7 +992,8 @@ async function main(): Promise<void> {
     });
     await shot(page, "34-desktop-profile-import.png");
     await attempt("close profile import panel", async () => {
-      await click(page, "button.btn-ghost", { hasText: "Import backup" });
+      // Import is a modal dialog now; it covers the sidebar toggle, so use its Close button.
+      await click(page, '[aria-labelledby="import-backup-title"] button[aria-label="Close"]');
       await page.waitForTimeout(300);
     });
 
