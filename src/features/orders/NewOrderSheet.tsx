@@ -34,7 +34,16 @@ export function NewOrderSheet({
 }: NewOrderSheetProps) {
   const isEdit = !!editOrder;
   const sheetRef = useRef<HTMLDivElement>(null);
-  useDialogKeys(sheetRef, onClose);
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
+  // Dismiss paths (Escape, scrim, ✕, Cancel) go through here so a half-filled new order
+  // is not thrown away silently. Escape while the prompt is up goes back to the form.
+  const dirtyRef = useRef(false);
+  function requestClose() {
+    if (confirmDiscard) { setConfirmDiscard(false); return; }
+    if (dirtyRef.current) { setConfirmDiscard(true); return; }
+    onClose();
+  }
+  useDialogKeys(sheetRef, requestClose);
 
   const [step, setStep] = useState<Step>(1);
 
@@ -184,6 +193,11 @@ export function NewOrderSheet({
     setStep(4);
   }
 
+  dirtyRef.current = !isEdit && step < 4 && (
+    cards.length > 0 || customVendor.trim() !== "" || orderNum.trim() !== "" ||
+    tracking.trim() !== "" || vendor !== defaultVendor
+  );
+
   const activeVendor = showCustom ? customVendor.trim() : vendor;
   const totalQty = cards.reduce((s, c) => s + c.quantity, 0);
   const totalPrice = cards.reduce((s, c) => s + (c.price ?? 0) * c.quantity, 0);
@@ -199,7 +213,7 @@ export function NewOrderSheet({
   ];
 
   return createPortal(
-    <div className="nos-scrim" onClick={onClose}>
+    <div className="nos-scrim" onClick={requestClose}>
       <div
         ref={sheetRef}
         className="nos-sheet"
@@ -219,7 +233,7 @@ export function NewOrderSheet({
             </h2>
             {headerSub && <span className="nos-vendor-tag">{headerSub}</span>}
           </div>
-          <button className="nos-close" onClick={onClose} aria-label="Close">✕</button>
+          <button className="nos-close" onClick={requestClose} aria-label="Close">✕</button>
         </div>
 
         {/* ── Stepper ── */}
@@ -488,22 +502,31 @@ export function NewOrderSheet({
 
         {/* ── Footer ── */}
         <div className="nos-foot">
-          {step === 1 && (
+          {confirmDiscard && (
+            <>
+              <div className="nos-delete-confirm" role="alert">
+                <span>Discard this order?</span>
+                <button className="btn btn-ghost btn-sm" onClick={onClose}>Discard</button>
+                <button className="btn btn-primary btn-sm" autoFocus onClick={() => setConfirmDiscard(false)}>Keep editing</button>
+              </div>
+            </>
+          )}
+          {!confirmDiscard && step === 1 && (
             <>
               <span />
               <div className="nos-foot-right">
-                <button className="btn btn-ghost btn-sm" onClick={onClose}>Cancel</button>
+                <button className="btn btn-ghost btn-sm" onClick={requestClose}>Cancel</button>
                 <button className="btn btn-primary btn-sm" disabled={!activeVendor} onClick={() => setStep(2)}>
                   Continue →
                 </button>
               </div>
             </>
           )}
-          {step === 2 && (
+          {!confirmDiscard && step === 2 && (
             <>
               <button className="btn btn-ghost btn-sm" onClick={() => setStep(1)}>← Back</button>
               <div className="nos-foot-right">
-                <button className="btn btn-ghost btn-sm" onClick={onClose}>Cancel</button>
+                <button className="btn btn-ghost btn-sm" onClick={requestClose}>Cancel</button>
                 <button
                   className="btn btn-primary btn-sm"
                   disabled={cards.length === 0}
@@ -514,18 +537,18 @@ export function NewOrderSheet({
               </div>
             </>
           )}
-          {step === 3 && !isEdit && (
+          {!confirmDiscard && step === 3 && !isEdit && (
             <>
               <button className="btn btn-ghost btn-sm" onClick={() => setStep(2)}>← Back</button>
               <div className="nos-foot-right">
-                <button className="btn btn-ghost btn-sm" onClick={onClose}>Cancel</button>
+                <button className="btn btn-ghost btn-sm" onClick={requestClose}>Cancel</button>
                 <button className="btn btn-primary btn-sm" onClick={handleCreate}>
                   Create order ✓
                 </button>
               </div>
             </>
           )}
-          {step === 3 && isEdit && (
+          {!confirmDiscard && step === 3 && isEdit && (
             <>
               {confirmDelete ? (
                 <div className="nos-delete-confirm">
@@ -553,7 +576,7 @@ export function NewOrderSheet({
               </div>
             </>
           )}
-          {step === 4 && (
+          {!confirmDiscard && step === 4 && (
             <>
               <span />
               <div className="nos-foot-right">
