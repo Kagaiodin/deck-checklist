@@ -1,4 +1,5 @@
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
+import { useDialogKeys } from "../../hooks/useDialogKeys";
 import "./demo.css";
 
 interface Props {
@@ -8,26 +9,13 @@ interface Props {
 
 export function DemoConfirmModal({ onCancel, onConfirm }: Props) {
   const confirmRef = useRef<HTMLButtonElement>(null);
-  // Callers pass inline handlers; keep the latest in a ref so the effect runs once.
-  const onCancelRef = useRef(onCancel);
-  useEffect(() => { onCancelRef.current = onCancel; });
-
-  useEffect(() => {
-    const prev = document.activeElement as HTMLElement | null;
-    confirmRef.current?.focus();
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onCancelRef.current();
-    }
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      prev?.focus();
-    };
-  }, []);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  // The safe-to-confirm button takes focus first; Escape cancels; Tab stays in the dialog.
+  useDialogKeys(dialogRef, onCancel, { initialFocus: () => confirmRef.current });
 
   return (
     <div className="demo-confirm-backdrop" onClick={e => { if (e.target === e.currentTarget) onCancel(); }}>
-      <div className="demo-confirm" role="dialog" aria-modal="true" aria-labelledby="demo-confirm-title">
+      <div ref={dialogRef} className="demo-confirm" role="dialog" aria-modal="true" aria-labelledby="demo-confirm-title">
         <h4 id="demo-confirm-title">Replace your data with sample data?</h4>
         <p>Your data is saved and comes back when you exit demo mode.</p>
         <div className="demo-confirm-foot">

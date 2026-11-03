@@ -281,3 +281,36 @@ describe("BuyListSheet — error views", () => {
     expect(screen.getByText("Send to Manapool (5)")).toBeInTheDocument();
   });
 });
+
+describe("BuyListSheet — focus", () => {
+  it("keeps Tab inside the sheet and pulls stray focus back in", () => {
+    render(<BuyListSheet {...baseProps} />);
+    const dialog = screen.getByRole("dialog");
+    const items = Array.from(dialog.querySelectorAll<HTMLElement>("button:not([disabled]), input:not([disabled])"));
+    const first = items[0];
+    const last = items[items.length - 1];
+    last.focus();
+    fireEvent.keyDown(document, { key: "Tab" });
+    expect(first).toHaveFocus();
+    fireEvent.keyDown(document, { key: "Tab", shiftKey: true });
+    expect(last).toHaveFocus();
+    (document.activeElement as HTMLElement).blur();
+    fireEvent.keyDown(document, { key: "Tab" });
+    expect(dialog).toContainElement(document.activeElement as HTMLElement);
+  });
+
+  it("ignores Escape while closed", () => {
+    const onClose = vi.fn();
+    render(<BuyListSheet {...baseProps} isOpen={false} onClose={onClose} />);
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("still traps focus after switching to the vendor picker sub-view", () => {
+    const { rerender } = render(<BuyListSheet {...baseProps} />);
+    rerender(<BuyListSheet {...baseProps} vendorPickerOpen={true} />);
+    (document.activeElement as HTMLElement).blur();
+    fireEvent.keyDown(document, { key: "Tab" });
+    expect(screen.getByRole("dialog", { name: "Choose vendor" })).toContainElement(document.activeElement as HTMLElement);
+  });
+});

@@ -38,6 +38,17 @@ describe("DemoConfirmModal", () => {
     expect(onCancel).toHaveBeenCalledOnce();
   });
 
+  it("focuses Load sample data first and keeps Tab inside the dialog", async () => {
+    render(<DemoConfirmModal onCancel={() => {}} onConfirm={() => {}} />);
+    const confirm = screen.getByRole("button", { name: "Load sample data" });
+    const cancel = screen.getByRole("button", { name: "Cancel" });
+    expect(confirm).toHaveFocus();
+    await userEvent.tab();
+    expect(cancel).toHaveFocus(); // wraps from the last control to the first
+    await userEvent.tab({ shift: true });
+    expect(confirm).toHaveFocus();
+  });
+
   it("cancels on Escape", async () => {
     const onCancel = vi.fn();
     render(<DemoConfirmModal onCancel={onCancel} onConfirm={() => {}} />);

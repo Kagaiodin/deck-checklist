@@ -23,6 +23,36 @@ function Host({ onClose, open }: { onClose: () => void; open: boolean }) {
   );
 }
 
+function Options({ active, onClose }: { active: boolean; onClose: () => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useDialogKeys(ref, onClose, { active, initialFocus: () => ref.current?.querySelector<HTMLElement>("[data-pick]") });
+  return (
+    <div ref={ref}>
+      <button>first</button>
+      <button data-pick>picked</button>
+    </div>
+  );
+}
+
+describe("useDialogKeys — options", () => {
+  it("focuses the element chosen by initialFocus instead of the first", () => {
+    render(<Options active onClose={vi.fn()} />);
+    expect(screen.getByText("picked")).toHaveFocus();
+  });
+
+  it("does nothing while inactive, and starts once activated", () => {
+    const onClose = vi.fn();
+    const { rerender } = render(<Options active={false} onClose={onClose} />);
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(onClose).not.toHaveBeenCalled();
+    expect(screen.getByText("picked")).not.toHaveFocus();
+    rerender(<Options active onClose={onClose} />);
+    expect(screen.getByText("picked")).toHaveFocus();
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe("useDialogKeys", () => {
   it("focuses the first control on mount", () => {
     render(<Harness onClose={vi.fn()} />);

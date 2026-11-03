@@ -1,4 +1,5 @@
 import { useEffect, useRef, type ReactNode } from "react";
+import { useDialogKeys } from "../../../hooks/useDialogKeys";
 import { createPortal } from "react-dom";
 import { XIcon } from "./TradeIcons";
 
@@ -13,25 +14,16 @@ interface TradeSheetProps {
 /** Centered modal on desktop, bottom sheet on phones (see TradePage.css). */
 export function TradeSheet({ title, chip, onClose, footer, children }: TradeSheetProps) {
   const ref = useRef<HTMLDivElement>(null);
-  // Held in a ref so an inline onClose doesn't re-run the effect (and steal focus) on every render.
-  const closeRef = useRef(onClose);
-  closeRef.current = onClose;
+
+  // A control marked data-autofocus wins (e.g. the safe button in a confirm); else the first input.
+  useDialogKeys(ref, onClose, {
+    initialFocus: () => ref.current?.querySelector<HTMLElement>("[data-autofocus]") ?? ref.current?.querySelector<HTMLElement>("input"),
+  });
 
   useEffect(() => {
-    const opener = document.activeElement as HTMLElement | null;
-    // A control marked data-autofocus wins (e.g. the safe button in a confirm); else the first input.
-    (ref.current?.querySelector<HTMLElement>("[data-autofocus]") ?? ref.current?.querySelector<HTMLElement>("input"))?.focus();
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") closeRef.current();
-    }
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.body.style.overflow = prev;
-      document.removeEventListener("keydown", onKey);
-      opener?.focus?.({ preventScroll: true });
-    };
+    return () => { document.body.style.overflow = prev; };
   }, []);
 
   return createPortal(
