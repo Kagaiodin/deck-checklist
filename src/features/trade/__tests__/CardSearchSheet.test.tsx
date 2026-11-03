@@ -162,6 +162,16 @@ describe("CardSearchSheet", () => {
     expect(screen.getByRole("button", { name: "Add card" })).toBeDisabled();
   });
 
+  it("traps Tab inside the sheet", async () => {
+    setup();
+    const dialog = screen.getByRole("dialog");
+    const close = screen.getByRole("button", { name: "Close" });
+    close.focus();
+    await userEvent.tab({ shift: true }); // from the first control, wraps to the last
+    expect(dialog).toContainElement(document.activeElement as HTMLElement);
+    expect(close).not.toHaveFocus();
+  });
+
   it("closes on Cancel, the X button and Escape", async () => {
     const { onClose } = setup();
     await userEvent.click(screen.getByRole("button", { name: "Cancel" }));

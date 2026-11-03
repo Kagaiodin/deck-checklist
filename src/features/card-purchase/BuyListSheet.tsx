@@ -3,6 +3,7 @@ import type { Card } from "../../types/index";
 import { VENDORS } from "./useBuyFlow";
 import type { SendState, ErrorType } from "./useBuyFlow";
 import { VendorPicker } from "./VendorPicker";
+import { useDialogKeys } from "../../hooks/useDialogKeys";
 import "./buy-flow.css";
 
 function formatLastUsed(ts: number | undefined): string {
@@ -57,17 +58,11 @@ export function BuyListSheet({
 }: Props) {
   const manualTextRef = useRef<HTMLTextAreaElement>(null);
 
-  // Dismiss the entire flow on Escape regardless of which sub-view is active.
-  // Intentionally calls onClose (not onCloseVendorPicker) so Escape fully
-  // closes rather than stepping back one level.
-  useEffect(() => {
-    if (!isOpen) return;
-    function onKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
-    }
-    document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
-  }, [isOpen, onClose]);
+  // Escape dismisses the entire flow regardless of which sub-view is active (it calls
+  // onClose, not onCloseVendorPicker, so it fully closes rather than stepping back one level).
+  // Every view renders its sheet into this one ref, so the trap follows the active view.
+  const sheetRef = useRef<HTMLDivElement>(null);
+  useDialogKeys(sheetRef, onClose, { active: isOpen });
 
   // Pre-select the manual fallback textarea when clipboard is denied
   useEffect(() => {
@@ -87,7 +82,7 @@ export function BuyListSheet({
   if (vendorPickerOpen) {
     return (
       <div className="buy-sheet-backdrop" onClick={onCloseVendorPicker}>
-        <div className="buy-sheet" role="dialog" aria-modal="true" aria-label="Choose vendor" onClick={e => e.stopPropagation()}>
+        <div ref={sheetRef} className="buy-sheet" role="dialog" aria-modal="true" aria-label="Choose vendor" onClick={e => e.stopPropagation()}>
           <VendorPicker
             initialVendorId={selectedVendorId}
             vendorLastUsed={vendorLastUsed}
@@ -107,7 +102,7 @@ export function BuyListSheet({
 
     return (
       <div className="buy-sheet-backdrop" onClick={onClose}>
-        <div className="buy-sheet" role="dialog" aria-modal="true" aria-label="Send complete" onClick={e => e.stopPropagation()}>
+        <div ref={sheetRef} className="buy-sheet" role="dialog" aria-modal="true" aria-label="Send complete" onClick={e => e.stopPropagation()}>
           <div className="buy-sheet-handle" />
           <div className="buy-sheet-header">
             <div>
@@ -179,7 +174,7 @@ export function BuyListSheet({
     if (errorType === "popup-blocked" && vendor) {
       return (
         <div className="buy-sheet-backdrop" onClick={onClose}>
-          <div className="buy-sheet" role="dialog" aria-modal="true" aria-label="Popup blocked" onClick={e => e.stopPropagation()}>
+          <div ref={sheetRef} className="buy-sheet" role="dialog" aria-modal="true" aria-label="Popup blocked" onClick={e => e.stopPropagation()}>
             <div className="buy-sheet-handle" />
             <div className="buy-sheet-header">
               <div><div className="buy-sheet-title">Buy list</div></div>
@@ -217,7 +212,7 @@ export function BuyListSheet({
     if (errorType === "clipboard-denied" && vendor) {
       return (
         <div className="buy-sheet-backdrop" onClick={onClose}>
-          <div className="buy-sheet" role="dialog" aria-modal="true" aria-label="Clipboard error" onClick={e => e.stopPropagation()}>
+          <div ref={sheetRef} className="buy-sheet" role="dialog" aria-modal="true" aria-label="Clipboard error" onClick={e => e.stopPropagation()}>
             <div className="buy-sheet-handle" />
             <div className="buy-sheet-header">
               <div><div className="buy-sheet-title">Buy list</div></div>
@@ -258,7 +253,7 @@ export function BuyListSheet({
   if (cards.length === 0) {
     return (
       <div className="buy-sheet-backdrop" onClick={onClose}>
-        <div className="buy-sheet" role="dialog" aria-modal="true" aria-label="Buy list" onClick={e => e.stopPropagation()}>
+        <div ref={sheetRef} className="buy-sheet" role="dialog" aria-modal="true" aria-label="Buy list" onClick={e => e.stopPropagation()}>
           <div className="buy-sheet-handle" />
           <div className="buy-sheet-header">
             <div>
@@ -289,7 +284,7 @@ export function BuyListSheet({
 
   return (
     <div className="buy-sheet-backdrop" onClick={onClose}>
-      <div className="buy-sheet" role="dialog" aria-modal="true" aria-label="Buy list" onClick={e => e.stopPropagation()}>
+      <div ref={sheetRef} className="buy-sheet" role="dialog" aria-modal="true" aria-label="Buy list" onClick={e => e.stopPropagation()}>
         <div className="buy-sheet-handle" />
         <div className="buy-sheet-header">
           <div>
