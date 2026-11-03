@@ -475,6 +475,16 @@ describe("OrdersPage — mobile detail sheet", () => {
     expect(sheet()).toBeNull();
   });
 
+  it("is a labelled modal dialog that Escape dismisses", async () => {
+    setup([order()]);
+    await expand("ManaPool");
+    expect(sheet()).toHaveAttribute("role", "dialog");
+    expect(sheet()).toHaveAttribute("aria-modal", "true");
+    expect(sheet()).toHaveAccessibleName("Order detail");
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(sheet()).toBeNull();
+  });
+
   it("Mark received, Cancel order and Delete act and close the sheet", async () => {
     const user = u();
     const p = setup([order({ cards: [{ cardName: "Sol Ring", quantity: 1, deckId: "d1" }] })]);
