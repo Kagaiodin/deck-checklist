@@ -20,6 +20,7 @@
     "screenshots:local": "tsx scripts/capture-screenshots.ts --local",
     "screenshots:diff": "tsx scripts/shot-diff.ts",
     "test:contrast": "sh scripts/contrast-gate.sh",
+    "test:a11y": "sh scripts/a11y-gate.sh",
     "test:e2e": "sh scripts/e2e-set-grouping.sh"
   },
   "dependencies": {
@@ -38,6 +39,7 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",
     "@vitest/coverage-v8": "^4.1.7",
+    "axe-core": "^4.14.0",
     "eslint": "^10.2.1",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",

@@ -1,6 +1,6 @@
 # Accessibility Gate (axe-core) — Spec
 
-**Status:** draft
+**Status:** implemented locally (`npm run test:a11y`); CI job deferred
 **Related:** `docs/specs/design-rules-ci-spec.md` (DL-CONTRAST-01, baseline/ratchet, `dl-allow` convention), #153 (toast close hit area: the bug this gate would have caught)
 
 ## 1. Goal
@@ -92,11 +92,13 @@ screenshot script already uses. Nothing to add to `MANAGED_KEYS` or `demoData.ts
 - Baseline and allowlist rules in §4 are enforced mechanically.
 - `color-contrast` is not reported by this gate.
 
-## 9. Open questions
+## 9. Resolved decisions
 
-- Which theme and accent for the single CI job (proposed: dark indigo)?
-- Does `target-size` need a per-component policy for dense card rows, or case-by-case allowlisting?
-- Should the baseline be generated per screen or flattened across screens?
+- CI theme: dark + indigo (the gate script runs only that combination).
+- `target-size` policy: case-by-case `data-a11y-allow`; no baseline entries today. Verified by shrinking buttons below 24x24, which fails the gate.
+- Baseline is flat across screens, keyed `rule | screen | selector`. Selectors with `nth-child` shift if fixture card order changes; regenerate with `npm run test:a11y -- --update-baseline` (existing issue numbers are kept).
+- CI job (commit 3 below) is deferred until the baseline is paid down; `npm run test:a11y` is run manually for now.
+- First-run baseline: 303 entries, tracked in #170 (checkboxes), #171 (unlabeled inputs), #172 (invalid `aria-modal`).
 
 ## 10. Suggested commit split
 
