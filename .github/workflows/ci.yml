@@ -62,3 +62,23 @@ jobs:
       - run: npm ci
 
       - run: npm run test:contrast -- ${{ matrix.mode }} ${{ matrix.accent }}
+
+  # axe-core WCAG 2.2 AA gate (docs/specs/a11y-gate-spec.md). Dark indigo only: most rules are theme-independent and
+  # colour contrast has its own job. The logic lives in `npm run test:a11y`. Same image-tag rule as the contrast job.
+  a11y:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    container:
+      image: mcr.microsoft.com/playwright:v1.60.0-noble
+      options: --ipc=host
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run test:a11y
