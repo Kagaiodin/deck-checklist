@@ -454,6 +454,15 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
 
   const selectedCount = selectedIds.size;
 
+  // Right-click anywhere on a row (except inputs) opens its ⋯ popover, anchored to the ⋯ button.
+  function openRowMenuOnRightClick(e: React.MouseEvent<HTMLElement>) {
+    if ((e.target as HTMLElement).closest("input, textarea")) return;
+    const btn = e.currentTarget.querySelector<HTMLButtonElement>(".row-overflow");
+    if (!btn) return;
+    e.preventDefault();
+    if (btn.getAttribute("aria-expanded") !== "true") btn.click();
+  }
+
   function renderRow(card: Card) {
     const isSelected = selectedIds.has(card.id);
     const isEditingQty = editingQtyId === card.id;
@@ -472,6 +481,7 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
             setSheetCard(card);
           } : undefined
         }
+        onContextMenu={editMode || selectMode || isTouchDevice ? undefined : openRowMenuOnRightClick}
         tabIndex={isTouchDevice && !editMode && !selectMode ? -1 : undefined}
       >
         {/* Checkbox */}

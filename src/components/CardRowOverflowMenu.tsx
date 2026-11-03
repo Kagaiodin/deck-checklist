@@ -36,9 +36,10 @@ export function CardRowOverflowMenu({ cardId, cardName, currentStatus, onSetSour
   const popoverRef = useRef<HTMLDivElement>(null);
   const hintId = `cmdr-hint-${useId()}`;
 
-  const close = useCallback(() => {
+  const close = useCallback((returnFocus = false) => {
     setOpen(false);
     setShowConfirm(false);
+    if (returnFocus) btnRef.current?.focus();
   }, []);
 
   useEffect(() => {
@@ -63,8 +64,7 @@ export function CardRowOverflowMenu({ cardId, cardName, currentStatus, onSetSour
       if (showConfirm) {
         setShowConfirm(false);
       } else {
-        close();
-        btnRef.current?.focus();
+        close(true);
       }
     }
 
@@ -78,7 +78,7 @@ export function CardRowOverflowMenu({ cardId, cardName, currentStatus, onSetSour
 
   function toggle(e: React.MouseEvent) {
     e.stopPropagation();
-    if (open) { close(); return; }
+    if (open) { close(true); return; }
 
     if (btnRef.current) {
       const rect = btnRef.current.getBoundingClientRect();
@@ -103,7 +103,7 @@ export function CardRowOverflowMenu({ cardId, cardName, currentStatus, onSetSour
 
   function handleViewPrintings(e: React.MouseEvent) {
     e.stopPropagation();
-    close();
+    close(true);
     window.open(
       `https://scryfall.com/search?q=!"${encodeURIComponent(cardName)}"&unique=prints`,
       "_blank",
@@ -118,8 +118,7 @@ export function CardRowOverflowMenu({ cardId, cardName, currentStatus, onSetSour
     e.stopPropagation();
     if (commanderBlocked) return;
     onToggleCommander?.(cardId);
-    close();
-    btnRef.current?.focus();
+    close(true);
   }
 
   function handleRemoveClick(e: React.MouseEvent) {
@@ -131,6 +130,33 @@ export function CardRowOverflowMenu({ cardId, cardName, currentStatus, onSetSour
     e.stopPropagation();
     onRemoveCard(cardId);
     close();
+  }
+
+  // Arrow-key navigation per the ARIA menu pattern: up/down across every item,
+  // left/right within the status group.
+  function onMenuKeyDown(e: React.KeyboardEvent) {
+    if (showConfirm) return;
+    const keys = ["ArrowDown", "ArrowUp", "ArrowLeft", "ArrowRight", "Home", "End"];
+    if (!keys.includes(e.key)) return;
+    const root = popoverRef.current;
+    if (!root) return;
+    const target = e.target as HTMLElement;
+    const inStatus = !!target.closest(".pop-status-row");
+    const scope = e.key === "ArrowLeft" || e.key === "ArrowRight"
+      ? (inStatus ? ".pop-status-row button" : null)
+      : "button";
+    if (!scope) return;
+    const items = Array.from(root.querySelectorAll<HTMLElement>(scope))
+      .filter(el => el.getAttribute("aria-disabled") !== "true");
+    if (items.length === 0) return;
+    e.preventDefault();
+    const idx = items.indexOf(target);
+    let next = idx;
+    if (e.key === "ArrowDown" || e.key === "ArrowRight") next = (idx + 1) % items.length;
+    else if (e.key === "ArrowUp" || e.key === "ArrowLeft") next = (idx - 1 + items.length) % items.length;
+    else if (e.key === "Home") next = 0;
+    else if (e.key === "End") next = items.length - 1;
+    items[next].focus();
   }
 
   function handleCancelConfirm(e: React.MouseEvent) {
@@ -148,6 +174,7 @@ export function CardRowOverflowMenu({ cardId, cardName, currentStatus, onSetSour
           role="menu"
           aria-label={`Card actions for ${cardName}`}
           style={popStyle}
+          onKeyDown={onMenuKeyDown}
         >
           {showConfirm ? (
             <div className="pop-confirm" role="alertdialog" aria-label={`Remove ${cardName} from deck`}>
