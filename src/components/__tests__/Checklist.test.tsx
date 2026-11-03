@@ -671,6 +671,17 @@ describe("Checklist — commander", () => {
     expect(screen.queryByText(/No commander set/)).not.toBeInTheDocument();
   });
 
+  it("gives row and select-all checkboxes an accessible name", () => {
+    setup({}, deck({ commanderIds: ["c4"] }));
+    expect(screen.getByRole("checkbox", { name: "Mark Atraxa, Praetors' Voice acquired" })).toBeInTheDocument();
+  });
+
+  it("names row checkboxes for selection in select mode", () => {
+    setup({ selectMode: true }, deck({ commanderIds: ["c4"] }));
+    expect(screen.getByRole("checkbox", { name: "Select Atraxa, Praetors' Voice" })).toBeInTheDocument();
+    expect(screen.getAllByRole("checkbox", { name: "Select all" }).length).toBeGreaterThan(0);
+  });
+
   it("includes the commander row in select-all", async () => {
     setup({ selectMode: true }, deck({ commanderIds: ["c4"] }));
     const selectAll = document.querySelector(".commander-group .card-row-select-all")!;

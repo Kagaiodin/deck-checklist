@@ -491,6 +491,7 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
             checked={selectMode ? isSelected : card.acquired}
             onChange={selectMode ? () => toggleSelect(card.id) : () => onToggleAcquired(card.id)}
             onClick={e => e.stopPropagation()}
+            aria-label={selectMode ? `Select ${card.name}` : `Mark ${card.name} acquired`}
             className="card-checkbox"
           />
         )}
@@ -877,6 +878,7 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
                   checked={allSelected}
                   onChange={toggleSelectAll}
                   onClick={e => e.stopPropagation()}
+                  aria-label="Select all"
                   className="card-checkbox"
                 />
                 <span className="card-select-all-label">Select all</span>
@@ -935,6 +937,7 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
                   checked={allSelected}
                   onChange={toggleSelectAll}
                   onClick={e => e.stopPropagation()}
+                  aria-label="Select all"
                   className="card-checkbox"
                 />
                 <span className="card-select-all-label">Select all</span>
