@@ -33,7 +33,8 @@ export function DriveConflictModal({ drive, local, onKeepDrive, onKeepLocal }: P
     modalRef.current?.querySelector<HTMLElement>('[role="radio"]')?.focus();
 
     function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") { onKeepLocal(); return; }
+      // Escape and scrim clicks deliberately do nothing: this choice overwrites one copy of
+      // the data, so it needs an explicit button press.
       if (e.key !== "Tab") return;
       const modal = modalRef.current;
       if (!modal) return;
@@ -52,7 +53,7 @@ export function DriveConflictModal({ drive, local, onKeepDrive, onKeepLocal }: P
       document.removeEventListener("keydown", handleKeyDown);
       prev?.focus();
     };
-  }, [onKeepLocal]);
+  }, []);
 
   function confirm() {
     if (selected === "drive") onKeepDrive();
@@ -60,7 +61,7 @@ export function DriveConflictModal({ drive, local, onKeepDrive, onKeepLocal }: P
   }
 
   return (
-    <div className="drive-conflict-backdrop" onClick={e => { if (e.target === e.currentTarget) onKeepLocal(); }}>
+    <div className="drive-conflict-backdrop">
       <div className="drive-conflict-modal" role="dialog" aria-modal="true" aria-labelledby="drive-conflict-title" ref={modalRef}>
         <div className="drive-conflict-kicker">versions don't match</div>
         <h4 id="drive-conflict-title">Keep which version?</h4>
