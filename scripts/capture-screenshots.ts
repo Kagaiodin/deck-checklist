@@ -14,6 +14,11 @@
  *   npx tsx scripts/capture-screenshots.ts --local --contrast-gate --headless
  *       # same audit, but exits 1 if any pair is under AA (or a shot failed, which would shrink coverage). This is
  *       # what CI runs via `npm run test:contrast`.
+ *   npx tsx scripts/capture-screenshots.ts --local --a11y-gate --headless
+ *       # axe-core WCAG 2.2 AA audit on every shot against scripts/a11y-baseline.json; exits 1 on a new violation, a
+ *       # stale baseline entry, a baseline entry without an issue number, or a malformed data-a11y-allow. `--a11y`
+ *       # reports only; `--a11y-update-baseline` rewrites the baseline (keeps existing issue numbers). This is what
+ *       # `npm run test:a11y` runs. See docs/specs/a11y-gate-spec.md.
  *   --only 24,42,59
  *               capture just these shots (the number before the first "-" in the file name, so `44b` matches
  *               44b-*.png but `44` does not). Navigation and setup steps still run, since later shots depend on
@@ -42,6 +47,8 @@ import path from "path";
 import fs from "fs";
 import os from "os";
 import { auditContrast, type ContrastHit } from "./contrast-audit";
+import { auditA11y } from "./a11y-audit";
+import { evaluate, gateFailed, hitKey, type A11yHit, type BaselineEntry } from "./a11y-policy";
 
 const argv = process.argv.slice(2);
 const flagValue = (name: string): string | undefined => {
@@ -58,6 +65,11 @@ const CONTRAST_GATE = argv.includes("--contrast-gate");
 const CONTRAST = CONTRAST_GATE || argv.includes("--contrast");
 const contrastHits: ContrastHit[] = [];
 const contrastTotals = { checked: 0, skipped: 0 };
+const A11Y_UPDATE_BASELINE = argv.includes("--a11y-update-baseline");
+const A11Y_GATE = argv.includes("--a11y-gate");
+const A11Y = A11Y_GATE || A11Y_UPDATE_BASELINE || argv.includes("--a11y");
+const A11Y_BASELINE_PATH = path.resolve(import.meta.dirname, "a11y-baseline.json");
+const a11yHits: A11yHit[] = [];
 
 const OUT_DIR = path.resolve(process.cwd(), flagValue("--out") ?? "design-review-screenshots");
 
@@ -143,6 +155,7 @@ async function shot(page: Page, name: string): Promise<void> {
       contrastTotals.checked += c.checked;
       contrastTotals.skipped += c.skipped;
     }
+    if (A11Y) a11yHits.push(...(await auditA11y(page, name.replace(/\.png$/, ""))));
     const durationMs = Date.now() - t0;
     const dirty = warnings.length > 0;
     log(`  ${dirty ? "⚠" : "✓"}  ${name}${dirty ? `  (${warnings.length} step warning${warnings.length !== 1 ? "s" : ""})` : ""}`);
@@ -1233,6 +1246,7 @@ function writeLog(): void {
     process.exitCode = 1;
   }
 
+  if (A11Y) writeA11yReport();
   if (CONTRAST) writeContrastReport();
   if (CONTRAST_GATE && (contrastHits.length > 0 || failed > 0)) {
     console.error(`Contrast gate failed: ${contrastHits.length} hit records, ${failed} failed shots.`);
@@ -1267,6 +1281,34 @@ function writeContrastReport(): void {
   for (const l of shown) console.log(l);
   if (shown.length < lines.length) console.log(`  … ${lines.length - shown.length} more in ${textPath}`);
   log(`Contrast${CONTRAST_GATE ? " (gate)" : " (report only)"}: ${contrastTotals.skipped} elements skipped (covered / over an image). Report: ${reportPath}\n`);
+}
+
+function writeA11yReport(): void {
+  const baseline: BaselineEntry[] = fs.existsSync(A11Y_BASELINE_PATH) ? JSON.parse(fs.readFileSync(A11Y_BASELINE_PATH, "utf8")) : [];
+  fs.writeFileSync(path.join(OUT_DIR, "a11y-report.json"), JSON.stringify(a11yHits, null, 2));
+
+  if (A11Y_UPDATE_BASELINE) {
+    if (ONLY.length > 0) { console.error("--a11y-update-baseline can't be combined with --only (it would drop other shots' entries)."); process.exitCode = 1; return; }
+    const issues = new Map(baseline.map(b => [b.key, b.issue]));
+    const keys = [...new Set(a11yHits.filter(h => h.allow === undefined).map(hitKey))].sort();
+    const next = keys.map(key => ({ key, issue: issues.get(key) ?? null }));
+    fs.writeFileSync(A11Y_BASELINE_PATH, JSON.stringify(next, null, 2) + "\n");
+    const todo = next.filter(e => e.issue === null).length;
+    console.log(`a11y baseline: ${next.length} entries written (${todo} need an issue number) → ${A11Y_BASELINE_PATH}`);
+    return;
+  }
+
+  // With --only the run only sees some shots, so absent baseline entries are not "stale".
+  const o = evaluate(a11yHits, ONLY.length > 0 ? baseline.filter(b => onlyCaptured.has(b.key.split(" | ")[1]?.split("-")[0] ?? "")) : baseline);
+  console.log(`a11y: ${o.newHits.length} new · ${o.baselined} baselined · ${o.allowed} allowlisted (data-a11y-allow) · ${o.stale.length} stale`);
+  for (const h of o.newHits) console.log(`  ✗ ${h.rule} [${h.impact}] ${h.screen}  ${h.selector}  — ${h.help}`);
+  for (const k of o.stale) console.log(`  ✗ stale baseline entry (fixed? remove it): ${k}`);
+  for (const k of o.missingIssue) console.log(`  ✗ baseline entry has no issue number: ${k}`);
+  for (const a of o.badAllows) console.log(`  ✗ data-a11y-allow needs "rule: reason": "${a}"`);
+  if (A11Y_GATE && gateFailed(o)) {
+    console.error("A11y gate failed.");
+    process.exitCode = 1;
+  }
 }
 
 main().catch(err => {
