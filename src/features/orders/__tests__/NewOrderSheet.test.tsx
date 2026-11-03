@@ -54,6 +54,54 @@ describe("NewOrderSheet — dismiss", () => {
   });
 });
 
+describe("NewOrderSheet — discard confirm", () => {
+  const u = () => userEvent.setup({ delay: null });
+
+  it("a clean form closes without asking", () => {
+    const p = setup();
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(p.onClose).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText("Discard this order?")).not.toBeInTheDocument();
+  });
+
+  it("asks before discarding once a vendor is picked, on every dismiss path", async () => {
+    const user = u();
+    const p = setup();
+    await user.click(screen.getByText("ManaPool"));
+    for (const dismiss of [
+      () => fireEvent.keyDown(document, { key: "Escape" }),
+      () => fireEvent.click(screen.getByRole("button", { name: "Close" })),
+      () => fireEvent.click(document.querySelector(".nos-scrim")!),
+      () => fireEvent.click(screen.getByRole("button", { name: "Cancel" })),
+    ]) {
+      dismiss();
+      expect(screen.getByText("Discard this order?")).toBeInTheDocument();
+      expect(p.onClose).not.toHaveBeenCalled();
+      await user.click(screen.getByRole("button", { name: "Keep editing" }));
+      expect(screen.queryByText("Discard this order?")).not.toBeInTheDocument();
+    }
+  });
+
+  it("Escape on the prompt returns to the form; Discard closes", async () => {
+    const user = u();
+    const p = setup();
+    await user.click(screen.getByText("ManaPool"));
+    fireEvent.keyDown(document, { key: "Escape" });
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByText("Discard this order?")).not.toBeInTheDocument();
+    expect(p.onClose).not.toHaveBeenCalled();
+    fireEvent.keyDown(document, { key: "Escape" });
+    await user.click(screen.getByRole("button", { name: "Discard" }));
+    expect(p.onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("edit mode closes without asking", async () => {
+    const p = setup({ editOrder: { ...orders[0], cards: [{ cardName: "Sol Ring", quantity: 1 }] }, onSave: vi.fn() });
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(p.onClose).toHaveBeenCalledTimes(1);
+  });
+});
+
 const user = () => userEvent.setup({ delay: null });
 const next = () => screen.getByRole("button", { name: /Continue/ });
 
