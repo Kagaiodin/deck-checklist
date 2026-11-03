@@ -42,12 +42,18 @@ describe("DriveConflictModal", () => {
     expect(p.onKeepDrive).not.toHaveBeenCalled();
   });
 
-  it("Cancel, Escape and backdrop click all keep local data", async () => {
+  it("Cancel keeps local data", async () => {
     const p = setup();
     await userEvent.setup().click(screen.getByRole("button", { name: "Cancel" }));
+    expect(p.onKeepLocal).toHaveBeenCalledTimes(1);
+  });
+
+  it("Escape and backdrop click do nothing: an explicit choice is required", () => {
+    const p = setup();
     fireEvent.keyDown(document, { key: "Escape" });
     fireEvent.click(p.container.querySelector(".drive-conflict-backdrop")!);
-    expect(p.onKeepLocal).toHaveBeenCalledTimes(3);
+    expect(p.onKeepLocal).not.toHaveBeenCalled();
+    expect(p.onKeepDrive).not.toHaveBeenCalled();
   });
 
   it("clicking inside the dialog does not dismiss it", () => {
