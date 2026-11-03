@@ -68,6 +68,24 @@ describe("CardRowSheet", () => {
     expect(screen.getByRole("radio", { name: "Owned" })).toHaveFocus();
   });
 
+  it("traps Tab: wraps from the last control to the first and back on Shift+Tab", () => {
+    setup();
+    const first = screen.getByRole("radio", { name: "Owned" });
+    const last = screen.getByRole("button", { name: /Remove from deck/ });
+    last.focus();
+    fireEvent.keyDown(document, { key: "Tab" });
+    expect(first).toHaveFocus();
+    fireEvent.keyDown(document, { key: "Tab", shiftKey: true });
+    expect(last).toHaveFocus();
+  });
+
+  it("pulls focus back into the sheet if it escaped", () => {
+    setup();
+    (document.activeElement as HTMLElement).blur();
+    fireEvent.keyDown(document, { key: "Tab" });
+    expect(screen.getByRole("radio", { name: "Owned" })).toHaveFocus();
+  });
+
   it("closes after the exit animation on scrim click, not on sheet click", () => {
     const p = setup();
     fireEvent.click(screen.getByRole("dialog"));
