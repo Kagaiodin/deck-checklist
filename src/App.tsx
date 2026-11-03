@@ -14,6 +14,7 @@ import { ErrorQueue } from "./components/ErrorQueue";
 import { ProgressTracker } from "./components/ProgressTracker";
 import type { Deck, ErrorQueueItem, AcquisitionSource, Collection, CollectionMeta, Order, DeckNotification, ProfileExport } from "./types/index";
 import { applyCollectionToCards, mergeOrderCardsIntoCollection } from "./utils/csvParser";
+import { formatOptions } from "./utils/deckFormats";
 import { getDeckColorIdentity, formatRelativeDate, getDeckDomain } from "./utils/deckUtils";
 import { CollectionPage } from "./features/collection/CollectionPage";
 import { TradePage, clearTradeHash } from "./features/trade/TradePage";
@@ -1198,13 +1199,16 @@ function AppInner() {
                       onChange={e => setDeckName(e.target.value)}
                       disabled={validating}
                     />
-                    <input
+                    <select
                       className="deck-name-input deck-format-input"
-                      placeholder="Format (e.g. Modern)"
+                      aria-label="Deck format"
                       value={deckFormat}
                       onChange={e => setDeckFormat(e.target.value)}
                       disabled={validating}
-                    />
+                    >
+                      <option value="">Format (optional)</option>
+                      {formatOptions().map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+                    </select>
                   </div>
                   <div className="url-field-row">
                     <input
@@ -1394,14 +1398,17 @@ function AppInner() {
                               className="format-edit-form"
                               onSubmit={e => { e.preventDefault(); commitFormat(); }}
                             >
-                              <input
+                              <select
                                 className="format-edit-input"
+                                aria-label="Deck format"
                                 value={formatDraft}
                                 onChange={e => setFormatDraft(e.target.value)}
                                 onBlur={commitFormat}
-                                placeholder="Format…"
                                 autoFocus
-                              />
+                              >
+                                <option value="">No format</option>
+                                {formatOptions(activeDeck.format).map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+                              </select>
                             </form>
                           ) : (
                             <button
