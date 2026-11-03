@@ -42,9 +42,9 @@ describe("DriveConflictModal", () => {
     expect(p.onKeepDrive).not.toHaveBeenCalled();
   });
 
-  it("Cancel keeps local data", async () => {
+  it("Decide later keeps local data", async () => {
     const p = setup();
-    await userEvent.setup().click(screen.getByRole("button", { name: "Cancel" }));
+    await userEvent.setup().click(screen.getByRole("button", { name: "Decide later" }));
     expect(p.onKeepLocal).toHaveBeenCalledTimes(1);
   });
 
@@ -64,7 +64,7 @@ describe("DriveConflictModal", () => {
 
   it("traps Tab focus within the dialog", () => {
     setup();
-    const cancel = screen.getByRole("button", { name: "Cancel" });
+    const cancel = screen.getByRole("button", { name: "Decide later" });
     const confirm = screen.getByRole("button", { name: "Keep Drive version" });
     const first = screen.getAllByRole("radio")[0];
 

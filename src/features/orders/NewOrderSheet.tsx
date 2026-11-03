@@ -193,10 +193,18 @@ export function NewOrderSheet({
     setStep(4);
   }
 
-  dirtyRef.current = !isEdit && step < 4 && (
-    cards.length > 0 || customVendor.trim() !== "" || orderNum.trim() !== "" ||
-    tracking.trim() !== "" || vendor !== defaultVendor
-  );
+  // New order: anything entered. Edit: anything that differs from the saved order.
+  const dirty = isEdit && editOrder
+    ? vendor !== editOrder.vendor ||
+      JSON.stringify(cards) !== JSON.stringify(editOrder.cards) ||
+      orderNum !== (editOrder.notes?.replace(/^Order #/, "") ?? "") ||
+      (editOrder.orderDate ? orderDate !== toDateInput(editOrder.orderDate) : false) ||
+      tracking !== (editOrder.trackingNumber ?? "") ||
+      (carrierManual && carrier !== (editOrder.carrier ?? "")) ||
+      (editOrder.expectedArrival ? expected !== toDateInput(editOrder.expectedArrival) : false)
+    : cards.length > 0 || customVendor.trim() !== "" || orderNum.trim() !== "" ||
+      tracking.trim() !== "" || vendor !== defaultVendor;
+  dirtyRef.current = step < 4 && dirty;
 
   const activeVendor = showCustom ? customVendor.trim() : vendor;
   const totalQty = cards.reduce((s, c) => s + c.quantity, 0);
@@ -505,7 +513,7 @@ export function NewOrderSheet({
           {confirmDiscard && (
             <>
               <div className="nos-delete-confirm" role="alert">
-                <span>Discard this order?</span>
+                <span>{isEdit ? "Discard your changes?" : "Discard this order?"}</span>
                 <button className="btn btn-ghost btn-sm" onClick={onClose}>Discard</button>
                 <button className="btn btn-primary btn-sm" autoFocus onClick={() => setConfirmDiscard(false)}>Keep editing</button>
               </div>

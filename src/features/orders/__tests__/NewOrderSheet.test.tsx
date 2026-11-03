@@ -439,3 +439,31 @@ describe("NewOrderSheet", () => {
     });
   });
 });
+
+describe("NewOrderSheet — edit mode discard", () => {
+  const editOrder: Order = {
+    id: "e1", createdAt: 1, orderDate: Date.parse("2026-05-01"), vendor: "ManaPool",
+    status: "active", cards: [{ cardName: "Sol Ring", quantity: 1 }],
+    trackingNumber: "1Z999AA10123456784",
+  };
+
+  it("closes straight away when nothing changed", () => {
+    const p = setup({ editOrder, onSave: vi.fn() });
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(p.onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("asks before discarding once a saved field is edited", async () => {
+    const p = setup({ editOrder, onSave: vi.fn() });
+    const user = userEvent.setup();
+    const input = screen.queryByDisplayValue("1Z999AA10123456784");
+    if (!input) {
+      // edit opens on an earlier step: advance to details
+      for (let i = 0; i < 2; i++) await user.click(screen.getByRole("button", { name: /next|continue/i }));
+    }
+    await user.type(screen.getByDisplayValue("1Z999AA10123456784"), "X");
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(p.onClose).not.toHaveBeenCalled();
+    expect(screen.getByText("Discard your changes?")).toBeInTheDocument();
+  });
+});
