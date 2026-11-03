@@ -33,6 +33,27 @@ function setup(over: Partial<React.ComponentProps<typeof NewOrderSheet>> = {}) {
   return props;
 }
 
+describe("NewOrderSheet — dismiss", () => {
+  it("is a labelled modal dialog", () => {
+    setup();
+    const dialog = screen.getByRole("dialog", { name: "New order" });
+    expect(dialog).toHaveAttribute("aria-modal", "true");
+  });
+
+  it("Escape closes it", () => {
+    const p = setup();
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(p.onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("scrim click and the close button also close it", () => {
+    const p = setup();
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+    fireEvent.click(document.querySelector(".nos-scrim")!);
+    expect(p.onClose).toHaveBeenCalledTimes(2);
+  });
+});
+
 const user = () => userEvent.setup({ delay: null });
 const next = () => screen.getByRole("button", { name: /Continue/ });
 

@@ -1,7 +1,8 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
 import "./NewOrderSheet.css";
 import type { Order, OrderCard, Carrier, Deck } from "../../types/index";
+import { useDialogKeys } from "../../hooks/useDialogKeys";
 import { detectCarrier, CARRIER_NAMES } from "../../utils/carrier";
 
 type Step = 1 | 2 | 3 | 4;
@@ -32,6 +33,8 @@ export function NewOrderSheet({
   editOrder, onSubmit, onSave, onDeleteEdit, onClose,
 }: NewOrderSheetProps) {
   const isEdit = !!editOrder;
+  const sheetRef = useRef<HTMLDivElement>(null);
+  useDialogKeys(sheetRef, onClose);
 
   const [step, setStep] = useState<Step>(1);
 
@@ -197,12 +200,19 @@ export function NewOrderSheet({
 
   return createPortal(
     <div className="nos-scrim" onClick={onClose}>
-      <div className="nos-sheet" onClick={e => e.stopPropagation()}>
+      <div
+        ref={sheetRef}
+        className="nos-sheet"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="nos-title"
+        onClick={e => e.stopPropagation()}
+      >
 
         {/* ── Header ── */}
         <div className="nos-head">
           <div className="nos-head-ttl">
-            <h2 className="nos-title">
+            <h2 id="nos-title" className="nos-title">
               {step === 4
                 ? (isEdit ? "Order updated" : "Order created")
                 : (isEdit ? "Edit order" : "New order")}

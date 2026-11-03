@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
+import { useDialogKeys } from "../../hooks/useDialogKeys";
 import { createPortal } from "react-dom";
 import "./OrdersPage.css";
 import type { Order, OrderCard, OrderStatus, Deck } from "../../types/index";
@@ -189,6 +190,9 @@ function OrderDetailSheet({
     return ids.map(id => decks.find(d => d.id === id)).filter(Boolean) as Deck[];
   }, [order.cards, decks]);
 
+  const sheetRef = useRef<HTMLDivElement>(null);
+  useDialogKeys(sheetRef, onClose);
+
   useEffect(() => {
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = ""; };
@@ -204,11 +208,18 @@ function OrderDetailSheet({
 
   return createPortal(
     <div className="ocard-mob-sheet-backdrop" onClick={onClose}>
-      <div className="ocard-mob-sheet" onClick={e => e.stopPropagation()}>
+      <div
+        ref={sheetRef}
+        className="ocard-mob-sheet"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="ocard-mob-title"
+        onClick={e => e.stopPropagation()}
+      >
         {/* Nav */}
         <div className="ocard-mob-nav">
           <button className="ocard-mob-back" onClick={onClose} aria-label="Back">‹</button>
-          <span className="ocard-mob-nav-title">Order detail</span>
+          <span id="ocard-mob-title" className="ocard-mob-nav-title">Order detail</span>
         </div>
 
         <div className="ocard-mob-body">
