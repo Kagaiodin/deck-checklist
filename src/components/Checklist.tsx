@@ -251,6 +251,7 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
   const availableTypes = MAIN_TYPES.filter(t => deck.cards.some(c => extractMainType(c.type) === t));
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [sheetCard, setSheetCard] = useState<Card | null>(null);
+  const sheetTriggerRef = useRef<HTMLElement | null>(null);
   const isTouchDevice = useMediaQuery("(pointer: coarse)");
   const [bulkSource, setBulkSource] = useState<AcquisitionSource | "">("");
   const [editingQtyId, setEditingQtyId] = useState<string | null>(null);
@@ -476,10 +477,12 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
           selectMode ? () => toggleSelect(card.id) :
           isTouchDevice ? (e) => {
             if ((e.target as HTMLElement).closest('input[type="checkbox"]')) return;
+            sheetTriggerRef.current = e.currentTarget;
             setSheetCard(card);
           } : undefined
         }
         onContextMenu={editMode || selectMode || isTouchDevice ? undefined : openRowMenuOnRightClick}
+        tabIndex={isTouchDevice && !editMode && !selectMode ? -1 : undefined}
       >
         {/* Checkbox */}
         {!editMode && (
@@ -973,7 +976,7 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
         <CardRowSheet
           card={sheetCard}
           deckId={deck.id}
-          onClose={() => setSheetCard(null)}
+          onClose={() => { setSheetCard(null); sheetTriggerRef.current?.focus(); }}
           onSetSource={onSetSource}
           onRemoveCard={(cardId) => { onRemoveCard(cardId); setSheetCard(null); }}
           isCommander={commanderIds.includes(sheetCard.id)}

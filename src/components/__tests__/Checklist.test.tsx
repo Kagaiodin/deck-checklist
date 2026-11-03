@@ -372,6 +372,15 @@ describe("Checklist — touch devices", () => {
     expect(document.querySelector(".card-row-sheet")).toBeNull();
   });
 
+  it("returns focus to the tapped row when the sheet closes", async () => {
+    setup();
+    fireEvent.click(row("Counterspell"));
+    await waitFor(() => screen.getByRole("dialog", { hidden: true }));
+    fireEvent.keyDown(document, { key: "Escape" });
+    await waitFor(() => expect(document.querySelector(".card-row-sheet")).toBeNull());
+    expect(row("Counterspell")).toHaveFocus();
+  });
+
   it("removing from the sheet removes the card and closes it", async () => {
     const p = setup();
     fireEvent.click(row("Counterspell"));

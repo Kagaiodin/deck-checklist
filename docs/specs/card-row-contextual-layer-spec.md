@@ -50,8 +50,6 @@ The card row's current desktop hover state renders an "All printings ↗" link i
 │  [Owned] [Need to buy] [Ordered] [Proxy]   │
 ├─────────────────────────────────┤
 │  [↗] View all printings  ›      │
-│  [⊞] Swap printing       ›      │
-│  [★] Add to buy list            │
 ├─────────────────────────────────┤
 │  [✕] Remove from deck           │  ← danger
 └─────────────────────────────────┘
@@ -158,17 +156,16 @@ The current status option is pre-selected when the layer opens. Selecting a diff
 - Behavior: navigates externally (or to a printings screen). Closes the sheet/popover before navigating.
 - On mobile this is a separate action from the set chip — the chip on the row is NOT a tap target for this nav on mobile (the chip opens the sheet; this action inside the sheet handles printings nav).
 
-### Swap Printing
+### Swap Printing — deferred
 
-- Icon: `⊞` on a purple-tinted `rgba(192,132,252,.15)` background
-- Description: current set code + " → choose another edition" (e.g. "SLD → choose another edition")
-- Behavior: navigates to the printing picker. Closes the sheet/popover before navigating.
+Blocked on #37 (edit set code and collector number). Once a printing picker exists, add a `⊞` action
+(purple `rgba(192,132,252,.15)` tint, description "SET → choose another edition") between View All
+Printings and Remove from Deck. Not part of the first shipped sheet.
 
-### Add to Buy List
+### Add to Buy List — dropped
 
-- Icon: `★` on a yellow-tinted `rgba(251,191,36,.15)` background
-- Description: "Queue for next order"
-- Behavior: immediate action, no navigation. Show a brief confirmation (toast or transient label update) and close the sheet/popover.
+The per-deck buy list is derived from cards with `source === "need_to_buy"`, so the **Need** status
+pill already does this. A separate action would duplicate it.
 
 ### Remove from Deck (destructive)
 
