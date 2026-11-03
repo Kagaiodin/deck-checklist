@@ -64,6 +64,14 @@ export function BuyListSheet({
   const sheetRef = useRef<HTMLDivElement>(null);
   useDialogKeys(sheetRef, onClose, { active: isOpen });
 
+  // Swapping sub-views unmounts the focused control, which drops focus to <body>; pull it
+  // back into the new view. Declared before the textarea effect so that one can still win.
+  useEffect(() => {
+    const root = sheetRef.current;
+    if (!isOpen || !root || root.contains(document.activeElement)) return;
+    root.querySelector<HTMLElement>("button:not([disabled]), [href], input:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])")?.focus();
+  });
+
   // Pre-select the manual fallback textarea when clipboard is denied
   useEffect(() => {
     if (errorType === "clipboard-denied" && manualTextRef.current) {

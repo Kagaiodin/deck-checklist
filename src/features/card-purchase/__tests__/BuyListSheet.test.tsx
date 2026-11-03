@@ -313,4 +313,12 @@ describe("BuyListSheet — focus", () => {
     fireEvent.keyDown(document, { key: "Tab" });
     expect(screen.getByRole("dialog", { name: "Choose vendor" })).toContainElement(document.activeElement as HTMLElement);
   });
+
+  it("keeps focus inside the dialog when the sub-view swaps, without a Tab", () => {
+    const { rerender } = render(<BuyListSheet {...baseProps} />);
+    screen.getByRole("dialog").querySelector<HTMLElement>("button")!.focus();
+    rerender(<BuyListSheet {...baseProps} vendorPickerOpen={true} />);
+    expect(screen.getByRole("dialog", { name: "Choose vendor" })).toContainElement(document.activeElement as HTMLElement);
+    expect(document.activeElement).not.toBe(document.body);
+  });
 });
