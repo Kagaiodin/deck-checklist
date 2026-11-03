@@ -103,7 +103,7 @@ export function DriveConflictModal({ drive, local, onKeepDrive, onKeepLocal }: P
         <p className="drive-conflict-caution">This can't be undone. The copy you don't keep is overwritten.</p>
 
         <div className="drive-conflict-foot">
-          <button type="button" className="btn btn-ghost btn-sm" onClick={onKeepLocal}>Cancel</button>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={onKeepLocal}>Decide later</button>
           <button type="button" className="btn btn-primary btn-sm" onClick={confirm}>
             {selected === "drive" ? "Keep Drive version" : "Keep this device"}
           </button>
