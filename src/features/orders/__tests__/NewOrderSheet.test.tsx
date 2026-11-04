@@ -289,6 +289,14 @@ describe("NewOrderSheet", () => {
       expect(screen.queryByText("Carrier")).not.toBeInTheDocument();
     });
 
+    it("gives the date inputs accessible names (#171)", async () => {
+      const u = user();
+      setup();
+      await toDetails(u);
+      expect(screen.getByLabelText("Order date")).toHaveAttribute("type", "date");
+      expect(screen.getByLabelText("Expected arrival")).toHaveAttribute("type", "date");
+    });
+
     it("auto-detects the carrier from tracking and allows a manual override", async () => {
       const u = user();
       setup();

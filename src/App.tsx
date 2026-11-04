@@ -1301,6 +1301,7 @@ function AppInner() {
                       <form className="rename-form" onSubmit={e => { e.preventDefault(); commitRename(); }}>
                         <input
                           className="rename-input"
+                          aria-label="Deck name"
                           value={renameValue}
                           onChange={e => setRenameValue(e.target.value)}
                           onBlur={commitRename}

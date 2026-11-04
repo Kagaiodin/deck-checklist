@@ -2,25 +2,5 @@
   {
     "key": "aria-allowed-attr | 34-desktop-profile-import | .import-backup-backdrop",
     "issue": 172
-  },
-  {
-    "key": "label | 24-desktop-edit-mode | .add-card-qty",
-    "issue": 171
-  },
-  {
-    "key": "label | 28-desktop-deck-rename | .rename-input",
-    "issue": 171
-  },
-  {
-    "key": "label | 39-desktop-orders-new-sheet-step2-filled | .nos-qty-input",
-    "issue": 171
-  },
-  {
-    "key": "label | 40-desktop-orders-new-sheet-step3 | input[value=\"2026-11-03\"]",
-    "issue": 171
-  },
-  {
-    "key": "label | 40-desktop-orders-new-sheet-step3 | input[value=\"2026-11-08\"]",
-    "issue": 171
   }
 ]

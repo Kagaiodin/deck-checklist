@@ -389,6 +389,7 @@ export function NewOrderSheet({
                           <span className="nos-cardrow-name">{c.cardName}</span>
                           <input
                             className="nos-qty-input"
+                            aria-label={`Quantity of ${c.cardName}`}
                             type="number"
                             min="1" max="99"
                             value={c.quantity}
@@ -438,7 +439,7 @@ export function NewOrderSheet({
                 </div>
                 <div className="nos-field">
                   <label>Ordered</label>
-                  <input type="date" value={orderDate} onChange={e => setOrderDate(e.target.value)} />
+                  <input type="date" aria-label="Order date" value={orderDate} onChange={e => setOrderDate(e.target.value)} />
                 </div>
               </div>
 
@@ -461,7 +462,7 @@ export function NewOrderSheet({
 
               <div className="nos-field">
                 <label>Expected arrival</label>
-                <input type="date" value={expected} onChange={e => setExpected(e.target.value)} />
+                <input type="date" aria-label="Expected arrival" value={expected} onChange={e => setExpected(e.target.value)} />
               </div>
             </>
           )}
