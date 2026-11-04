@@ -127,7 +127,6 @@ export function ImportBackupModal({ onImport, showToast, onClose }: Props) {
   return (
     <div
       className="import-backup-backdrop"
-      aria-modal="true"
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div

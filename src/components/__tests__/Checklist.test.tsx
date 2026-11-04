@@ -513,6 +513,11 @@ describe("Checklist — edit mode", () => {
       vi.stubGlobal("fetch", vi.fn(async () => ({ json: async () => ({ data: ["Sol Ring", "Sol Talisman"] }) })));
     });
 
+    it("names the quantity input (#171)", () => {
+      setup({ editMode: true });
+      expect(screen.getByRole("spinbutton", { name: "Quantity" })).toHaveClass("add-card-qty");
+    });
+
     it("adds 'qty name' and resets on success", async () => {
       const user = u();
       const p = setup({ editMode: true });

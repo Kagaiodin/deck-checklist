@@ -1,6 +1,6 @@
 # Accessibility Gate (axe-core) — Spec
 
-**Status:** implemented locally (`npm run test:a11y`); CI job deferred
+**Status:** implemented (`npm run test:a11y`, CI job `a11y`); baseline empty
 **Related:** `docs/specs/design-rules-ci-spec.md` (DL-CONTRAST-01, baseline/ratchet, `dl-allow` convention), #153 (toast close hit area: the bug this gate would have caught)
 
 ## 1. Goal
@@ -97,8 +97,8 @@ screenshot script already uses. Nothing to add to `MANAGED_KEYS` or `demoData.ts
 - CI theme: dark + indigo (the gate script runs only that combination).
 - `target-size` policy: case-by-case `data-a11y-allow`; no baseline entries today. Verified by shrinking buttons below 24x24, which fails the gate.
 - Baseline is flat across screens, keyed `rule | screen | selector`. Selectors with `nth-child` shift if fixture card order changes; regenerate with `npm run test:a11y -- --update-baseline` (existing issue numbers are kept).
-- CI job (commit 3 below) is deferred until the baseline is paid down; `npm run test:a11y` is run manually for now.
-- First-run baseline: 303 entries, tracked in #170 (checkboxes), #171 (unlabeled inputs), #172 (invalid `aria-modal`).
+- CI job `a11y` runs on PRs (added in #173). Make it a required check now that the baseline is empty.
+- First-run baseline: 303 entries, tracked in #170 (checkboxes), #171 (unlabeled inputs), #172 (invalid `aria-modal`); all fixed, baseline is now empty.
 
 ## 10. Suggested commit split
 

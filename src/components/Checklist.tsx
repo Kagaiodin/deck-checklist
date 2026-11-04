@@ -193,6 +193,7 @@ function AddCardRow({ onAdd }: { onAdd: (name: string) => Promise<{ success: boo
       <input
         type="number"
         className="add-card-qty"
+        aria-label="Quantity"
         value={qty}
         min={1}
         max={99}
