@@ -25,6 +25,9 @@ accessible names, roles, labels, landmarks and ARIA validity are unchecked today
 - Dev-only: no runtime, bundle or Cloudflare Workers impact, no cost.
 - Rule tags: `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa`, `wcag22aa` (the last includes `target-size`).
   `color-contrast` disabled.
+- Custom `dialog-semantics` check (in `scripts/a11y-audit.ts`, same baseline/allowlist policy): an element with
+  `aria-modal="true"` must have role `dialog`/`alertdialog`, and every dialog needs an accessible name. Escape and
+  focus traps are not checkable by axe; `src/__tests__/modalEscape.test.tsx` covers them (#168).
 
 ### Entry points
 - `npm run test:a11y` → `sh scripts/a11y-gate.sh`, a thin wrapper modelled on `contrast-gate.sh`

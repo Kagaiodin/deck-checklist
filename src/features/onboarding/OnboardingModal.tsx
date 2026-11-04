@@ -48,7 +48,7 @@ export function OnboardingModal({ onDismiss, onImportDeck }: Props) {
   }
 
   return (
-    <div className="onboarding-backdrop" aria-modal="true" onClick={e => { if (e.target === e.currentTarget) onDismiss(); }}>
+    <div className="onboarding-backdrop" onClick={e => { if (e.target === e.currentTarget) onDismiss(); }}>
       <div
         className="onboarding-modal"
         role="dialog"
