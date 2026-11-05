@@ -52,3 +52,32 @@ export const CONDITION_MULTIPLIERS: Record<Condition, number> = {
 };
 
 export const DEFAULT_SETTINGS: TradeSettings = { discountPct: 10, tolerancePct: 10 };
+
+/** One card line in a logged trade. `unitPrice` is the price at log time, after condition and discount. */
+export interface TradeLogCard {
+  name: string;
+  scryfallId: string;
+  set: string;
+  collectorNumber: string;
+  finish: Finish;
+  condition: Condition;
+  quantity: number;
+  /** Null = no price at log time; the card is left out of the totals. */
+  unitPrice: number | null;
+}
+
+/** A trade the user confirmed in "Log this trade". Prices are snapshots, never recomputed. */
+export interface TradeLogEntry {
+  id: string;
+  /** Epoch ms. */
+  date: number;
+  counterparty?: string;
+  /** Trade.mine.cards ("I give"). */
+  cardsOut: TradeLogCard[];
+  /** Trade.theirs.cards ("I get"). Empty for a straight sale. */
+  cardsIn: TradeLogCard[];
+  cash: { out: number; in: number };
+  /** sideTotals(...).total at log time, cash included. */
+  totals: { out: number; in: number };
+  notes?: string;
+}
