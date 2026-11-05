@@ -48,7 +48,7 @@ deriveBinder(collection, getCommittedInfo, excluded: ReadonlySet<string>): { row
 - No prices, no totals, no value.
 
 ### Exclude list
-- Persisted `string[]` of lowercase names at `mtg-checklist-binder-excluded-v1`, via `useLocalStorage`, wrapped in `useBinderExcluded()` (`exclude(key)`, `restore(key)`).
+- Persisted `string[]` of lowercase names at `mtg-checklist-binder-excluded-v1`, held in a small shared store (`useSyncExternalStore` over localStorage plus a change event, so Binder and an import stay in step), exposed as `useBinderExcludedList()` and `useBinderExcluded()` (`exclude(key)`, `restore(key)`).
 - Exclude shows the same Undo toast Collection uses. Restore is "Show in Binder".
 - "Add to new trade" opens the Calculator with that card pre-added to "mine" (see §6); it does not change the exclude list.
 
@@ -108,8 +108,9 @@ interface TradeLogEntry {
 
 ### Confirm step (`LogTradeSheet`)
 Opened by "Log this trade" in the Calculator (`TradeWorkspace`). Fields: counterparty (free text), date (default today), notes. Summary: cards leaving, cards arriving, cash in and out, per `transactions-ledger-*`.
-- **In-deck warning** (not a block): a card leaving is flagged "N in decks" when `ownedTotal − qtyOut < committed`, using `useCommittedInfo`. Copy states the deck checklist will show the card as needed again.
+- **In-deck warning** (not a block): a card leaving is flagged "N in decks" when `ownedTotal − qtyOut < committed`, using `useCommittedInfo` (the same basis as Binder's "N in decks"). The flag shows the copies decks lose, `committed − max(ownedTotal − qtyOut, 0)`, so it still appears when some copies are owned but fewer than are leaving. The note counts distinct cards, not lines. Copy states the deck checklist will show the card as needed again.
 - **Not-in-collection note** (not a block): a card leaving with less owned than quantity (typically added from Scryfall search) is flagged "Not in your collection"; Collection simply isn't reduced for the missing copies.
+- The backdrop does not dismiss this sheet, so typed counterparty and notes are not lost to a stray click; Cancel, Escape and the close button still do.
 - Disabled when both sides are empty. Hidden when `trade.readOnly` (an opened share link) until the user forks it.
 - Works in demo mode; the demo keys are isolated by `MANAGED_KEYS`.
 
@@ -124,7 +125,7 @@ Confirm copy: Collection will not change back; cards given stay out, cards recei
 
 ## 7. Ledger and invoice UI
 
-- `src/features/transactions/ledger/`: `LedgerList`, `LedgerEntryDetail`, `LogTradeSheet`, `Invoice`, each with CSS from the approved mockups (tokens only).
+- `src/features/transactions/ledger/`: `LedgerPanel` (list and read-only detail in one component), `LogTradeSheet`, `Invoice` (PR 5), each with CSS from the approved mockups (tokens only).
 - List: date, counterparty, out/in counts, cash. Empty state with "New trade". Detail is read-only with a footnote "To correct a mistake, delete and re-log".
 - Invoice: opened from an entry, in-app state only (no URL). On-screen printable view; `@media print` hides app chrome and shows the paper in light colors regardless of theme; "Print" calls `window.print()`; "Copy as text" uses `ledgerEntryToText(entry)` in `src/utils/tradeLedger.ts`, modeled on `tradeToText`. No PDF service.
 - Missing-price cards (`unitPrice: null`) show "no price" and are excluded from totals, as in the Calculator.
