@@ -1,5 +1,5 @@
 import { commanderToastTitle } from "./utils/commander";
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef } from "react";
 import "./tokens.css";
 import "./App.css";
 import { DeckProvider, useDecks } from "./store/decks";
@@ -9,7 +9,7 @@ import { refreshDeckPrices, needsPriceRefresh } from "./utils/deckCost";
 import type { ValidationProgress } from "./utils/validator";
 import { useLocalStorage } from "./hooks/useLocalStorage";
 import { useOrderActions } from "./hooks/useOrderActions";
-import { readBinderExcluded, writeBinderExcluded } from "./features/transactions/binder/useBinder";
+import { readBinderExcluded, writeBinderExcluded, sanitizeExcluded, useBinderExcludedList } from "./features/transactions/binder/useBinder";
 import { useTradeLedger } from "./features/transactions/ledger/useTradeLedger";
 import { Checklist } from "./components/Checklist";
 import { EmptyState } from "./components/EmptyState";
@@ -17,7 +17,7 @@ import { ErrorQueue } from "./components/ErrorQueue";
 import { ProgressTracker } from "./components/ProgressTracker";
 import type { Deck, ErrorQueueItem, AcquisitionSource, Collection, CollectionMeta, Order, ProfileExport } from "./types/index";
 import type { Trade } from "./types/trade";
-import { mergeLedger, type LogMeta } from "./utils/tradeLedger";
+import { mergeLedger, sanitizeLedger, sortLedger, type LogMeta } from "./utils/tradeLedger";
 import { applyCollectionToCards } from "./utils/csvParser";
 import { formatOptions } from "./utils/deckFormats";
 import { getDeckColorIdentity, formatRelativeDate, getDeckDomain } from "./utils/deckUtils";
@@ -59,6 +59,15 @@ const openedWithTradeLink = () => isTradePath() || extractPayload(window.locatio
  * The Collection as it is right now. AppInner's own copy is only refreshed on reload
  * (CollectionPage owns the writes), so Trade reads storage fresh each time it opens.
  */
+function readCollectionMeta(): CollectionMeta | null {
+  try {
+    const raw = window.localStorage.getItem("mtg-checklist-collection-meta-v2");
+    return raw ? (JSON.parse(raw) as CollectionMeta) : null;
+  } catch {
+    return null;
+  }
+}
+
 function readCollection(): Collection {
   try {
     const raw = window.localStorage.getItem(COLLECTION_KEY);
@@ -453,11 +462,10 @@ function AppInner() {
   });
 
   const { entries: ledger, setEntries: setLedger, logTrade, deleteEntry: deleteLedgerEntry } = useTradeLedger({
-    readCollection, setCollection, setCollectionMeta, dispatch,
+    readCollection, readCollectionMeta, setCollection, setCollectionMeta, dispatch,
   });
-  // Binder owns the live exclude list; re-read it whenever the view changes so backups carry the current one.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const binderExcluded = useMemo(readBinderExcluded, [view]);
+  // The exclude list is a shared external store, so backups always carry the current one.
+  const binderExcluded = useBinderExcludedList();
   const [ledgerOpenId, setLedgerOpenId] = useState<string | null>(null);
 
   /** Log this trade: writes the ledger and Collection, then refreshes the Calculator's own Collection copy. */
@@ -490,10 +498,10 @@ function AppInner() {
       setCollection(data.collection ?? {});
       setCollectionMeta(data.collectionMeta ?? null);
       setOrders(data.orders ?? []);
-      setLedger(data.tradeLedger ?? []);
-      writeBinderExcluded(data.binderExcluded ?? []);
+      setLedger(sortLedger(sanitizeLedger(data.tradeLedger)));
+      writeBinderExcluded(sanitizeExcluded(data.binderExcluded));
       setRecentVendors((data.vendorHistory ?? []).slice(0, 50));
-      return { newDecks: (data.decks ?? []).length, newCards: Object.keys(data.collection ?? {}).length, newOrders: (data.orders ?? []).length, newTrades: (data.tradeLedger ?? []).length };
+      return { newDecks: (data.decks ?? []).length, newCards: Object.keys(data.collection ?? {}).length, newOrders: (data.orders ?? []).length, newTrades: sanitizeLedger(data.tradeLedger).length };
     }
 
     // Merge mode — only add net-new items
@@ -534,9 +542,10 @@ function AppInner() {
     setOrders([...orders, ...newOrders]);
 
     // Trade ledger — skip duplicates by id; exclude list is a union
-    const { merged: mergedLedger, added: newTrades } = mergeLedger(ledger, data.tradeLedger ?? []);
+    const { merged: mergedLedger, added: newTrades } = mergeLedger(ledger, sanitizeLedger(data.tradeLedger));
     setLedger(mergedLedger);
-    if (data.binderExcluded?.length) writeBinderExcluded([...new Set([...readBinderExcluded(), ...data.binderExcluded])]);
+    const incomingExcluded = sanitizeExcluded(data.binderExcluded);
+    if (incomingExcluded.length) writeBinderExcluded([...new Set([...readBinderExcluded(), ...incomingExcluded])]);
 
     // Vendor history — union, deduplicated, cap at 50
     const mergedVendors = [...new Set([...recentVendors, ...(data.vendorHistory ?? [])])].slice(0, 50);

@@ -126,7 +126,7 @@ export function LogTradeSheet({ trade, collection, decks, onCancel, onConfirm }:
 
         {inDeckCount > 0 && (
           <p className="lg-note" role="note">
-            {inDeckCount === 1 ? "A card" : "Some cards"} leaving {inDeckCount === 1 ? "is" : "are"} still in a deck. The deck checklist will show {inDeckCount === 1 ? "it" : "them"} as needed again.
+            {inDeckCount === 1 ? "A card" : "Some cards"} leaving {inDeckCount === 1 ? "is" : "are"} still in a deck. The deck checklist may show {inDeckCount === 1 ? "it" : "them"} as needed again. Cards you tagged as owned by hand keep that tag.
           </p>
         )}
         <p className="lg-note">Collection updates when you confirm: cards leaving are removed, cards arriving are added.</p>

@@ -164,12 +164,15 @@ describe("Trade route", () => {
 
     it("on confirm removes the card from Collection, records the entry, empties the Calculator and links to the entry", async () => {
       await toCalculator();
+      store.set("mtg-checklist-collection-meta-v2", JSON.stringify({ fileName: "mine.csv", importedAt: 42, cardCount: 7 }));
       await userEvent.click(screen.getByRole("button", { name: "Log this trade" }));
       await userEvent.type(screen.getByLabelText("Who with"), "Sam");
       await userEvent.click(screen.getByRole("button", { name: "Log trade" }));
       await waitFor(() => expect(stored("mtg-checklist-trade-ledger-v1")).toHaveLength(1));
       expect(stored("mtg-checklist-trade-ledger-v1")[0]).toMatchObject({ counterparty: "Sam" });
       expect(stored("mtg-checklist-collection-v2")["sol ring"][0].quantity).toBe(1);
+      // Import metadata written by Collection is kept; only the count follows the change.
+      expect(stored("mtg-checklist-collection-meta-v2")).toMatchObject({ fileName: "mine.csv", importedAt: 42, cardCount: 1 });
       expect(within(screen.getByRole("region", { name: "My offer" })).queryByText("Sol Ring")).not.toBeInTheDocument();
       // Undo cannot bring a logged trade back.
       expect(screen.getAllByRole("button", { name: "Undo" }).every(b => b.hasAttribute("disabled"))).toBe(true);

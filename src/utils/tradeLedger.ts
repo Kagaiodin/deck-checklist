@@ -1,6 +1,7 @@
 import type { Collection, CollectionPrinting } from "../types/index";
 import type { Finish, Trade, TradeCard, TradeLogCard, TradeLogEntry, TradeSide } from "../types/trade";
 import { sideTotals, unitPrice } from "./tradePricing";
+import { getFrontFaceName } from "./dualface";
 
 export interface LogMeta {
   date: number;
@@ -12,8 +13,7 @@ const isFoilFinish = (f: Finish) => f !== "nonfoil";
 
 /** Collection keys are lowercased front-face names; trade cards may carry the full "A // B" name. */
 export function collectionKey(name: string): string {
-  const front = name.includes(" // ") ? name.split(" // ")[0] : name;
-  return front.trim().toLowerCase();
+  return getFrontFaceName(name).toLowerCase();
 }
 
 function toLogCard(card: TradeCard, side: TradeSide, settings: Trade["settings"]): TradeLogCard {
@@ -116,9 +116,51 @@ export function applyTradeToCollection(
   return { collection: next, shortfall };
 }
 
+/** Newest first. Stable, so entries on the same date keep their insertion order. */
+export const sortLedger = (entries: TradeLogEntry[]) => [...entries].sort((a, b) => b.date - a.date);
+
+const isNum = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v);
+const isStr = (v: unknown): v is string => typeof v === "string";
+
+function validCard(c: unknown): c is TradeLogCard {
+  if (!c || typeof c !== "object") return false;
+  const o = c as Record<string, unknown>;
+  return isStr(o.name) && isStr(o.set) && isStr(o.collectorNumber) && isStr(o.scryfallId)
+    && isStr(o.finish) && isStr(o.condition) && isNum(o.quantity) && o.quantity > 0
+    && (o.unitPrice === null || isNum(o.unitPrice));
+}
+
+function validEntry(e: unknown): e is TradeLogEntry {
+  if (!e || typeof e !== "object") return false;
+  const o = e as Record<string, unknown>;
+  const pair = (v: unknown) => !!v && typeof v === "object" && isNum((v as Record<string, unknown>).out) && isNum((v as Record<string, unknown>).in);
+  return isStr(o.id) && o.id !== "" && isNum(o.date)
+    && Array.isArray(o.cardsOut) && o.cardsOut.every(validCard)
+    && Array.isArray(o.cardsIn) && o.cardsIn.every(validCard)
+    && pair(o.cash) && pair(o.totals);
+}
+
+/** Backups are untrusted: keep only well-formed entries (unique ids), drop the rest. */
+export function sanitizeLedger(raw: unknown): TradeLogEntry[] {
+  if (!Array.isArray(raw)) return [];
+  const seen = new Set<string>();
+  const out: TradeLogEntry[] = [];
+  for (const e of raw) {
+    if (!validEntry(e) || seen.has(e.id)) continue;
+    seen.add(e.id);
+    out.push(e);
+  }
+  return out;
+}
+
 /** Merge-import: keeps local entries, adds incoming ones whose id is new, newest first. */
 export function mergeLedger(local: TradeLogEntry[], incoming: TradeLogEntry[]): { merged: TradeLogEntry[]; added: number } {
   const have = new Set(local.map(e => e.id));
-  const fresh = incoming.filter(e => !have.has(e.id));
-  return { merged: [...local, ...fresh].sort((a, b) => b.date - a.date), added: fresh.length };
+  const fresh: TradeLogEntry[] = [];
+  for (const e of incoming) {
+    if (have.has(e.id)) continue;
+    have.add(e.id);
+    fresh.push(e);
+  }
+  return { merged: sortLedger([...local, ...fresh]), added: fresh.length };
 }

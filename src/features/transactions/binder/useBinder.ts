@@ -1,29 +1,54 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useSyncExternalStore } from "react";
 import type { Collection, Deck } from "../../../types/index";
-import { useLocalStorage } from "../../../hooks/useLocalStorage";
 import { useCommittedInfo } from "../../collection/hooks/useCommittedInfo";
 import { deriveBinder, type Binder } from "./binderSurplus";
 
 export const BINDER_EXCLUDED_KEY = "mtg-checklist-binder-excluded-v1";
 
-/** Reads the exclude list straight from storage (Binder owns the live copy; backups need the current one). */
+const CHANGE_EVENT = "fetchlist:binder-excluded-change";
+
+/** Backups are untrusted: keep only string keys. */
+export function sanitizeExcluded(raw: unknown): string[] {
+  return Array.isArray(raw) ? raw.filter((k): k is string => typeof k === "string") : [];
+}
+
+/** Reads the exclude list straight from storage. */
 export function readBinderExcluded(): string[] {
   try {
-    const raw = JSON.parse(window.localStorage.getItem(BINDER_EXCLUDED_KEY) ?? "[]");
-    return Array.isArray(raw) ? raw.filter((k): k is string => typeof k === "string") : [];
+    return sanitizeExcluded(JSON.parse(window.localStorage.getItem(BINDER_EXCLUDED_KEY) ?? "[]"));
   } catch { return []; }
 }
 
+/** Writes the list and tells every live reader (Binder, backups) to re-read it. */
 export function writeBinderExcluded(list: string[]) {
   try { window.localStorage.setItem(BINDER_EXCLUDED_KEY, JSON.stringify(list)); } catch { /* quota */ }
+  window.dispatchEvent(new Event(CHANGE_EVENT));
+}
+
+function subscribe(cb: () => void) {
+  window.addEventListener(CHANGE_EVENT, cb);
+  window.addEventListener("storage", cb);
+  return () => { window.removeEventListener(CHANGE_EVENT, cb); window.removeEventListener("storage", cb); };
+}
+function snapshot(): string {
+  try { return window.localStorage.getItem(BINDER_EXCLUDED_KEY) ?? "[]"; } catch { return "[]"; }
+}
+
+/** The current exclude list; one shared store, so every component sees the same list. */
+export function useBinderExcludedList(): string[] {
+  const raw = useSyncExternalStore(subscribe, snapshot, () => "[]");
+  return useMemo(() => { try { return sanitizeExcluded(JSON.parse(raw)); } catch { return []; } }, [raw]);
 }
 
 /** Lowercase names the user keeps out of the Binder. */
 export function useBinderExcluded() {
-  const [list, setList] = useLocalStorage<string[]>(BINDER_EXCLUDED_KEY, []);
-  const excluded = useMemo(() => new Set(Array.isArray(list) ? list : []), [list]);
-  const exclude = useCallback((key: string) => setList(prev => (prev.includes(key) ? prev : [...prev, key])), [setList]);
-  const restore = useCallback((key: string) => setList(prev => prev.filter(k => k !== key)), [setList]);
+  const list = useBinderExcludedList();
+  const excluded = useMemo(() => new Set(list), [list]);
+  const exclude = useCallback((key: string) => {
+    const cur = readBinderExcluded();
+    if (!cur.includes(key)) writeBinderExcluded([...cur, key]);
+  }, []);
+  const restore = useCallback((key: string) => writeBinderExcluded(readBinderExcluded().filter(k => k !== key)), []);
   return { excluded, exclude, restore };
 }
 

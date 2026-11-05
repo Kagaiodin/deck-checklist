@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { applyTradeToCollection, tradeToLogEntry, collectionKey, mergeLedger } from "../tradeLedger";
+import { applyTradeToCollection, tradeToLogEntry, collectionKey, mergeLedger, sanitizeLedger, sortLedger } from "../tradeLedger";
 import { DEFAULT_SETTINGS, type Trade, type TradeCard, type TradeLogCard } from "../../types/trade";
 import type { Collection } from "../../types/index";
 
@@ -128,5 +128,36 @@ describe("mergeLedger", () => {
   });
   it("treats an old backup with no ledger as nothing to add", () => {
     expect(mergeLedger([e("a", 1)], [])).toEqual({ merged: [e("a", 1)], added: 0 });
+  });
+});
+
+describe("sanitizeLedger", () => {
+  const card = { name: "Sol Ring", scryfallId: "x", set: "cmm", collectorNumber: "410", finish: "nonfoil", condition: "NM", quantity: 1, unitPrice: null };
+  const good = { id: "a", date: 1, cardsOut: [card], cardsIn: [], cash: { out: 0, in: 0 }, totals: { out: 0, in: 0 } };
+  it("returns [] for anything that is not an array", () => {
+    for (const v of [undefined, null, {}, "x", 5]) expect(sanitizeLedger(v)).toEqual([]);
+  });
+  it("keeps good entries and drops malformed ones and duplicate ids", () => {
+    const bad = [
+      { ...good, id: "b", cardsOut: undefined },
+      { ...good, id: "c", cash: undefined },
+      { ...good, id: "d", totals: { out: "1", in: 0 } },
+      { ...good, id: "e", cardsIn: [{ ...card, quantity: 0 }] },
+      { ...good, id: "f", date: Number.NaN },
+      null, 7,
+    ];
+    expect(sanitizeLedger([good, ...bad, { ...good }]).map(e => e.id)).toEqual(["a"]);
+  });
+});
+
+describe("ledger ordering", () => {
+  const e = (id: string, date: number) => ({ id, date, cardsOut: [], cardsIn: [], cash: { out: 0, in: 0 }, totals: { out: 0, in: 0 } });
+  it("sortLedger puts a backdated entry below newer ones and keeps insertion order on ties", () => {
+    expect(sortLedger([e("old", 5), e("n1", 9), e("n2", 9)]).map(x => x.id)).toEqual(["n1", "n2", "old"]);
+  });
+  it("mergeLedger drops duplicate ids inside the incoming backup", () => {
+    const r = mergeLedger([], [e("a", 1), e("a", 1), e("b", 2)]);
+    expect(r.added).toBe(2);
+    expect(r.merged.map(x => x.id)).toEqual(["b", "a"]);
   });
 });

@@ -89,6 +89,14 @@ describe("LedgerPanel", () => {
     expect(screen.getByText(/2 cards out · 1 card in · \$5\.00 cash in/)).toBeInTheDocument();
   });
 
+  it("a receive-only trade shows what came in, not '0 cards out' or a zero given total", () => {
+    render(<Panel entries={[entry({ cardsOut: [], cash: { out: 0, in: 0 }, totals: { out: 0, in: 12 }, cardsIn: [entry().cardsIn[0]] })]} />);
+    expect(screen.getByText(/· 1 card in$/)).toBeInTheDocument();
+    expect(screen.queryByText(/cards? out/)).not.toBeInTheDocument();
+    expect(screen.queryByText("Gave")).not.toBeInTheDocument();
+    expect(screen.getByText("Got")).toBeInTheDocument();
+  });
+
   it("detail shows snapshot lines, 'no price' and the re-log footnote", () => {
     render(<Panel entries={[entry()]} openId="e1" />);
     const gave = screen.getByRole("region", { name: "You gave" });

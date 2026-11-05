@@ -21,11 +21,20 @@ const FINISH: Record<string, string> = { nonfoil: "", foil: " Foil", etched: " E
 
 function summary(e: TradeLogEntry): string {
   const out = count(e.cardsOut), inn = count(e.cardsIn);
-  const parts = [`${plural(out, "card")} out`];
+  const parts: string[] = [];
+  if (out > 0) parts.push(`${plural(out, "card")} out`);
   if (inn > 0) parts.push(`${plural(inn, "card")} in`);
   if (e.cash.out > 0) parts.push(`${usd(e.cash.out)} cash out`);
   if (e.cash.in > 0) parts.push(`${usd(e.cash.in)} cash in`);
-  return parts.join(" · ");
+  return parts.length ? parts.join(" · ") : "Empty trade";
+}
+
+/** Each side's snapshot value, shown only for a side that has something on it. */
+function sideValues(e: TradeLogEntry): { label: string; value: number }[] {
+  const v: { label: string; value: number }[] = [];
+  if (e.cardsOut.length > 0 || e.cash.out > 0) v.push({ label: "Gave", value: e.totals.out });
+  if (e.cardsIn.length > 0 || e.cash.in > 0) v.push({ label: "Got", value: e.totals.in });
+  return v;
 }
 
 export function LedgerPanel({ entries, openId, onOpenChange, onNewTrade, onDelete }: LedgerPanelProps) {
@@ -88,7 +97,9 @@ export function LedgerPanel({ entries, openId, onOpenChange, onNewTrade, onDelet
               <span className="ledger-row-name">{e.counterparty || "Trade"}</span>
               <span className="ledger-row-sub">{fmtDate(e.date)} · {summary(e)}</span>
             </span>
-            <span className="ledger-row-total">{usd(e.totals.out)}</span>
+            <span className="ledger-row-total">
+              {sideValues(e).map(s => <span key={s.label}><span className="ledger-row-total-label">{s.label}</span> {usd(s.value)}</span>)}
+            </span>
           </button>
         </li>
       ))}
