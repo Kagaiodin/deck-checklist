@@ -183,6 +183,7 @@ describe("Invoice", () => {
     expect(screen.getByText("Notes: at FNM")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "← Back to entry" }));
     expect(screen.getByRole("button", { name: "View invoice" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Trade with Sam" })).toHaveFocus();
   });
 
   it("prints through window.print", async () => {

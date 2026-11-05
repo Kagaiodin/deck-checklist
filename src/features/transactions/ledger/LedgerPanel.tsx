@@ -67,6 +67,13 @@ export function LedgerPanel({ entries, openId, onOpenChange, onNewTrade, onDelet
   // Leaving the entry (back, delete, replace import) always drops the invoice with it.
   useEffect(() => { if (!open) setInvoicing(false); }, [open]);
 
+  // Closing the invoice unmounts the focused Back button; hand focus to the entry title.
+  const wasInvoicing = useRef(false);
+  useEffect(() => {
+    if (wasInvoicing.current && !invoicing) root.current?.querySelector<HTMLElement>(".ledger-title")?.focus();
+    wasInvoicing.current = invoicing;
+  }, [invoicing]);
+
   if (open && invoicing) return <Invoice entry={open} onBack={() => setInvoicing(false)} />;
 
   if (open) {

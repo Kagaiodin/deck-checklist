@@ -69,6 +69,7 @@
   .inv-bar .btn { min-height: 44px; flex: 1; }
 }
 @media print {
+  html, body { background: #fff !important; }
   body * { visibility: hidden; }
   .paper-sheet, .paper-sheet * { visibility: visible; }
   .paper-sheet { position: absolute; left: 0; top: 0; max-width: none; box-shadow: none; border: none; padding: 0; }
