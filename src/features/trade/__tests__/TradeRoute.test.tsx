@@ -142,6 +142,16 @@ describe("Trade route", () => {
     expect(screen.queryByRole("heading", { name: "Trade" })).not.toBeInTheDocument();
   });
 
+  it("Trades & sales → New trade, and the breadcrumb returns to Trades & sales (not Binder)", async () => {
+    render(<App />);
+    await userEvent.click(tab(/^Transactions/));
+    await userEvent.click(screen.getByRole("tab", { name: /^Trades & sales/ }));
+    await userEvent.click(screen.getByRole("button", { name: "New trade" }));
+    expect(screen.getByRole("heading", { level: 1, name: "Trade" })).toBeInTheDocument();
+    await userEvent.click(within(screen.getByRole("navigation", { name: "Breadcrumb" })).getByRole("button", { name: "Trades & sales" }));
+    expect(screen.getByRole("tab", { name: /^Trades & sales/ })).toHaveAttribute("aria-selected", "true");
+  });
+
   describe("Log this trade", () => {
     const toCalculator = async () => {
       store.set("mtg-checklist-collection-v2", JSON.stringify({ "sol ring": [{ quantity: 2 }] }));

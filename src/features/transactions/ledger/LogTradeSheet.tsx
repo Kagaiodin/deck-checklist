@@ -55,7 +55,9 @@ export function LogTradeSheet({ trade, collection, decks, onCancel, onConfirm }:
       const owned = ownedTotal(collection, c);
       const qty = qtyByKey.get(key) ?? c.quantity;
       const committed = committedTotal(decks, c);
-      m.set(c.id, { missing: owned < qty, inDecks: owned >= qty && owned - qty < committed ? committed - (owned - qty) : 0 });
+      // Copies left after the trade (never below 0) vs. copies decks need: the shortfall is what decks lose.
+      const spare = Math.max(owned - qty, 0);
+      m.set(c.id, { missing: owned < qty, inDecks: spare < committed ? committed - spare : 0 });
     }
     return m;
   }, [trade.mine.cards, collection, decks]);

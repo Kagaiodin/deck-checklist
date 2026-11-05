@@ -40,6 +40,13 @@ describe("LogTradeSheet", () => {
     expect(screen.getByRole("button", { name: "Log trade" })).toBeEnabled();
   });
 
+  it("still flags a deck when the trade takes more copies than owned but some are owned", () => {
+    // Own 1, trade out 2 (two lines): the deck loses its only copy, and the line must say so.
+    sheet(trade([tc({ id: "a" }), tc({ id: "b" })]), { "sol ring": [{ quantity: 1 }] }, [deckWith("Sol Ring", 1)]);
+    expect(screen.getAllByText("Not in your collection").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("1 in decks").length).toBeGreaterThan(0);
+  });
+
   it("does not warn when the spare copies cover the trade", () => {
     sheet(trade([tc()]), { "sol ring": [{ quantity: 2 }] }, [deckWith("Sol Ring", 1)]);
     expect(screen.queryByText(/in decks/)).not.toBeInTheDocument();

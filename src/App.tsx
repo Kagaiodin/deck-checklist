@@ -1570,7 +1570,7 @@ function AppInner() {
               subTab={txSubTab}
               onSubTabChange={setTxSubTab}
               collection={tradeCollection}
-              onOpenTrade={seed => openTrade("binder", seed)}
+              onOpenTrade={seed => openTrade(txSubTab === "trades" ? "trades" : "binder", seed)}
               onViewCollection={() => switchView("collection")}
               ledger={ledger}
               onDeleteLedgerEntry={deleteLedgerEntry}
