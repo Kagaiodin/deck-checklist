@@ -45,7 +45,7 @@ describe("Trade route", () => {
   it("is not a top-level tab", () => {
     render(<App />);
     const nav = screen.getByRole("navigation");
-    expect(within(nav).getAllByRole("button").map((b) => b.textContent)).toEqual(["DecksDecks", "CollectionCollection", "Orders"]);
+    expect(within(nav).getAllByRole("button").map((b) => b.textContent)).toEqual(["DecksDecks", "CollectionCollection", "Transactions"]);
     expect(screen.queryByRole("heading", { name: "Trade" })).not.toBeInTheDocument();
   });
 
@@ -56,6 +56,7 @@ describe("Trade route", () => {
     const crumb = screen.getByRole("navigation", { name: "Breadcrumb" });
     expect(within(crumb).getByRole("button", { name: "Collection" })).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "My offer" })).toBeInTheDocument();
+    expect(tab(/^Transactions/)).toHaveClass("active"); // the Calculator lives under Transactions
   });
 
   it("goes back to Collection from the breadcrumb", async () => {
@@ -69,7 +70,7 @@ describe("Trade route", () => {
   it("leaves Trade when a top-level tab is clicked", async () => {
     render(<App />);
     await goToTrade();
-    await userEvent.click(tab(/^Orders/));
+    await userEvent.click(tab(/^Transactions/));
     expect(screen.queryByRole("heading", { name: "Trade" })).not.toBeInTheDocument();
   });
 
@@ -105,8 +106,10 @@ describe("Trade route", () => {
     window.location.hash = `#trade=${await encodeTrade(shared, Date.now())}`;
     render(<App />);
     await screen.findByText(/Shared trade — prices as of/);
-    await userEvent.click(within(screen.getByRole("navigation", { name: "Breadcrumb" })).getByRole("button", { name: "Collection" }));
+    await userEvent.click(within(screen.getByRole("navigation", { name: "Breadcrumb" })).getByRole("button", { name: "Binder" }));
     await waitFor(() => expect(window.location.hash).toBe(""));
+    // A share link returns to Binder, not Collection.
+    expect(screen.getByRole("tab", { name: "Binder" })).toHaveAttribute("aria-selected", "true");
   });
 
   it("opens straight into Trade on /trade, and leaves /trade when going back", async () => {
@@ -115,7 +118,7 @@ describe("Trade route", () => {
     // PersistenceWrapper remounts the app once decks load; wait it out before grabbing the breadcrumb.
     await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
     expect(screen.getByRole("heading", { level: 1, name: "Trade" })).toBeInTheDocument();
-    await userEvent.click(within(screen.getByRole("navigation", { name: "Breadcrumb" })).getByRole("button", { name: "Collection" }));
+    await userEvent.click(within(screen.getByRole("navigation", { name: "Breadcrumb" })).getByRole("button", { name: "Binder" }));
     expect(screen.queryByRole("heading", { name: "Trade" })).not.toBeInTheDocument();
     expect(window.location.pathname).toBe("/");
   });

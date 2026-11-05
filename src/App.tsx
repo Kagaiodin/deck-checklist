@@ -20,7 +20,8 @@ import { getDeckColorIdentity, formatRelativeDate, getDeckDomain } from "./utils
 import { CollectionPage } from "./features/collection/CollectionPage";
 import { TradePage, clearTradeHash } from "./features/trade/TradePage";
 import { extractPayload } from "./utils/tradeShare";
-import { OrdersPage } from "./features/orders/OrdersPage";
+import { TransactionsPage, type TransactionsTab } from "./features/transactions/TransactionsPage";
+import type { TradeOrigin } from "./features/trade/TradePage";
 import { OnboardingModal } from "./features/onboarding/OnboardingModal";
 import { ProfileExportImport } from "./features/profile/ProfileExportImport";
 import { ImportBackupModal } from "./features/profile/ImportBackupModal";
@@ -74,9 +75,12 @@ function AppInner() {
   const [validating, setValidating] = useState(false);
   const [progress, setProgress] = useState<ValidationProgress>({ total: 0, validated: 0 });
   const [importError, setImportError] = useState<string | null>(null);
-  const [view, setView] = useState<"decks" | "collection" | "orders">(() => (openedWithTradeLink() ? "collection" : "decks"));
-  // Trade is a page nested under Collection, not a top-level tab. `tradeKey` remounts it for a new link.
+  const [view, setView] = useState<"decks" | "collection" | "transactions">(() => (openedWithTradeLink() ? "transactions" : "decks"));
+  const [txSubTab, setTxSubTab] = useState<TransactionsTab>(() => (openedWithTradeLink() ? "binder" : "buys"));
+  // The Calculator renders inside Transactions, replacing the sub-tab body. `tradeOrigin` is where
+  // its back control returns to; `tradeKey` remounts it for a new link.
   const [tradeOpen, setTradeOpen] = useState<boolean>(openedWithTradeLink);
+  const [tradeOrigin, setTradeOrigin] = useState<TradeOrigin>(() => (openedWithTradeLink() ? "link" : "collection"));
   const [tradeKey, setTradeKey] = useState(0);
   const [tradeCollection, setTradeCollection] = useState<Collection>(readCollection);
   const [showImport, setShowImport] = useState(false);
@@ -615,14 +619,16 @@ function AppInner() {
   const toBuyCards = activeDeck?.cards.filter(c => c.source === "need_to_buy") ?? [];
   const toBuyTotal = toBuyCards.reduce((s, c) => s + c.quantity, 0);
 
-  function switchView(v: "decks" | "collection" | "orders") {
+  function switchView(v: "decks" | "collection" | "transactions") {
     if (tradeOpen) closeTrade();
     setView(v);
     window.scrollTo({ top: 0, behavior: "instant" });
   }
 
-  // ── Trade (nested under Collection) ────────────────────────────────────────
-  function openTrade() {
+  // ── Trade (Calculator, rendered inside Transactions) ───────────────────────
+  function openTrade(origin: TradeOrigin) {
+    setTradeOrigin(origin);
+    setView("transactions");
     setTradeCollection(readCollection());
     setTradeKey(k => k + 1);
     setTradeOpen(true);
@@ -635,11 +641,20 @@ function AppInner() {
     setTradeOpen(false);
   }
 
+  /** The Calculator's back control: return to wherever it was opened from. */
+  function leaveTrade() {
+    closeTrade();
+    if (tradeOrigin === "collection") setView("collection");
+    else setTxSubTab(tradeOrigin === "link" ? "binder" : tradeOrigin);
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }
+
   // A share link pasted into an already-open tab only changes the hash, so listen for it.
   useEffect(() => {
     function onHashChange() {
       if (!openedWithTradeLink()) return;
-      setView("collection");
+      setTradeOrigin("link");
+      setView("transactions");
       setTradeCollection(readCollection());
       setTradeKey(k => k + 1);
       setTradeOpen(true);
@@ -652,7 +667,7 @@ function AppInner() {
     toBuyCards,
     deckId: activeDeckId,
     onCreateOrder: (order) => setOrders(prev => [order, ...prev]),
-    onViewOrder: () => switchView("orders"),
+    onViewOrder: () => { setTxSubTab("buys"); switchView("transactions"); },
     nextOrderId: () => crypto.randomUUID(),
   });
 
@@ -754,10 +769,10 @@ function AppInner() {
             <span className="nav-label-full">Collection</span>
           </button>
           <button
-            className={`nav-btn${view === "orders" ? " active" : ""}`}
-            onClick={() => switchView("orders")}
+            className={`nav-btn${view === "transactions" ? " active" : ""}`}
+            onClick={() => switchView("transactions")}
           >
-            Orders
+            Transactions
             {orders.filter(o => o.status === "active").length > 0 && (
               <span className="nav-badge">{orders.filter(o => o.status === "active").length}</span>
             )}
@@ -1477,29 +1492,39 @@ function AppInner() {
 
         {/* ── Collection tab ─────────────────────────────────────────────── */}
         {view === "collection" && (
+          <CollectionPage
+            decks={state.decks}
+            onCollectionChange={updated => dispatch({ type: "APPLY_COLLECTION", payload: updated })}
+            onOpenTrade={() => openTrade("collection")}
+          />
+        )}
+        {/* ── Transactions tab (Buys · Trades & sales · Binder, or the Calculator) ── */}
+        {view === "transactions" && (
           tradeOpen ? (
-            <TradePage key={tradeKey} collection={tradeCollection} decks={state.decks} onBack={closeTrade} />
-          ) : (
-            <CollectionPage
+            <TradePage
+              key={tradeKey}
+              collection={tradeCollection}
               decks={state.decks}
-              onCollectionChange={updated => dispatch({ type: "APPLY_COLLECTION", payload: updated })}
-              onOpenTrade={openTrade}
+              origin={tradeOrigin}
+              onBack={leaveTrade}
+            />
+          ) : (
+            <TransactionsPage
+              subTab={txSubTab}
+              onSubTabChange={setTxSubTab}
+              ordersProps={{
+                orders,
+                decks: state.decks,
+                recentVendors,
+                onCreateOrder: handleCreateOrder,
+                onUpdateOrder: handleUpdateOrder,
+                onMarkReceived: handleMarkReceived,
+                onMarkCancelled: handleMarkCancelled,
+                onDeleteOrder: handleDeleteOrder,
+                onOpenBuyList: () => buyFlow.openBuySheet(),
+              }}
             />
           )
-        )}
-        {/* ── Orders tab ─────────────────────────────────────────────────── */}
-        {view === "orders" && (
-          <OrdersPage
-            orders={orders}
-            decks={state.decks}
-            recentVendors={recentVendors}
-            onCreateOrder={handleCreateOrder}
-            onUpdateOrder={handleUpdateOrder}
-            onMarkReceived={handleMarkReceived}
-            onMarkCancelled={handleMarkCancelled}
-            onDeleteOrder={handleDeleteOrder}
-            onOpenBuyList={() => buyFlow.openBuySheet()}
-          />
         )}
 
       </main>

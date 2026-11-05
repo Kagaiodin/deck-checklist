@@ -232,7 +232,7 @@ async function gotoAndSettle(page: Page, url: string): Promise<void> {
 }
 
 async function clickNav(page: Page, label: string): Promise<void> {
-  // Nav buttons render "Decks", "Collection", "Orders" — use exact short labels.
+  // Nav buttons render "Decks", "Collection", "Transactions" — use exact short labels.
   await page.locator("button.nav-btn", { hasText: label }).first().click({ timeout: 5_000 });
   await page.waitForTimeout(SETTLE_MS);
 }
@@ -579,7 +579,7 @@ async function main(): Promise<void> {
     await shot(page, "04-desktop-collection.png");
 
     // 05 — Orders tab
-    await attempt("nav to Orders", () => clickNav(page, "Orders"));
+    await attempt("nav to Transactions", () => clickNav(page, "Transactions"));
     await shot(page, "05-desktop-orders.png");
 
     // 06 — Buy list modal open
@@ -636,7 +636,7 @@ async function main(): Promise<void> {
     });
 
     // ── Orders redesign shots (37–48) ─────────────────────────────────────
-    await attempt("nav to Orders", () => clickNav(page, "Orders"));
+    await attempt("nav to Transactions", () => clickNav(page, "Transactions"));
 
     // 47 — Overdue meta (order-001 is past its expected arrival)
     await shot(page, "47-desktop-orders-overdue-meta.png");
@@ -775,7 +775,7 @@ async function main(): Promise<void> {
     await attempt("switch to light mode (orders)", () => click(page, ".mode-segment-btn", { hasText: "Light" }));
     await page.waitForTimeout(600);
     // Ensure we're on Orders tab
-    await attempt("nav to Orders (light mode)", () => clickNav(page, "Orders"));
+    await attempt("nav to Transactions (light mode)", () => clickNav(page, "Transactions"));
     await shot(page, "46-desktop-orders-light-mode.png");
     // 46b — expanded ocard in light mode
     await attempt("expand first order in light mode", async () => {
@@ -1037,7 +1037,7 @@ async function main(): Promise<void> {
     await shot(page, "11-mobile-collection.png");
 
     // 12 — Mobile orders
-    await attempt("nav to Orders (mobile)", () => clickNav(page, "Orders"));
+    await attempt("nav to Transactions (mobile)", () => clickNav(page, "Transactions"));
     await shot(page, "12-mobile-orders.png");
 
     // 49 — Mobile order detail sheet (tap a row)
@@ -1109,7 +1109,7 @@ async function main(): Promise<void> {
     await shot(page, "16-tablet-collection.png");
 
     // 51 — Tablet orders list
-    await attempt("nav to Orders (tablet)", () => clickNav(page, "Orders"));
+    await attempt("nav to Transactions (tablet)", () => clickNav(page, "Transactions"));
     await shot(page, "51-tablet-orders.png");
 
     // 51b — Tablet orders expanded
@@ -1139,7 +1139,7 @@ async function main(): Promise<void> {
         await emptyPage3.goto(BASE_URL);
         try { await emptyPage3.waitForLoadState("networkidle", { timeout: 10_000 }); } catch {}
         await emptyPage3.waitForTimeout(SETTLE_MS);
-        await emptyPage3.locator("button.nav-btn", { hasText: "Orders" }).first().click({ timeout: 5_000 });
+        await emptyPage3.locator("button.nav-btn", { hasText: "Transactions" }).first().click({ timeout: 5_000 });
         await emptyPage3.waitForTimeout(SETTLE_MS);
         await shot(emptyPage3, "52-desktop-orders-empty.png");
       } catch (e) {
@@ -1166,7 +1166,7 @@ async function main(): Promise<void> {
         await emptyPage4.goto(BASE_URL);
         try { await emptyPage4.waitForLoadState("networkidle", { timeout: 10_000 }); } catch {}
         await emptyPage4.waitForTimeout(SETTLE_MS);
-        await emptyPage4.locator("button.nav-btn", { hasText: "Orders" }).first().click({ timeout: 5_000 });
+        await emptyPage4.locator("button.nav-btn", { hasText: "Transactions" }).first().click({ timeout: 5_000 });
         await emptyPage4.waitForTimeout(SETTLE_MS);
         await shot(emptyPage4, "53-mobile-orders-empty.png");
       } catch (e) {

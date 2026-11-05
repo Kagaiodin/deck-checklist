@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, type ReactNode } from "react";
 import { useDialogKeys } from "../../hooks/useDialogKeys";
 import { createPortal } from "react-dom";
 import "./OrdersPage.css";
@@ -102,7 +102,7 @@ function buildTimeline(order: Order & { isLate: boolean }): TlStep[] {
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 
-interface OrdersPageProps {
+export interface OrdersPageProps {
   orders: Order[];
   decks: Deck[];
   recentVendors: string[];
@@ -112,6 +112,12 @@ interface OrdersPageProps {
   onMarkCancelled: (orderId: string) => void;
   onDeleteOrder: (orderId: string) => void;
   onOpenBuyList?: () => void;
+  /** Page title. Transactions passes its own; standalone default is "Orders". */
+  heading?: string;
+  /** Rendered at the top of the body, outside the tabpanel (the Transactions sub-tab row). */
+  subnav?: ReactNode;
+  /** When set, the body below `subnav` is exposed as the tabpanel for that tab. */
+  panel?: { id: string; labelledBy: string };
 }
 
 // ── Shared sub-components ─────────────────────────────────────────────────────
@@ -657,6 +663,7 @@ function OCard({
 export function OrdersPage({
   orders, decks, recentVendors,
   onCreateOrder, onUpdateOrder, onMarkReceived, onMarkCancelled, onDeleteOrder, onOpenBuyList,
+  heading = "Orders", subnav, panel,
 }: OrdersPageProps) {
   const [filter, setFilter] = useState<OrderStatus | "all">("active");
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -775,7 +782,7 @@ export function OrdersPage({
         {/* ── Top bar ──────────────────────────────────────────────────────── */}
         <div className="orders-topbar">
           <div className="orders-topbar-left">
-            <h1 className="orders-title">Orders</h1>
+            <h1 className="orders-title">{heading}</h1>
             {orders.length > 0 && (
               <span className="orders-count">{countLabel}</span>
             )}
@@ -806,6 +813,10 @@ export function OrdersPage({
 
         {/* ── Scrollable body ───────────────────────────────────────────────── */}
         <div className="orders-body">
+          {subnav}
+          <div
+            {...(panel ? { role: "tabpanel", id: panel.id, "aria-labelledby": panel.labelledBy } : {})}
+          >
 
           {orders.length === 0 && (
             <div className="orders-empty-wrap">
@@ -905,6 +916,7 @@ export function OrdersPage({
               )}
             </>
           )}
+          </div>
         </div>
       </div>
 

@@ -7,10 +7,21 @@ import { BrokenLinkIcon, RefreshIcon } from "./components/TradeIcons";
 import { EmptyState } from "../../components/EmptyState";
 import "./TradePage.css";
 
+/** Where the Calculator was opened from; decides the back control's label and target. */
+export type TradeOrigin = "collection" | "binder" | "trades" | "link";
+
+const ORIGIN_LABEL: Record<TradeOrigin, string> = {
+  collection: "Collection",
+  binder: "Binder",
+  trades: "Trades & sales",
+  link: "Binder",
+};
+
 interface TradePageProps {
   collection: Collection;
   decks: Deck[];
-  /** Back to the Collection tab (the "Collection ›" breadcrumb). */
+  origin?: TradeOrigin;
+  /** Back to the origin (the breadcrumb's first crumb). */
   onBack: () => void;
 }
 
@@ -26,7 +37,7 @@ export function clearTradeHash() {
   if (window.location.hash) window.history.replaceState(null, "", window.location.pathname + window.location.search);
 }
 
-export function TradePage({ collection, decks, onBack }: TradePageProps) {
+export function TradePage({ collection, decks, origin = "collection", onBack }: TradePageProps) {
   const [load, setLoad] = useState<Load>(() => (extractPayload(window.location.hash) ? { status: "decoding" } : { status: "local" }));
 
   useEffect(() => {
@@ -49,7 +60,7 @@ export function TradePage({ collection, decks, onBack }: TradePageProps) {
   return (
     <div className="trade-page">
       <nav className="tr-crumb" aria-label="Breadcrumb">
-        <button type="button" onClick={onBack}>Collection</button>
+        <button type="button" onClick={onBack}>{ORIGIN_LABEL[origin]}</button>
         <span aria-hidden="true">›</span>
         <span aria-current="page">Trade</span>
       </nav>
