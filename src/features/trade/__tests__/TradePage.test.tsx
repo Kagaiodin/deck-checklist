@@ -92,7 +92,7 @@ describe("TradePage — seed from Binder", () => {
     expect(await within(mineOffer()).findByText("Sol Ring")).toBeInTheDocument();
     expect(within(theirOffer()).queryByText("Sol Ring")).not.toBeInTheDocument();
     expect(toast()).toHaveTextContent("Added Sol Ring");
-    expect(JSON.parse(store.get(TRADE_STORAGE_KEY)!).mine.cards).toHaveLength(1);
+    await waitFor(() => expect(JSON.parse(store.get(TRADE_STORAGE_KEY)!).mine.cards).toHaveLength(1));
   });
 
   it("is ignored when opening a shared trade", async () => {
