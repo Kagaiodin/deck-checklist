@@ -17,6 +17,7 @@ export function Invoice({ entry, onBack }: InvoiceProps) {
   useEffect(() => { heading.current?.focus(); }, []);
 
   const copy = async () => {
+    setStatus("");
     try {
       await navigator.clipboard.writeText(ledgerEntryToText(entry));
       setStatus("Copied to clipboard as plain text.");

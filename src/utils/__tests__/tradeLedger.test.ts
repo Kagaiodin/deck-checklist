@@ -164,7 +164,7 @@ describe("ledger ordering", () => {
 
 describe("ledgerEntryToText", () => {
   const entry = {
-    id: "e", date: Date.UTC(2026, 10, 2, 12), counterparty: "Marcus", notes: "FNM",
+    id: "e", date: new Date(2026, 10, 2, 12).getTime(), counterparty: "Marcus", notes: "FNM",
     cardsOut: [log({ name: "Rhystic Study", set: "cml", collectorNumber: "1", unitPrice: 24.6 }), log({ finish: "foil", unitPrice: null })],
     cardsIn: [log({ name: "Smothering Tithe", quantity: 2, unitPrice: 11.4 })],
     cash: { out: 0, in: 9.7 }, totals: { out: 24.6, in: 32.5 },
@@ -181,6 +181,12 @@ describe("ledgerEntryToText", () => {
     expect(t).toContain("Cash received: $9.70");
     expect(t).not.toContain("Cash given");
     expect(t).toContain("Notes: FNM");
+  });
+
+  it("leaves out the counterparty and notes when there are none", () => {
+    const t = ledgerEntryToText({ ...entry, counterparty: undefined, notes: undefined });
+    expect(t.split("\n")[1]).toBe("Nov 2, 2026");
+    expect(t).not.toContain("Notes:");
   });
 
   it("omits the empty side of a straight sale", () => {

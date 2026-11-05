@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import { useState } from "react";
 import userEvent from "@testing-library/user-event";
@@ -172,6 +172,12 @@ describe("LedgerPanel", () => {
 });
 
 describe("Invoice", () => {
+  const realClipboard = Object.getOwnPropertyDescriptor(navigator, "clipboard");
+  afterEach(() => {
+    if (realClipboard) Object.defineProperty(navigator, "clipboard", realClipboard);
+    else delete (navigator as unknown as Record<string, unknown>).clipboard;
+  });
+
   const openInvoice = async () => {
     render(<LedgerPanel entries={[entry({ cash: { out: 0, in: 5 }, notes: "at FNM" })]} openId="e1" onOpenChange={vi.fn()} onNewTrade={vi.fn()} onDelete={vi.fn()} />);
     await userEvent.click(screen.getByRole("button", { name: "View invoice" }));
@@ -180,6 +186,7 @@ describe("Invoice", () => {
   it("opens from the entry detail and returns to it", async () => {
     await openInvoice();
     expect(screen.getByRole("document", { name: "Trade invoice" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Trade invoice" })).toHaveFocus();
     expect(screen.getByText("Notes: at FNM")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "← Back to entry" }));
     expect(screen.getByRole("button", { name: "View invoice" })).toBeInTheDocument();
@@ -208,5 +215,26 @@ describe("Invoice", () => {
     await openInvoice();
     await userEvent.click(screen.getByRole("button", { name: "Copy as text" }));
     expect(await screen.findByRole("status")).toHaveTextContent("Could not copy");
+  });
+
+  it("clears the status before a repeat copy so it is announced again", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+    await openInvoice();
+    await userEvent.click(screen.getByRole("button", { name: "Copy as text" }));
+    expect(await screen.findByRole("status")).toHaveTextContent("Copied");
+    writeText.mockImplementationOnce(() => new Promise(() => {})); // stays pending
+    await userEvent.click(screen.getByRole("button", { name: "Copy as text" }));
+    expect(screen.getByRole("status")).toBeEmptyDOMElement();
+  });
+
+  it("drops to the list when its entry disappears while the invoice is open", async () => {
+    const onOpenChange = vi.fn();
+    const e = entry();
+    const { rerender } = render(<LedgerPanel entries={[e]} openId="e1" onOpenChange={onOpenChange} onNewTrade={vi.fn()} onDelete={vi.fn()} />);
+    await userEvent.click(screen.getByRole("button", { name: "View invoice" }));
+    rerender(<LedgerPanel entries={[]} openId="e1" onOpenChange={onOpenChange} onNewTrade={vi.fn()} onDelete={vi.fn()} />);
+    expect(screen.queryByRole("document", { name: "Trade invoice" })).not.toBeInTheDocument();
+    expect(onOpenChange).toHaveBeenCalledWith(null);
   });
 });
