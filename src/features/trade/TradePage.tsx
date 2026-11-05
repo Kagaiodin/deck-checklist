@@ -3,6 +3,7 @@ import type { Collection, Deck } from "../../types/index";
 import type { Trade } from "../../types/trade";
 import { decodeTrade, extractPayload } from "../../utils/tradeShare";
 import { TradeWorkspace } from "./TradeWorkspace";
+import type { TradeSeed } from "./seedCard";
 import { BrokenLinkIcon, RefreshIcon } from "./components/TradeIcons";
 import { EmptyState } from "../../components/EmptyState";
 import "./TradePage.css";
@@ -21,6 +22,8 @@ interface TradePageProps {
   collection: Collection;
   decks: Deck[];
   origin?: TradeOrigin;
+  /** Card to pre-add to My offer. */
+  seed?: TradeSeed;
   /** Back to the origin (the breadcrumb's first crumb). */
   onBack: () => void;
 }
@@ -37,7 +40,7 @@ export function clearTradeHash() {
   if (window.location.hash) window.history.replaceState(null, "", window.location.pathname + window.location.search);
 }
 
-export function TradePage({ collection, decks, origin = "collection", onBack }: TradePageProps) {
+export function TradePage({ collection, decks, origin = "collection", seed, onBack }: TradePageProps) {
   const [load, setLoad] = useState<Load>(() => (extractPayload(window.location.hash) ? { status: "decoding" } : { status: "local" }));
 
   useEffect(() => {
@@ -101,6 +104,7 @@ export function TradePage({ collection, decks, origin = "collection", onBack }: 
           collection={collection}
           decks={decks}
           onForked={clearTradeHash}
+          seed={seed}
         />
       )}
     </div>

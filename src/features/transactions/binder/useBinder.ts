@@ -1,0 +1,27 @@
+import { useCallback, useMemo } from "react";
+import type { Collection, Deck } from "../../../types/index";
+import { useLocalStorage } from "../../../hooks/useLocalStorage";
+import { useCommittedInfo } from "../../collection/hooks/useCommittedInfo";
+import { deriveBinder, type Binder } from "./binderSurplus";
+
+export const BINDER_EXCLUDED_KEY = "mtg-checklist-binder-excluded-v1";
+
+/** Lowercase names the user keeps out of the Binder. */
+export function useBinderExcluded() {
+  const [list, setList] = useLocalStorage<string[]>(BINDER_EXCLUDED_KEY, []);
+  const excluded = useMemo(() => new Set(Array.isArray(list) ? list : []), [list]);
+  const exclude = useCallback((key: string) => setList(prev => (prev.includes(key) ? prev : [...prev, key])), [setList]);
+  const restore = useCallback((key: string) => setList(prev => prev.filter(k => k !== key)), [setList]);
+  return { excluded, exclude, restore };
+}
+
+export function useBinder(collection: Collection, decks: Deck[]): Binder & {
+  excluded: ReadonlySet<string>;
+  exclude: (key: string) => void;
+  restore: (key: string) => void;
+} {
+  const getCommittedInfo = useCommittedInfo(decks);
+  const { excluded, exclude, restore } = useBinderExcluded();
+  const binder = useMemo(() => deriveBinder(collection, getCommittedInfo, excluded), [collection, getCommittedInfo, excluded]);
+  return { ...binder, excluded, exclude, restore };
+}

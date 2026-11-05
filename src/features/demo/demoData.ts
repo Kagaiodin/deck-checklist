@@ -392,6 +392,8 @@ export function buildDemoData(now: number): DemoValues {
     "mtg-checklist-vendor-history": JSON.stringify(["Card Kingdom", "TCGplayer", "ManaPool", "Face to Face"]),
     "mtg-checklist-errors": "{}",
     "fetchlist-trade": JSON.stringify({ mine, theirs, settings }),
+    // Binder exclude list starts empty so demo exclusions never touch the real one.
+    "mtg-checklist-binder-excluded-v1": "[]",
     "fetchlist:onboarding:dismissed": "true",
   };
 }

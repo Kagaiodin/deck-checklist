@@ -22,6 +22,7 @@ import { TradePage, clearTradeHash } from "./features/trade/TradePage";
 import { extractPayload } from "./utils/tradeShare";
 import { TransactionsPage, type TransactionsTab } from "./features/transactions/TransactionsPage";
 import type { TradeOrigin } from "./features/trade/TradePage";
+import type { TradeSeed } from "./features/trade/seedCard";
 import { OnboardingModal } from "./features/onboarding/OnboardingModal";
 import { ProfileExportImport } from "./features/profile/ProfileExportImport";
 import { ImportBackupModal } from "./features/profile/ImportBackupModal";
@@ -82,6 +83,7 @@ function AppInner() {
   const [tradeOpen, setTradeOpen] = useState<boolean>(openedWithTradeLink);
   const [tradeOrigin, setTradeOrigin] = useState<TradeOrigin>(() => (openedWithTradeLink() ? "link" : "collection"));
   const [tradeKey, setTradeKey] = useState(0);
+  const [tradeSeed, setTradeSeed] = useState<TradeSeed | undefined>(undefined);
   const [tradeCollection, setTradeCollection] = useState<Collection>(readCollection);
   const [showImport, setShowImport] = useState(false);
   const [renamingDeckId, setRenamingDeckId] = useState<string | null>(null);
@@ -621,13 +623,16 @@ function AppInner() {
 
   function switchView(v: "decks" | "collection" | "transactions") {
     if (tradeOpen) closeTrade();
+    // CollectionPage writes localStorage on its own, so re-read for the Binder when Transactions opens.
+    if (v === "transactions") setTradeCollection(readCollection());
     setView(v);
     window.scrollTo({ top: 0, behavior: "instant" });
   }
 
   // ── Trade (Calculator, rendered inside Transactions) ───────────────────────
-  function openTrade(origin: TradeOrigin) {
+  function openTrade(origin: TradeOrigin, seed?: TradeSeed) {
     setTradeOrigin(origin);
+    setTradeSeed(seed);
     setView("transactions");
     setTradeCollection(readCollection());
     setTradeKey(k => k + 1);
@@ -638,6 +643,7 @@ function AppInner() {
     clearTradeHash();
     // Otherwise a reload on `/trade` would reopen Trade.
     if (isTradePath()) window.history.replaceState(null, "", "/" + window.location.search);
+    setTradeSeed(undefined);
     setTradeOpen(false);
   }
 
@@ -654,6 +660,7 @@ function AppInner() {
     function onHashChange() {
       if (!openedWithTradeLink()) return;
       setTradeOrigin("link");
+      setTradeSeed(undefined);
       setView("transactions");
       setTradeCollection(readCollection());
       setTradeKey(k => k + 1);
@@ -1506,12 +1513,16 @@ function AppInner() {
               collection={tradeCollection}
               decks={state.decks}
               origin={tradeOrigin}
+              seed={tradeSeed}
               onBack={leaveTrade}
             />
           ) : (
             <TransactionsPage
               subTab={txSubTab}
               onSubTabChange={setTxSubTab}
+              collection={tradeCollection}
+              onOpenTrade={seed => openTrade("binder", seed)}
+              onViewCollection={() => switchView("collection")}
               ordersProps={{
                 orders,
                 decks: state.decks,

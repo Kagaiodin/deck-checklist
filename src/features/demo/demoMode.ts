@@ -13,6 +13,7 @@ export const MANAGED_KEYS = [
   "mtg-checklist-vendor-history",
   "mtg-checklist-errors",
   "fetchlist-trade",
+  "mtg-checklist-binder-excluded-v1",
   "fetchlist-last-vendor",
   "fetchlist-vendor-last-used",
   "fetchlist:onboarding:dismissed",

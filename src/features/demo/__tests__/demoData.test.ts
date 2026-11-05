@@ -4,6 +4,7 @@ import { MANAGED_KEYS } from "../demoMode";
 import { getDeckColorIdentity } from "../../../utils/deckUtils";
 import { computeCostToComplete } from "../../../utils/deckCost";
 import { fairness, sideTotals } from "../../../utils/tradePricing";
+import { deriveBinder } from "../../transactions/binder/binderSurplus";
 import type { Deck, Order, Collection } from "../../../types/index";
 import type { Trade } from "../../../types/trade";
 
@@ -21,6 +22,18 @@ const progress = (d: Deck) => {
   const have = d.cards.filter((c) => c.acquired).reduce((s, c) => s + c.quantity, 0);
   return have / total;
 };
+
+describe("demo Binder", () => {
+  it("has spare cards so the sub-tab is not empty, and an empty exclude list", () => {
+    const committed = (key: string) => {
+      let total = 0;
+      for (const d of decks) for (const c of d.cards) if (c.acquired && c.name.toLowerCase() === key) total += c.quantity;
+      return { total, deckCount: total ? 1 : 0, decks: [] };
+    };
+    expect(deriveBinder(collection, committed, new Set()).rows.length).toBeGreaterThan(0);
+    expect(data["mtg-checklist-binder-excluded-v1"]).toBe("[]");
+  });
+});
 
 describe("buildDemoData", () => {
   it("only sets managed keys, as JSON strings, and skips onboarding via the dismissed flag", () => {

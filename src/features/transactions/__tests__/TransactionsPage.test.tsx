@@ -3,7 +3,8 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { TransactionsPage, type TransactionsTab } from "../TransactionsPage";
-import type { Order } from "../../../types/index";
+vi.mock("../../../hooks/useMediaQuery", () => ({ useMediaQuery: () => false }));
+import type { Collection, Order } from "../../../types/index";
 
 const order = (id: string): Order => ({
   id, createdAt: Date.now(), vendor: "ManaPool", status: "active",
@@ -17,12 +18,37 @@ const ordersProps = (orders: Order[] = []) => ({
 });
 
 /** Controlled the way App drives it. */
-function Harness({ initial = "buys", orders = [] }: { initial?: TransactionsTab; orders?: Order[] }) {
+function Harness({ initial = "buys", orders = [], collection = {}, onOpenTrade = vi.fn() }: {
+  initial?: TransactionsTab; orders?: Order[]; collection?: Collection; onOpenTrade?: () => void;
+}) {
   const [tab, setTab] = useState<TransactionsTab>(initial);
-  return <TransactionsPage subTab={tab} onSubTabChange={setTab} ordersProps={ordersProps(orders)} />;
+  return (
+    <TransactionsPage
+      subTab={tab}
+      onSubTabChange={setTab}
+      ordersProps={ordersProps(orders)}
+      collection={collection}
+      onOpenTrade={onOpenTrade}
+      onViewCollection={vi.fn()}
+    />
+  );
 }
 
-beforeEach(() => vi.clearAllMocks());
+// Node's built-in localStorage can shadow jsdom's; use an in-memory mock.
+function installStorage(seed: Record<string, string> = {}) {
+  const store = new Map<string, string>(Object.entries(seed));
+  const mock = {
+    getItem: (k: string) => store.get(k) ?? null,
+    setItem: (k: string, v: string) => { store.set(k, v); },
+    removeItem: (k: string) => { store.delete(k); },
+    clear: () => store.clear(),
+  };
+  for (const target of [globalThis, window]) {
+    Object.defineProperty(target, "localStorage", { value: mock, writable: true, configurable: true });
+  }
+}
+
+beforeEach(() => { vi.clearAllMocks(); installStorage(); });
 
 describe("TransactionsPage", () => {
   it("titles the page Transactions and offers Buys, Trades & sales and Binder", () => {
@@ -78,5 +104,21 @@ describe("TransactionsPage", () => {
   it("opens straight to the sub-tab App hands it", () => {
     render(<Harness initial="binder" />);
     expect(screen.getByRole("tab", { name: "Binder" })).toHaveAttribute("aria-selected", "true");
+  });
+
+  it("shows the Binder count on its tab and a New trade button that opens an empty Calculator", async () => {
+    const onOpenTrade = vi.fn();
+    render(<Harness initial="binder" collection={{ "sol ring": [{ quantity: 2 }], cultivate: [{ quantity: 1 }] }} onOpenTrade={onOpenTrade} />);
+    expect(screen.getByRole("tab", { name: /Binder/ })).toHaveTextContent("Binder2");
+    await userEvent.click(screen.getByRole("button", { name: "New trade" }));
+    expect(onOpenTrade).toHaveBeenCalledWith();
+  });
+
+  it("seeds the Calculator with the row's largest printing from Add to new trade", async () => {
+    const onOpenTrade = vi.fn();
+    render(<Harness initial="binder" onOpenTrade={onOpenTrade}
+      collection={{ "sol ring": [{ quantity: 1 }, { quantity: 3, set: "cmm", collectorNumber: "1", foil: true }] }} />);
+    await userEvent.click(screen.getByRole("button", { name: "Add to new trade: Sol Ring" }));
+    expect(onOpenTrade).toHaveBeenCalledWith({ name: "sol ring", set: "cmm", collectorNumber: "1", foil: true });
   });
 });

@@ -85,6 +85,26 @@ async function addBoltFromSearch(sideName: "My offer" | "Their offer") {
   await userEvent.click(screen.getByRole("button", { name: "Add card" }));
 }
 
+describe("TradePage — seed from Binder", () => {
+  it("adds the seeded card to My offer once, priced, with a toast", async () => {
+    fetchPricesMock.mockResolvedValue(new Map([["cmm:410", printing({ name: "Sol Ring", set: "cmm", collectorNumber: "410", prices: { usd: "1.50" } })]]));
+    render(<TradePage collection={{}} decks={[]} onBack={vi.fn()} seed={{ name: "sol ring", set: "cmm", collectorNumber: "410" }} />);
+    expect(await within(mineOffer()).findByText("Sol Ring")).toBeInTheDocument();
+    expect(within(theirOffer()).queryByText("Sol Ring")).not.toBeInTheDocument();
+    expect(toast()).toHaveTextContent("Added Sol Ring");
+    expect(JSON.parse(store.get(TRADE_STORAGE_KEY)!).mine.cards).toHaveLength(1);
+  });
+
+  it("is ignored when opening a shared trade", async () => {
+    const shared = trade(side([card({ name: "Creator Gives" })]), side([card({ name: "Creator Gets" })]));
+    window.location.hash = `#trade=${await encodeTrade(shared, Date.UTC(2026, 8, 26, 16, 12))}`;
+    render(<TradePage collection={{}} decks={[]} onBack={vi.fn()} seed={{ name: "sol ring" }} />);
+    expect(await screen.findByText(/Shared trade — prices as of/)).toBeInTheDocument();
+    expect(screen.queryByText("Sol Ring")).not.toBeInTheDocument();
+    expect(searchMock).not.toHaveBeenCalled();
+  });
+});
+
 describe("TradePage — desktop", () => {
   it("renders the three panels, breadcrumb and a neutral verdict", async () => {
     const { onBack } = setup();

@@ -8,6 +8,7 @@ import { useMediaQuery } from "../../hooks/useMediaQuery";
 import { loadLocalTrade, useTrade, type SideKey } from "./hooks/useTrade";
 import { ownedFor } from "./collectionMatch";
 import { FINISH_LABEL, oldestPriceAt, usd } from "./format";
+import { seedToTradeCard, type TradeSeed } from "./seedCard";
 import { CardSearchSheet } from "./components/CardSearchSheet";
 import { CollectionPickerSheet } from "./components/CollectionPickerSheet";
 import { ControlPanel } from "./components/ControlPanel";
@@ -27,6 +28,8 @@ interface TradeWorkspaceProps {
   decks: Deck[];
   /** Called once a shared trade has been forked, so the page can drop the link from the URL. */
   onForked: () => void;
+  /** A card to add to My offer once on open (Binder → "Add to new trade"). Ignored for shared trades. */
+  seed?: TradeSeed;
 }
 
 type OpenSheet = { kind: "search"; side: SideKey } | { kind: "collection" } | null;
@@ -42,7 +45,7 @@ async function copy(text: string): Promise<boolean> {
   }
 }
 
-export function TradeWorkspace({ initial, snapshotAt, collection, decks, onForked }: TradeWorkspaceProps) {
+export function TradeWorkspace({ initial, snapshotAt, collection, decks, onForked, seed }: TradeWorkspaceProps) {
   const t = useTrade(initial);
   const { trade } = t;
   const ro = trade.readOnly;
@@ -63,6 +66,18 @@ export function TradeWorkspace({ initial, snapshotAt, collection, decks, onForke
     setToast({ id: ++toastSeq.current, message, action });
   }, []);
   const withUndo = (message: string) => showToast(message, { label: "Undo", onClick: () => tRef.current.undo() });
+
+  // Seed once per mount (the page remounts for each new trade); the ref also covers StrictMode's double effect.
+  const seeded = useRef(false);
+  useEffect(() => {
+    if (!seed || initial || seeded.current) return;
+    seeded.current = true;
+    void seedToTradeCard(seed).then((card) => {
+      tRef.current.addCards("mine", [card]);
+      showToast(`Added ${card.name}${card.basePrice === null ? " · no price" : ""}`);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ⌘Z / ⇧⌘Z, unless the user is typing or a dialog is open.
   useEffect(() => {

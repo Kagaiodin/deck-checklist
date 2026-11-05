@@ -5,6 +5,12 @@ import App from "../../../App";
 import { encodeTrade } from "../../../utils/tradeShare";
 import { DEFAULT_SETTINGS, type Trade } from "../../../types/trade";
 
+vi.mock("../../../utils/scryfallSearch", async (orig) => ({
+  ...(await orig<typeof import("../../../utils/scryfallSearch")>()),
+  searchPrintings: vi.fn().mockResolvedValue([]),
+  fetchPrices: vi.fn().mockResolvedValue(new Map()),
+}));
+
 // App-level wiring: Trade is a page nested under Collection, reached from the ⋯ menu or a share link.
 
 let store: Map<string, string>;
@@ -121,5 +127,18 @@ describe("Trade route", () => {
     await userEvent.click(within(screen.getByRole("navigation", { name: "Breadcrumb" })).getByRole("button", { name: "Binder" }));
     expect(screen.queryByRole("heading", { name: "Trade" })).not.toBeInTheDocument();
     expect(window.location.pathname).toBe("/");
+  });
+
+  it("Binder → Add to new trade opens the Calculator with the card on My offer, and Binder crumb returns to Binder", async () => {
+    store.set("mtg-checklist-collection-v2", JSON.stringify({ "sol ring": [{ quantity: 2 }] }));
+    render(<App />);
+    await userEvent.click(tab(/^Transactions/));
+    await userEvent.click(screen.getByRole("tab", { name: /^Binder/ }));
+    await userEvent.click(screen.getByRole("button", { name: "Add to new trade: Sol Ring" }));
+    expect(screen.getByRole("heading", { level: 1, name: "Trade" })).toBeInTheDocument();
+    expect(await within(screen.getByRole("region", { name: "My offer" })).findByText("Sol Ring")).toBeInTheDocument();
+    await userEvent.click(within(screen.getByRole("navigation", { name: "Breadcrumb" })).getByRole("button", { name: "Binder" }));
+    expect(screen.getByRole("tab", { name: /^Binder/ })).toHaveAttribute("aria-selected", "true");
+    expect(screen.queryByRole("heading", { name: "Trade" })).not.toBeInTheDocument();
   });
 });

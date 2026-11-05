@@ -1,6 +1,11 @@
-import { useEffect, useRef, type KeyboardEvent, type ReactNode } from "react";
+import { useEffect, useRef, type KeyboardEvent } from "react";
 import { OrdersPage, type OrdersPageProps } from "../orders/OrdersPage";
 import { EmptyState } from "../../components/EmptyState";
+import type { Collection } from "../../types/index";
+import type { TradeSeed } from "../trade/seedCard";
+import { BinderPanel } from "./binder/BinderPanel";
+import { primaryPrinting, type BinderRow } from "./binder/binderSurplus";
+import { useBinder } from "./binder/useBinder";
 import "./TransactionsPage.css";
 
 export type TransactionsTab = "buys" | "trades" | "binder";
@@ -17,12 +22,24 @@ interface TransactionsPageProps {
   onSubTabChange: (tab: TransactionsTab) => void;
   /** Passed through to OrdersPage for the Buys sub-tab, unchanged. */
   ordersProps: Omit<OrdersPageProps, "heading" | "subnav" | "panel">;
+  /** Current Collection (read fresh by App when this view opens), for the derived Binder. */
+  collection: Collection;
+  /** Opens the Calculator from the Binder; `seed` pre-adds a card to My offer. */
+  onOpenTrade: (seed?: TradeSeed) => void;
+  onViewCollection: () => void;
+}
+
+/** A Binder row as a Calculator seed: its largest-quantity printing. */
+function rowToSeed(row: BinderRow): TradeSeed {
+  const p = primaryPrinting(row);
+  return { name: row.key, set: p?.set, collectorNumber: p?.collectorNumber, foil: p?.foil };
 }
 
 const tabId = (t: TransactionsTab) => `tx-tab-${t}`;
 const panelId = (t: TransactionsTab) => `tx-panel-${t}`;
 
-export function TransactionsPage({ subTab, onSubTabChange, ordersProps }: TransactionsPageProps) {
+export function TransactionsPage({ subTab, onSubTabChange, ordersProps, collection, onOpenTrade, onViewCollection }: TransactionsPageProps) {
+  const binder = useBinder(collection, ordersProps.decks);
   const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   // Buys and the other panels render different trees, so the tablist remounts on a switch;
   // put focus back on the newly selected tab once it exists.
@@ -75,6 +92,9 @@ export function TransactionsPage({ subTab, onSubTabChange, ordersProps }: Transa
           {t.id === "buys" && ordersProps.orders.length > 0 && (
             <span className="count">{ordersProps.orders.length}</span>
           )}
+          {t.id === "binder" && binder.rows.length > 0 && (
+            <span className="count">{binder.rows.length}</span>
+          )}
         </button>
       ))}
     </div>
@@ -91,33 +111,45 @@ export function TransactionsPage({ subTab, onSubTabChange, ordersProps }: Transa
     );
   }
 
-  const placeholder: Record<"trades" | "binder", { title: string; body: ReactNode }> = {
-    trades: { title: "No trades yet", body: "Trades and sales you log will appear here." },
-    binder: { title: "Your Binder is on the way", body: "Cards you own beyond what your decks need will appear here." },
-  };
-  const { title, body } = placeholder[subTab];
-
   return (
     <section className="orders-panel">
       <div className="orders-container">
         <div className="orders-topbar">
           <div className="orders-topbar-left">
             <h1 className="orders-title">Transactions</h1>
+            {subTab === "binder" && binder.rows.length > 0 && (
+              <span className="orders-count">{binder.rows.length} {binder.rows.length === 1 ? "card" : "cards"}</span>
+            )}
           </div>
+          {subTab === "binder" && (
+            <div className="orders-topbar-right">
+              <button type="button" className="btn btn-primary btn-sm tx-new-trade" onClick={() => onOpenTrade()}>New trade</button>
+            </div>
+          )}
         </div>
         <div className="orders-body">
           {subnav}
           <div role="tabpanel" id={panelId(subTab)} aria-labelledby={tabId(subTab)}>
-            <EmptyState
-              icon={
-                <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor"
-                  strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M7 7h12l-3-3M17 17H5l3 3" />
-                </svg>
-              }
-              title={title}
-              body={body}
-            />
+            {subTab === "binder" ? (
+              <BinderPanel
+                collection={collection}
+                binder={binder}
+                onNewTrade={() => onOpenTrade()}
+                onAddToTrade={row => onOpenTrade(rowToSeed(row))}
+                onViewCollection={onViewCollection}
+              />
+            ) : (
+              <EmptyState
+                icon={
+                  <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor"
+                    strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M7 7h12l-3-3M17 17H5l3 3" />
+                  </svg>
+                }
+                title="No trades yet"
+                body="Trades and sales you log will appear here."
+              />
+            )}
           </div>
         </div>
       </div>

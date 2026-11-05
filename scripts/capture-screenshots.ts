@@ -582,6 +582,11 @@ async function main(): Promise<void> {
     await attempt("nav to Transactions", () => clickNav(page, "Transactions"));
     await shot(page, "05-desktop-orders.png");
 
+    // 05b — Binder sub-tab (derived surplus), then back to Buys for the order shots below
+    await attempt("open Binder sub-tab", () => click(page, "[role=tab]", { hasText: "Binder" }));
+    await shot(page, "05b-desktop-binder.png");
+    await attempt("back to Buys sub-tab", () => click(page, "[role=tab]", { hasText: "Buys" }));
+
     // 06 — Buy list modal open
     await attempt("nav to Decks for buy list", () => clickNav(page, "Decks"));
     await attempt("select deck with need_to_buy cards", async () => {

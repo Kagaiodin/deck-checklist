@@ -9,3 +9,7 @@
   .tx-subtabs .order-filter-tab { min-height: 44px; padding: 6px 4px; }
   .tx-subtabs .order-filter-tab .count { display: none; }
 }
+
+@media (max-width: 767px) {
+  .tx-new-trade { min-height: 44px; }
+}
