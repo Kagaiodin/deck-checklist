@@ -8,12 +8,13 @@ import { validateDecklist, enrichDeckExtraInfo } from "./utils/validator";
 import { refreshDeckPrices, needsPriceRefresh } from "./utils/deckCost";
 import type { ValidationProgress } from "./utils/validator";
 import { useLocalStorage } from "./hooks/useLocalStorage";
+import { useOrderActions } from "./hooks/useOrderActions";
 import { Checklist } from "./components/Checklist";
 import { EmptyState } from "./components/EmptyState";
 import { ErrorQueue } from "./components/ErrorQueue";
 import { ProgressTracker } from "./components/ProgressTracker";
-import type { Deck, ErrorQueueItem, AcquisitionSource, Collection, CollectionMeta, Order, DeckNotification, ProfileExport } from "./types/index";
-import { applyCollectionToCards, mergeOrderCardsIntoCollection } from "./utils/csvParser";
+import type { Deck, ErrorQueueItem, AcquisitionSource, Collection, CollectionMeta, Order, ProfileExport } from "./types/index";
+import { applyCollectionToCards } from "./utils/csvParser";
 import { formatOptions } from "./utils/deckFormats";
 import { getDeckColorIdentity, formatRelativeDate, getDeckDomain } from "./utils/deckUtils";
 import { CollectionPage } from "./features/collection/CollectionPage";
@@ -39,15 +40,6 @@ import type { ToastInput } from "./features/profile/ProfileExportImport";
 import { BuyListSheet } from "./features/card-purchase/BuyListSheet";
 import { useBuyFlow } from "./features/card-purchase/useBuyFlow";
 import "./features/card-purchase/buy-flow.css";
-
-// ── Order row helpers ──────────────────────────────────────────────────────────
-
-function orderLabelForNotification(order: Order): string {
-  const d = order.orderDate
-    ? new Date(order.orderDate).toLocaleDateString("en-US", { month: "long", day: "numeric" })
-    : "";
-  return d ? `${order.vendor} — ${d}` : order.vendor;
-}
 
 const ONBOARDING_KEY = "fetchlist:onboarding:dismissed";
 const COLLECTION_KEY = "mtg-checklist-collection-v2";
@@ -446,71 +438,9 @@ function AppInner() {
     setOrders(prev => prev.map(o => o.id === updated.id ? updated : o));
   }
 
-  function handleMarkReceived(orderId: string) {
-    const order = orders.find(o => o.id === orderId);
-    if (!order) return;
-
-    // Update order status
-    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: "received" as const } : o));
-
-    // Tag deck-linked cards as "owned" (manuallyTagged so collection won't overwrite)
-    const cardsByDeck = new Map<string, string[]>();
-    for (const oc of order.cards) {
-      if (oc.deckId && oc.cardId) {
-        cardsByDeck.set(oc.deckId, [...(cardsByDeck.get(oc.deckId) ?? []), oc.cardId]);
-      }
-    }
-    for (const [deckId, cardIds] of cardsByDeck) {
-      dispatch({ type: "BULK_SET_SOURCE", payload: { deckId, cardIds, source: "owned" } });
-    }
-
-    // Merge into collection (Option A: quantity only, no set/CN)
-    const updatedCollection = mergeOrderCardsIntoCollection(order.cards, collection);
-    setCollection(updatedCollection);
-    setCollectionMeta(prev => prev
-      ? { ...prev, cardCount: Object.keys(updatedCollection).length }
-      : { fileName: "Order receipt", importedAt: Date.now(), cardCount: Object.keys(updatedCollection).length }
-    );
-    dispatch({ type: "APPLY_COLLECTION", payload: updatedCollection });
-  }
-
-  function handleMarkCancelled(orderId: string) {
-    const order = orders.find(o => o.id === orderId);
-    if (!order) return;
-
-    // Update order status
-    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: "cancelled" as const } : o));
-
-    // Unset source + manuallyTagged on deck-linked cards so collection can re-tag
-    const cardsByDeck = new Map<string, string[]>();
-    for (const oc of order.cards) {
-      if (oc.deckId && oc.cardId) {
-        cardsByDeck.set(oc.deckId, [...(cardsByDeck.get(oc.deckId) ?? []), oc.cardId]);
-      }
-    }
-    for (const [deckId, cardIds] of cardsByDeck) {
-      dispatch({ type: "UNSET_CARD_SOURCES", payload: { deckId, cardIds } });
-    }
-
-    // Re-apply collection now that manuallyTagged is cleared
-    if (Object.keys(collection).length > 0) {
-      dispatch({ type: "APPLY_COLLECTION", payload: collection });
-    }
-
-    // Add deck notifications so user knows which cards to review
-    const label = orderLabelForNotification(order);
-    for (const [deckId, cardIds] of cardsByDeck) {
-      const notification: DeckNotification = {
-        id: `${orderId}_${deckId}`,
-        type: "order_cancelled",
-        orderId,
-        orderLabel: label,
-        affectedCardIds: cardIds,
-        createdAt: Date.now(),
-      };
-      dispatch({ type: "ADD_NOTIFICATION", payload: { deckId, notification } });
-    }
-  }
+  const { handleMarkReceived, handleMarkCancelled } = useOrderActions({
+    orders, setOrders, collection, setCollection, setCollectionMeta, dispatch,
+  });
 
   function handleDismissNotification(deckId: string, notificationId: string) {
     dispatch({ type: "DISMISS_NOTIFICATION", payload: { deckId, notificationId } });

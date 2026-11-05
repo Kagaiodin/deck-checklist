@@ -7,7 +7,7 @@ type DeckState = {
   decks: Deck[];
 };
 
-type DeckAction =
+export type DeckAction =
   | { type: "ADD_DECK"; payload: Deck }
   | { type: "DELETE_DECK"; payload: string }
   | { type: "RENAME_DECK"; payload: { id: string; name: string } }
