@@ -45,13 +45,25 @@ describe("demo trade ledger", () => {
     expect(ledger.some((e) => e.cardsIn.length === 0 && e.cardsOut.length > 0)).toBe(true);
     expect(ledger.map((e) => e.date)).toEqual([...ledger.map((e) => e.date)].sort((a, b) => b - a));
   });
-  it("only receives cards the demo collection holds, and gives away none that a deck uses", () => {
+  it("holds each received card's printing, and gives away none that a deck uses", () => {
     for (const e of ledger) {
       for (const c of e.cardsIn) {
-        const owned = (collection[c.name.toLowerCase()] ?? []).reduce((n, p) => n + p.quantity, 0);
-        expect(owned).toBeGreaterThanOrEqual(c.quantity);
+        const printing = (collection[c.name.toLowerCase()] ?? []).find(
+          (p) => p.set === c.set && p.collectorNumber === c.collectorNumber,
+        );
+        expect(printing?.quantity ?? 0).toBeGreaterThanOrEqual(c.quantity);
       }
       for (const c of e.cardsOut) expect(committed.has(c.name.toLowerCase())).toBe(false);
+    }
+  });
+  it("holds at least every copy that arrived through a received order or a logged trade", () => {
+    const arrived = new Map<string, number>();
+    const add = (name: string, n: number) => arrived.set(name.toLowerCase(), (arrived.get(name.toLowerCase()) ?? 0) + n);
+    for (const o of orders) if (o.status === "received") for (const c of o.cards) add(c.cardName, c.quantity);
+    for (const e of ledger) for (const c of e.cardsIn) add(c.name, c.quantity);
+    for (const [key, n] of arrived) {
+      const owned = (collection[key] ?? []).reduce((s, p) => s + p.quantity, 0);
+      expect(owned, key).toBeGreaterThanOrEqual(n);
     }
   });
   it("stores totals equal to the recomputed unit price × quantity plus cash", () => {

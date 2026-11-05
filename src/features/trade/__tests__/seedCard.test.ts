@@ -22,6 +22,19 @@ describe("seedToTradeCard", () => {
     expect(card).toMatchObject({ name: "Sol Ring", set: "cmm", finish: "foil", quantity: 1, source: "collection", condition: "NM", basePrice: 4 });
   });
 
+  it("prices a foil row on an etched-only printing as etched", async () => {
+    const etched = { ...printing, prices: { usd: null, usd_foil: null, usd_etched: "7.00" }, finishes: ["etched"] };
+    vi.mocked(fetchPrices).mockResolvedValue(new Map([["cmm:1", etched]]) as never);
+    const card = await seedToTradeCard({ name: "sol ring", set: "cmm", collectorNumber: "1", foil: true });
+    expect(card).toMatchObject({ finish: "etched", basePrice: 7 });
+  });
+
+  it("keeps foil when the printing is sold both foil and etched", async () => {
+    vi.mocked(fetchPrices).mockResolvedValue(new Map([["cmm:1", { ...printing, finishes: ["foil", "etched"] }]]) as never);
+    const card = await seedToTradeCard({ name: "sol ring", set: "cmm", collectorNumber: "1", foil: true });
+    expect(card.finish).toBe("foil");
+  });
+
   it("falls back to the newest printing when the row has no set", async () => {
     vi.mocked(searchPrintings).mockResolvedValue([printing] as never);
     const card = await seedToTradeCard({ name: "sol ring" });

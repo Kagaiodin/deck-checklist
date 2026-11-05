@@ -16,7 +16,7 @@ Per the collection-page rule: the trade screen must stay a calculator for moving
 
 | Topic | Decision |
 |---|---|
-| Relationship to #109 | Sandbox now, ledger hook later. Nothing here writes to Collection or any ledger in v1. |
+| Relationship to #109 | Sandbox now, ledger hook later. Nothing here writes to Collection or any ledger in v1. **Updated by #116:** weighing a trade still never writes; the one write path is confirming "Log this trade", which records a ledger entry and updates Collection (see `transactions-ledger-spec.md`). |
 | Their side | Search + shareable link. No accounts, no real-time sync. |
 | Price basis | Scryfall price fields (TCGplayer-derived) minus a configurable discount % |
 | Discount scope | Global default + per-side override + per-card override (most specific wins) |
@@ -33,7 +33,7 @@ Per the collection-page rule: the trade screen must stay a calculator for moving
 | Collection picker | Caps at owned quantity; deck-committed cards are flagged ("N in decks") but not blocked |
 | Their-side editing | Condition/finish editable identically to My offer |
 | Fairness + cash lines | Cash/credit lines (if built) count toward the fairness meter |
-| Nav placement | **Decided (per mockups 09): quiet item in Collection's ⋯ menu**, below a separator, no icon, no badge, helper line "Weigh a trade. Doesn't change your collection." Same item in the mobile overflow sheet. Guardrails: no trade state anywhere in Collection's chrome/rows/stats; Trade is its own route (not a panel/mode inside Collection) so moving it to a standalone home later is a one-line nav change. Revisit when the #109 ledger lands. Rejected: contextual header button + per-row hover actions (puts trade state in Collection). |
+| Nav placement | **Decided (per mockups 09): quiet item in Collection's ⋯ menu**, below a separator, no icon, no badge, helper line "Weigh a trade. Your collection only changes if you log it." Same item in the mobile overflow sheet. Guardrails: no trade state anywhere in Collection's chrome/rows/stats; Trade is its own route (not a panel/mode inside Collection) so moving it to a standalone home later is a one-line nav change. Revisit when the #109 ledger lands. Rejected: contextual header button + per-row hover actions (puts trade state in Collection). |
 | Band cutoffs | Fair ≤ tolerance; Leaning ≤ `max(25, tolerance + 15)`; Lopsided above. Zones on the meter follow the tolerance live. Supersedes the earlier "fixed constants" decision. Same result at the default 10% (10 / 25). |
 | Manual price + discount | Manual price replaces `basePrice × condition`; the discount **still applies**. UI previews "Counts as $X after −N%". |
 | Global discount vs. meter | A discount both sides share doesn't move the meter (working as intended); it sets the dollar terms (totals, gap, balance hint, copy-as-text). Cash lines stay at **face value**, not discounted. |

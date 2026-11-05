@@ -1,7 +1,18 @@
 import type { Finish, TradeCard } from "../../types/trade";
 import { basePriceFor } from "../../utils/tradePricing";
-import { fetchPrices, priceKey, searchPrintings } from "../../utils/scryfallSearch";
+import { fetchPrices, priceKey, searchPrintings, type Printing } from "../../utils/scryfallSearch";
 import { displayName } from "./format";
+
+/**
+ * Collection rows only record foil yes/no (the CSV import folds "etched" into foil), so an
+ * etched copy arrives as `foil: true`. Use the printing's finishes to tell them apart: a
+ * printing that is only sold etched must be priced as etched.
+ */
+function seedFinish(foil: boolean | undefined, finishes: Finish[] | undefined): Finish {
+  if (!foil) return "nonfoil";
+  if (finishes && !finishes.includes("foil") && finishes.includes("etched")) return "etched";
+  return "foil";
+}
 
 /** A collection card handed to the Calculator (e.g. "Add to new trade" in the Binder). */
 export interface TradeSeed {
@@ -14,8 +25,7 @@ export interface TradeSeed {
 
 /** Builds a priced "My offer" card (quantity 1) from a seed; unpriced if Scryfall can't be reached. */
 export async function seedToTradeCard(seed: TradeSeed): Promise<Omit<TradeCard, "id">> {
-  const finish: Finish = seed.foil ? "foil" : "nonfoil";
-  let found;
+  let found: Printing | undefined;
   try {
     if (seed.set && seed.collectorNumber) {
       const prices = await fetchPrices([{ set: seed.set, collectorNumber: seed.collectorNumber }]);
@@ -32,6 +42,7 @@ export async function seedToTradeCard(seed: TradeSeed): Promise<Omit<TradeCard, 
   } catch {
     found = undefined;
   }
+  const finish = seedFinish(seed.foil, found?.finishes);
   return {
     name: found?.name ?? displayName(seed.name),
     scryfallId: found?.scryfallId ?? "",

@@ -142,7 +142,7 @@ export function CollectionOverflowSheet({
             >
               <div className="sheet-action-body">
                 <span className="sheet-action-label">Trade calculator</span>
-                <span className="sheet-action-desc">Weigh a trade. Doesn't change your collection.</span>
+                <span className="sheet-action-desc">Weigh a trade. Your collection only changes if you log it.</span>
               </div>
             </button>
             <div className="sheet-divider" />

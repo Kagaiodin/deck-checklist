@@ -18,7 +18,7 @@ Manual acceptance testing of the built feature against the spec's confirmed deci
 
 | # | Steps | Expected | Status |
 |---|---|---|---|
-| 1.1 | Desktop: Collection tab → ⋯ menu | "Trade calculator" item sits below a separator, no icon, no badge, helper line "Weigh a trade. Doesn't change your collection." | ☐ |
+| 1.1 | Desktop: Collection tab → ⋯ menu | "Trade calculator" item sits below a separator, no icon, no badge, helper line "Weigh a trade. Your collection only changes if you log it." | ☐ |
 | 1.2 | Mobile: Collection → overflow sheet | Same item and helper line | ☐ |
 | 1.3 | Click it | Trade opens on its own route; breadcrumb reads Collection › Trade | ☐ |
 | 1.4 | Click "Collection" in breadcrumb | Returns to Collection, unchanged | ☐ |
