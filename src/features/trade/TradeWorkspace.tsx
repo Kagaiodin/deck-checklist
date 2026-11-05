@@ -290,7 +290,7 @@ export function TradeWorkspace({ initial, snapshotAt, collection, decks, onForke
       onClear={clearTrade}
       onCopyText={() => void copyText()}
       onShare={() => void share()}
-      onLogTrade={onLogTrade && !ro ? () => setLogging(true) : undefined}
+      onLogTrade={onLogTrade && !ro ? () => { setToast(null); setLogging(true); } : undefined}
     />
   );
 
