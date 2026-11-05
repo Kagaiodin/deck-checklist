@@ -39,3 +39,38 @@
 @media (max-width: 767px) {
   .ledger-row, .ledger-back { min-height: 44px; }
 }
+
+/* Invoice (print preview). The paper is always light, even in dark mode. */
+.inv-wrap { display: flex; flex-direction: column; gap: 8px; padding: 4px 0 16px; }
+.inv-bar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.inv-bar .spacer { flex: 1; }
+.inv-status { min-height: 18px; margin: 0; font-size: 12.5px; color: var(--text-muted); }
+.paper-sheet {
+  --surface: #fff; --text: #1a1a1a; --text-muted: #5c5c5c; --border: #d4d4d4; --border-dim: #e8e8e8;
+  max-width: 680px; width: 100%; padding: 28px 32px; border-radius: var(--radius);
+  background: #fff; color: #1a1a1a; border: 1px solid var(--border); box-shadow: var(--shadow-menu);
+  display: flex; flex-direction: column; gap: 16px;
+}
+.paper-sheet h2 { font-size: 20px; font-weight: 600; letter-spacing: -.01em; margin: 0; }
+.paper-sheet h2:focus { outline: none; }
+.inv-meta { display: flex; gap: 28px; font-size: 13px; flex-wrap: wrap; }
+.inv-meta span { display: block; font-size: 11.5px; color: var(--text-muted); margin-bottom: 2px; }
+.inv-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.inv-table caption { text-align: left; font-size: 12px; font-weight: 600; color: var(--text-muted); padding-bottom: 6px; }
+.inv-table th { font-size: 11.5px; font-weight: 500; color: var(--text-muted); text-align: right; padding: 4px 0; border-bottom: 1px solid var(--border); }
+.inv-table td { padding: 7px 0; border-bottom: 1px solid var(--border-dim); text-align: right; font-variant-numeric: tabular-nums; }
+.inv-table th:first-child, .inv-table td:first-child { text-align: left; }
+.inv-table .sub { display: block; font-size: 12px; color: var(--text-muted); }
+.inv-tot { display: grid; grid-template-columns: 1fr auto; gap: 4px 24px; font-size: 13px; margin-left: auto; min-width: 240px; }
+.inv-tot .num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+.inv-notes, .paper-sheet .fine { margin: 0; font-size: 12px; color: var(--text-muted); }
+@media (max-width: 600px) {
+  .paper-sheet { padding: 18px 16px; }
+  .inv-bar .btn { min-height: 44px; flex: 1; }
+}
+@media print {
+  body * { visibility: hidden; }
+  .paper-sheet, .paper-sheet * { visibility: visible; }
+  .paper-sheet { position: absolute; left: 0; top: 0; max-width: none; box-shadow: none; border: none; padding: 0; }
+}
+.ledger-actions { display: flex; gap: 8px; flex-wrap: wrap; }

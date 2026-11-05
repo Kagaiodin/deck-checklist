@@ -2,6 +2,7 @@ import type { Collection, CollectionPrinting } from "../types/index";
 import type { Finish, Trade, TradeCard, TradeLogCard, TradeLogEntry, TradeSide } from "../types/trade";
 import { sideTotals, unitPrice } from "./tradePricing";
 import { getFrontFaceName } from "./dualface";
+import { usd } from "../features/trade/format";
 
 export interface LogMeta {
   date: number;
@@ -163,4 +164,27 @@ export function mergeLedger(local: TradeLogEntry[], incoming: TradeLogEntry[]): 
     fresh.push(e);
   }
   return { merged: sortLedger([...local, ...fresh]), added: fresh.length };
+}
+
+const fmtLedgerDate = (ms: number) => new Date(ms).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+
+/** Plain-text invoice for a ledger entry, from the stored snapshot only (no repricing). Mirrors the Invoice view. */
+export function ledgerEntryToText(entry: TradeLogEntry): string {
+  const line = (c: TradeLogCard) => {
+    const finish = c.finish === "nonfoil" ? "" : ` ${c.finish}`;
+    const price = c.unitPrice === null ? "no price" : usd(c.unitPrice * c.quantity);
+    return `  ${c.quantity}x ${c.name} (${c.set.toUpperCase()} ${c.collectorNumber}${finish}, ${c.condition}) — ${price}`;
+  };
+  const header = [fmtLedgerDate(entry.date), entry.counterparty].filter(Boolean).join(" · ");
+  const out: string[] = ["Trade invoice", header];
+  if (entry.cardsOut.length) out.push("", "Cards given", ...entry.cardsOut.map(line));
+  if (entry.cardsIn.length) out.push("", "Cards received", ...entry.cardsIn.map(line));
+  out.push("");
+  if (entry.cardsOut.length || entry.cash.out > 0) out.push(`Given total: ${usd(entry.totals.out)}`);
+  if (entry.cardsIn.length || entry.cash.in > 0) out.push(`Received total: ${usd(entry.totals.in)}`);
+  if (entry.cash.out > 0) out.push(`Cash given: ${usd(entry.cash.out)}`);
+  if (entry.cash.in > 0) out.push(`Cash received: ${usd(entry.cash.in)}`);
+  if (entry.notes) out.push(`Notes: ${entry.notes}`);
+  out.push("Prices as logged.");
+  return out.join("\n");
 }

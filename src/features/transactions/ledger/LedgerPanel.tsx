@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { TradeLogCard, TradeLogEntry } from "../../../types/trade";
 import { EmptyState } from "../../../components/EmptyState";
+import { Invoice } from "./Invoice";
 import { TradeSheet } from "../../trade/components/TradeSheet";
 import { usd } from "../../trade/format";
 import "./LedgerPanel.css";
@@ -39,6 +40,7 @@ function sideValues(e: TradeLogEntry): { label: string; value: number }[] {
 
 export function LedgerPanel({ entries, openId, onOpenChange, onNewTrade, onDelete }: LedgerPanelProps) {
   const [confirming, setConfirming] = useState(false);
+  const [invoicing, setInvoicing] = useState(false);
   const open = openId ? entries.find(e => e.id === openId) ?? null : null;
   const root = useRef<HTMLDivElement>(null);
   /** Row to refocus when the list comes back; null after a delete (the row is gone). */
@@ -62,6 +64,11 @@ export function LedgerPanel({ entries, openId, onOpenChange, onNewTrade, onDelet
     }
   }, [open]);
 
+  // Leaving the entry (back, delete, replace import) always drops the invoice with it.
+  useEffect(() => { if (!open) setInvoicing(false); }, [open]);
+
+  if (open && invoicing) return <Invoice entry={open} onBack={() => setInvoicing(false)} />;
+
   if (open) {
     const title = open.counterparty ? `Trade with ${open.counterparty}` : "Trade";
     return (
@@ -72,7 +79,10 @@ export function LedgerPanel({ entries, openId, onOpenChange, onNewTrade, onDelet
         <DetailSide heading="You gave" cards={open.cardsOut} cash={open.cash.out} total={open.totals.out} />
         <DetailSide heading="You received" cards={open.cardsIn} cash={open.cash.in} total={open.totals.in} />
         <p className="ledger-foot">To correct a mistake, delete and re-log.</p>
-        <button type="button" className="btn btn-secondary" onClick={() => setConfirming(true)}>Delete entry</button>
+        <div className="ledger-actions">
+          <button type="button" className="btn btn-primary" onClick={() => setInvoicing(true)}>View invoice</button>
+          <button type="button" className="btn btn-secondary" onClick={() => setConfirming(true)}>Delete entry</button>
+        </div>
         {confirming && (
           <TradeSheet
             title="Delete this entry?"

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { applyTradeToCollection, tradeToLogEntry, collectionKey, mergeLedger, sanitizeLedger, sortLedger } from "../tradeLedger";
+import { applyTradeToCollection, tradeToLogEntry, collectionKey, ledgerEntryToText, mergeLedger, sanitizeLedger, sortLedger } from "../tradeLedger";
 import { DEFAULT_SETTINGS, type Trade, type TradeCard, type TradeLogCard } from "../../types/trade";
 import type { Collection } from "../../types/index";
 
@@ -159,5 +159,33 @@ describe("ledger ordering", () => {
     const r = mergeLedger([], [e("a", 1), e("a", 1), e("b", 2)]);
     expect(r.added).toBe(2);
     expect(r.merged.map(x => x.id)).toEqual(["b", "a"]);
+  });
+});
+
+describe("ledgerEntryToText", () => {
+  const entry = {
+    id: "e", date: Date.UTC(2026, 10, 2, 12), counterparty: "Marcus", notes: "FNM",
+    cardsOut: [log({ name: "Rhystic Study", set: "cml", collectorNumber: "1", unitPrice: 24.6 }), log({ finish: "foil", unitPrice: null })],
+    cardsIn: [log({ name: "Smothering Tithe", quantity: 2, unitPrice: 11.4 })],
+    cash: { out: 0, in: 9.7 }, totals: { out: 24.6, in: 32.5 },
+  };
+
+  it("renders both sides, snapshot prices, cash and notes", () => {
+    const t = ledgerEntryToText(entry);
+    expect(t).toContain("Nov 2, 2026 · Marcus");
+    expect(t).toContain("1x Rhystic Study (CML 1, NM) — $24.60");
+    expect(t).toContain("(CMM 410 foil, NM) — no price");
+    expect(t).toContain("2x Smothering Tithe (CMM 410, NM) — $22.80");
+    expect(t).toContain("Given total: $24.60");
+    expect(t).toContain("Received total: $32.50");
+    expect(t).toContain("Cash received: $9.70");
+    expect(t).not.toContain("Cash given");
+    expect(t).toContain("Notes: FNM");
+  });
+
+  it("omits the empty side of a straight sale", () => {
+    const t = ledgerEntryToText({ ...entry, cardsIn: [], cash: { out: 0, in: 20 }, totals: { out: 24.6, in: 20 } });
+    expect(t).not.toContain("Cards received");
+    expect(t).toContain("Cards given");
   });
 });

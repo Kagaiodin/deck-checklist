@@ -170,3 +170,42 @@ describe("LedgerPanel", () => {
     expect(onOpenChange).toHaveBeenCalledWith(null);
   });
 });
+
+describe("Invoice", () => {
+  const openInvoice = async () => {
+    render(<LedgerPanel entries={[entry({ cash: { out: 0, in: 5 }, notes: "at FNM" })]} openId="e1" onOpenChange={vi.fn()} onNewTrade={vi.fn()} onDelete={vi.fn()} />);
+    await userEvent.click(screen.getByRole("button", { name: "View invoice" }));
+  };
+
+  it("opens from the entry detail and returns to it", async () => {
+    await openInvoice();
+    expect(screen.getByRole("document", { name: "Trade invoice" })).toBeInTheDocument();
+    expect(screen.getByText("Notes: at FNM")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "← Back to entry" }));
+    expect(screen.getByRole("button", { name: "View invoice" })).toBeInTheDocument();
+  });
+
+  it("prints through window.print", async () => {
+    const print = vi.spyOn(window, "print").mockImplementation(() => {});
+    await openInvoice();
+    await userEvent.click(screen.getByRole("button", { name: "Print" }));
+    expect(print).toHaveBeenCalledTimes(1);
+    print.mockRestore();
+  });
+
+  it("copies the plain-text invoice and confirms politely", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+    await openInvoice();
+    await userEvent.click(screen.getByRole("button", { name: "Copy as text" }));
+    expect(writeText).toHaveBeenCalledWith(expect.stringContaining("Trade invoice"));
+    expect(await screen.findByRole("status")).toHaveTextContent("Copied to clipboard");
+  });
+
+  it("says so when the clipboard is unavailable", async () => {
+    Object.defineProperty(navigator, "clipboard", { value: { writeText: vi.fn().mockRejectedValue(new Error("no")) }, configurable: true });
+    await openInvoice();
+    await userEvent.click(screen.getByRole("button", { name: "Copy as text" }));
+    expect(await screen.findByRole("status")).toHaveTextContent("Could not copy");
+  });
+});
