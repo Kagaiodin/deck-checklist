@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, within } from "@testing-library/react";
+import { useState } from "react";
 import userEvent from "@testing-library/user-event";
 import { LogTradeSheet } from "../LogTradeSheet";
 import { LedgerPanel } from "../LedgerPanel";
@@ -56,6 +57,21 @@ describe("LogTradeSheet", () => {
     sheet(trade([tc()]), {});
     expect(screen.getByText("Not in your collection")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Log trade" })).toBeEnabled();
+  });
+
+  it("counts a card once in the deck note even when it is on two lines", () => {
+    sheet(trade([tc({ id: "a" }), tc({ id: "b" })]), { "sol ring": [{ quantity: 2 }] }, [deckWith("Sol Ring", 2)]);
+    expect(screen.getByRole("note")).toHaveTextContent(/^A card leaving is still in a deck/);
+  });
+
+  it("does not close, or lose typed notes, when the backdrop is clicked", async () => {
+    const onCancel = vi.fn();
+    sheet(trade([tc()]), { "sol ring": [{ quantity: 2 }] }, [], vi.fn(), onCancel);
+    await userEvent.type(screen.getByLabelText("Notes"), "keep me");
+    const scrim = screen.getByRole("dialog").parentElement!;
+    scrim.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+    expect(onCancel).not.toHaveBeenCalled();
+    expect(screen.getByLabelText("Notes")).toHaveValue("keep me");
   });
 
   it("is disabled when both sides are empty", () => {
@@ -122,5 +138,35 @@ describe("LedgerPanel", () => {
     expect(onDelete).not.toHaveBeenCalled();
     await userEvent.click(within(dialog).getByRole("button", { name: "Delete entry" }));
     expect(onDelete).toHaveBeenCalledWith("e1");
+  });
+
+  /** Controlled the way App drives it. */
+  function Controlled({ entries, initial }: { entries: TradeLogEntry[]; initial: string | null }) {
+    const [openId, setOpenId] = useState<string | null>(initial);
+    const [list, setList] = useState(entries);
+    return <LedgerPanel entries={list} openId={openId} onOpenChange={setOpenId} onNewTrade={vi.fn()} onDelete={id => setList(l => l.filter(e => e.id !== id))} />;
+  }
+
+  it("returns focus to the row you came from when you go back to the list", async () => {
+    render(<Controlled entries={[entry({ id: "a", counterparty: "Ann" }), entry({ id: "b", counterparty: "Bo" })]} initial={null} />);
+    await userEvent.click(screen.getByText("Bo"));
+    await userEvent.click(screen.getByRole("button", { name: /Trades & sales/ }));
+    expect(screen.getByText("Bo").closest("button")).toHaveFocus();
+  });
+
+  it("moves focus into the detail heading on open, and to the list after a delete", async () => {
+    render(<Controlled entries={[entry({ id: "a", counterparty: "Ann" }), entry({ id: "b", counterparty: "Bo" })]} initial={null} />);
+    await userEvent.click(screen.getByText("Ann"));
+    expect(screen.getByRole("heading", { name: "Trade with Ann" })).toHaveFocus();
+    await userEvent.click(screen.getByRole("button", { name: "Delete entry" }));
+    await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Delete entry" }));
+    expect(screen.getByText("Bo").closest("button")).toHaveFocus();
+  });
+
+  it("clears an open id that no longer matches an entry", () => {
+    const onOpenChange = vi.fn();
+    render(<LedgerPanel entries={[entry()]} openId="gone" onOpenChange={onOpenChange} onNewTrade={vi.fn()} onDelete={vi.fn()} />);
+    expect(screen.getByText("Sam")).toBeInTheDocument(); // list, not detail
+    expect(onOpenChange).toHaveBeenCalledWith(null);
   });
 });

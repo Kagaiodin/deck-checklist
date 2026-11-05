@@ -3,6 +3,7 @@ import type { Collection, Deck } from "../../../types/index";
 import type { Trade, TradeCard } from "../../../types/trade";
 import { sideTotals } from "../../../utils/tradePricing";
 import { collectionKey, type LogMeta } from "../../../utils/tradeLedger";
+import { useCommittedInfo } from "../../collection/hooks/useCommittedInfo";
 import { TradeSheet } from "../../trade/components/TradeSheet";
 import { usd } from "../../trade/format";
 
@@ -28,13 +29,6 @@ const parseDateInput = (v: string, fallback: number) => {
 function ownedTotal(collection: Collection, card: TradeCard): number {
   return (collection[collectionKey(card.name)] ?? []).reduce((n, p) => n + p.quantity, 0);
 }
-function committedTotal(decks: Deck[], card: TradeCard): number {
-  const key = collectionKey(card.name);
-  let n = 0;
-  for (const deck of decks) for (const c of deck.cards) if (c.acquired && collectionKey(c.name) === key) n += c.quantity;
-  return n;
-}
-
 /** Confirm step for "Log this trade": the only way a trade changes the Collection. */
 export function LogTradeSheet({ trade, collection, decks, onCancel, onConfirm }: LogTradeSheetProps) {
   const [now] = useState(() => Date.now());
@@ -45,8 +39,11 @@ export function LogTradeSheet({ trade, collection, decks, onCancel, onConfirm }:
   const out = useMemo(() => sideTotals(trade.mine, trade.settings), [trade]);
   const inn = useMemo(() => sideTotals(trade.theirs, trade.settings), [trade]);
 
+  // Same basis as Binder's "N in decks", so the two never disagree.
+  const getCommittedInfo = useCommittedInfo(decks);
   const flags = useMemo(() => {
     const m = new Map<string, { missing: boolean; inDecks: number }>();
+    const committedTotal = (c: TradeCard) => getCommittedInfo(collectionKey(c.name)).total;
     // Copies of one name across several lines are checked together.
     const qtyByKey = new Map<string, number>();
     for (const c of trade.mine.cards) qtyByKey.set(collectionKey(c.name), (qtyByKey.get(collectionKey(c.name)) ?? 0) + c.quantity);
@@ -54,15 +51,16 @@ export function LogTradeSheet({ trade, collection, decks, onCancel, onConfirm }:
       const key = collectionKey(c.name);
       const owned = ownedTotal(collection, c);
       const qty = qtyByKey.get(key) ?? c.quantity;
-      const committed = committedTotal(decks, c);
+      const committed = committedTotal(c);
       // Copies left after the trade (never below 0) vs. copies decks need: the shortfall is what decks lose.
       const spare = Math.max(owned - qty, 0);
       m.set(c.id, { missing: owned < qty, inDecks: spare < committed ? committed - spare : 0 });
     }
     return m;
-  }, [trade.mine.cards, collection, decks]);
+  }, [trade.mine.cards, collection, getCommittedInfo]);
 
-  const inDeckCount = [...flags.values()].filter(f => f.inDecks > 0).length;
+  // Distinct cards, not lines: two lines of one name count once.
+  const inDeckCount = new Set(trade.mine.cards.filter(c => (flags.get(c.id)?.inDecks ?? 0) > 0).map(c => collectionKey(c.name))).size;
   const empty = trade.mine.cards.length + trade.theirs.cards.length === 0 && out.cashTotal + inn.cashTotal === 0
     && trade.mine.cash.length + trade.theirs.cash.length === 0;
   const dateMs = parseDateInput(date, now);
@@ -83,6 +81,7 @@ export function LogTradeSheet({ trade, collection, decks, onCancel, onConfirm }:
     <TradeSheet
       title="Log this trade"
       onClose={onCancel}
+      dismissOnScrim={false}
       footer={
         <>
           <span className="tr-spacer" />

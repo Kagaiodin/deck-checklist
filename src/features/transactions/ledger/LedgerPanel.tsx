@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { TradeLogCard, TradeLogEntry } from "../../../types/trade";
 import { EmptyState } from "../../../components/EmptyState";
 import { TradeSheet } from "../../trade/components/TradeSheet";
@@ -40,13 +40,34 @@ function sideValues(e: TradeLogEntry): { label: string; value: number }[] {
 export function LedgerPanel({ entries, openId, onOpenChange, onNewTrade, onDelete }: LedgerPanelProps) {
   const [confirming, setConfirming] = useState(false);
   const open = openId ? entries.find(e => e.id === openId) ?? null : null;
+  const root = useRef<HTMLDivElement>(null);
+  /** Row to refocus when the list comes back; null after a delete (the row is gone). */
+  const returnTo = useRef<string | null>(null);
+  const wasOpen = useRef(false);
+
+  // An id with no entry (e.g. dropped by a replace import) falls back to the list; clear it so it cannot linger.
+  useEffect(() => { if (openId && !open) onOpenChange(null); }, [openId, open, onOpenChange]);
+
+  // Opening or closing a detail unmounts the focused button; hand focus to something that exists.
+  useEffect(() => {
+    if (open) {
+      wasOpen.current = true;
+      root.current?.querySelector<HTMLElement>(".ledger-title")?.focus();
+    } else if (wasOpen.current) {
+      wasOpen.current = false;
+      const el = returnTo.current
+        ? root.current?.querySelector<HTMLElement>(`[data-entry-id="${CSS.escape(returnTo.current)}"]`)
+        : root.current?.querySelector<HTMLElement>(".ledger-row");
+      el?.focus();
+    }
+  }, [open]);
 
   if (open) {
     const title = open.counterparty ? `Trade with ${open.counterparty}` : "Trade";
     return (
-      <div className="ledger-detail">
-        <button type="button" className="btn btn-ghost btn-sm ledger-back" onClick={() => onOpenChange(null)}>← Trades &amp; sales</button>
-        <h2 className="ledger-title">{title}</h2>
+      <div className="ledger-detail" ref={root}>
+        <button type="button" className="btn btn-ghost btn-sm ledger-back" onClick={() => { returnTo.current = open.id; onOpenChange(null); }}>← Trades &amp; sales</button>
+        <h2 className="ledger-title" tabIndex={-1}>{title}</h2>
         <p className="ledger-sub">{fmtDate(open.date)}{open.notes ? ` · ${open.notes}` : ""}</p>
         <DetailSide heading="You gave" cards={open.cardsOut} cash={open.cash.out} total={open.totals.out} />
         <DetailSide heading="You received" cards={open.cardsIn} cash={open.cash.in} total={open.totals.in} />
@@ -60,7 +81,7 @@ export function LedgerPanel({ entries, openId, onOpenChange, onNewTrade, onDelet
               <>
                 <span className="tr-spacer" />
                 <button type="button" className="btn btn-secondary" data-autofocus onClick={() => setConfirming(false)}>Cancel</button>
-                <button type="button" className="btn tr-btn-destructive" onClick={() => { setConfirming(false); onOpenChange(null); onDelete(open.id); }}>Delete entry</button>
+                <button type="button" className="btn tr-btn-destructive" onClick={() => { setConfirming(false); returnTo.current = null; onOpenChange(null); onDelete(open.id); }}>Delete entry</button>
               </>
             }
           >
@@ -89,10 +110,11 @@ export function LedgerPanel({ entries, openId, onOpenChange, onNewTrade, onDelet
   }
 
   return (
+    <div ref={root}>
     <ul className="ledger-list">
       {entries.map(e => (
         <li key={e.id}>
-          <button type="button" className="ledger-row" onClick={() => onOpenChange(e.id)}>
+          <button type="button" className="ledger-row" data-entry-id={e.id} onClick={() => onOpenChange(e.id)}>
             <span className="ledger-row-main">
               <span className="ledger-row-name">{e.counterparty || "Trade"}</span>
               <span className="ledger-row-sub">{fmtDate(e.date)} · {summary(e)}</span>
@@ -104,6 +126,7 @@ export function LedgerPanel({ entries, openId, onOpenChange, onNewTrade, onDelet
         </li>
       ))}
     </ul>
+    </div>
   );
 }
 

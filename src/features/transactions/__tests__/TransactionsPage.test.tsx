@@ -125,4 +125,15 @@ describe("TransactionsPage", () => {
     await userEvent.click(screen.getByRole("button", { name: "Add to new trade: Sol Ring" }));
     expect(onOpenTrade).toHaveBeenCalledWith({ name: "sol ring", set: "cmm", collectorNumber: "1", foil: true });
   });
+
+  it("keeps New trade on Trades & sales when the open entry id no longer exists", () => {
+    const e = { id: "e1", date: 1, cardsOut: [], cardsIn: [], cash: { out: 0, in: 1 }, totals: { out: 0, in: 1 } };
+    render(
+      <TransactionsPage
+        subTab="trades" onSubTabChange={vi.fn()} ordersProps={ordersProps()} collection={{}} onOpenTrade={vi.fn()} onViewCollection={vi.fn()}
+        ledger={[e]} onDeleteLedgerEntry={vi.fn()} ledgerOpenId="gone" onLedgerOpenChange={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole("button", { name: "New trade" })).toBeInTheDocument();
+  });
 });

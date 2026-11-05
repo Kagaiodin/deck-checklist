@@ -7,12 +7,14 @@ interface TradeSheetProps {
   title: string;
   chip?: string;
   onClose: () => void;
+  /** Clicking outside closes the sheet (default). Forms that hold typed input turn this off. */
+  dismissOnScrim?: boolean;
   footer?: ReactNode;
   children: ReactNode;
 }
 
 /** Centered modal on desktop, bottom sheet on phones (see TradePage.css). */
-export function TradeSheet({ title, chip, onClose, footer, children }: TradeSheetProps) {
+export function TradeSheet({ title, chip, onClose, dismissOnScrim = true, footer, children }: TradeSheetProps) {
   const ref = useRef<HTMLDivElement>(null);
 
   // A control marked data-autofocus wins (e.g. the safe button in a confirm); else the first input.
@@ -27,7 +29,7 @@ export function TradeSheet({ title, chip, onClose, footer, children }: TradeShee
   }, []);
 
   return createPortal(
-    <div className="tr-scrim" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+    <div className="tr-scrim" onMouseDown={(e) => { if (dismissOnScrim && e.target === e.currentTarget) onClose(); }}>
       <div ref={ref} className="tr-sheet" role="dialog" aria-modal="true" aria-label={title}>
         <div className="tr-sheet-head">
           <h3>{title}</h3>

@@ -121,6 +121,9 @@ export function TransactionsPage({ subTab, onSubTabChange, ordersProps, collecti
     );
   }
 
+  // The id can outlive its entry (replace import, delete elsewhere); only a real entry replaces the list.
+  const entryOpen = !!ledgerOpenId && ledger.some(e => e.id === ledgerOpenId);
+
   return (
     <section className="orders-panel">
       <div className="orders-container">
@@ -131,7 +134,7 @@ export function TransactionsPage({ subTab, onSubTabChange, ordersProps, collecti
               <span className="orders-count">{binder.rows.length} {binder.rows.length === 1 ? "card" : "cards"}</span>
             )}
           </div>
-          {(subTab === "binder" || (subTab === "trades" && ledger.length > 0 && !ledgerOpenId)) && (
+          {(subTab === "binder" || (subTab === "trades" && ledger.length > 0 && !entryOpen)) && (
             <div className="orders-topbar-right">
               <button type="button" className="btn btn-primary btn-sm tx-new-trade" onClick={() => onOpenTrade()}>New trade</button>
             </div>

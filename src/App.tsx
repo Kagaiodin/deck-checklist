@@ -49,25 +49,27 @@ import "./features/card-purchase/buy-flow.css";
 
 const ONBOARDING_KEY = "fetchlist:onboarding:dismissed";
 const COLLECTION_KEY = "mtg-checklist-collection-v2";
+const COLLECTION_META_KEY = "mtg-checklist-collection-meta-v2";
 
 const isTradePath = () => /^\/trade\/?$/.test(window.location.pathname);
 
 /** `/trade` or a `/#trade=…` share link opens the Trade page (nested under Collection) instead of the default tab. */
 const openedWithTradeLink = () => isTradePath() || extractPayload(window.location.hash) !== null;
 
-/**
- * The Collection as it is right now. AppInner's own copy is only refreshed on reload
- * (CollectionPage owns the writes), so Trade reads storage fresh each time it opens.
- */
+/** Collection metadata as stored now; CollectionPage owns it, so AppInner's own copy can be stale. */
 function readCollectionMeta(): CollectionMeta | null {
   try {
-    const raw = window.localStorage.getItem("mtg-checklist-collection-meta-v2");
+    const raw = window.localStorage.getItem(COLLECTION_META_KEY);
     return raw ? (JSON.parse(raw) as CollectionMeta) : null;
   } catch {
     return null;
   }
 }
 
+/**
+ * The Collection as it is right now. AppInner's own copy is only refreshed on reload
+ * (CollectionPage owns the writes), so Trade reads storage fresh each time it opens.
+ */
 function readCollection(): Collection {
   try {
     const raw = window.localStorage.getItem(COLLECTION_KEY);
@@ -187,7 +189,7 @@ function AppInner() {
   // ── Collection (read-only, for auto-tagging on deck import) ──────────────
   // CollectionPage owns all writes; AppInner only reads + writes when receiving orders.
   const [collection, setCollection] = useLocalStorage<Collection>("mtg-checklist-collection-v2", {});
-  const [collectionMeta, setCollectionMeta] = useLocalStorage<CollectionMeta | null>("mtg-checklist-collection-meta-v2", null);
+  const [collectionMeta, setCollectionMeta] = useLocalStorage<CollectionMeta | null>(COLLECTION_META_KEY, null);
 
   // ── Orders state ──────────────────────────────────────────────────────────
   const [orders, setOrders] = useLocalStorage<Order[]>("mtg-checklist-orders-v1", []);

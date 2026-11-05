@@ -206,7 +206,8 @@ export function TradeWorkspace({ initial, snapshotAt, collection, decks, onForke
     setLogging(false);
     setControlsOpen(false);
     t.reset();
-    const note = shortfall.length > 0 ? ` · ${shortfall.length} ${shortfall.length === 1 ? "card wasn't" : "cards weren't"} in your collection` : "";
+    const missing = shortfall.reduce((n, c) => n + c.quantity, 0);
+    const note = missing > 0 ? ` · ${missing} ${missing === 1 ? "card wasn't" : "cards weren't"} in your collection` : "";
     showToast(`Trade logged${note}`, onViewEntry ? { label: "View", onClick: () => onViewEntry(entry.id) } : undefined);
   }
 
