@@ -6,7 +6,7 @@ import { computeCostToComplete } from "../../../utils/deckCost";
 import { fairness, sideTotals } from "../../../utils/tradePricing";
 import { deriveBinder } from "../../transactions/binder/binderSurplus";
 import type { Deck, Order, Collection } from "../../../types/index";
-import type { Trade } from "../../../types/trade";
+import type { Trade, TradeLogEntry } from "../../../types/trade";
 
 const NOW = Date.UTC(2026, 9, 16, 12, 0, 0);
 const DAY = 86_400_000;
@@ -32,6 +32,34 @@ describe("demo Binder", () => {
     };
     expect(deriveBinder(collection, committed, new Set()).rows.length).toBeGreaterThan(0);
     expect(data["mtg-checklist-binder-excluded-v1"]).toBe("[]");
+  });
+});
+
+describe("demo trade ledger", () => {
+  const ledger = JSON.parse(data["mtg-checklist-trade-ledger-v1"]!) as TradeLogEntry[];
+  const committed = new Set(decks.flatMap((d) => d.cards.filter((c) => c.acquired).map((c) => c.name.toLowerCase())));
+
+  it("has a trade with cards in and out and a straight sale, newest first", () => {
+    expect(ledger.length).toBeGreaterThanOrEqual(2);
+    expect(ledger.some((e) => e.cardsIn.length > 0 && e.cardsOut.length > 0)).toBe(true);
+    expect(ledger.some((e) => e.cardsIn.length === 0 && e.cardsOut.length > 0)).toBe(true);
+    expect(ledger.map((e) => e.date)).toEqual([...ledger.map((e) => e.date)].sort((a, b) => b - a));
+  });
+  it("only receives cards the demo collection holds, and gives away none that a deck uses", () => {
+    for (const e of ledger) {
+      for (const c of e.cardsIn) {
+        const owned = (collection[c.name.toLowerCase()] ?? []).reduce((n, p) => n + p.quantity, 0);
+        expect(owned).toBeGreaterThanOrEqual(c.quantity);
+      }
+      for (const c of e.cardsOut) expect(committed.has(c.name.toLowerCase())).toBe(false);
+    }
+  });
+  it("stores totals equal to the recomputed unit price × quantity plus cash", () => {
+    const sum = (cs: TradeLogEntry["cardsIn"]) => cs.reduce((s, c) => s + (c.unitPrice ?? 0) * c.quantity, 0);
+    for (const e of ledger) {
+      expect(e.totals.out).toBeCloseTo(sum(e.cardsOut) + e.cash.out);
+      expect(e.totals.in).toBeCloseTo(sum(e.cardsIn) + e.cash.in);
+    }
   });
 });
 

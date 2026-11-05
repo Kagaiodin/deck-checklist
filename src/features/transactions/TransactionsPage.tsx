@@ -1,7 +1,8 @@
 import { useEffect, useRef, type KeyboardEvent } from "react";
 import { OrdersPage, type OrdersPageProps } from "../orders/OrdersPage";
-import { EmptyState } from "../../components/EmptyState";
 import type { Collection } from "../../types/index";
+import type { TradeLogEntry } from "../../types/trade";
+import { LedgerPanel } from "./ledger/LedgerPanel";
 import type { TradeSeed } from "../trade/seedCard";
 import { BinderPanel } from "./binder/BinderPanel";
 import { primaryPrinting, type BinderRow } from "./binder/binderSurplus";
@@ -27,6 +28,12 @@ interface TransactionsPageProps {
   /** Opens the Calculator from the Binder; `seed` pre-adds a card to My offer. */
   onOpenTrade: (seed?: TradeSeed) => void;
   onViewCollection: () => void;
+  /** The trade ledger, newest first. */
+  ledger: TradeLogEntry[];
+  onDeleteLedgerEntry: (id: string) => void;
+  /** Entry to show in detail (set after "Log this trade"); null shows the list. */
+  ledgerOpenId: string | null;
+  onLedgerOpenChange: (id: string | null) => void;
 }
 
 /** A Binder row as a Calculator seed: its largest-quantity printing. */
@@ -38,7 +45,7 @@ function rowToSeed(row: BinderRow): TradeSeed {
 const tabId = (t: TransactionsTab) => `tx-tab-${t}`;
 const panelId = (t: TransactionsTab) => `tx-panel-${t}`;
 
-export function TransactionsPage({ subTab, onSubTabChange, ordersProps, collection, onOpenTrade, onViewCollection }: TransactionsPageProps) {
+export function TransactionsPage({ subTab, onSubTabChange, ordersProps, collection, onOpenTrade, onViewCollection, ledger, onDeleteLedgerEntry, ledgerOpenId, onLedgerOpenChange }: TransactionsPageProps) {
   const binder = useBinder(collection, ordersProps.decks);
   const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   // Buys and the other panels render different trees, so the tablist remounts on a switch;
@@ -92,6 +99,9 @@ export function TransactionsPage({ subTab, onSubTabChange, ordersProps, collecti
           {t.id === "buys" && ordersProps.orders.length > 0 && (
             <span className="count">{ordersProps.orders.length}</span>
           )}
+          {t.id === "trades" && ledger.length > 0 && (
+            <span className="count">{ledger.length}</span>
+          )}
           {t.id === "binder" && binder.rows.length > 0 && (
             <span className="count">{binder.rows.length}</span>
           )}
@@ -121,7 +131,7 @@ export function TransactionsPage({ subTab, onSubTabChange, ordersProps, collecti
               <span className="orders-count">{binder.rows.length} {binder.rows.length === 1 ? "card" : "cards"}</span>
             )}
           </div>
-          {subTab === "binder" && (
+          {(subTab === "binder" || (subTab === "trades" && ledger.length > 0 && !ledgerOpenId)) && (
             <div className="orders-topbar-right">
               <button type="button" className="btn btn-primary btn-sm tx-new-trade" onClick={() => onOpenTrade()}>New trade</button>
             </div>
@@ -139,15 +149,12 @@ export function TransactionsPage({ subTab, onSubTabChange, ordersProps, collecti
                 onViewCollection={onViewCollection}
               />
             ) : (
-              <EmptyState
-                icon={
-                  <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor"
-                    strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M7 7h12l-3-3M17 17H5l3 3" />
-                  </svg>
-                }
-                title="No trades yet"
-                body="Trades and sales you log will appear here."
+              <LedgerPanel
+                entries={ledger}
+                openId={ledgerOpenId}
+                onOpenChange={onLedgerOpenChange}
+                onNewTrade={() => onOpenTrade()}
+                onDelete={onDeleteLedgerEntry}
               />
             )}
           </div>

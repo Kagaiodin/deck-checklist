@@ -13,6 +13,7 @@ export const MANAGED_KEYS = [
   "mtg-checklist-vendor-history",
   "mtg-checklist-errors",
   "fetchlist-trade",
+  "mtg-checklist-trade-ledger-v1",
   "mtg-checklist-binder-excluded-v1",
   "fetchlist-last-vendor",
   "fetchlist-vendor-last-used",
@@ -80,6 +81,7 @@ const DATA_KEYS = [
   "mtg-checklist-decks",
   "mtg-checklist-collection-v2",
   "mtg-checklist-orders-v1",
+  "mtg-checklist-trade-ledger-v1",
   "mtg-checklist-errors",
   "fetchlist-trade",
 ] as const;

@@ -30,6 +30,10 @@ function Harness({ initial = "buys", orders = [], collection = {}, onOpenTrade =
       collection={collection}
       onOpenTrade={onOpenTrade}
       onViewCollection={vi.fn()}
+      ledger={[]}
+      onDeleteLedgerEntry={vi.fn()}
+      ledgerOpenId={null}
+      onLedgerOpenChange={vi.fn()}
     />
   );
 }

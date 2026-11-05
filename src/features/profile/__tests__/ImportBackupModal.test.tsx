@@ -153,7 +153,7 @@ describe("ImportBackupModal", () => {
     const onImport = vi.fn(() => ({ newDecks: 1, newCards: 0, newOrders: 0 }));
     render(<ImportBackupModal {...baseProps} onImport={onImport} />);
     fireEvent.click(screen.getByLabelText(/Replace all local data/));
-    expect(screen.getByText("This will wipe all existing decks, collection, and orders.")).toBeInTheDocument();
+    expect(screen.getByText("This will wipe all existing decks, collection, orders, and trades.")).toBeInTheDocument();
     uploadFile(document.querySelector('input[type="file"]')!, JSON.stringify({ version: 1, decks: [] }));
     await waitFor(() => expect(onImport).toHaveBeenCalledWith({ version: 1, decks: [] }, true));
   });

@@ -1,3 +1,4 @@
+import type { TradeLogEntry } from "../../types/trade";
 import { useEffect, useState } from "react";
 import type { Deck, ErrorQueueItem, Collection, CollectionMeta, Order, ProfileExport } from "../../types/index";
 import {
@@ -23,10 +24,12 @@ interface Props {
   collection: Collection;
   collectionMeta: CollectionMeta | null;
   orders: Order[];
+  tradeLedger?: TradeLogEntry[];
+  binderExcluded?: string[];
   vendorHistory: string[];
 
   // Passed through to GoogleDriveBackup, which manages its own import flow
-  onImport: (data: ProfileExport, replace: boolean) => { newDecks: number; newCards: number; newOrders: number };
+  onImport: (data: ProfileExport, replace: boolean) => { newDecks: number; newCards: number; newOrders: number; newTrades?: number };
   showToast: (t: ToastInput) => void;
 
   // Import lives in a top-level modal (ImportBackupModal) — this button just opens it
@@ -35,7 +38,7 @@ interface Props {
 }
 
 export function ProfileExportImport({
-  decks, allErrors, collection, collectionMeta, orders, vendorHistory,
+  decks, allErrors, collection, collectionMeta, orders, tradeLedger, binderExcluded, vendorHistory,
   onImport, showToast,
   importPanelOpen, onToggleImportPanel,
 }: Props) {
@@ -60,6 +63,8 @@ export function ProfileExportImport({
       collectionMeta,
       orders,
       vendorHistory,
+      tradeLedger,
+      binderExcluded,
     };
   }
 
@@ -127,6 +132,8 @@ export function ProfileExportImport({
           collection={collection}
           collectionMeta={collectionMeta}
           orders={orders}
+          tradeLedger={tradeLedger}
+          binderExcluded={binderExcluded}
           vendorHistory={vendorHistory}
           onImport={onImport}
           showToast={showToast}

@@ -141,4 +141,47 @@ describe("Trade route", () => {
     expect(screen.getByRole("tab", { name: /^Binder/ })).toHaveAttribute("aria-selected", "true");
     expect(screen.queryByRole("heading", { name: "Trade" })).not.toBeInTheDocument();
   });
+
+  describe("Log this trade", () => {
+    const toCalculator = async () => {
+      store.set("mtg-checklist-collection-v2", JSON.stringify({ "sol ring": [{ quantity: 2 }] }));
+      render(<App />);
+      await userEvent.click(tab(/^Transactions/));
+      await userEvent.click(screen.getByRole("tab", { name: /^Binder/ }));
+      await userEvent.click(screen.getByRole("button", { name: "Add to new trade: Sol Ring" }));
+      await within(screen.getByRole("region", { name: "My offer" })).findByText("Sol Ring");
+    };
+    const stored = (k: string) => JSON.parse(store.get(k) ?? "null");
+
+    it("writes nothing until confirmed", async () => {
+      await toCalculator();
+      await userEvent.click(screen.getByRole("button", { name: "Log this trade" }));
+      expect(screen.getByRole("dialog", { name: "Log this trade" })).toBeInTheDocument();
+      await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
+      expect(stored("mtg-checklist-collection-v2")["sol ring"][0].quantity).toBe(2);
+      expect(stored("mtg-checklist-trade-ledger-v1") ?? []).toEqual([]);
+    });
+
+    it("on confirm removes the card from Collection, records the entry, empties the Calculator and links to the entry", async () => {
+      await toCalculator();
+      await userEvent.click(screen.getByRole("button", { name: "Log this trade" }));
+      await userEvent.type(screen.getByLabelText("Who with"), "Sam");
+      await userEvent.click(screen.getByRole("button", { name: "Log trade" }));
+      await waitFor(() => expect(stored("mtg-checklist-trade-ledger-v1")).toHaveLength(1));
+      expect(stored("mtg-checklist-trade-ledger-v1")[0]).toMatchObject({ counterparty: "Sam" });
+      expect(stored("mtg-checklist-collection-v2")["sol ring"][0].quantity).toBe(1);
+      expect(within(screen.getByRole("region", { name: "My offer" })).queryByText("Sol Ring")).not.toBeInTheDocument();
+      // Undo cannot bring a logged trade back.
+      expect(screen.getAllByRole("button", { name: "Undo" }).every(b => b.hasAttribute("disabled"))).toBe(true);
+      await userEvent.click(screen.getByRole("button", { name: "View" }));
+      expect(screen.getByRole("heading", { name: "Trade with Sam" })).toBeInTheDocument();
+    });
+
+    it("is not offered on a shared read-only trade", async () => {
+      window.location.hash = `#trade=${await encodeTrade(shared, Date.now())}`;
+      render(<App />);
+      await screen.findByText(/Shared trade — prices as of/);
+      expect(screen.queryByRole("button", { name: "Log this trade" })).not.toBeInTheDocument();
+    });
+  });
 });

@@ -1,5 +1,5 @@
 import { commanderToastTitle } from "./utils/commander";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import "./tokens.css";
 import "./App.css";
 import { DeckProvider, useDecks } from "./store/decks";
@@ -9,11 +9,15 @@ import { refreshDeckPrices, needsPriceRefresh } from "./utils/deckCost";
 import type { ValidationProgress } from "./utils/validator";
 import { useLocalStorage } from "./hooks/useLocalStorage";
 import { useOrderActions } from "./hooks/useOrderActions";
+import { readBinderExcluded, writeBinderExcluded } from "./features/transactions/binder/useBinder";
+import { useTradeLedger } from "./features/transactions/ledger/useTradeLedger";
 import { Checklist } from "./components/Checklist";
 import { EmptyState } from "./components/EmptyState";
 import { ErrorQueue } from "./components/ErrorQueue";
 import { ProgressTracker } from "./components/ProgressTracker";
 import type { Deck, ErrorQueueItem, AcquisitionSource, Collection, CollectionMeta, Order, ProfileExport } from "./types/index";
+import type { Trade } from "./types/trade";
+import { mergeLedger, type LogMeta } from "./utils/tradeLedger";
 import { applyCollectionToCards } from "./utils/csvParser";
 import { formatOptions } from "./utils/deckFormats";
 import { getDeckColorIdentity, formatRelativeDate, getDeckDomain } from "./utils/deckUtils";
@@ -448,6 +452,28 @@ function AppInner() {
     orders, setOrders, collection, setCollection, setCollectionMeta, dispatch,
   });
 
+  const { entries: ledger, setEntries: setLedger, logTrade, deleteEntry: deleteLedgerEntry } = useTradeLedger({
+    readCollection, setCollection, setCollectionMeta, dispatch,
+  });
+  // Binder owns the live exclude list; re-read it whenever the view changes so backups carry the current one.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const binderExcluded = useMemo(readBinderExcluded, [view]);
+  const [ledgerOpenId, setLedgerOpenId] = useState<string | null>(null);
+
+  /** Log this trade: writes the ledger and Collection, then refreshes the Calculator's own Collection copy. */
+  function handleLogTrade(trade: Trade, meta: LogMeta) {
+    const result = logTrade(trade, meta);
+    setTradeCollection(result.collection);
+    return result;
+  }
+
+  function viewLedgerEntry(id: string) {
+    closeTrade();
+    setLedgerOpenId(id);
+    setTxSubTab("trades");
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }
+
   function handleDismissNotification(deckId: string, notificationId: string) {
     dispatch({ type: "DISMISS_NOTIFICATION", payload: { deckId, notificationId } });
     setNotificationFilterIds(null);
@@ -456,7 +482,7 @@ function AppInner() {
   // ── Profile export / import ───────────────────────────────────────────────
   function handleProfileImport(data: ProfileExport, replace: boolean) {
     // Backups must never land on top of sample data (the UI disables this path too).
-    if (isDemoActiveNow()) return { newDecks: 0, newCards: 0, newOrders: 0 };
+    if (isDemoActiveNow()) return { newDecks: 0, newCards: 0, newOrders: 0, newTrades: 0 };
     if (replace) {
       // Replace mode — wipe all and restore from backup
       dispatch({ type: "SET_DECKS", payload: data.decks ?? [] });
@@ -464,8 +490,10 @@ function AppInner() {
       setCollection(data.collection ?? {});
       setCollectionMeta(data.collectionMeta ?? null);
       setOrders(data.orders ?? []);
+      setLedger(data.tradeLedger ?? []);
+      writeBinderExcluded(data.binderExcluded ?? []);
       setRecentVendors((data.vendorHistory ?? []).slice(0, 50));
-      return { newDecks: (data.decks ?? []).length, newCards: Object.keys(data.collection ?? {}).length, newOrders: (data.orders ?? []).length };
+      return { newDecks: (data.decks ?? []).length, newCards: Object.keys(data.collection ?? {}).length, newOrders: (data.orders ?? []).length, newTrades: (data.tradeLedger ?? []).length };
     }
 
     // Merge mode — only add net-new items
@@ -505,11 +533,16 @@ function AppInner() {
     const newOrders = (data.orders ?? []).filter(o => !existingOrderIds.has(o.id));
     setOrders([...orders, ...newOrders]);
 
+    // Trade ledger — skip duplicates by id; exclude list is a union
+    const { merged: mergedLedger, added: newTrades } = mergeLedger(ledger, data.tradeLedger ?? []);
+    setLedger(mergedLedger);
+    if (data.binderExcluded?.length) writeBinderExcluded([...new Set([...readBinderExcluded(), ...data.binderExcluded])]);
+
     // Vendor history — union, deduplicated, cap at 50
     const mergedVendors = [...new Set([...recentVendors, ...(data.vendorHistory ?? [])])].slice(0, 50);
     setRecentVendors(mergedVendors);
 
-    return { newDecks: newDecks.length, newCards: newCardKeyCount, newOrders: newOrders.length };
+    return { newDecks: newDecks.length, newCards: newCardKeyCount, newOrders: newOrders.length, newTrades };
   }
 
   // ── Archidekt import ───────────────────────────────────────────────────────
@@ -929,6 +962,7 @@ function AppInner() {
                           version: 1, exportedAt: new Date().toISOString(),
                           decks: state.decks, errors: allErrors,
                           collection, collectionMeta, orders, vendorHistory: recentVendors,
+                          tradeLedger: ledger, binderExcluded,
                         };
                         const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
                         const url = URL.createObjectURL(blob);
@@ -949,6 +983,8 @@ function AppInner() {
                       collection={collection}
                       collectionMeta={collectionMeta}
                       orders={orders}
+                      tradeLedger={ledger}
+                      binderExcluded={binderExcluded}
                       vendorHistory={recentVendors}
                       onImport={handleProfileImport}
                       showToast={showToast}
@@ -1093,6 +1129,8 @@ function AppInner() {
                     collection={collection}
                     collectionMeta={collectionMeta}
                     orders={orders}
+                    tradeLedger={ledger}
+                    binderExcluded={binderExcluded}
                     vendorHistory={recentVendors}
                     onImport={handleProfileImport}
                     showToast={showToast}
@@ -1514,6 +1552,8 @@ function AppInner() {
               decks={state.decks}
               origin={tradeOrigin}
               seed={tradeSeed}
+              onLogTrade={handleLogTrade}
+              onViewEntry={viewLedgerEntry}
               onBack={leaveTrade}
             />
           ) : (
@@ -1523,6 +1563,10 @@ function AppInner() {
               collection={tradeCollection}
               onOpenTrade={seed => openTrade("binder", seed)}
               onViewCollection={() => switchView("collection")}
+              ledger={ledger}
+              onDeleteLedgerEntry={deleteLedgerEntry}
+              ledgerOpenId={ledgerOpenId}
+              onLedgerOpenChange={setLedgerOpenId}
               ordersProps={{
                 orders,
                 decks: state.decks,

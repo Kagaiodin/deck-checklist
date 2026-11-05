@@ -115,3 +115,10 @@ export function applyTradeToCollection(
 
   return { collection: next, shortfall };
 }
+
+/** Merge-import: keeps local entries, adds incoming ones whose id is new, newest first. */
+export function mergeLedger(local: TradeLogEntry[], incoming: TradeLogEntry[]): { merged: TradeLogEntry[]; added: number } {
+  const have = new Set(local.map(e => e.id));
+  const fresh = incoming.filter(e => !have.has(e.id));
+  return { merged: [...local, ...fresh].sort((a, b) => b.date - a.date), added: fresh.length };
+}

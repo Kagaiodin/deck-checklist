@@ -84,6 +84,7 @@ type Action =
   | { type: "setSideDiscount"; side: SideKey; pct: number | undefined }
   | { type: "swap" }
   | { type: "clear" }
+  | { type: "reset" }
   | { type: "undo" }
   | { type: "redo" }
   | { type: "open"; trade: Trade }
@@ -218,6 +219,9 @@ function reduce(state: State, action: Action): State {
       return commit(state, editSide(trade, action.side, (s) => ({ ...s, discountOverridePct: action.pct })));
     case "swap":
       return commit(state, { ...trade, mine: trade.theirs, theirs: trade.mine });
+    case "reset":
+      // After a trade is logged: empty the sides and drop history, so Undo cannot bring back a logged trade.
+      return { trade: { ...trade, mine: emptySide(), theirs: emptySide() }, past: [], future: [] };
     case "clear": {
       if (isSideEmpty(trade.mine) && isSideEmpty(trade.theirs)) return state;
       return commit(state, { ...trade, mine: emptySide(), theirs: emptySide() });
@@ -312,6 +316,7 @@ export function useTrade(initial?: Trade) {
     setSideDiscount: (side: SideKey, pct: number | undefined) => dispatch({ type: "setSideDiscount", side, pct }),
     swap: () => dispatch({ type: "swap" }),
     clear: () => dispatch({ type: "clear" }),
+    reset: () => dispatch({ type: "reset" }),
     undo: () => dispatch({ type: "undo" }),
     redo: () => dispatch({ type: "redo" }),
     open: (t: Trade) => dispatch({ type: "open", trade: t }),

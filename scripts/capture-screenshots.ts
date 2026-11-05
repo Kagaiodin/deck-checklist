@@ -585,6 +585,11 @@ async function main(): Promise<void> {
     // 05b — Binder sub-tab (derived surplus), then back to Buys for the order shots below
     await attempt("open Binder sub-tab", () => click(page, "[role=tab]", { hasText: "Binder" }));
     await shot(page, "05b-desktop-binder.png");
+    // 05c — Trades & sales ledger (demo entries), its detail, then back to Buys
+    await attempt("open Trades & sales sub-tab", () => click(page, "[role=tab]", { hasText: "Trades & sales" }));
+    await shot(page, "05c-desktop-trades.png");
+    await attempt("open ledger entry", () => click(page, ".ledger-row"));
+    await shot(page, "05d-desktop-trade-detail.png");
     await attempt("back to Buys sub-tab", () => click(page, "[role=tab]", { hasText: "Buys" }));
 
     // 06 — Buy list modal open

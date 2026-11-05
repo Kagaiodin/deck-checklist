@@ -6,6 +6,18 @@ import { deriveBinder, type Binder } from "./binderSurplus";
 
 export const BINDER_EXCLUDED_KEY = "mtg-checklist-binder-excluded-v1";
 
+/** Reads the exclude list straight from storage (Binder owns the live copy; backups need the current one). */
+export function readBinderExcluded(): string[] {
+  try {
+    const raw = JSON.parse(window.localStorage.getItem(BINDER_EXCLUDED_KEY) ?? "[]");
+    return Array.isArray(raw) ? raw.filter((k): k is string => typeof k === "string") : [];
+  } catch { return []; }
+}
+
+export function writeBinderExcluded(list: string[]) {
+  try { window.localStorage.setItem(BINDER_EXCLUDED_KEY, JSON.stringify(list)); } catch { /* quota */ }
+}
+
 /** Lowercase names the user keeps out of the Binder. */
 export function useBinderExcluded() {
   const [list, setList] = useLocalStorage<string[]>(BINDER_EXCLUDED_KEY, []);

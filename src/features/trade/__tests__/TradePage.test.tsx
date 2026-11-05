@@ -109,7 +109,7 @@ describe("TradePage — desktop", () => {
   it("renders the three panels, breadcrumb and a neutral verdict", async () => {
     const { onBack } = setup();
     expect(screen.getByRole("heading", { level: 1, name: "Trade" })).toBeInTheDocument();
-    expect(screen.getByText("Weigh a trade. Doesn't change your collection.")).toBeInTheDocument();
+    expect(screen.getByText("Weigh a trade. Your collection only changes if you log it.")).toBeInTheDocument();
     expect(mineOffer()).toBeInTheDocument();
     expect(theirOffer()).toBeInTheDocument();
     expect(screen.getByRole("complementary", { name: "Trade controls" })).toBeInTheDocument();

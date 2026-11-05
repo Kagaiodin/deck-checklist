@@ -63,6 +63,26 @@ describe("ProfileExportImport — File System Access save/load", () => {
     expect(showToast.mock.calls[0][0].title).toBe("Profile exported");
   });
 
+  it("includes the trade ledger and Binder exclude list in the backup, on the v1 envelope", async () => {
+    let captured = "";
+    const OrigBlob = globalThis.Blob;
+    vi.spyOn(globalThis, "Blob").mockImplementation(function (parts?: BlobPart[], opts?: BlobPropertyBag) {
+      captured = String(parts?.[0] ?? "");
+      return new OrigBlob(parts, opts);
+    } as unknown as typeof Blob);
+    URL.createObjectURL = vi.fn(() => "blob:x");
+    URL.revokeObjectURL = vi.fn();
+    mockAnchorClick();
+    const entry = { id: "e1", date: 1, cardsOut: [], cardsIn: [], cash: { out: 0, in: 3 }, totals: { out: 0, in: 3 } };
+    render(<ProfileExportImport {...baseProps} tradeLedger={[entry]} binderExcluded={["sol ring"]} />);
+    fireEvent.click(screen.getByText("↓ Export backup"));
+    await waitFor(() => expect(captured).not.toBe(""));
+    const payload = JSON.parse(captured);
+    expect(payload.version).toBe(1);
+    expect(payload.tradeLedger).toEqual([entry]);
+    expect(payload.binderExcluded).toEqual(["sol ring"]);
+  });
+
   it("opens the save picker on first export, then writes silently and shows the linked chip", async () => {
     const handle = makeHandle("fetchlist-backup.json");
     const showSaveFilePicker = vi.fn().mockResolvedValue(handle);

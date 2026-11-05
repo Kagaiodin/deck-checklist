@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Collection, Deck } from "../../types/index";
 import type { Condition, Finish, Trade, TradeCard } from "../../types/trade";
+import type { LogMeta } from "../../utils/tradeLedger";
+import type { LogTradeResult } from "../transactions/ledger/useTradeLedger";
+import { LogTradeSheet } from "../transactions/ledger/LogTradeSheet";
 import { basePriceFor, isSideEmpty, unitPrice } from "../../utils/tradePricing";
 import { fetchPrices, priceKey } from "../../utils/scryfallSearch";
 import { buildShareUrl, encodeTrade, isShareUrlTooLong, tradeToText } from "../../utils/tradeShare";
@@ -30,6 +33,10 @@ interface TradeWorkspaceProps {
   onForked: () => void;
   /** A card to add to My offer once on open (Binder → "Add to new trade"). Ignored for shared trades. */
   seed?: TradeSeed;
+  /** Writes the trade to the ledger and Collection. Omit to hide "Log this trade". */
+  onLogTrade?: (trade: Trade, meta: LogMeta) => LogTradeResult;
+  /** Opens a ledger entry (from the "Trade logged" toast). */
+  onViewEntry?: (id: string) => void;
 }
 
 type OpenSheet = { kind: "search"; side: SideKey } | { kind: "collection" } | null;
@@ -45,7 +52,7 @@ async function copy(text: string): Promise<boolean> {
   }
 }
 
-export function TradeWorkspace({ initial, snapshotAt, collection, decks, onForked, seed }: TradeWorkspaceProps) {
+export function TradeWorkspace({ initial, snapshotAt, collection, decks, onForked, seed, onLogTrade, onViewEntry }: TradeWorkspaceProps) {
   const t = useTrade(initial);
   const { trade } = t;
   const ro = trade.readOnly;
@@ -55,6 +62,7 @@ export function TradeWorkspace({ initial, snapshotAt, collection, decks, onForke
   const [controlsOpen, setControlsOpen] = useState(false);
   const [sheet, setSheet] = useState<OpenSheet>(null);
   const [confirmFork, setConfirmFork] = useState(false);
+  const [logging, setLogging] = useState(false);
   const [toast, setToast] = useState<ToastState | null>(null);
   const [flashId, setFlashId] = useState<string | null>(null);
   const [jumpId, setJumpId] = useState<string | null>(null);
@@ -192,6 +200,16 @@ export function TradeWorkspace({ initial, snapshotAt, collection, decks, onForke
     else setConfirmFork(true);
   }
 
+  function confirmLog(meta: LogMeta) {
+    if (!onLogTrade) return;
+    const { entry, shortfall } = onLogTrade(trade, meta);
+    setLogging(false);
+    setControlsOpen(false);
+    t.reset();
+    const note = shortfall.length > 0 ? ` · ${shortfall.length} ${shortfall.length === 1 ? "card wasn't" : "cards weren't"} in your collection` : "";
+    showToast(`Trade logged${note}`, onViewEntry ? { label: "View", onClick: () => onViewEntry(entry.id) } : undefined);
+  }
+
   async function copyMine() {
     const ok = await copy(tradeToText(loadLocalTrade()));
     showToast(ok ? "Your current trade copied as text" : "Couldn't copy — clipboard access was blocked");
@@ -272,6 +290,7 @@ export function TradeWorkspace({ initial, snapshotAt, collection, decks, onForke
       onClear={clearTrade}
       onCopyText={() => void copyText()}
       onShare={() => void share()}
+      onLogTrade={onLogTrade && !ro ? () => setLogging(true) : undefined}
     />
   );
 
@@ -335,6 +354,7 @@ export function TradeWorkspace({ initial, snapshotAt, collection, decks, onForke
       {sheet?.kind === "collection" && (
         <CollectionPickerSheet collection={collection} decks={decks} onAdd={addFromCollection} onClose={() => setSheet(null)} />
       )}
+      {logging && <LogTradeSheet trade={trade} collection={collection} decks={decks} onCancel={() => setLogging(false)} onConfirm={confirmLog} />}
       {confirmFork && <ForkConfirmDialog onCancel={() => setConfirmFork(false)} onReplace={doFork} onCopyMine={() => void copyMine()} />}
 
       <TradeToast toast={toast} onDismiss={() => setToast(null)} />

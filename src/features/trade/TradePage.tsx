@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import type { Collection, Deck } from "../../types/index";
 import type { Trade } from "../../types/trade";
+import type { LogMeta } from "../../utils/tradeLedger";
+import type { LogTradeResult } from "../transactions/ledger/useTradeLedger";
 import { decodeTrade, extractPayload } from "../../utils/tradeShare";
 import { TradeWorkspace } from "./TradeWorkspace";
 import type { TradeSeed } from "./seedCard";
@@ -24,6 +26,9 @@ interface TradePageProps {
   origin?: TradeOrigin;
   /** Card to pre-add to My offer. */
   seed?: TradeSeed;
+  /** Logs the trade to the ledger and Collection. */
+  onLogTrade?: (trade: Trade, meta: LogMeta) => LogTradeResult;
+  onViewEntry?: (id: string) => void;
   /** Back to the origin (the breadcrumb's first crumb). */
   onBack: () => void;
 }
@@ -40,7 +45,7 @@ export function clearTradeHash() {
   if (window.location.hash) window.history.replaceState(null, "", window.location.pathname + window.location.search);
 }
 
-export function TradePage({ collection, decks, origin = "collection", seed, onBack }: TradePageProps) {
+export function TradePage({ collection, decks, origin = "collection", seed, onLogTrade, onViewEntry, onBack }: TradePageProps) {
   const [load, setLoad] = useState<Load>(() => (extractPayload(window.location.hash) ? { status: "decoding" } : { status: "local" }));
 
   useEffect(() => {
@@ -69,7 +74,7 @@ export function TradePage({ collection, decks, origin = "collection", seed, onBa
       </nav>
       <header className="tr-page-head">
         <h1>Trade</h1>
-        <p className="tr-page-sub">Weigh a trade. Doesn't change your collection.</p>
+        <p className="tr-page-sub">Weigh a trade. Your collection only changes if you log it.</p>
       </header>
 
       {load.status === "decoding" && <p className="tr-note" role="status">Opening shared trade…</p>}
@@ -105,6 +110,8 @@ export function TradePage({ collection, decks, origin = "collection", seed, onBa
           decks={decks}
           onForked={clearTradeHash}
           seed={seed}
+          onLogTrade={onLogTrade}
+          onViewEntry={onViewEntry}
         />
       )}
     </div>

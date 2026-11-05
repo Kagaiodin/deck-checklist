@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { applyTradeToCollection, tradeToLogEntry, collectionKey } from "../tradeLedger";
+import { applyTradeToCollection, tradeToLogEntry, collectionKey, mergeLedger } from "../tradeLedger";
 import { DEFAULT_SETTINGS, type Trade, type TradeCard, type TradeLogCard } from "../../types/trade";
 import type { Collection } from "../../types/index";
 
@@ -116,5 +116,17 @@ describe("double-faced names", () => {
     expect(out.collection["delver of secrets"]).toEqual([{ quantity: 1, set: "isd", collectorNumber: "51" }]);
     const inn = applyTradeToCollection({}, [], [log({ name: "Delver of Secrets // Insectile Aberration", set: "isd", collectorNumber: "51" })]);
     expect(Object.keys(inn.collection)).toEqual(["delver of secrets"]);
+  });
+});
+
+describe("mergeLedger", () => {
+  const e = (id: string, date: number) => ({ id, date, cardsOut: [], cardsIn: [], cash: { out: 0, in: 0 }, totals: { out: 0, in: 0 } });
+  it("skips ids already present, counts what was added, and sorts newest first", () => {
+    const r = mergeLedger([e("a", 10)], [e("a", 10), e("b", 30), e("c", 20)]);
+    expect(r.added).toBe(2);
+    expect(r.merged.map(x => x.id)).toEqual(["b", "c", "a"]);
+  });
+  it("treats an old backup with no ledger as nothing to add", () => {
+    expect(mergeLedger([e("a", 1)], [])).toEqual({ merged: [e("a", 1)], added: 0 });
   });
 });
