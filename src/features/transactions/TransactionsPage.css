@@ -1,15 +1,15 @@
-/* Sub-tab row (reuses App.css .order-filter-tabs). Capped on desktop, full width and
-   touch-sized on phones; counts hide under 480px so "Trades & sales" fits. */
+/* Sub-tab row (reuses App.css .order-filter-tabs). Capped on desktop; 44px tap targets at
+   the mobile breakpoint (spec D4); full width with counts hidden under 480px so "Trades & sales" fits. */
 .tx-subtabs { max-width: 440px; margin-bottom: 14px; }
 .tx-subtabs .order-filter-tab { white-space: nowrap; }
 .tx-subtabs .order-filter-tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 
 @media (max-width: 480px) {
   .tx-subtabs { max-width: none; }
-  .tx-subtabs .order-filter-tab { min-height: 44px; padding: 6px 4px; }
+  .tx-subtabs .order-filter-tab { padding: 6px 4px; }
   .tx-subtabs .order-filter-tab .count { display: none; }
 }
 
 @media (max-width: 767px) {
-  .tx-new-trade { min-height: 44px; }
+  .tx-new-trade, .tx-subtabs .order-filter-tab { min-height: 44px; }
 }
