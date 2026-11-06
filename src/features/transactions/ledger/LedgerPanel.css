@@ -46,7 +46,6 @@
 .inv-bar .spacer { flex: 1; }
 .inv-status { min-height: 18px; margin: 0; font-size: 12.5px; color: var(--text-muted); }
 .paper-sheet {
-  --text: var(--paper-text); --text-muted: var(--paper-text-muted); --border: var(--paper-border); --border-dim: var(--paper-border-dim);
   max-width: 680px; width: 100%; padding: 28px 32px; border-radius: var(--radius);
   background: var(--paper-bg); color: var(--paper-text); border: 1px solid var(--border); box-shadow: var(--shadow-menu);
   display: flex; flex-direction: column; gap: 16px;
@@ -71,7 +70,7 @@
 }
 /* Print: only while an invoice is on screen, so printing any other view is untouched. */
 @media print {
-  body:has(.paper-sheet) { background: #fff; }
+  body:has(.paper-sheet) { background: var(--paper-bg); }
   body:has(.paper-sheet) .app { display: block; height: auto; overflow: visible; }
   body:has(.paper-sheet) .app > :not(.app-main),
   body:has(.paper-sheet) .orders-topbar,

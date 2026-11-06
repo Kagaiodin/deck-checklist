@@ -130,6 +130,13 @@ html { overflow-x: hidden; } /* catch-all: prevents root scroll container from f
   --paper-border: #c9c4b5;
   --paper-border-dim: #e3dfd3;
 }
+/* Inside the paper, the shared text/border tokens resolve to paper colors. */
+.paper-sheet {
+  --text: var(--paper-text);
+  --text-muted: var(--paper-text-muted);
+  --border: var(--paper-border);
+  --border-dim: var(--paper-border-dim);
+}
 
 /* ─── Light mode ────────────────────────────────────────────────────────────── */
 html[data-mode="light"] {
