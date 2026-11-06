@@ -1,6 +1,7 @@
 import type { Card, AcquisitionSource, Collection, Deck, Order } from "../../types/index";
 import type { Trade, TradeCard } from "../../types/trade";
 import { DEFAULT_SETTINGS } from "../../types/trade";
+import { tradeToLogEntry } from "../../utils/tradeLedger";
 import type { DemoValues } from "./demoMode";
 
 const DAY = 86_400_000;
@@ -362,6 +363,8 @@ export function buildDemoData(now: number): DemoValues {
   addOwned("Mana Crypt", 1);
   addOwned("Force of Will", 1);
   addOwned("Mystic Remora", 1);
+  // The second Demonic Tutor is the one received in demo-trade-1, so it carries that printing.
+  collection["demonic tutor"].push({ quantity: 1, set: "sta", collectorNumber: "71" });
 
   const trade: Trade = {
     mine: {
@@ -380,6 +383,25 @@ export function buildDemoData(now: number): DemoValues {
   };
   const { mine, theirs, settings } = trade;
 
+  // Logged trades, built through the real snapshot path so totals are consistent by construction.
+  // Cards in are in the demo collection; cards out are in no demo deck.
+  const logged = (id: string, t: Trade, date: number, counterparty: string, notes?: string) =>
+    ({ ...tradeToLogEntry(t, { date, counterparty, notes }), id });
+  const swap: Trade = {
+    mine: { cards: [tradeCard("l1-o1", "Chrome Mox", "mrd", "150", 35, now, "collection"), tradeCard("l1-o2", "Lotus Petal", "tmp", "294", 12, now, "collection")], cash: [] },
+    theirs: { cards: [tradeCard("l1-i1", "Demonic Tutor", "sta", "71", 40, now, "search")], cash: [{ id: "l1-c", amount: 5 }] },
+    settings: { ...DEFAULT_SETTINGS }, readOnly: false,
+  };
+  const sale: Trade = {
+    mine: { cards: [tradeCard("l2-o1", "Mox Diamond", "sta", "62", 60, now, "collection")], cash: [] },
+    theirs: { cards: [], cash: [{ id: "l2-c", amount: 45 }] },
+    settings: { ...DEFAULT_SETTINGS }, readOnly: false,
+  };
+  const ledger = [
+    logged("demo-trade-1", swap, now - 9 * DAY, "Dana", "Swapped at the Friday night game"),
+    logged("demo-trade-2", sale, now - 22 * DAY, "Local game store"),
+  ];
+
   return {
     "mtg-checklist-decks": JSON.stringify(decks),
     "mtg-checklist-collection-v2": JSON.stringify(collection),
@@ -392,6 +414,9 @@ export function buildDemoData(now: number): DemoValues {
     "mtg-checklist-vendor-history": JSON.stringify(["Card Kingdom", "TCGplayer", "ManaPool", "Face to Face"]),
     "mtg-checklist-errors": "{}",
     "fetchlist-trade": JSON.stringify({ mine, theirs, settings }),
+    "mtg-checklist-trade-ledger-v1": JSON.stringify(ledger),
+    // Binder exclude list starts empty so demo exclusions never touch the real one.
+    "mtg-checklist-binder-excluded-v1": "[]",
     "fetchlist:onboarding:dismissed": "true",
   };
 }

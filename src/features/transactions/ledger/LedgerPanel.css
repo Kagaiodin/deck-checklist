@@ -1,0 +1,97 @@
+.ledger-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--border); }
+.ledger-row {
+  display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px; padding: 8px 16px; text-align: left;
+  border: 0; border-bottom: 1px solid var(--border); background: transparent; color: var(--text); cursor: pointer; font: inherit;
+}
+.ledger-row:hover { background: var(--hover-fill); }
+.ledger-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.ledger-row-main { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1; }
+.ledger-row-name { font-size: 14px; font-weight: 500; }
+.ledger-row-sub { font-size: 12px; color: var(--text-muted); }
+.ledger-row-total { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.ledger-row-total-label { font-size: 12px; font-weight: 400; color: var(--text-muted); }
+
+.ledger-detail { display: flex; flex-direction: column; gap: 12px; padding: 4px 0 16px; align-items: flex-start; }
+.ledger-back { margin-left: -8px; }
+.ledger-title { font-size: 18px; font-weight: 600; margin: 0; }
+.ledger-sub { font-size: 13px; color: var(--text-muted); margin: 0; }
+.ledger-side { width: 100%; max-width: 560px; }
+.ledger-side h3 { display: flex; justify-content: space-between; font-size: 14px; font-weight: 600; margin: 0 0 6px; }
+.ledger-side ul { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--border); }
+.ledger-side li { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+.ledger-meta, .ledger-none { color: var(--text-muted); }
+.ledger-foot { font-size: 12.5px; color: var(--text-muted); margin: 0; }
+
+/* Log this trade confirm */
+.lg-sheet { max-width: none; display: flex; flex-direction: column; gap: 12px; }
+.lg-fields { display: grid; gap: 8px; grid-template-columns: 1fr; }
+.lg-field { display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; color: var(--text-muted); }
+.lg-field input { min-height: 36px; padding: 6px 10px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); color: var(--text); font: inherit; }
+.lg-h { font-size: 13px; font-weight: 600; margin: 0 0 4px; }
+.lg-list { list-style: none; margin: 0; padding: 0; }
+.lg-line { display: flex; align-items: baseline; gap: 8px; padding: 4px 0; font-size: 13px; }
+.lg-qty { font-variant-numeric: tabular-nums; color: var(--text-muted); }
+.lg-name { flex: 1; min-width: 0; }
+.lg-flag { font-size: 12px; color: var(--warn-text, var(--text-muted)); }
+.lg-flag--plain { color: var(--text); }
+.lg-none { font-size: 13px; color: var(--text-muted); }
+.lg-note { font-size: 12.5px; color: var(--text-muted); margin: 0; }
+@media (max-width: 767px) {
+  .ledger-row, .ledger-back { min-height: 44px; }
+}
+
+/* Invoice (print preview). The paper is always light, even in dark mode. */
+.inv-wrap { display: flex; flex-direction: column; gap: 8px; padding: 4px 0 16px; }
+.inv-bar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.inv-bar .spacer { flex: 1; }
+.inv-status { min-height: 18px; margin: 0; font-size: 12.5px; color: var(--text-muted); }
+.paper-sheet {
+  max-width: 680px; width: 100%; padding: 28px 32px; border-radius: var(--radius);
+  background: var(--paper-bg); color: var(--paper-text); border: 1px solid var(--border); box-shadow: var(--shadow-menu);
+  display: flex; flex-direction: column; gap: 16px;
+}
+.paper-sheet h2 { font-size: 20px; font-weight: 600; letter-spacing: -.01em; margin: 0; }
+.paper-sheet h2:focus { outline: none; }
+.inv-meta { display: flex; gap: 28px; font-size: 13px; flex-wrap: wrap; }
+.inv-meta span { display: block; font-size: 11.5px; color: var(--text-muted); margin-bottom: 2px; }
+/* Fixed layout so the "gave" and "got" tables line up column for column. */
+.inv-table { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; }
+.inv-table th:nth-child(2) { width: 44px; }
+.inv-table th:nth-child(3) { width: 84px; }
+.inv-table th:nth-child(4) { width: 92px; }
+.inv-table td:first-child { overflow-wrap: anywhere; padding-right: 8px; }
+/* Gap between number columns, so six-figure prices never run together. */
+.inv-table th:not(:first-child), .inv-table td:not(:first-child) { padding-left: 6px; white-space: nowrap; }
+.inv-table caption { text-align: left; font-size: 12px; font-weight: 600; color: var(--text-muted); padding-bottom: 6px; }
+.inv-table th { font-size: 11.5px; font-weight: 500; color: var(--text-muted); text-align: right; padding: 4px 0; border-bottom: 1px solid var(--border); }
+.inv-table td { padding: 7px 0; border-bottom: 1px solid var(--border-dim); text-align: right; font-variant-numeric: tabular-nums; }
+.inv-table th:first-child, .inv-table td:first-child { text-align: left; }
+.inv-table .sub { display: block; font-size: 12px; color: var(--text-muted); }
+.inv-tot { display: grid; grid-template-columns: 1fr auto; gap: 4px 24px; font-size: 13px; margin-left: auto; min-width: 240px; }
+.inv-tot .num { font-family: inherit; text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+.inv-notes, .paper-sheet .fine { margin: 0; font-size: 12px; color: var(--text-muted); }
+@media (max-width: 767px) {
+  .paper-sheet { padding: 18px 16px; }
+  .inv-table th:nth-child(2) { width: 36px; }
+  .inv-table th:nth-child(3) { width: 80px; }
+  .inv-table th:nth-child(4) { width: 90px; }
+}
+/* Phones: fixed columns would squeeze card names to fragments; let each table size itself. */
+@media (max-width: 479px) {
+  .inv-table { table-layout: auto; }
+  .inv-table th:not(:first-child) { width: auto; }
+  .inv-bar .btn, .ledger-actions .btn { min-height: 44px; }
+  .inv-bar .btn:not(.ledger-back) { flex: 1; }
+}
+/* Print: only while an invoice is on screen, so printing any other view is untouched. */
+@media print {
+  body:has(.paper-sheet) { background: var(--paper-bg); }
+  body:has(.paper-sheet) .app { display: block; height: auto; overflow: visible; }
+  body:has(.paper-sheet) .app > :not(.app-main),
+  body:has(.paper-sheet) .orders-topbar,
+  body:has(.paper-sheet) .tx-subtabs,
+  body:has(.paper-sheet) .inv-bar,
+  body:has(.paper-sheet) .inv-status { display: none !important; }
+  body:has(.paper-sheet) .app-main { display: block; overflow: visible; }
+  body:has(.paper-sheet) .paper-sheet { max-width: none; box-shadow: none; border: none; padding: 0; }
+}

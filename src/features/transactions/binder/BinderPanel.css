@@ -1,0 +1,61 @@
+/* Binder: rows mirror Collection's look; actions stay visible (not hover-only). */
+.binder-meta { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+.binder-meta p { font-size: 13px; color: var(--text-muted); flex: 1; min-width: 200px; margin: 0; }
+.binder-meta .num { color: var(--text); }
+.binder-meta-end { justify-content: flex-end; margin-top: 8px; }
+.keep-toggle {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 4px 10px;
+  border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface);
+  color: var(--text-muted); font-size: 12.5px; cursor: pointer;
+}
+.keep-toggle:hover { color: var(--text); border-color: var(--border-strong); }
+.keep-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.keep-toggle .num { font-size: 11px; }
+
+.binder-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--border); }
+.binder-row {
+  display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 8px 16px;
+  border-bottom: 1px solid var(--border); font-size: 13px;
+}
+.binder-row:hover { background: var(--hover-fill); }
+.binder-row-main { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1; }
+.binder-row-name { font-size: 14px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.binder-row-sub { font-size: 12px; color: var(--text-muted); line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.binder-qty { display: flex; align-items: baseline; gap: 5px; flex-shrink: 0; min-width: 64px; justify-content: flex-end; }
+.binder-qty b { font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.binder-qty span { font-size: 12px; color: var(--text-muted); }
+.binder-actions { display: flex; gap: 6px; flex-shrink: 0; }
+/* Printing list: wraps under the row on desktop expansion, sits in the sheet header on phones. */
+.binder-row:has(.binder-printings-row) { flex-wrap: wrap; row-gap: 4px; }
+.binder-printings-toggle {
+  align-self: flex-start; display: inline-flex; align-items: center; gap: 4px; min-height: 24px; padding: 0;
+  border: none; background: none; color: var(--text-muted); font-size: 12px; cursor: pointer;
+}
+.binder-printings-toggle:hover { color: var(--text); }
+.binder-printings-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; border-radius: var(--radius); }
+.binder-printings { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--text-muted); }
+.binder-printings li { display: flex; justify-content: space-between; gap: 12px; }
+.binder-printings b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+/* Full width so it wraps under the row; cap the lines, not the list (a capped flex-basis never wraps). */
+.binder-printings-row { flex: 0 0 100%; padding: 2px 0 4px 16px; }
+.binder-printings-row li { max-width: 404px; }
+.binder-printings-sheet { margin-top: 10px; }
+/* Kept-out rows recede by colour, not opacity. */
+.binder-row-kept .binder-row-name { color: var(--text-muted); }
+.binder-kept-head { display: flex; flex-direction: column; gap: 2px; margin: 14px 0 6px; }
+.binder-kept-head h2 { font-size: 14px; font-weight: 600; margin: 0; }
+.binder-kept-head p { font-size: 12.5px; color: var(--text-muted); margin: 0; }
+
+.binder-more {
+  width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+  border: 1px solid var(--border); border-radius: var(--radius); background: transparent; color: var(--text-muted); cursor: pointer;
+}
+.binder-more:hover { color: var(--text); background: var(--hover-fill); }
+.binder-more:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+@media (max-width: 767px) {
+  .binder-row { padding: 8px 4px 8px 12px; gap: 8px; }
+  .binder-qty { min-width: 0; flex-direction: column; align-items: flex-end; gap: 1px; }
+  .binder-meta p { min-width: 0; flex-basis: 100%; }
+  .keep-toggle, .binder-restore { min-height: 44px; }
+}

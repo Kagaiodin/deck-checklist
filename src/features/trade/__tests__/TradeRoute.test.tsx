@@ -5,6 +5,12 @@ import App from "../../../App";
 import { encodeTrade } from "../../../utils/tradeShare";
 import { DEFAULT_SETTINGS, type Trade } from "../../../types/trade";
 
+vi.mock("../../../utils/scryfallSearch", async (orig) => ({
+  ...(await orig<typeof import("../../../utils/scryfallSearch")>()),
+  searchPrintings: vi.fn().mockResolvedValue([]),
+  fetchPrices: vi.fn().mockResolvedValue(new Map()),
+}));
+
 // App-level wiring: Trade is a page nested under Collection, reached from the ⋯ menu or a share link.
 
 let store: Map<string, string>;
@@ -45,7 +51,7 @@ describe("Trade route", () => {
   it("is not a top-level tab", () => {
     render(<App />);
     const nav = screen.getByRole("navigation");
-    expect(within(nav).getAllByRole("button").map((b) => b.textContent)).toEqual(["DecksDecks", "CollectionCollection", "Orders"]);
+    expect(within(nav).getAllByRole("button").map((b) => b.textContent)).toEqual(["DecksDecks", "CollectionCollection", "Transactions"]);
     expect(screen.queryByRole("heading", { name: "Trade" })).not.toBeInTheDocument();
   });
 
@@ -56,6 +62,7 @@ describe("Trade route", () => {
     const crumb = screen.getByRole("navigation", { name: "Breadcrumb" });
     expect(within(crumb).getByRole("button", { name: "Collection" })).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "My offer" })).toBeInTheDocument();
+    expect(tab(/^Transactions/)).toHaveClass("active"); // the Calculator lives under Transactions
   });
 
   it("goes back to Collection from the breadcrumb", async () => {
@@ -69,7 +76,7 @@ describe("Trade route", () => {
   it("leaves Trade when a top-level tab is clicked", async () => {
     render(<App />);
     await goToTrade();
-    await userEvent.click(tab(/^Orders/));
+    await userEvent.click(tab(/^Transactions/));
     expect(screen.queryByRole("heading", { name: "Trade" })).not.toBeInTheDocument();
   });
 
@@ -105,8 +112,10 @@ describe("Trade route", () => {
     window.location.hash = `#trade=${await encodeTrade(shared, Date.now())}`;
     render(<App />);
     await screen.findByText(/Shared trade — prices as of/);
-    await userEvent.click(within(screen.getByRole("navigation", { name: "Breadcrumb" })).getByRole("button", { name: "Collection" }));
+    await userEvent.click(within(screen.getByRole("navigation", { name: "Breadcrumb" })).getByRole("button", { name: "Binder" }));
     await waitFor(() => expect(window.location.hash).toBe(""));
+    // A share link returns to Binder, not Collection.
+    expect(screen.getByRole("tab", { name: "Binder" })).toHaveAttribute("aria-selected", "true");
   });
 
   it("opens straight into Trade on /trade, and leaves /trade when going back", async () => {
@@ -115,8 +124,77 @@ describe("Trade route", () => {
     // PersistenceWrapper remounts the app once decks load; wait it out before grabbing the breadcrumb.
     await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
     expect(screen.getByRole("heading", { level: 1, name: "Trade" })).toBeInTheDocument();
-    await userEvent.click(within(screen.getByRole("navigation", { name: "Breadcrumb" })).getByRole("button", { name: "Collection" }));
+    await userEvent.click(within(screen.getByRole("navigation", { name: "Breadcrumb" })).getByRole("button", { name: "Binder" }));
     expect(screen.queryByRole("heading", { name: "Trade" })).not.toBeInTheDocument();
     expect(window.location.pathname).toBe("/");
+  });
+
+  it("Binder → Add to new trade opens the Calculator with the card on My offer, and Binder crumb returns to Binder", async () => {
+    store.set("mtg-checklist-collection-v2", JSON.stringify({ "sol ring": [{ quantity: 2 }] }));
+    render(<App />);
+    await userEvent.click(tab(/^Transactions/));
+    await userEvent.click(screen.getByRole("tab", { name: /^Binder/ }));
+    await userEvent.click(screen.getByRole("button", { name: "Add to new trade: Sol Ring" }));
+    expect(screen.getByRole("heading", { level: 1, name: "Trade" })).toBeInTheDocument();
+    expect(await within(screen.getByRole("region", { name: "My offer" })).findByText("Sol Ring")).toBeInTheDocument();
+    await userEvent.click(within(screen.getByRole("navigation", { name: "Breadcrumb" })).getByRole("button", { name: "Binder" }));
+    expect(screen.getByRole("tab", { name: /^Binder/ })).toHaveAttribute("aria-selected", "true");
+    expect(screen.queryByRole("heading", { name: "Trade" })).not.toBeInTheDocument();
+  });
+
+  it("Trades & sales → New trade, and the breadcrumb returns to Trades & sales (not Binder)", async () => {
+    render(<App />);
+    await userEvent.click(tab(/^Transactions/));
+    await userEvent.click(screen.getByRole("tab", { name: /^Trades & sales/ }));
+    await userEvent.click(screen.getByRole("button", { name: "New trade" }));
+    expect(screen.getByRole("heading", { level: 1, name: "Trade" })).toBeInTheDocument();
+    await userEvent.click(within(screen.getByRole("navigation", { name: "Breadcrumb" })).getByRole("button", { name: "Trades & sales" }));
+    expect(screen.getByRole("tab", { name: /^Trades & sales/ })).toHaveAttribute("aria-selected", "true");
+  });
+
+  describe("Log this trade", () => {
+    const toCalculator = async () => {
+      store.set("mtg-checklist-collection-v2", JSON.stringify({ "sol ring": [{ quantity: 2 }] }));
+      render(<App />);
+      await userEvent.click(tab(/^Transactions/));
+      await userEvent.click(screen.getByRole("tab", { name: /^Binder/ }));
+      await userEvent.click(screen.getByRole("button", { name: "Add to new trade: Sol Ring" }));
+      await within(screen.getByRole("region", { name: "My offer" })).findByText("Sol Ring");
+    };
+    const stored = (k: string) => JSON.parse(store.get(k) ?? "null");
+
+    it("writes nothing until confirmed", async () => {
+      await toCalculator();
+      await userEvent.click(screen.getByRole("button", { name: "Log this trade" }));
+      expect(screen.getByRole("dialog", { name: "Log this trade" })).toBeInTheDocument();
+      await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
+      expect(stored("mtg-checklist-collection-v2")["sol ring"][0].quantity).toBe(2);
+      expect(stored("mtg-checklist-trade-ledger-v1") ?? []).toEqual([]);
+    });
+
+    it("on confirm removes the card from Collection, records the entry, empties the Calculator and links to the entry", async () => {
+      await toCalculator();
+      store.set("mtg-checklist-collection-meta-v2", JSON.stringify({ fileName: "mine.csv", importedAt: 42, cardCount: 7 }));
+      await userEvent.click(screen.getByRole("button", { name: "Log this trade" }));
+      await userEvent.type(screen.getByLabelText("Who with"), "Sam");
+      await userEvent.click(screen.getByRole("button", { name: "Log trade" }));
+      await waitFor(() => expect(stored("mtg-checklist-trade-ledger-v1")).toHaveLength(1));
+      expect(stored("mtg-checklist-trade-ledger-v1")[0]).toMatchObject({ counterparty: "Sam" });
+      expect(stored("mtg-checklist-collection-v2")["sol ring"][0].quantity).toBe(1);
+      // Import metadata written by Collection is kept; only the count follows the change.
+      expect(stored("mtg-checklist-collection-meta-v2")).toMatchObject({ fileName: "mine.csv", importedAt: 42, cardCount: 1 });
+      expect(within(screen.getByRole("region", { name: "My offer" })).queryByText("Sol Ring")).not.toBeInTheDocument();
+      // Undo cannot bring a logged trade back.
+      expect(screen.getAllByRole("button", { name: "Undo" }).every(b => b.hasAttribute("disabled"))).toBe(true);
+      await userEvent.click(screen.getByRole("button", { name: "View" }));
+      expect(screen.getByRole("heading", { name: "Trade with Sam" })).toBeInTheDocument();
+    });
+
+    it("is not offered on a shared read-only trade", async () => {
+      window.location.hash = `#trade=${await encodeTrade(shared, Date.now())}`;
+      render(<App />);
+      await screen.findByText(/Shared trade — prices as of/);
+      expect(screen.queryByRole("button", { name: "Log this trade" })).not.toBeInTheDocument();
+    });
   });
 });

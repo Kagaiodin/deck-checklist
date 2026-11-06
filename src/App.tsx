@@ -9,18 +9,24 @@ import { refreshDeckPrices, needsPriceRefresh } from "./utils/deckCost";
 import type { ValidationProgress } from "./utils/validator";
 import { useLocalStorage } from "./hooks/useLocalStorage";
 import { useOrderActions } from "./hooks/useOrderActions";
+import { readBinderExcluded, writeBinderExcluded, sanitizeExcluded, useBinderExcludedList } from "./features/transactions/binder/useBinder";
+import { useTradeLedger } from "./features/transactions/ledger/useTradeLedger";
 import { Checklist } from "./components/Checklist";
 import { EmptyState } from "./components/EmptyState";
 import { ErrorQueue } from "./components/ErrorQueue";
 import { ProgressTracker } from "./components/ProgressTracker";
 import type { Deck, ErrorQueueItem, AcquisitionSource, Collection, CollectionMeta, Order, ProfileExport } from "./types/index";
+import type { Trade } from "./types/trade";
+import { mergeLedger, sanitizeLedger, sortLedger, type LogMeta } from "./utils/tradeLedger";
 import { applyCollectionToCards } from "./utils/csvParser";
 import { formatOptions } from "./utils/deckFormats";
 import { getDeckColorIdentity, formatRelativeDate, getDeckDomain } from "./utils/deckUtils";
 import { CollectionPage } from "./features/collection/CollectionPage";
 import { TradePage, clearTradeHash } from "./features/trade/TradePage";
 import { extractPayload } from "./utils/tradeShare";
-import { OrdersPage } from "./features/orders/OrdersPage";
+import { TransactionsPage, type TransactionsTab } from "./features/transactions/TransactionsPage";
+import type { TradeOrigin } from "./features/trade/TradePage";
+import type { TradeSeed } from "./features/trade/seedCard";
 import { OnboardingModal } from "./features/onboarding/OnboardingModal";
 import { ProfileExportImport } from "./features/profile/ProfileExportImport";
 import { ImportBackupModal } from "./features/profile/ImportBackupModal";
@@ -43,11 +49,22 @@ import "./features/card-purchase/buy-flow.css";
 
 const ONBOARDING_KEY = "fetchlist:onboarding:dismissed";
 const COLLECTION_KEY = "mtg-checklist-collection-v2";
+const COLLECTION_META_KEY = "mtg-checklist-collection-meta-v2";
 
 const isTradePath = () => /^\/trade\/?$/.test(window.location.pathname);
 
 /** `/trade` or a `/#trade=…` share link opens the Trade page (nested under Collection) instead of the default tab. */
 const openedWithTradeLink = () => isTradePath() || extractPayload(window.location.hash) !== null;
+
+/** Collection metadata as stored now; CollectionPage owns it, so AppInner's own copy can be stale. */
+function readCollectionMeta(): CollectionMeta | null {
+  try {
+    const raw = window.localStorage.getItem(COLLECTION_META_KEY);
+    return raw ? (JSON.parse(raw) as CollectionMeta) : null;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * The Collection as it is right now. AppInner's own copy is only refreshed on reload
@@ -74,10 +91,14 @@ function AppInner() {
   const [validating, setValidating] = useState(false);
   const [progress, setProgress] = useState<ValidationProgress>({ total: 0, validated: 0 });
   const [importError, setImportError] = useState<string | null>(null);
-  const [view, setView] = useState<"decks" | "collection" | "orders">(() => (openedWithTradeLink() ? "collection" : "decks"));
-  // Trade is a page nested under Collection, not a top-level tab. `tradeKey` remounts it for a new link.
+  const [view, setView] = useState<"decks" | "collection" | "transactions">(() => (openedWithTradeLink() ? "transactions" : "decks"));
+  const [txSubTab, setTxSubTab] = useState<TransactionsTab>(() => (openedWithTradeLink() ? "binder" : "buys"));
+  // The Calculator renders inside Transactions, replacing the sub-tab body. `tradeOrigin` is where
+  // its back control returns to; `tradeKey` remounts it for a new link.
   const [tradeOpen, setTradeOpen] = useState<boolean>(openedWithTradeLink);
+  const [tradeOrigin, setTradeOrigin] = useState<TradeOrigin>(() => (openedWithTradeLink() ? "link" : "collection"));
   const [tradeKey, setTradeKey] = useState(0);
+  const [tradeSeed, setTradeSeed] = useState<TradeSeed | undefined>(undefined);
   const [tradeCollection, setTradeCollection] = useState<Collection>(readCollection);
   const [showImport, setShowImport] = useState(false);
   const [renamingDeckId, setRenamingDeckId] = useState<string | null>(null);
@@ -168,7 +189,7 @@ function AppInner() {
   // ── Collection (read-only, for auto-tagging on deck import) ──────────────
   // CollectionPage owns all writes; AppInner only reads + writes when receiving orders.
   const [collection, setCollection] = useLocalStorage<Collection>("mtg-checklist-collection-v2", {});
-  const [collectionMeta, setCollectionMeta] = useLocalStorage<CollectionMeta | null>("mtg-checklist-collection-meta-v2", null);
+  const [collectionMeta, setCollectionMeta] = useLocalStorage<CollectionMeta | null>(COLLECTION_META_KEY, null);
 
   // ── Orders state ──────────────────────────────────────────────────────────
   const [orders, setOrders] = useLocalStorage<Order[]>("mtg-checklist-orders-v1", []);
@@ -442,6 +463,27 @@ function AppInner() {
     orders, setOrders, collection, setCollection, setCollectionMeta, dispatch,
   });
 
+  const { entries: ledger, setEntries: setLedger, logTrade, deleteEntry: deleteLedgerEntry } = useTradeLedger({
+    readCollection, readCollectionMeta, setCollection, setCollectionMeta, dispatch,
+  });
+  // The exclude list is a shared external store, so backups always carry the current one.
+  const binderExcluded = useBinderExcludedList();
+  const [ledgerOpenId, setLedgerOpenId] = useState<string | null>(null);
+
+  /** Log this trade: writes the ledger and Collection, then refreshes the Calculator's own Collection copy. */
+  function handleLogTrade(trade: Trade, meta: LogMeta) {
+    const result = logTrade(trade, meta);
+    setTradeCollection(result.collection);
+    return result;
+  }
+
+  function viewLedgerEntry(id: string) {
+    closeTrade();
+    setLedgerOpenId(id);
+    setTxSubTab("trades");
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }
+
   function handleDismissNotification(deckId: string, notificationId: string) {
     dispatch({ type: "DISMISS_NOTIFICATION", payload: { deckId, notificationId } });
     setNotificationFilterIds(null);
@@ -450,7 +492,7 @@ function AppInner() {
   // ── Profile export / import ───────────────────────────────────────────────
   function handleProfileImport(data: ProfileExport, replace: boolean) {
     // Backups must never land on top of sample data (the UI disables this path too).
-    if (isDemoActiveNow()) return { newDecks: 0, newCards: 0, newOrders: 0 };
+    if (isDemoActiveNow()) return { newDecks: 0, newCards: 0, newOrders: 0, newTrades: 0 };
     if (replace) {
       // Replace mode — wipe all and restore from backup
       dispatch({ type: "SET_DECKS", payload: data.decks ?? [] });
@@ -458,8 +500,10 @@ function AppInner() {
       setCollection(data.collection ?? {});
       setCollectionMeta(data.collectionMeta ?? null);
       setOrders(data.orders ?? []);
+      setLedger(sortLedger(sanitizeLedger(data.tradeLedger)));
+      writeBinderExcluded(sanitizeExcluded(data.binderExcluded));
       setRecentVendors((data.vendorHistory ?? []).slice(0, 50));
-      return { newDecks: (data.decks ?? []).length, newCards: Object.keys(data.collection ?? {}).length, newOrders: (data.orders ?? []).length };
+      return { newDecks: (data.decks ?? []).length, newCards: Object.keys(data.collection ?? {}).length, newOrders: (data.orders ?? []).length, newTrades: sanitizeLedger(data.tradeLedger).length };
     }
 
     // Merge mode — only add net-new items
@@ -499,11 +543,17 @@ function AppInner() {
     const newOrders = (data.orders ?? []).filter(o => !existingOrderIds.has(o.id));
     setOrders([...orders, ...newOrders]);
 
+    // Trade ledger — skip duplicates by id; exclude list is a union
+    const { merged: mergedLedger, added: newTrades } = mergeLedger(ledger, sanitizeLedger(data.tradeLedger));
+    setLedger(mergedLedger);
+    const incomingExcluded = sanitizeExcluded(data.binderExcluded);
+    if (incomingExcluded.length) writeBinderExcluded([...new Set([...readBinderExcluded(), ...incomingExcluded])]);
+
     // Vendor history — union, deduplicated, cap at 50
     const mergedVendors = [...new Set([...recentVendors, ...(data.vendorHistory ?? [])])].slice(0, 50);
     setRecentVendors(mergedVendors);
 
-    return { newDecks: newDecks.length, newCards: newCardKeyCount, newOrders: newOrders.length };
+    return { newDecks: newDecks.length, newCards: newCardKeyCount, newOrders: newOrders.length, newTrades };
   }
 
   // ── Archidekt import ───────────────────────────────────────────────────────
@@ -615,14 +665,19 @@ function AppInner() {
   const toBuyCards = activeDeck?.cards.filter(c => c.source === "need_to_buy") ?? [];
   const toBuyTotal = toBuyCards.reduce((s, c) => s + c.quantity, 0);
 
-  function switchView(v: "decks" | "collection" | "orders") {
+  function switchView(v: "decks" | "collection" | "transactions") {
     if (tradeOpen) closeTrade();
+    // CollectionPage writes localStorage on its own, so re-read for the Binder when Transactions opens.
+    if (v === "transactions") setTradeCollection(readCollection());
     setView(v);
     window.scrollTo({ top: 0, behavior: "instant" });
   }
 
-  // ── Trade (nested under Collection) ────────────────────────────────────────
-  function openTrade() {
+  // ── Trade (Calculator, rendered inside Transactions) ───────────────────────
+  function openTrade(origin: TradeOrigin, seed?: TradeSeed) {
+    setTradeOrigin(origin);
+    setTradeSeed(seed);
+    setView("transactions");
     setTradeCollection(readCollection());
     setTradeKey(k => k + 1);
     setTradeOpen(true);
@@ -632,14 +687,25 @@ function AppInner() {
     clearTradeHash();
     // Otherwise a reload on `/trade` would reopen Trade.
     if (isTradePath()) window.history.replaceState(null, "", "/" + window.location.search);
+    setTradeSeed(undefined);
     setTradeOpen(false);
+  }
+
+  /** The Calculator's back control: return to wherever it was opened from. */
+  function leaveTrade() {
+    closeTrade();
+    if (tradeOrigin === "collection") setView("collection");
+    else setTxSubTab(tradeOrigin === "link" ? "binder" : tradeOrigin);
+    window.scrollTo({ top: 0, behavior: "instant" });
   }
 
   // A share link pasted into an already-open tab only changes the hash, so listen for it.
   useEffect(() => {
     function onHashChange() {
       if (!openedWithTradeLink()) return;
-      setView("collection");
+      setTradeOrigin("link");
+      setTradeSeed(undefined);
+      setView("transactions");
       setTradeCollection(readCollection());
       setTradeKey(k => k + 1);
       setTradeOpen(true);
@@ -652,7 +718,7 @@ function AppInner() {
     toBuyCards,
     deckId: activeDeckId,
     onCreateOrder: (order) => setOrders(prev => [order, ...prev]),
-    onViewOrder: () => switchView("orders"),
+    onViewOrder: () => { setTxSubTab("buys"); switchView("transactions"); },
     nextOrderId: () => crypto.randomUUID(),
   });
 
@@ -754,10 +820,10 @@ function AppInner() {
             <span className="nav-label-full">Collection</span>
           </button>
           <button
-            className={`nav-btn${view === "orders" ? " active" : ""}`}
-            onClick={() => switchView("orders")}
+            className={`nav-btn${view === "transactions" ? " active" : ""}`}
+            onClick={() => switchView("transactions")}
           >
-            Orders
+            Transactions
             {orders.filter(o => o.status === "active").length > 0 && (
               <span className="nav-badge">{orders.filter(o => o.status === "active").length}</span>
             )}
@@ -907,6 +973,7 @@ function AppInner() {
                           version: 1, exportedAt: new Date().toISOString(),
                           decks: state.decks, errors: allErrors,
                           collection, collectionMeta, orders, vendorHistory: recentVendors,
+                          tradeLedger: ledger, binderExcluded,
                         };
                         const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
                         const url = URL.createObjectURL(blob);
@@ -927,6 +994,8 @@ function AppInner() {
                       collection={collection}
                       collectionMeta={collectionMeta}
                       orders={orders}
+                      tradeLedger={ledger}
+                      binderExcluded={binderExcluded}
                       vendorHistory={recentVendors}
                       onImport={handleProfileImport}
                       showToast={showToast}
@@ -1071,6 +1140,8 @@ function AppInner() {
                     collection={collection}
                     collectionMeta={collectionMeta}
                     orders={orders}
+                    tradeLedger={ledger}
+                    binderExcluded={binderExcluded}
                     vendorHistory={recentVendors}
                     onImport={handleProfileImport}
                     showToast={showToast}
@@ -1477,29 +1548,49 @@ function AppInner() {
 
         {/* ── Collection tab ─────────────────────────────────────────────── */}
         {view === "collection" && (
+          <CollectionPage
+            decks={state.decks}
+            onCollectionChange={updated => dispatch({ type: "APPLY_COLLECTION", payload: updated })}
+            onOpenTrade={() => openTrade("collection")}
+          />
+        )}
+        {/* ── Transactions tab (Buys · Trades & sales · Binder, or the Calculator) ── */}
+        {view === "transactions" && (
           tradeOpen ? (
-            <TradePage key={tradeKey} collection={tradeCollection} decks={state.decks} onBack={closeTrade} />
-          ) : (
-            <CollectionPage
+            <TradePage
+              key={tradeKey}
+              collection={tradeCollection}
               decks={state.decks}
-              onCollectionChange={updated => dispatch({ type: "APPLY_COLLECTION", payload: updated })}
-              onOpenTrade={openTrade}
+              origin={tradeOrigin}
+              seed={tradeSeed}
+              onLogTrade={handleLogTrade}
+              onViewEntry={viewLedgerEntry}
+              onBack={leaveTrade}
+            />
+          ) : (
+            <TransactionsPage
+              subTab={txSubTab}
+              onSubTabChange={setTxSubTab}
+              collection={tradeCollection}
+              onOpenTrade={seed => openTrade(txSubTab === "trades" ? "trades" : "binder", seed)}
+              onViewCollection={() => switchView("collection")}
+              ledger={ledger}
+              onDeleteLedgerEntry={deleteLedgerEntry}
+              ledgerOpenId={ledgerOpenId}
+              onLedgerOpenChange={setLedgerOpenId}
+              ordersProps={{
+                orders,
+                decks: state.decks,
+                recentVendors,
+                onCreateOrder: handleCreateOrder,
+                onUpdateOrder: handleUpdateOrder,
+                onMarkReceived: handleMarkReceived,
+                onMarkCancelled: handleMarkCancelled,
+                onDeleteOrder: handleDeleteOrder,
+                onOpenBuyList: () => buyFlow.openBuySheet(),
+              }}
             />
           )
-        )}
-        {/* ── Orders tab ─────────────────────────────────────────────────── */}
-        {view === "orders" && (
-          <OrdersPage
-            orders={orders}
-            decks={state.decks}
-            recentVendors={recentVendors}
-            onCreateOrder={handleCreateOrder}
-            onUpdateOrder={handleUpdateOrder}
-            onMarkReceived={handleMarkReceived}
-            onMarkCancelled={handleMarkCancelled}
-            onDeleteOrder={handleDeleteOrder}
-            onOpenBuyList={() => buyFlow.openBuySheet()}
-          />
         )}
 
       </main>

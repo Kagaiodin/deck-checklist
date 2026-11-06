@@ -119,7 +119,7 @@ interface UseBuyFlowOptions {
   deckId: string | null;
   /** Called to persist a new auto-created order draft */
   onCreateOrder: (order: Order) => void;
-  /** Called when user taps "View order" — navigate to orders tab */
+  /** Called when user taps "View order" — navigate to the Transactions tab (Buys) */
   onViewOrder: () => void;
   /** Generate a new order ID */
   nextOrderId: () => string;

@@ -1,3 +1,4 @@
+import type { TradeLogEntry } from "../../types/trade";
 import { useEffect, useState } from "react";
 import type { Deck, ErrorQueueItem, Collection, CollectionMeta, Order, ProfileExport } from "../../types/index";
 import {
@@ -15,8 +16,10 @@ interface Props {
   collection: Collection;
   collectionMeta: CollectionMeta | null;
   orders: Order[];
+  tradeLedger?: TradeLogEntry[];
+  binderExcluded?: string[];
   vendorHistory: string[];
-  onImport: (data: ProfileExport, replace: boolean) => { newDecks: number; newCards: number; newOrders: number };
+  onImport: (data: ProfileExport, replace: boolean) => { newDecks: number; newCards: number; newOrders: number; newTrades?: number };
   showToast: (t: ToastInput) => void;
   // Sidebar (desktop, sibling to the Tier 1 chip) vs mobile deck-picker sheet
   // footer (its own boxed unit) — see docs/specs/google-drive-integration-design-brief.md
@@ -52,7 +55,7 @@ function relativeTime(from: Date): string {
 }
 
 export function GoogleDriveBackup({
-  decks, allErrors, collection, collectionMeta, orders, vendorHistory,
+  decks, allErrors, collection, collectionMeta, orders, tradeLedger, binderExcluded, vendorHistory,
   onImport, showToast, variant,
 }: Props) {
   const [status, setStatus] = useState<"idle" | "connecting" | "saving" | "loading">("idle");
@@ -85,7 +88,7 @@ export function GoogleDriveBackup({
     return {
       version: 1,
       exportedAt: new Date().toISOString(),
-      decks, errors: allErrors, collection, collectionMeta, orders, vendorHistory,
+      decks, errors: allErrors, collection, collectionMeta, orders, vendorHistory, tradeLedger, binderExcluded,
     };
   }
 
@@ -146,7 +149,7 @@ export function GoogleDriveBackup({
         showToast({ title: "No backup in Drive yet", sub: "Save first to create one.", variant: "neutral", autoDismiss: 2500 });
         return;
       }
-      const hasLocalData = decks.length > 0 || Object.keys(collection).length > 0 || orders.length > 0;
+      const hasLocalData = decks.length > 0 || Object.keys(collection).length > 0 || orders.length > 0 || (tradeLedger?.length ?? 0) > 0;
       if (hasLocalData) {
         setConflict(result);
       } else if (applyDriveContents(result.contents)) {

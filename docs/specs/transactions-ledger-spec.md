@@ -15,7 +15,7 @@
 ## 1. Navigation and routing (`src/App.tsx`)
 
 - `view` becomes `"decks" | "collection" | "transactions"`. Nav label "Transactions". Persisted key `mtg-checklist-orders-v1` is unchanged.
-- New `src/features/transactions/TransactionsPage.tsx` owns the sub-tab state (`"buys" | "trades" | "binder"`) and renders the existing `OrdersPage` for Buys with its props passed through unchanged. Sub-tabs reuse `.order-filter-tabs`.
+- New `src/features/transactions/TransactionsPage.tsx` owns the sub-tab state (`"buys" | "trades" | "binder"`) and renders the existing `OrdersPage` for Buys with its props passed through unchanged. Sub-tabs reuse `.order-filter-tabs`, including its `.count` badge: Buys shows the order count, Trades & sales the ledger entry count, Binder the Binder row count (hidden at ≤480px so "Trades & sales" fits). The Binder sub-tab header also says "N card(s)".
 - The Calculator (`TradePage`) moves out from under Collection. `tradeOpen` stays in `App.tsx` but renders inside the Transactions view, replacing the sub-tab body, and `switchView` still closes it.
 - `openedWithTradeLink()` (`/trade`, `/#trade=…`) now sets `view` to `"transactions"`. The `hashchange` listener does the same. Share-link behavior, `clearTradeHash` and the `/trade` path handling are otherwise unchanged.
 - Collection's "Trade calculator" menu entry keeps its `onOpenTrade` prop; the handler switches to Transactions and opens the Calculator. No Collection UI change.
@@ -41,14 +41,14 @@ interface BinderRow {
 }
 deriveBinder(collection, getCommittedInfo, excluded: ReadonlySet<string>): { rows: BinderRow[]; excludedRows: BinderRow[] }
 ```
-- Surplus is per card name, because deck cards carry no set, collector number or finish (same basis as `ownedFor` and `useCommittedInfo`). Printings are shown on row expansion only.
+- Surplus is per card name, because deck cards carry no set, collector number or finish (same basis as `ownedFor` and `useCommittedInfo`). Printings are shown on row expansion only: on desktop a row with 2+ printings gets a "▸ N printings" toggle that lists each printing ("CMM #1 · Foil", or "No set recorded") with its quantity under the row; on phones the row sheet lists them. Single-printing rows rely on the subtitle.
 - `rows` = surplus > 0 and not excluded; `excludedRows` = surplus > 0 and excluded (the "Keep these" list). A card whose surplus drops to 0 while excluded disappears from both and stays in the persisted set (harmless; it reappears if surplus returns).
 - Sorted by name ascending. Pure function; memoised in `useBinder(collection, decks)`.
 - Partial stacks: wording is `"{owned} owned · {committed} in decks · {surplus} spare"` (resolves the brief's open item).
 - No prices, no totals, no value.
 
 ### Exclude list
-- Persisted `string[]` of lowercase names at `mtg-checklist-binder-excluded-v1`, via `useLocalStorage`, wrapped in `useBinderExcluded()` (`exclude(key)`, `restore(key)`).
+- Persisted `string[]` of lowercase names at `mtg-checklist-binder-excluded-v1`, held in a small shared store (`useSyncExternalStore` over localStorage plus a change event, so Binder and an import stay in step), exposed as `useBinderExcludedList()` and `useBinderExcluded()` (`exclude(key)`, `restore(key)`).
 - Exclude shows the same Undo toast Collection uses. Restore is "Show in Binder".
 - "Add to new trade" opens the Calculator with that card pre-added to "mine" (see §6); it does not change the exclude list.
 
@@ -107,9 +107,10 @@ interface TradeLogEntry {
 - Pure and unit-tested; `logTrade` is a thin wrapper.
 
 ### Confirm step (`LogTradeSheet`)
-Opened by "Log this trade" in the Calculator (`TradeWorkspace`). Fields: counterparty (free text), date (default today), notes. Summary: cards leaving, cards arriving, cash in and out, per `transactions-ledger-*`.
-- **In-deck warning** (not a block): a card leaving is flagged "N in decks" when `ownedTotal − qtyOut < committed`, using `useCommittedInfo`. Copy states the deck checklist will show the card as needed again.
+Opened by "Log this trade" in the Calculator (`TradeWorkspace`). Fields: counterparty (free text), date (default today), notes. Summary: cards leaving, cards arriving, cash in and out, per `transactions-ledger-*`. Each side's heading shows that side's total ("Leaving your collection · $X", "Arriving in your collection · $Y"), from `sideTotals` (the Calculator's figures, cash included), so the value can be checked right before the write.
+- **In-deck warning** (not a block): a card leaving is flagged "N in decks" when `ownedTotal − qtyOut < committed`, using `useCommittedInfo` (the same basis as Binder's "N in decks"). The flag shows the copies decks lose, `committed − max(ownedTotal − qtyOut, 0)`, so it still appears when some copies are owned but fewer than are leaving. The note counts distinct cards, not lines. Copy states the deck checklist will show the card as needed again.
 - **Not-in-collection note** (not a block): a card leaving with less owned than quantity (typically added from Scryfall search) is flagged "Not in your collection"; Collection simply isn't reduced for the missing copies.
+- The backdrop does not dismiss this sheet, so typed counterparty and notes are not lost to a stray click; Cancel, Escape and the close button still do.
 - Disabled when both sides are empty. Hidden when `trade.readOnly` (an opened share link) until the user forks it.
 - Works in demo mode; the demo keys are isolated by `MANAGED_KEYS`.
 
@@ -118,14 +119,14 @@ Confirm copy: Collection will not change back; cards given stay out, cards recei
 
 ## 6. Calculator hand-off
 
-- "Add to new trade" from a Binder row calls `openTrade({ origin: "binder", seed: BinderRow })`. The seed is converted to a `TradeCard` on "mine" with the row's printing (largest-quantity printing; foil-ness from it), quantity 1, `source: "collection"`, price fetched through the existing `applyPrices` path.
+- "Add to new trade" from a Binder row calls `openTrade({ origin: "binder", seed: BinderRow })`. The seed is converted to a `TradeCard` on "mine" with the row's printing (largest-quantity printing that has a set and collector number, so a larger generic stack from order receipts never hides the copy the user owns; foil-ness from it), quantity 1, `source: "collection"`. `seedToTradeCard` prices it with the same primitives as Refresh (`fetchPrices` for the printing, `basePriceFor` for the finish) rather than dispatching `applyPrices`, which reprices the whole trade and needs a set and collector number. A row with no such printing (order receipts record quantity only) falls back to the newest printing of that exact name via `searchPrintings`. Collection rows only record foil yes/no, so a foil row on a printing sold only as etched is priced as etched. Unreachable Scryfall leaves the card unpriced.
 - "New trade" in Binder and ledger opens an empty Calculator. An unfinished local trade is kept (existing `fetchlist-trade` behavior); seeding adds to it.
 - QR share row (#119) is untouched.
 
 ## 7. Ledger and invoice UI
 
-- `src/features/transactions/ledger/`: `LedgerList`, `LedgerEntryDetail`, `LogTradeSheet`, `Invoice`, each with CSS from the approved mockups (tokens only).
-- List: date, counterparty, out/in counts, cash. Empty state with "New trade". Detail is read-only with a footnote "To correct a mistake, delete and re-log".
+- `src/features/transactions/ledger/`: `LedgerPanel` (list and read-only detail in one component), `LogTradeSheet`, `Invoice` (PR 5), each with CSS from the approved mockups (tokens only).
+- List: date, counterparty, out/in counts, cash, and each side's snapshot value ("Gave $X", "Got $Y" from `totals.out`/`totals.in`, shown only for a side that has cards or cash; same figures as D3). Empty state with "New trade". Detail is read-only with a footnote "To correct a mistake, delete and re-log".
 - Invoice: opened from an entry, in-app state only (no URL). On-screen printable view; `@media print` hides app chrome and shows the paper in light colors regardless of theme; "Print" calls `window.print()`; "Copy as text" uses `ledgerEntryToText(entry)` in `src/utils/tradeLedger.ts`, modeled on `tradeToText`. No PDF service.
 - Missing-price cards (`unitPrice: null`) show "no price" and are excluded from totals, as in the Calculator.
 
@@ -150,7 +151,7 @@ Confirm copy: Collection will not change back; cards given stay out, cards recei
 | D2 | Export envelope | Optional fields on v1; no version bump (§8). |
 | D3 | Invoice subtotals | Keep "given vs received" plus cash; they are the entry's own snapshot figures, not collection value. |
 | D4 | Mobile control heights | 44px for the new Transactions sub-tabs and top-bar button on mobile only; other `.order-filter-tabs` uses are unchanged. |
-| D5 | Empty-collection Binder and 360px header | No new mockup. Use the shared `EmptyState`; drop the nav badge below 380px; verify both in a browser during PR 2 and PR 3. |
+| D5 | Empty-collection Binder and 360px header | No new mockup. Use the shared `EmptyState`; drop the nav badge below 380px; at ≤400px tighten the header (12px gutters, logo max 92px, 6px nav-button padding) so the ⋯ button stays on screen at 360px with the longer "Transactions" label; verify both in a browser during PR 2 and PR 3. |
 
 ## 11. Tests (vitest, `__tests__/` next to the code)
 

@@ -4,8 +4,9 @@ import { MANAGED_KEYS } from "../demoMode";
 import { getDeckColorIdentity } from "../../../utils/deckUtils";
 import { computeCostToComplete } from "../../../utils/deckCost";
 import { fairness, sideTotals } from "../../../utils/tradePricing";
+import { deriveBinder } from "../../transactions/binder/binderSurplus";
 import type { Deck, Order, Collection } from "../../../types/index";
-import type { Trade } from "../../../types/trade";
+import type { Trade, TradeLogEntry } from "../../../types/trade";
 
 const NOW = Date.UTC(2026, 9, 16, 12, 0, 0);
 const DAY = 86_400_000;
@@ -21,6 +22,58 @@ const progress = (d: Deck) => {
   const have = d.cards.filter((c) => c.acquired).reduce((s, c) => s + c.quantity, 0);
   return have / total;
 };
+
+describe("demo Binder", () => {
+  it("has spare cards so the sub-tab is not empty, and an empty exclude list", () => {
+    const committed = (key: string) => {
+      let total = 0;
+      for (const d of decks) for (const c of d.cards) if (c.acquired && c.name.toLowerCase() === key) total += c.quantity;
+      return { total, deckCount: total ? 1 : 0, decks: [] };
+    };
+    expect(deriveBinder(collection, committed, new Set()).rows.length).toBeGreaterThan(0);
+    expect(data["mtg-checklist-binder-excluded-v1"]).toBe("[]");
+  });
+});
+
+describe("demo trade ledger", () => {
+  const ledger = JSON.parse(data["mtg-checklist-trade-ledger-v1"]!) as TradeLogEntry[];
+  const committed = new Set(decks.flatMap((d) => d.cards.filter((c) => c.acquired).map((c) => c.name.toLowerCase())));
+
+  it("has a trade with cards in and out and a straight sale, newest first", () => {
+    expect(ledger.length).toBeGreaterThanOrEqual(2);
+    expect(ledger.some((e) => e.cardsIn.length > 0 && e.cardsOut.length > 0)).toBe(true);
+    expect(ledger.some((e) => e.cardsIn.length === 0 && e.cardsOut.length > 0)).toBe(true);
+    expect(ledger.map((e) => e.date)).toEqual([...ledger.map((e) => e.date)].sort((a, b) => b - a));
+  });
+  it("holds each received card's printing, and gives away none that a deck uses", () => {
+    for (const e of ledger) {
+      for (const c of e.cardsIn) {
+        const printing = (collection[c.name.toLowerCase()] ?? []).find(
+          (p) => p.set === c.set && p.collectorNumber === c.collectorNumber,
+        );
+        expect(printing?.quantity ?? 0).toBeGreaterThanOrEqual(c.quantity);
+      }
+      for (const c of e.cardsOut) expect(committed.has(c.name.toLowerCase())).toBe(false);
+    }
+  });
+  it("holds at least every copy that arrived through a received order or a logged trade", () => {
+    const arrived = new Map<string, number>();
+    const add = (name: string, n: number) => arrived.set(name.toLowerCase(), (arrived.get(name.toLowerCase()) ?? 0) + n);
+    for (const o of orders) if (o.status === "received") for (const c of o.cards) add(c.cardName, c.quantity);
+    for (const e of ledger) for (const c of e.cardsIn) add(c.name, c.quantity);
+    for (const [key, n] of arrived) {
+      const owned = (collection[key] ?? []).reduce((s, p) => s + p.quantity, 0);
+      expect(owned, key).toBeGreaterThanOrEqual(n);
+    }
+  });
+  it("stores totals equal to the recomputed unit price × quantity plus cash", () => {
+    const sum = (cs: TradeLogEntry["cardsIn"]) => cs.reduce((s, c) => s + (c.unitPrice ?? 0) * c.quantity, 0);
+    for (const e of ledger) {
+      expect(e.totals.out).toBeCloseTo(sum(e.cardsOut) + e.cash.out);
+      expect(e.totals.in).toBeCloseTo(sum(e.cardsIn) + e.cash.in);
+    }
+  });
+});
 
 describe("buildDemoData", () => {
   it("only sets managed keys, as JSON strings, and skips onboarding via the dismissed flag", () => {

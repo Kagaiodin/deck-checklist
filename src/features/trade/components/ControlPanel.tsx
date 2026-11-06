@@ -39,6 +39,8 @@ interface ControlPanelProps {
   onClear: () => void;
   onCopyText: () => void;
   onShare: () => void;
+  /** Opens the Log this trade confirm. Omitted when logging is unavailable. */
+  onLogTrade?: () => void;
 }
 
 export function ControlPanel(p: ControlPanelProps) {
@@ -123,6 +125,12 @@ export function ControlPanel(p: ControlPanelProps) {
             </div>
           </div>
         </>
+      )}
+
+      {!ro && p.onLogTrade && (
+        <div className="tr-ctrl-sec">
+          <button type="button" className="btn btn-primary btn-block" disabled={nothing} onClick={p.onLogTrade}>Log this trade</button>
+        </div>
       )}
 
       <div className="tr-ctrl-sec">

@@ -196,7 +196,7 @@ export function CollectionHeader({
                         onClick={() => { setOverflowOpen(false); onOpenTrade(); }}
                       >
                         Trade calculator
-                        <span className="collection-overflow-hint">Weigh a trade. Doesn't change your collection.</span>
+                        <span className="collection-overflow-hint">Weigh a trade. Your collection only changes if you log it.</span>
                       </button>
                     </>
                   )}

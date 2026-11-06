@@ -18,7 +18,7 @@ Manual acceptance testing of the built feature against the spec's confirmed deci
 
 | # | Steps | Expected | Status |
 |---|---|---|---|
-| 1.1 | Desktop: Collection tab → ⋯ menu | "Trade calculator" item sits below a separator, no icon, no badge, helper line "Weigh a trade. Doesn't change your collection." | ☐ |
+| 1.1 | Desktop: Collection tab → ⋯ menu | "Trade calculator" item sits below a separator, no icon, no badge, helper line "Weigh a trade. Your collection only changes if you log it." | ☐ |
 | 1.2 | Mobile: Collection → overflow sheet | Same item and helper line | ☐ |
 | 1.3 | Click it | Trade opens on its own route; breadcrumb reads Collection › Trade | ☐ |
 | 1.4 | Click "Collection" in breadcrumb | Returns to Collection, unchanged | ☐ |
@@ -189,7 +189,7 @@ Verify with a calculator on one known card (e.g. $10.00 base, NM).
 
 | # | Check | Expected | Status |
 |---|---|---|---|
-| 11.1 | After a full trade session, inspect Collection | No quantities changed, no flags added | ☐ |
+| 11.1 | After a full trade session **without** pressing Log this trade, inspect Collection | No quantities changed, no flags added | ☐ |
 | 11.2 | Decks and Orders tabs | Untouched | ☐ |
 | 11.3 | Anywhere in the UI | No display of total collection value | ☐ |
 | 11.4 | Trade screen copy | Frames it as weighing a trade, not admiring holdings | ☐ |
@@ -216,6 +216,37 @@ Verify with a calculator on one known card (e.g. $10.00 base, NM).
 | 13.3 | Preview deploy (or `wrangler dev`): open a share link cold | Loads; hash is client-only so SPA fallback is unaffected | ☐ |
 | 13.4 | Trade route deep link on preview | Loads, no 404 | ☐ |
 
+## 14. Log this trade (the only Collection write path)
+
+| # | Steps | Expected | Status |
+|---|---|---|---|
+| 14.1 | Build a trade, press Log this trade, then Cancel | Nothing changes: Collection, ledger and the trade are as before | ☐ |
+| 14.2 | Confirm a trade of owned cards for new cards | Cards given leave Collection, cards received appear with set and collector number; entry shows under Trades & sales | ☐ |
+| 14.3 | Log a card that a deck still uses | Sheet flags "N in decks" and says the deck checklist will show it as needed again; Log trade still works | ☐ |
+| 14.4 | Log a card added from search that you do not own | Flagged "Not in your collection"; Collection is not reduced for the missing copies; toast says so | ☐ |
+| 14.5 | Both sides empty | Log this trade disabled | ☐ |
+| 14.6 | Open a share link | No Log this trade button until forked | ☐ |
+| 14.7 | After logging | Calculator is empty, Undo cannot restore the trade, toast has View | ☐ |
+| 14.8 | Delete a ledger entry | Confirm says Collection will not change back; Collection is untouched after | ☐ |
+| 14.9 | Export a backup, wipe, import it (replace), then merge-import it twice | Ledger and Binder exclusions restored; merge adds no duplicates | ☐ |
+| 14.10 | Import an older backup with no ledger | Imports normally; replace mode empties the ledger | ☐ |
+| 14.11 | Demo mode | Two sample entries; logging a trade in demo never touches real data | ☐ |
+
+## 15. Entry points and back control (Transactions)
+
+The Calculator lives inside Transactions. Its first crumb names where it was opened from and returns there (ledger spec D1).
+
+| # | Steps | Expected | Status |
+|---|---|---|---|
+| 15.1 | Collection → ⋯ → Trade calculator (the Collection deep link) | Calculator opens with **Transactions** active in the nav; crumb reads Collection › Trade | ☐ |
+| 15.2 | Click "Collection" in that crumb | Back on the Collection tab, unchanged | ☐ |
+| 15.3 | Binder → Add to new trade on a foil row | Card on My offer, quantity 1, that row's printing and finish, priced (or Set price if offline); crumb reads Binder | ☐ |
+| 15.4 | Click "Binder" in that crumb | Back on Transactions › Binder | ☐ |
+| 15.5 | Trades & sales → New trade, then click the first crumb | Crumb reads Trades & sales; returns to Transactions › Trades & sales | ☐ |
+| 15.6 | Open a share link in a **new** tab | Lands on **Transactions** with the Calculator open, read-only; crumb reads Binder (not Collection) | ☐ |
+| 15.7 | From the shared view, click "Binder" | Back on Transactions › Binder; `#trade=` gone from the URL; reload does not reopen the shared trade | ☐ |
+| 15.8 | Paste a share link into an already-open tab sitting on Decks | Switches to Transactions with the Calculator open; crumb reads Binder | ☐ |
+
 ## Known / intentional (don't file as bugs)
 
 - Swipe-down-to-dismiss on the mobile controls sheet is not built.
@@ -224,7 +255,7 @@ Verify with a calculator on one known card (e.g. $10.00 base, NM).
 - Copy-as-text can't be pasted back into a trade.
 - Condition multipliers are fixed in v1.
 - Same discount on both sides doesn't move the meter.
-- No ledger, no writes to Collection (#109 is separate).
+- Weighing a trade never writes to Collection. Only confirming **Log this trade** does (section 14).
 
 ## Sign-off
 

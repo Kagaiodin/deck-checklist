@@ -142,6 +142,24 @@ describe("undo / redo", () => {
     act(() => result.current.addCash("mine", 1));
     expect(result.current.canRedo).toBe(false);
   });
+
+  it("reset empties both sides, keeps settings and drops history so a logged trade cannot come back", () => {
+    const { result } = renderHook(() => useTrade());
+    act(() => result.current.setSettings({ tolerancePct: 7 }));
+    act(() => result.current.addCard("mine", card()));
+    act(() => result.current.addCash("theirs", 5));
+    act(() => result.current.undo());
+    expect(result.current.canRedo).toBe(true);
+    act(() => result.current.reset());
+    expect(result.current.trade.mine).toEqual({ cards: [], cash: [] });
+    expect(result.current.trade.theirs).toEqual({ cards: [], cash: [] });
+    expect(result.current.trade.settings.tolerancePct).toBe(7);
+    expect(result.current.canUndo).toBe(false);
+    expect(result.current.canRedo).toBe(false);
+    act(() => result.current.undo());
+    expect(result.current.trade.mine.cards).toHaveLength(0);
+    expect(JSON.parse(window.localStorage.getItem(TRADE_STORAGE_KEY)!).mine.cards).toHaveLength(0);
+  });
 });
 
 describe("persistence", () => {

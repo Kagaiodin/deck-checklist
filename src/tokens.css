@@ -122,6 +122,22 @@ html { overflow-x: hidden; } /* catch-all: prevents root scroll container from f
   --scrim: rgba(5,6,14,.6); /* backdrop behind modals and sheets, both modes */
 }
 
+/* ─── Paper (always light, e.g. the printable invoice, regardless of theme) ── */
+:root {
+  --paper-bg: #ffffff;
+  --paper-text: #1c1d2e;
+  --paper-text-muted: #55596f;
+  --paper-border: #c9c4b5;
+  --paper-border-dim: #e3dfd3;
+}
+/* Inside the paper, the shared text/border tokens resolve to paper colors. */
+.paper-sheet {
+  --text: var(--paper-text);
+  --text-muted: var(--paper-text-muted);
+  --border: var(--paper-border);
+  --border-dim: var(--paper-border-dim);
+}
+
 /* ─── Light mode ────────────────────────────────────────────────────────────── */
 html[data-mode="light"] {
   color-scheme: light;

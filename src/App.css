@@ -163,6 +163,12 @@ code { font-family: var(--font-mono); display: inline-flex; border-radius: 4px; 
 @media (max-width: 479px) {
   .nav-btn { padding: 0 8px; font-size: 11px; }
 }
+/* "Transactions" is the longest label: tighten logo, gutters and nav padding so the ⋯ button stays on screen at 360px. */
+@media (max-width: 400px) {
+  .app-header { padding: 0 12px; gap: 2px; }
+  .app-logo { max-width: 92px; }
+  .app-nav .nav-btn { padding: 0 6px; }
+}
 @media (min-width: 640px) {
   .nav-btn { padding: 0 14px; font-size: 13px; }
 }
@@ -1664,6 +1670,8 @@ html[data-mode="light"] .card-row.acquired:hover .row-name { color: var(--text-m
   border-radius: 999px; font-size: 10px; font-weight: 700;
   padding: 1px 5px; margin-left: 4px; line-height: 1;
 }
+/* "Transactions" is the longest nav label; drop the badge on the narrowest phones so the header fits (360px). */
+@media (max-width: 379px) { .nav-badge { display: none; } }
 
 /* ─── Part B: Create order form ─────────────────────────────────────────────── */
 .order-form {

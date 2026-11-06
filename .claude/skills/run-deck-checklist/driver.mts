@@ -26,7 +26,7 @@ const FLOW = arg("flow");
 const OUT = arg("out", "/tmp/deck-checklist-shots")!;
 const EMPTY = process.argv.includes("--empty");
 
-const NAV_LABEL: Record<string, string> = { decks: "Decks", collection: "Collection", orders: "Orders" };
+const NAV_LABEL: Record<string, string> = { decks: "Decks", collection: "Collection", orders: "Transactions" };
 assert.ok(NAV_LABEL[VIEW], `--view must be one of ${Object.keys(NAV_LABEL).join(", ")}`);
 
 async function up() {

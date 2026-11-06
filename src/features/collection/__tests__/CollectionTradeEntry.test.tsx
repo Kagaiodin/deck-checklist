@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { CollectionHeader } from "../components/CollectionHeader";
 import { CollectionOverflowSheet } from "../components/CollectionOverflowSheet";
 
-const HELPER = "Weigh a trade. Doesn't change your collection.";
+const HELPER = "Weigh a trade. Your collection only changes if you log it.";
 
 const headerProps = {
   collectionMeta: null,

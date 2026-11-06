@@ -5,7 +5,7 @@ import { supportsFileSystemAccess, pickOpenHandle, readLinkedFile } from "../../
 import "./ImportBackupModal.css";
 
 interface Props {
-  onImport: (data: ProfileExport, replace: boolean) => { newDecks: number; newCards: number; newOrders: number };
+  onImport: (data: ProfileExport, replace: boolean) => { newDecks: number; newCards: number; newOrders: number; newTrades?: number };
   showToast: (t: ToastInput) => void;
   onClose: () => void;
 }
@@ -84,6 +84,7 @@ export function ImportBackupModal({ onImport, showToast, onClose }: Props) {
     if (counts.newDecks > 0) parts.push(`${counts.newDecks} deck${counts.newDecks !== 1 ? "s" : ""}`);
     if (counts.newCards > 0) parts.push(`${counts.newCards} collection cards`);
     if (counts.newOrders > 0) parts.push(`${counts.newOrders} order${counts.newOrders !== 1 ? "s" : ""}`);
+    if (counts.newTrades) parts.push(`${counts.newTrades} trade${counts.newTrades !== 1 ? "s" : ""}`);
 
     if (parts.length === 0) {
       showToast({
@@ -166,8 +167,8 @@ export function ImportBackupModal({ onImport, showToast, onClose }: Props) {
             Replace all local data
             <small>
               {replaceMode
-                ? "This will wipe all existing decks, collection, and orders."
-                : "Wipes existing decks, collection, and orders before importing."}
+                ? "This will wipe all existing decks, collection, orders, and trades."
+                : "Wipes existing decks, collection, orders, and trades before importing."}
             </small>
           </label>
         </div>

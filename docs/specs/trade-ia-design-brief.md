@@ -88,7 +88,7 @@ Generated from a ledger entry: counterparty, date, cards out and in with price s
 - **#109 / `trade-binder-spec.md`**: remove the `tradeable` flag and the "filtered view where `tradeable === true`" model; replace with derived surplus plus the exclude list; move ledger and invoice under Transactions; update the routing section.
 - **#44**: close as folded into Binder.
 - **#119 / QR share**: unchanged; the QR still hangs off the Calculator's share row.
-- **Calculator UAT**: no change to 1.6 and 11.1. Add UAT for "Log this trade" (only write path) and for the deep link from Collection.
+- **Calculator UAT**: 1.6 is unchanged. 11.1 is scoped to a session that does **not** press "Log this trade", since that confirm is now the one deliberate write; the guardrail is otherwise the same (weighing a trade never writes). Add UAT for "Log this trade" (only write path) and for the deep link from Collection.
 - **#55, #87**: Buys sub-tab is where these land; no IA change.
 
 ## Demo mode impact

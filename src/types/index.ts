@@ -1,3 +1,4 @@
+import type { TradeLogEntry } from "./trade";
 export type AcquisitionSource =
   | "owned"
   | "ordered"
@@ -137,4 +138,7 @@ export interface ProfileExport {
   collectionMeta: CollectionMeta | null;
   orders: Order[];
   vendorHistory: string[];
+  /** Optional: absent in backups made before Transactions. Envelope stays version 1. */
+  tradeLedger?: TradeLogEntry[];
+  binderExcluded?: string[];
 }

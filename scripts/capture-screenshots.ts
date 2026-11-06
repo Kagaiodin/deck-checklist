@@ -232,7 +232,7 @@ async function gotoAndSettle(page: Page, url: string): Promise<void> {
 }
 
 async function clickNav(page: Page, label: string): Promise<void> {
-  // Nav buttons render "Decks", "Collection", "Orders" — use exact short labels.
+  // Nav buttons render "Decks", "Collection", "Transactions" — use exact short labels.
   await page.locator("button.nav-btn", { hasText: label }).first().click({ timeout: 5_000 });
   await page.waitForTimeout(SETTLE_MS);
 }
@@ -579,8 +579,35 @@ async function main(): Promise<void> {
     await shot(page, "04-desktop-collection.png");
 
     // 05 — Orders tab
-    await attempt("nav to Orders", () => clickNav(page, "Orders"));
+    await attempt("nav to Transactions", () => clickNav(page, "Transactions"));
     await shot(page, "05-desktop-orders.png");
+
+    // 05b — Binder sub-tab (derived surplus), then back to Buys for the order shots below
+    await attempt("open Binder sub-tab", () => click(page, "[role=tab]", { hasText: "Binder" }));
+    await shot(page, "05b-desktop-binder.png");
+    // 05c — Trades & sales ledger (demo entries), its detail, then back to Buys
+    await attempt("open Trades & sales sub-tab", () => click(page, "[role=tab]", { hasText: "Trades & sales" }));
+    await shot(page, "05c-desktop-trades.png");
+    await attempt("open ledger entry", () => click(page, ".ledger-row"));
+    await shot(page, "05d-desktop-trade-detail.png");
+    // 05e–05g — the ledger's dialogs and the Log this trade sheet, so the a11y gate audits them (ledger spec §11)
+    await attempt("open invoice", () => click(page, "button", { hasText: "View invoice" }));
+    await shot(page, "05e-desktop-trade-invoice.png");
+    await attempt("back to entry", () => click(page, "button", { hasText: "Back to entry" }));
+    await attempt("open delete confirm", () => click(page, "button", { hasText: "Delete entry" }));
+    await shot(page, "05f-desktop-trade-delete-confirm.png");
+    await attempt("cancel delete", () => click(page, "[role=dialog] button", { hasText: "Cancel" }));
+    await attempt("seed a trade from the Binder", async () => {
+      await click(page, "[role=tab]", { hasText: "Binder" });
+      await click(page, "button", { hasText: "Add to new trade" });
+      await page.waitForTimeout(SETTLE_MS);
+      await click(page, "button", { hasText: "Log this trade" });
+      await page.waitForTimeout(400);
+    });
+    await shot(page, "05g-desktop-log-trade.png");
+    await attempt("cancel Log this trade", () => click(page, "[role=dialog] button", { hasText: "Cancel" }));
+    await attempt("back to Transactions", () => clickNav(page, "Transactions"));
+    await attempt("back to Buys sub-tab", () => click(page, "[role=tab]", { hasText: "Buys" }));
 
     // 06 — Buy list modal open
     await attempt("nav to Decks for buy list", () => clickNav(page, "Decks"));
@@ -636,7 +663,7 @@ async function main(): Promise<void> {
     });
 
     // ── Orders redesign shots (37–48) ─────────────────────────────────────
-    await attempt("nav to Orders", () => clickNav(page, "Orders"));
+    await attempt("nav to Transactions", () => clickNav(page, "Transactions"));
 
     // 47 — Overdue meta (order-001 is past its expected arrival)
     await shot(page, "47-desktop-orders-overdue-meta.png");
@@ -775,7 +802,7 @@ async function main(): Promise<void> {
     await attempt("switch to light mode (orders)", () => click(page, ".mode-segment-btn", { hasText: "Light" }));
     await page.waitForTimeout(600);
     // Ensure we're on Orders tab
-    await attempt("nav to Orders (light mode)", () => clickNav(page, "Orders"));
+    await attempt("nav to Transactions (light mode)", () => clickNav(page, "Transactions"));
     await shot(page, "46-desktop-orders-light-mode.png");
     // 46b — expanded ocard in light mode
     await attempt("expand first order in light mode", async () => {
@@ -1037,8 +1064,21 @@ async function main(): Promise<void> {
     await shot(page, "11-mobile-collection.png");
 
     // 12 — Mobile orders
-    await attempt("nav to Orders (mobile)", () => clickNav(page, "Orders"));
+    await attempt("nav to Transactions (mobile)", () => clickNav(page, "Transactions"));
     await shot(page, "12-mobile-orders.png");
+
+    // 12b — Binder row action sheet (mobile only), then back to Buys for the order shots below
+    await attempt("open mobile Binder row sheet", async () => {
+      await click(page, "[role=tab]", { hasText: "Binder" });
+      await click(page, "button.binder-more");
+      await page.waitForTimeout(400);
+    });
+    await shot(page, "12b-mobile-binder-row-sheet.png");
+    await attempt("close Binder row sheet", async () => {
+      await page.keyboard.press("Escape");
+      await page.waitForTimeout(400);
+      await click(page, "[role=tab]", { hasText: "Buys" });
+    });
 
     // 49 — Mobile order detail sheet (tap a row)
     await attempt("tap first order row on mobile", async () => {
@@ -1109,7 +1149,7 @@ async function main(): Promise<void> {
     await shot(page, "16-tablet-collection.png");
 
     // 51 — Tablet orders list
-    await attempt("nav to Orders (tablet)", () => clickNav(page, "Orders"));
+    await attempt("nav to Transactions (tablet)", () => clickNav(page, "Transactions"));
     await shot(page, "51-tablet-orders.png");
 
     // 51b — Tablet orders expanded
@@ -1139,7 +1179,7 @@ async function main(): Promise<void> {
         await emptyPage3.goto(BASE_URL);
         try { await emptyPage3.waitForLoadState("networkidle", { timeout: 10_000 }); } catch {}
         await emptyPage3.waitForTimeout(SETTLE_MS);
-        await emptyPage3.locator("button.nav-btn", { hasText: "Orders" }).first().click({ timeout: 5_000 });
+        await emptyPage3.locator("button.nav-btn", { hasText: "Transactions" }).first().click({ timeout: 5_000 });
         await emptyPage3.waitForTimeout(SETTLE_MS);
         await shot(emptyPage3, "52-desktop-orders-empty.png");
       } catch (e) {
@@ -1166,7 +1206,7 @@ async function main(): Promise<void> {
         await emptyPage4.goto(BASE_URL);
         try { await emptyPage4.waitForLoadState("networkidle", { timeout: 10_000 }); } catch {}
         await emptyPage4.waitForTimeout(SETTLE_MS);
-        await emptyPage4.locator("button.nav-btn", { hasText: "Orders" }).first().click({ timeout: 5_000 });
+        await emptyPage4.locator("button.nav-btn", { hasText: "Transactions" }).first().click({ timeout: 5_000 });
         await emptyPage4.waitForTimeout(SETTLE_MS);
         await shot(emptyPage4, "53-mobile-orders-empty.png");
       } catch (e) {
