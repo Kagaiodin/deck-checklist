@@ -45,11 +45,10 @@ import { AppLogo } from "./components/AppLogo";
 import type { ToastInput } from "./features/profile/ProfileExportImport";
 import { BuyListSheet } from "./features/card-purchase/BuyListSheet";
 import { useBuyFlow } from "./features/card-purchase/useBuyFlow";
+import { COLLECTION_KEY, COLLECTION_META_KEY } from "./features/collection/storageKeys";
 import "./features/card-purchase/buy-flow.css";
 
 const ONBOARDING_KEY = "fetchlist:onboarding:dismissed";
-const COLLECTION_KEY = "mtg-checklist-collection-v2";
-const COLLECTION_META_KEY = "mtg-checklist-collection-meta-v2";
 
 const isTradePath = () => /^\/trade\/?$/.test(window.location.pathname);
 
@@ -188,7 +187,7 @@ function AppInner() {
 
   // ── Collection (read-only, for auto-tagging on deck import) ──────────────
   // CollectionPage owns all writes; AppInner only reads + writes when receiving orders.
-  const [collection, setCollection] = useLocalStorage<Collection>("mtg-checklist-collection-v2", {});
+  const [collection, setCollection] = useLocalStorage<Collection>(COLLECTION_KEY, {});
   const [collectionMeta, setCollectionMeta] = useLocalStorage<CollectionMeta | null>(COLLECTION_META_KEY, null);
 
   // ── Orders state ──────────────────────────────────────────────────────────

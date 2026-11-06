@@ -3,6 +3,7 @@ import type { Trade, TradeCard } from "../../types/trade";
 import { DEFAULT_SETTINGS } from "../../types/trade";
 import { tradeToLogEntry } from "../../utils/tradeLedger";
 import type { DemoValues } from "./demoMode";
+import { COLLECTION_KEY, COLLECTION_META_KEY } from "../collection/storageKeys";
 
 const DAY = 86_400_000;
 
@@ -404,8 +405,8 @@ export function buildDemoData(now: number): DemoValues {
 
   return {
     "mtg-checklist-decks": JSON.stringify(decks),
-    "mtg-checklist-collection-v2": JSON.stringify(collection),
-    "mtg-checklist-collection-meta-v2": JSON.stringify({
+    [COLLECTION_KEY]: JSON.stringify(collection),
+    [COLLECTION_META_KEY]: JSON.stringify({
       fileName: "sample-collection.csv",
       importedAt: now - 7 * DAY,
       cardCount: Object.keys(collection).length,
