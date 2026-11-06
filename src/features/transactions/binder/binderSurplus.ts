@@ -2,8 +2,6 @@ import type { Collection, CollectionPrinting } from "../../../types/index";
 import type { CommittedInfo } from "../../../types/collection";
 import { displayName } from "../../trade/format";
 
-export { displayName };
-
 export interface BinderRow {
   /** Lowercased card name, the Collection key. */
   key: string;
