@@ -282,7 +282,7 @@ html[data-mode="light"] .tr-row:hover, html[data-mode="light"] .tr-row:focus-wit
 .tr-seg button:disabled { opacity: .35; cursor: not-allowed; text-decoration: line-through; }
 .tr-coll-row { display: grid; grid-template-columns: 36px 1fr auto; gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border-dim); list-style: none; }
 .tr-dialog { max-width: 440px; }
-.tr-dialog p { font-size: 14px; color: var(--text-muted); margin-bottom: 8px; }
+.tr-dialog p { font-size: 14px; color: var(--text-muted); margin-bottom: 8px; text-wrap: pretty; }
 .tr-dialog-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; padding: 12px 16px 16px; }
 .tr-btn-destructive { background: color-mix(in srgb, var(--danger) 16%, transparent); color: var(--danger-text); border: 1px solid color-mix(in srgb, var(--danger) 30%, transparent); }
 .tr-error-card { max-width: 520px; margin: 48px auto; }
