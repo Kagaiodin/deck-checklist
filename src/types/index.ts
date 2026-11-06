@@ -142,3 +142,11 @@ export interface ProfileExport {
   tradeLedger?: TradeLogEntry[];
   binderExcluded?: string[];
 }
+
+/** What a profile import added; drives the summary toast. */
+export interface ImportCounts {
+  newDecks: number;
+  newCards: number;
+  newOrders: number;
+  newTrades?: number;
+}

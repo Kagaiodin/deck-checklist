@@ -15,7 +15,7 @@ import { Checklist } from "./components/Checklist";
 import { EmptyState } from "./components/EmptyState";
 import { ErrorQueue } from "./components/ErrorQueue";
 import { ProgressTracker } from "./components/ProgressTracker";
-import type { Deck, ErrorQueueItem, AcquisitionSource, Collection, CollectionMeta, Order, ProfileExport } from "./types/index";
+import type { Deck, ErrorQueueItem, AcquisitionSource, Collection, CollectionMeta, Order, ImportCounts, ProfileExport } from "./types/index";
 import type { Trade } from "./types/trade";
 import { mergeLedger, sanitizeLedger, sortLedger, type LogMeta } from "./utils/tradeLedger";
 import { applyCollectionToCards } from "./utils/csvParser";
@@ -489,7 +489,7 @@ function AppInner() {
   }
 
   // ── Profile export / import ───────────────────────────────────────────────
-  function handleProfileImport(data: ProfileExport, replace: boolean) {
+  function handleProfileImport(data: ProfileExport, replace: boolean): ImportCounts {
     // Backups must never land on top of sample data (the UI disables this path too).
     if (isDemoActiveNow()) return { newDecks: 0, newCards: 0, newOrders: 0, newTrades: 0 };
     if (replace) {

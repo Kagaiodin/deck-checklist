@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import type { ProfileExport } from "../../types/index";
+import type { ImportCounts, ProfileExport } from "../../types/index";
 import type { ToastInput } from "./ProfileExportImport";
 import { supportsFileSystemAccess, pickOpenHandle, readLinkedFile } from "../../utils/fileSystemAccess";
 import "./ImportBackupModal.css";
 
 interface Props {
-  onImport: (data: ProfileExport, replace: boolean) => { newDecks: number; newCards: number; newOrders: number; newTrades?: number };
+  onImport: (data: ProfileExport, replace: boolean) => ImportCounts;
   showToast: (t: ToastInput) => void;
   onClose: () => void;
 }

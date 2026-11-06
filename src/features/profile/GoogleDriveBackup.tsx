@@ -1,6 +1,6 @@
 import type { TradeLogEntry } from "../../types/trade";
 import { useEffect, useState } from "react";
-import type { Deck, ErrorQueueItem, Collection, CollectionMeta, Order, ProfileExport } from "../../types/index";
+import type { Deck, ErrorQueueItem, Collection, CollectionMeta, Order, ImportCounts, ProfileExport } from "../../types/index";
 import {
   supportsGoogleDrive, getConnectedEmail, isConnected, isExpired,
   connect, disconnect, saveToDrive, loadFromDrive, DriveError,
@@ -19,7 +19,7 @@ interface Props {
   tradeLedger?: TradeLogEntry[];
   binderExcluded?: string[];
   vendorHistory: string[];
-  onImport: (data: ProfileExport, replace: boolean) => { newDecks: number; newCards: number; newOrders: number; newTrades?: number };
+  onImport: (data: ProfileExport, replace: boolean) => ImportCounts;
   showToast: (t: ToastInput) => void;
   // Sidebar (desktop, sibling to the Tier 1 chip) vs mobile deck-picker sheet
   // footer (its own boxed unit) — see docs/specs/google-drive-integration-design-brief.md
