@@ -134,7 +134,7 @@ export function TradeCardRow({ card, side, settings, readOnly, stale, flash, own
         </div>
         {noPrice
           ? !readOnly && <button type="button" className="tr-unit-btn" onClick={(e) => open("manual", e.currentTarget)}>Set price</button>
-          : <button type="button" className="tr-unit-btn" onClick={(e) => open("breakdown", e.currentTarget)}>{usd(unit)} ea<span className="sr-only">, price breakdown for {card.name}</span></button>}
+          : <button type="button" className="tr-unit-btn" aria-label={`${usd(unit)} ea, price breakdown for ${card.name}`} onClick={(e) => open("breakdown", e.currentTarget)}>{usd(unit)} ea</button>}
         {hasBadges && <div className="tr-row-badges">{badges}</div>}
       </div>
 
