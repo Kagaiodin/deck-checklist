@@ -53,6 +53,12 @@ export function deriveBinder(
   return { rows: rows.sort(byName), excludedRows: excludedRows.sort(byName) };
 }
 
+/** "CMM #1 · Foil", or "No set recorded" for a quantity-only printing (order receipts). */
+export function printingLabel(p: CollectionPrinting): string {
+  const where = p.set ? `${p.set.toUpperCase()}${p.collectorNumber ? ` #${p.collectorNumber}` : ""}` : "No set recorded";
+  return p.foil ? `${where} · Foil` : where;
+}
+
 /**
  * The printing a trade seed uses: largest quantity, first on a tie, among printings with a set
  * and collector number. Generic printings (order receipts record quantity only) are used only

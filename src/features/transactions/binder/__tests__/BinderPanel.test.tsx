@@ -105,6 +105,37 @@ describe("BinderPanel", () => {
     expect(screen.getByRole("list", { name: "Spare cards" })).toBeInTheDocument();
   });
 
+  const mixed: Collection = {
+    "sol ring": [{ quantity: 3, set: "cmm", collectorNumber: "1", foil: true }, { quantity: 2 }],
+    "rhystic study": [{ quantity: 3 }],
+  };
+
+  it("a row with several printings expands to list them; a single-printing row has no toggle", async () => {
+    render(<Harness collection={mixed} />);
+    expect(screen.queryByRole("button", { name: /printings.*Rhystic Study/ })).not.toBeInTheDocument();
+    const toggle = screen.getByRole("button", { name: "2 printings of Sol Ring" });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByRole("list", { name: "Printings of Sol Ring" })).not.toBeInTheDocument();
+
+    await userEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    const items = within(screen.getByRole("list", { name: "Printings of Sol Ring" })).getAllByRole("listitem");
+    expect(items.map(li => li.textContent)).toEqual(["CMM #1 · Foil3", "No set recorded2"]);
+
+    await userEvent.click(toggle);
+    expect(screen.queryByRole("list", { name: "Printings of Sol Ring" })).not.toBeInTheDocument();
+  });
+
+  it("the phone sheet lists every printing of a multi-printing card", async () => {
+    vi.mocked(useMediaQuery).mockReturnValue(true);
+    render(<Harness collection={mixed} />);
+    expect(screen.queryByRole("button", { name: /printings of/ })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Actions for Sol Ring" }));
+    const sheet = screen.getByRole("dialog", { name: "Sol Ring" });
+    const items = within(within(sheet).getByRole("list", { name: "Printings of Sol Ring" })).getAllByRole("listitem");
+    expect(items).toHaveLength(2);
+  });
+
   it("phones get a row-actions sheet instead of inline buttons", async () => {
     vi.mocked(useMediaQuery).mockReturnValue(true);
     const onAddToTrade = vi.fn();

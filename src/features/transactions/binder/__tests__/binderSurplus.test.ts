@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { deriveBinder, displayName, primaryPrinting, surplusLabel } from "../binderSurplus";
+import { deriveBinder, displayName, primaryPrinting, printingLabel, surplusLabel } from "../binderSurplus";
 import type { Collection } from "../../../../types/index";
 import type { CommittedInfo } from "../../../../types/collection";
 
@@ -70,6 +70,13 @@ describe("helpers", () => {
   it("prefers a real printing over a larger generic one (order receipts carry no set)", () => {
     const p = primaryPrinting({ printings: [{ quantity: 4 }, { quantity: 1, set: "cmm", collectorNumber: "1", foil: true }] });
     expect(p).toEqual({ quantity: 1, set: "cmm", collectorNumber: "1", foil: true });
+  });
+
+  it("printingLabel names set, number and foil, or says no set was recorded", () => {
+    expect(printingLabel({ quantity: 1, set: "cmm", collectorNumber: "1", foil: true })).toBe("CMM #1 · Foil");
+    expect(printingLabel({ quantity: 1, set: "lea" })).toBe("LEA");
+    expect(printingLabel({ quantity: 2 })).toBe("No set recorded");
+    expect(printingLabel({ quantity: 2, foil: true })).toBe("No set recorded · Foil");
   });
 
   it("falls back to a generic printing only when none has a set and collector number", () => {

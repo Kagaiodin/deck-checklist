@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import type { Collection } from "../../../types/index";
 import { EmptyState } from "../../../components/EmptyState";
 import { useMediaQuery } from "../../../hooks/useMediaQuery";
 import { primaryPrinting, surplusLabel, type Binder, type BinderRow } from "./binderSurplus";
 import { BinderRowSheet } from "./BinderRowSheet";
+import { PrintingList } from "./PrintingList";
 import "./BinderPanel.css";
 
 interface BinderPanelProps {
@@ -37,6 +38,8 @@ export function BinderPanel({ collection, binder, onNewTrade, onAddToTrade, onVi
   const mobile = useMediaQuery("(max-width: 767px)");
   const [keepOpen, setKeepOpen] = useState(false);
   const [sheetRow, setSheetRow] = useState<BinderRow | null>(null);
+  const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
+  const idBase = useId();
   const [toast, setToast] = useState<{ key: string; message: string } | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
@@ -46,6 +49,13 @@ export function BinderPanel({ collection, binder, onNewTrade, onAddToTrade, onVi
     if (timer.current) clearTimeout(timer.current);
     setToast({ key: row.key, message: `${row.name} kept out of Binder.` });
     timer.current = setTimeout(() => setToast(null), 30_000);
+  }
+  function toggleExpanded(key: string) {
+    setExpanded(prev => {
+      const next = new Set(prev);
+      if (!next.delete(key)) next.add(key);
+      return next;
+    });
   }
   function undo() {
     if (toast) restore(toast.key);
@@ -109,11 +119,28 @@ export function BinderPanel({ collection, binder, onNewTrade, onAddToTrade, onVi
             {keepToggle}
           </div>
           <ul className="binder-list" aria-label="Spare cards">
-            {rows.map(row => (
+            {rows.map((row, i) => {
+              // Printings show on expansion (desktop) or in the row sheet (phone), only when there is more than one.
+              const expandable = !mobile && row.printings.length > 1;
+              const open = expandable && expanded.has(row.key);
+              const listId = `${idBase}-printings-${i}`;
+              return (
               <li key={row.key} className="binder-row">
                 <div className="binder-row-main">
                   <span className="binder-row-name">{row.name}</span>
                   <span className="binder-row-sub">{subtitle(row, false)}</span>
+                  {expandable && (
+                    <button
+                      type="button"
+                      className="binder-printings-toggle"
+                      aria-expanded={open}
+                      aria-controls={open ? listId : undefined}
+                      aria-label={`${row.printings.length} printings of ${row.name}`}
+                      onClick={() => toggleExpanded(row.key)}
+                    >
+                      <span aria-hidden="true">{open ? "▾" : "▸"}</span> {row.printings.length} printings
+                    </button>
+                  )}
                 </div>
                 <div className="binder-qty"><b>{row.surplus}</b><span>spare</span></div>
                 {mobile ? (
@@ -138,8 +165,10 @@ export function BinderPanel({ collection, binder, onNewTrade, onAddToTrade, onVi
                     </button>
                   </div>
                 )}
+                {open && <PrintingList row={row} id={listId} className="binder-printings-row" />}
               </li>
-            ))}
+              );
+            })}
           </ul>
         </>
       )}

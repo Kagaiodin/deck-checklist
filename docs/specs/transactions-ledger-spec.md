@@ -41,7 +41,7 @@ interface BinderRow {
 }
 deriveBinder(collection, getCommittedInfo, excluded: ReadonlySet<string>): { rows: BinderRow[]; excludedRows: BinderRow[] }
 ```
-- Surplus is per card name, because deck cards carry no set, collector number or finish (same basis as `ownedFor` and `useCommittedInfo`). Printings are shown on row expansion only.
+- Surplus is per card name, because deck cards carry no set, collector number or finish (same basis as `ownedFor` and `useCommittedInfo`). Printings are shown on row expansion only: on desktop a row with 2+ printings gets a "▸ N printings" toggle that lists each printing ("CMM #1 · Foil", or "No set recorded") with its quantity under the row; on phones the row sheet lists them. Single-printing rows rely on the subtitle.
 - `rows` = surplus > 0 and not excluded; `excludedRows` = surplus > 0 and excluded (the "Keep these" list). A card whose surplus drops to 0 while excluded disappears from both and stays in the persisted set (harmless; it reappears if surplus returns).
 - Sorted by name ascending. Pure function; memoised in `useBinder(collection, decks)`.
 - Partial stacks: wording is `"{owned} owned · {committed} in decks · {surplus} spare"` (resolves the brief's open item).

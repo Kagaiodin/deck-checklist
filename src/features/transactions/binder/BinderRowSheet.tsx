@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useDialogKeys } from "../../../hooks/useDialogKeys";
 import { surplusLabel, type BinderRow } from "./binderSurplus";
+import { PrintingList } from "./PrintingList";
 
 interface BinderRowSheetProps {
   row: BinderRow;
@@ -41,6 +42,7 @@ export function BinderRowSheet({ row, onClose, onAddToTrade, onExclude }: Binder
         <div className="sheet-header">
           <div id="binder-sheet-name" className="sheet-card-name">{row.name}</div>
           <div className="sheet-card-meta">{surplusLabel(row)}</div>
+          {row.printings.length > 1 && <PrintingList row={row} className="binder-printings-sheet" />}
         </div>
         <div className="sheet-body">
           <button ref={firstRef} type="button" className="sheet-action" onClick={() => { onAddToTrade(row); onClose(); }}>
