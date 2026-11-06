@@ -127,7 +127,7 @@ describe("OfferPanel", () => {
   describe("pricing popovers", () => {
     it("shows the price breakdown with condition and discount", async () => {
       setup({}, { cards: [card({ condition: "LP" })], cash: [] });
-      await userEvent.click(screen.getByRole("button", { name: "Price breakdown for Sol Ring" }));
+      await userEvent.click(screen.getByRole("button", { name: /price breakdown for Sol Ring$/ }));
       const bd = screen.getByRole("dialog", { name: "Price breakdown" });
       expect(within(bd).getByText("×0.90")).toBeInTheDocument();
       expect(within(bd).getByText("−10%")).toBeInTheDocument();
@@ -170,7 +170,7 @@ describe("OfferPanel", () => {
 
     it("closes a popover on Escape", async () => {
       setup();
-      await userEvent.click(screen.getByRole("button", { name: "Price breakdown for Sol Ring" }));
+      await userEvent.click(screen.getByRole("button", { name: /price breakdown for Sol Ring$/ }));
       expect(screen.getByRole("dialog", { name: "Price breakdown" })).toBeInTheDocument();
       await userEvent.keyboard("{Escape}");
       expect(screen.queryByRole("dialog", { name: "Price breakdown" })).not.toBeInTheDocument();
