@@ -61,7 +61,7 @@ const TRADE_RETURN: Record<TradeOrigin, { view: "collection" | "transactions"; s
 
 const isTradePath = () => /^\/trade\/?$/.test(window.location.pathname);
 
-/** `/trade` or a `/#trade=…` share link opens the Trade page (nested under Collection) instead of the default tab. */
+/** `/trade` or a `/#trade=…` share link opens the trade Calculator (under Transactions → Binder) instead of the default tab. */
 const openedWithTradeLink = () => isTradePath() || extractPayload(window.location.hash) !== null;
 
 /** Collection metadata as stored now; CollectionPage owns it, so AppInner's own copy can be stale. */
