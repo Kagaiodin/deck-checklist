@@ -119,7 +119,7 @@ Confirm copy: Collection will not change back; cards given stay out, cards recei
 
 ## 6. Calculator hand-off
 
-- "Add to new trade" from a Binder row calls `openTrade({ origin: "binder", seed: BinderRow })`. The seed is converted to a `TradeCard` on "mine" with the row's printing (largest-quantity printing; foil-ness from it), quantity 1, `source: "collection"`, price fetched through the existing `applyPrices` path.
+- "Add to new trade" from a Binder row calls `openTrade({ origin: "binder", seed: BinderRow })`. The seed is converted to a `TradeCard` on "mine" with the row's printing (largest-quantity printing; foil-ness from it), quantity 1, `source: "collection"`. `seedToTradeCard` prices it with the same primitives as Refresh (`fetchPrices` for the printing, `basePriceFor` for the finish) rather than dispatching `applyPrices`, which reprices the whole trade and needs a set and collector number. A row with no printing (order receipts record quantity only) falls back to the newest printing of that exact name via `searchPrintings`. Collection rows only record foil yes/no, so a foil row on a printing sold only as etched is priced as etched. Unreachable Scryfall leaves the card unpriced.
 - "New trade" in Binder and ledger opens an empty Calculator. An unfinished local trade is kept (existing `fetchlist-trade` behavior); seeding adds to it.
 - QR share row (#119) is untouched.
 

@@ -232,6 +232,21 @@ Verify with a calculator on one known card (e.g. $10.00 base, NM).
 | 14.10 | Import an older backup with no ledger | Imports normally; replace mode empties the ledger | ☐ |
 | 14.11 | Demo mode | Two sample entries; logging a trade in demo never touches real data | ☐ |
 
+## 15. Entry points and back control (Transactions)
+
+The Calculator lives inside Transactions. Its first crumb names where it was opened from and returns there (ledger spec D1).
+
+| # | Steps | Expected | Status |
+|---|---|---|---|
+| 15.1 | Collection → ⋯ → Trade calculator (the Collection deep link) | Calculator opens with **Transactions** active in the nav; crumb reads Collection › Trade | ☐ |
+| 15.2 | Click "Collection" in that crumb | Back on the Collection tab, unchanged | ☐ |
+| 15.3 | Binder → Add to new trade on a foil row | Card on My offer, quantity 1, that row's printing and finish, priced (or Set price if offline); crumb reads Binder | ☐ |
+| 15.4 | Click "Binder" in that crumb | Back on Transactions › Binder | ☐ |
+| 15.5 | Trades & sales → New trade, then click the first crumb | Crumb reads Trades & sales; returns to Transactions › Trades & sales | ☐ |
+| 15.6 | Open a share link in a **new** tab | Lands on **Transactions** with the Calculator open, read-only; crumb reads Binder (not Collection) | ☐ |
+| 15.7 | From the shared view, click "Binder" | Back on Transactions › Binder; `#trade=` gone from the URL; reload does not reopen the shared trade | ☐ |
+| 15.8 | Paste a share link into an already-open tab sitting on Decks | Switches to Transactions with the Calculator open; crumb reads Binder | ☐ |
+
 ## Known / intentional (don't file as bugs)
 
 - Swipe-down-to-dismiss on the mobile controls sheet is not built.
