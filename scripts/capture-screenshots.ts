@@ -590,6 +590,23 @@ async function main(): Promise<void> {
     await shot(page, "05c-desktop-trades.png");
     await attempt("open ledger entry", () => click(page, ".ledger-row"));
     await shot(page, "05d-desktop-trade-detail.png");
+    // 05e–05g — the ledger's dialogs and the Log this trade sheet, so the a11y gate audits them (ledger spec §11)
+    await attempt("open invoice", () => click(page, "button", { hasText: "View invoice" }));
+    await shot(page, "05e-desktop-trade-invoice.png");
+    await attempt("back to entry", () => click(page, "button", { hasText: "Back to entry" }));
+    await attempt("open delete confirm", () => click(page, "button", { hasText: "Delete entry" }));
+    await shot(page, "05f-desktop-trade-delete-confirm.png");
+    await attempt("cancel delete", () => click(page, "[role=dialog] button", { hasText: "Cancel" }));
+    await attempt("seed a trade from the Binder", async () => {
+      await click(page, "[role=tab]", { hasText: "Binder" });
+      await click(page, "button", { hasText: "Add to new trade" });
+      await page.waitForTimeout(SETTLE_MS);
+      await click(page, "button", { hasText: "Log this trade" });
+      await page.waitForTimeout(400);
+    });
+    await shot(page, "05g-desktop-log-trade.png");
+    await attempt("cancel Log this trade", () => click(page, "[role=dialog] button", { hasText: "Cancel" }));
+    await attempt("back to Transactions", () => clickNav(page, "Transactions"));
     await attempt("back to Buys sub-tab", () => click(page, "[role=tab]", { hasText: "Buys" }));
 
     // 06 — Buy list modal open
@@ -1049,6 +1066,19 @@ async function main(): Promise<void> {
     // 12 — Mobile orders
     await attempt("nav to Transactions (mobile)", () => clickNav(page, "Transactions"));
     await shot(page, "12-mobile-orders.png");
+
+    // 12b — Binder row action sheet (mobile only), then back to Buys for the order shots below
+    await attempt("open mobile Binder row sheet", async () => {
+      await click(page, "[role=tab]", { hasText: "Binder" });
+      await click(page, "button.binder-more");
+      await page.waitForTimeout(400);
+    });
+    await shot(page, "12b-mobile-binder-row-sheet.png");
+    await attempt("close Binder row sheet", async () => {
+      await page.keyboard.press("Escape");
+      await page.waitForTimeout(400);
+      await click(page, "[role=tab]", { hasText: "Buys" });
+    });
 
     // 49 — Mobile order detail sheet (tap a row)
     await attempt("tap first order row on mobile", async () => {
