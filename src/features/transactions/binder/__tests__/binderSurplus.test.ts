@@ -66,4 +66,13 @@ describe("helpers", () => {
     expect(primaryPrinting({ printings: [{ quantity: 1, set: "a" }, { quantity: 3, set: "b" }, { quantity: 3, set: "c" }] })?.set).toBe("b");
     expect(primaryPrinting({ printings: [] })).toBeUndefined();
   });
+
+  it("prefers a real printing over a larger generic one (order receipts carry no set)", () => {
+    const p = primaryPrinting({ printings: [{ quantity: 4 }, { quantity: 1, set: "cmm", collectorNumber: "1", foil: true }] });
+    expect(p).toEqual({ quantity: 1, set: "cmm", collectorNumber: "1", foil: true });
+  });
+
+  it("falls back to a generic printing only when none has a set and collector number", () => {
+    expect(primaryPrinting({ printings: [{ quantity: 1, set: "cmm" }, { quantity: 2 }] })).toEqual({ quantity: 2 });
+  });
 });

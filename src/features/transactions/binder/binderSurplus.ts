@@ -53,9 +53,14 @@ export function deriveBinder(
   return { rows: rows.sort(byName), excludedRows: excludedRows.sort(byName) };
 }
 
-/** The printing a trade seed uses: largest quantity, first on a tie. */
+/**
+ * The printing a trade seed uses: largest quantity, first on a tie, among printings with a set
+ * and collector number. Generic printings (order receipts record quantity only) are used only
+ * when no real printing exists, so the seed prices the copy the user actually owns.
+ */
 export function primaryPrinting(row: Pick<BinderRow, "printings">): CollectionPrinting | undefined {
+  const real = row.printings.filter(p => p.set && p.collectorNumber);
   let best: CollectionPrinting | undefined;
-  for (const p of row.printings) if (!best || p.quantity > best.quantity) best = p;
+  for (const p of real.length > 0 ? real : row.printings) if (!best || p.quantity > best.quantity) best = p;
   return best;
 }
