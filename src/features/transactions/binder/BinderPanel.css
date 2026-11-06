@@ -13,14 +13,10 @@
 .keep-toggle .num { font-size: 11px; }
 
 .binder-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--border); }
-.binder-row {
-  display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 8px 16px;
-  border-bottom: 1px solid var(--border); font-size: 13px;
-}
-.binder-row:hover { background: var(--hover-fill); }
-.binder-row-main { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1; }
-.binder-row-name { font-size: 14px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.binder-row-sub { font-size: 12px; color: var(--text-muted); line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Row layout is .tx-row (TxRow.css); this adds Binder's text size and one-line truncation. */
+.binder-row { font-size: 13px; }
+.binder-row-name { color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.binder-row-sub { line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .binder-qty { display: flex; align-items: baseline; gap: 5px; flex-shrink: 0; min-width: 64px; justify-content: flex-end; }
 .binder-qty b { font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .binder-qty span { font-size: 12px; color: var(--text-muted); }

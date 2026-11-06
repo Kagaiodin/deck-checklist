@@ -5,6 +5,7 @@ import { useMediaQuery } from "../../../hooks/useMediaQuery";
 import { primaryPrinting, surplusLabel, type Binder, type BinderRow } from "./binderSurplus";
 import { BinderRowSheet } from "./BinderRowSheet";
 import { PrintingList } from "./PrintingList";
+import "../TxRow.css";
 import "./BinderPanel.css";
 
 interface BinderPanelProps {
@@ -125,10 +126,10 @@ export function BinderPanel({ collection, binder, onNewTrade, onAddToTrade, onVi
               const open = expandable && expanded.has(row.key);
               const listId = `${idBase}-printings-${i}`;
               return (
-              <li key={row.key} className="binder-row">
-                <div className="binder-row-main">
-                  <span className="binder-row-name">{row.name}</span>
-                  <span className="binder-row-sub">{subtitle(row, false)}</span>
+              <li key={row.key} className="tx-row binder-row">
+                <div className="tx-row-main">
+                  <span className="tx-row-name binder-row-name">{row.name}</span>
+                  <span className="tx-row-sub binder-row-sub">{subtitle(row, false)}</span>
                   {expandable && (
                     <button
                       type="button"
@@ -181,10 +182,10 @@ export function BinderPanel({ collection, binder, onNewTrade, onAddToTrade, onVi
           </div>
           <ul className="binder-list" aria-label="Kept out of Binder">
             {excludedRows.map(row => (
-              <li key={row.key} className="binder-row binder-row-kept">
-                <div className="binder-row-main">
-                  <span className="binder-row-name">{row.name}</span>
-                  <span className="binder-row-sub">{subtitle(row, true)}</span>
+              <li key={row.key} className="tx-row binder-row binder-row-kept">
+                <div className="tx-row-main">
+                  <span className="tx-row-name binder-row-name">{row.name}</span>
+                  <span className="tx-row-sub binder-row-sub">{subtitle(row, true)}</span>
                 </div>
                 <button type="button" className="btn btn-secondary btn-sm binder-restore" aria-label={`Show in Binder: ${row.name}`} onClick={() => restore(row.key)}>
                   Show in Binder
