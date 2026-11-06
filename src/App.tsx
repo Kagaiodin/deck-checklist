@@ -50,6 +50,15 @@ import "./features/card-purchase/buy-flow.css";
 
 const ONBOARDING_KEY = "fetchlist:onboarding:dismissed";
 
+/** Where the Calculator's back control returns to, for each place it can be opened from. */
+const TRADE_RETURN: Record<TradeOrigin, { view: "collection" | "transactions"; subTab?: TransactionsTab }> = {
+  collection: { view: "collection" },
+  binder: { view: "transactions", subTab: "binder" },
+  trades: { view: "transactions", subTab: "trades" },
+  // A share link opens on Binder, so back lands there too.
+  link: { view: "transactions", subTab: "binder" },
+};
+
 const isTradePath = () => /^\/trade\/?$/.test(window.location.pathname);
 
 /** `/trade` or a `/#trade=…` share link opens the Trade page (nested under Collection) instead of the default tab. */
@@ -693,8 +702,9 @@ function AppInner() {
   /** The Calculator's back control: return to wherever it was opened from. */
   function leaveTrade() {
     closeTrade();
-    if (tradeOrigin === "collection") setView("collection");
-    else setTxSubTab(tradeOrigin === "link" ? "binder" : tradeOrigin);
+    const { view: backView, subTab } = TRADE_RETURN[tradeOrigin];
+    setView(backView);
+    if (subTab) setTxSubTab(subTab);
     window.scrollTo({ top: 0, behavior: "instant" });
   }
 
