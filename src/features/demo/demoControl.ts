@@ -1,4 +1,4 @@
-import { enterDemo, exitDemo, hasRealData, isDemoActive, type DemoSource } from "./demoMode";
+import { enterDemo, exitDemo, hasRealData, isDemoActive, refreshDemo, type DemoSource } from "./demoMode";
 
 export const RECOVERED_FLAG = "fetchlist:demo:recovered";
 
@@ -18,10 +18,21 @@ const defaultDeps = (): DemoDeps => ({
 
 /** Loads the fixture lazily, swaps it in, and reloads so the app re-reads storage. */
 export async function startDemo(source: DemoSource, deps: DemoDeps = defaultDeps(), { reload = true } = {}): Promise<boolean> {
-  const { buildDemoData } = await import("./demoData");
-  const { ok } = enterDemo(deps.storage, buildDemoData(deps.now()), source);
+  const { buildDemoData, demoDataVersion } = await import("./demoData");
+  const { ok } = enterDemo(deps.storage, buildDemoData(deps.now()), source, demoDataVersion());
   if (ok && reload) deps.reload();
   return ok;
+}
+
+/**
+ * Brings a running demo up to the current sample data (see refreshDemo). Runs before the app
+ * renders, so nothing has read the old values yet and no reload is needed. Loads the fixture only
+ * when a demo is active.
+ */
+export async function refreshStaleDemo(deps: DemoDeps = defaultDeps()): Promise<boolean> {
+  if (!isDemoActive(deps.storage)) return false;
+  const { buildDemoData, demoDataVersion } = await import("./demoData");
+  return refreshDemo(deps.storage, buildDemoData(deps.now()), demoDataVersion());
 }
 
 export function leaveDemo(deps: DemoDeps = defaultDeps()): void {

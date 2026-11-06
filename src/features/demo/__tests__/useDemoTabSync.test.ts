@@ -10,6 +10,13 @@ describe("useDemoTabSync", () => {
     expect(reload).toHaveBeenCalledOnce();
   });
 
+  it("reloads when another tab refreshes the demo's sample data", () => {
+    const reload = vi.fn();
+    renderHook(() => useDemoTabSync(reload));
+    window.dispatchEvent(new StorageEvent("storage", { key: "fetchlist:demo:version" }));
+    expect(reload).toHaveBeenCalledOnce();
+  });
+
   it("ignores unrelated keys and stops listening on unmount", () => {
     const reload = vi.fn();
     const { unmount } = renderHook(() => useDemoTabSync(reload));

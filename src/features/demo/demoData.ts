@@ -298,6 +298,21 @@ function tradeCard(
   };
 }
 
+/**
+ * Fingerprint of the sample data, independent of the clock. Any change to what buildDemoData
+ * produces changes it, so running demo sessions pick up new sample data (refreshDemo) with no
+ * manual version bump. Relies on buildDemoData being deterministic for a given `now`.
+ */
+export function demoDataVersion(): string {
+  const text = JSON.stringify(buildDemoData(0));
+  let hash = 0x811c9dc5; // FNV-1a, 32-bit
+  for (let i = 0; i < text.length; i++) {
+    hash ^= text.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return (hash >>> 0).toString(16).padStart(8, "0");
+}
+
 /** Builds the localStorage values for demo mode. Every date is derived from `now`. */
 export function buildDemoData(now: number): DemoValues {
   const decks: Deck[] = [

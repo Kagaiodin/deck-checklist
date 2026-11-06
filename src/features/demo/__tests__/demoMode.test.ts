@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { MemoryStorage } from "./memoryStorage";
-import { enterDemo, exitDemo, isDemoActive, hasRealData, MANAGED_KEYS } from "../demoMode";
+import { enterDemo, exitDemo, isDemoActive, hasRealData, refreshDemo, MANAGED_KEYS } from "../demoMode";
 
 const THEME_KEY = "fl-theme-mode";
 
@@ -75,6 +75,52 @@ describe("demoMode", () => {
     expect(localStorage.getItem("mtg-checklist-decks")).toBe("real");
     expect(localStorage.getItem("mtg-checklist-orders-v1")).toBe("real-orders");
     expect(localStorage.getItem("fetchlist:demo:snapshot")).toBeNull();
+  });
+
+  describe("refreshDemo", () => {
+    it("rewrites a session from older sample data, and Exit still restores the real data", () => {
+      localStorage.setItem("mtg-checklist-decks", "real");
+      enterDemo(localStorage, { "mtg-checklist-decks": "demo-v1", "mtg-checklist-orders-v1": "old-orders" }, "settings", "v1");
+
+      expect(refreshDemo(localStorage, { "mtg-checklist-decks": "demo-v2", "mtg-checklist-trade-ledger-v1": "[2]" }, "v2")).toBe(true);
+
+      expect(localStorage.getItem("mtg-checklist-decks")).toBe("demo-v2");
+      expect(localStorage.getItem("mtg-checklist-trade-ledger-v1")).toBe("[2]");
+      expect(localStorage.getItem("mtg-checklist-orders-v1")).toBeNull();
+      expect(localStorage.getItem("fetchlist:demo:version")).toBe("v2");
+      exitDemo(localStorage);
+      expect(localStorage.getItem("mtg-checklist-decks")).toBe("real");
+      expect(localStorage.getItem("mtg-checklist-trade-ledger-v1")).toBeNull();
+      expect(localStorage.getItem("fetchlist:demo:version")).toBeNull();
+    });
+
+    it("treats a session with no fingerprint (started before fingerprints) as stale", () => {
+      enterDemo(localStorage, { "mtg-checklist-decks": "demo-old" }, "settings");
+      expect(refreshDemo(localStorage, { "mtg-checklist-decks": "demo-new" }, "v2")).toBe(true);
+      expect(localStorage.getItem("mtg-checklist-decks")).toBe("demo-new");
+    });
+
+    it("leaves an up-to-date session alone, so demo edits survive a reload", () => {
+      enterDemo(localStorage, { "mtg-checklist-decks": "demo" }, "settings", "v1");
+      localStorage.setItem("mtg-checklist-decks", "demo-edited");
+      expect(refreshDemo(localStorage, { "mtg-checklist-decks": "demo" }, "v1")).toBe(false);
+      expect(localStorage.getItem("mtg-checklist-decks")).toBe("demo-edited");
+    });
+
+    it("never writes when demo is not active", () => {
+      localStorage.setItem("mtg-checklist-decks", "real");
+      expect(refreshDemo(localStorage, { "mtg-checklist-decks": "demo" }, "v1")).toBe(false);
+      expect(localStorage.getItem("mtg-checklist-decks")).toBe("real");
+      expect(localStorage.getItem("fetchlist:demo:version")).toBeNull();
+    });
+
+    it("keeps the old fingerprint when a write fails, so the next load retries", () => {
+      enterDemo(localStorage, { "mtg-checklist-decks": "demo" }, "settings", "v1");
+      localStorage.failOn.add("mtg-checklist-orders-v1");
+      expect(refreshDemo(localStorage, { "mtg-checklist-decks": "demo2", "mtg-checklist-orders-v1": "x" }, "v2")).toBe(false);
+      expect(localStorage.getItem("fetchlist:demo:version")).toBe("v1");
+      expect(isDemoActive(localStorage)).toBe(true);
+    });
   });
 
   it("exit is a no-op when demo is not active (a second tab's late Exit must not wipe restored data)", () => {

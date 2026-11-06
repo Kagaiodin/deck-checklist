@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildDemoData } from "../demoData";
+import { buildDemoData, demoDataVersion } from "../demoData";
 import { MANAGED_KEYS } from "../demoMode";
 import { getDeckColorIdentity } from "../../../utils/deckUtils";
 import { computeCostToComplete } from "../../../utils/deckCost";
@@ -22,6 +22,15 @@ const progress = (d: Deck) => {
   const have = d.cards.filter((c) => c.acquired).reduce((s, c) => s + c.quantity, 0);
   return have / total;
 };
+
+describe("demo data fingerprint", () => {
+  // demoDataVersion hashes buildDemoData(0); randomness or a clock read here would refresh every demo on every load.
+  it("is deterministic for a given now", () => {
+    expect(JSON.stringify(buildDemoData(NOW))).toBe(JSON.stringify(buildDemoData(NOW)));
+    expect(demoDataVersion()).toBe(demoDataVersion());
+    expect(demoDataVersion()).toMatch(/^[0-9a-f]{8}$/);
+  });
+});
 
 describe("demo Binder", () => {
   it("has spare cards so the sub-tab is not empty, and an empty exclude list", () => {
