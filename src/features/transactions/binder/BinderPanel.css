@@ -26,7 +26,7 @@
 .binder-qty span { font-size: 12px; color: var(--text-muted); }
 .binder-actions { display: flex; gap: 6px; flex-shrink: 0; }
 /* Printing list: wraps under the row on desktop expansion, sits in the sheet header on phones. */
-.binder-row:has(.binder-printings-row) { flex-wrap: wrap; }
+.binder-row:has(.binder-printings-row) { flex-wrap: wrap; row-gap: 4px; }
 .binder-printings-toggle {
   align-self: flex-start; display: inline-flex; align-items: center; gap: 4px; min-height: 24px; padding: 0;
   border: none; background: none; color: var(--text-muted); font-size: 12px; cursor: pointer;
@@ -36,7 +36,9 @@
 .binder-printings { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--text-muted); }
 .binder-printings li { display: flex; justify-content: space-between; gap: 12px; }
 .binder-printings b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
-.binder-printings-row { flex-basis: 100%; padding: 2px 0 4px 16px; max-width: 420px; }
+/* Full width so it wraps under the row; cap the lines, not the list (a capped flex-basis never wraps). */
+.binder-printings-row { flex: 0 0 100%; padding: 2px 0 4px 16px; }
+.binder-printings-row li { max-width: 404px; }
 .binder-printings-sheet { margin-top: 10px; }
 /* Kept-out rows recede by colour, not opacity. */
 .binder-row-kept .binder-row-name { color: var(--text-muted); }
