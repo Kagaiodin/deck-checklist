@@ -1,3 +1,5 @@
+import { COLLECTION_KEY, COLLECTION_META_KEY } from "../collection/storageKeys";
+
 export const DEMO_ACTIVE_KEY = "fetchlist:demo:active";
 export const DEMO_SNAPSHOT_KEY = "fetchlist:demo:snapshot";
 export const DEMO_SOURCE_KEY = "fetchlist:demo:source";
@@ -7,8 +9,8 @@ export type DemoSource = "link" | "settings";
 // Keys replaced while demo mode is active. UI preference keys are deliberately absent.
 export const MANAGED_KEYS = [
   "mtg-checklist-decks",
-  "mtg-checklist-collection-v2",
-  "mtg-checklist-collection-meta-v2",
+  COLLECTION_KEY,
+  COLLECTION_META_KEY,
   "mtg-checklist-orders-v1",
   "mtg-checklist-vendor-history",
   "mtg-checklist-errors",
@@ -79,7 +81,7 @@ export function exitDemo(storage: Storage): { recovered: boolean } {
 // Keys that count as the user's own data when deciding whether to confirm a replace.
 const DATA_KEYS = [
   "mtg-checklist-decks",
-  "mtg-checklist-collection-v2",
+  COLLECTION_KEY,
   "mtg-checklist-orders-v1",
   "mtg-checklist-trade-ledger-v1",
   "mtg-checklist-errors",

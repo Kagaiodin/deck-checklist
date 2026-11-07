@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { deriveBinder, displayName, primaryPrinting, printingLabel, surplusLabel } from "../binderSurplus";
+import { deriveBinder, primaryPrinting, printingLabel, surplusLabel } from "../binderSurplus";
+import { displayName } from "../../../trade/format";
 import type { Collection } from "../../../../types/index";
 import type { CommittedInfo } from "../../../../types/collection";
 

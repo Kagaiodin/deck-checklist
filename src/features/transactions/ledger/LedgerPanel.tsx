@@ -4,6 +4,7 @@ import { EmptyState } from "../../../components/EmptyState";
 import { Invoice } from "./Invoice";
 import { TradeSheet } from "../../trade/components/TradeSheet";
 import { usd } from "../../trade/format";
+import "../TxRow.css";
 import "./LedgerPanel.css";
 
 interface LedgerPanelProps {
@@ -131,10 +132,10 @@ export function LedgerPanel({ entries, openId, onOpenChange, onNewTrade, onDelet
     <ul className="ledger-list">
       {entries.map(e => (
         <li key={e.id}>
-          <button type="button" className="ledger-row" data-entry-id={e.id} onClick={() => onOpenChange(e.id)}>
-            <span className="ledger-row-main">
-              <span className="ledger-row-name">{e.counterparty || "Trade"}</span>
-              <span className="ledger-row-sub">{fmtDate(e.date)} · {summary(e)}</span>
+          <button type="button" className="tx-row ledger-row" data-entry-id={e.id} onClick={() => onOpenChange(e.id)}>
+            <span className="tx-row-main">
+              <span className="tx-row-name">{e.counterparty || "Trade"}</span>
+              <span className="tx-row-sub">{fmtDate(e.date)} · {summary(e)}</span>
             </span>
             <span className="ledger-row-total">
               {sideValues(e).map(s => <span key={s.label}><span className="ledger-row-total-label">{s.label}</span> {usd(s.value)}</span>)}

@@ -15,7 +15,7 @@ import { Checklist } from "./components/Checklist";
 import { EmptyState } from "./components/EmptyState";
 import { ErrorQueue } from "./components/ErrorQueue";
 import { ProgressTracker } from "./components/ProgressTracker";
-import type { Deck, ErrorQueueItem, AcquisitionSource, Collection, CollectionMeta, Order, ProfileExport } from "./types/index";
+import type { Deck, ErrorQueueItem, AcquisitionSource, Collection, CollectionMeta, Order, ImportCounts, ProfileExport } from "./types/index";
 import type { Trade } from "./types/trade";
 import { mergeLedger, sanitizeLedger, sortLedger, type LogMeta } from "./utils/tradeLedger";
 import { applyCollectionToCards } from "./utils/csvParser";
@@ -45,15 +45,23 @@ import { AppLogo } from "./components/AppLogo";
 import type { ToastInput } from "./features/profile/ProfileExportImport";
 import { BuyListSheet } from "./features/card-purchase/BuyListSheet";
 import { useBuyFlow } from "./features/card-purchase/useBuyFlow";
+import { COLLECTION_KEY, COLLECTION_META_KEY } from "./features/collection/storageKeys";
 import "./features/card-purchase/buy-flow.css";
 
 const ONBOARDING_KEY = "fetchlist:onboarding:dismissed";
-const COLLECTION_KEY = "mtg-checklist-collection-v2";
-const COLLECTION_META_KEY = "mtg-checklist-collection-meta-v2";
+
+/** Where the Calculator's back control returns to, for each place it can be opened from. */
+const TRADE_RETURN: Record<TradeOrigin, { view: "collection" | "transactions"; subTab?: TransactionsTab }> = {
+  collection: { view: "collection" },
+  binder: { view: "transactions", subTab: "binder" },
+  trades: { view: "transactions", subTab: "trades" },
+  // A share link opens on Binder, so back lands there too.
+  link: { view: "transactions", subTab: "binder" },
+};
 
 const isTradePath = () => /^\/trade\/?$/.test(window.location.pathname);
 
-/** `/trade` or a `/#trade=…` share link opens the Trade page (nested under Collection) instead of the default tab. */
+/** `/trade` or a `/#trade=…` share link opens the trade Calculator (under Transactions → Binder) instead of the default tab. */
 const openedWithTradeLink = () => isTradePath() || extractPayload(window.location.hash) !== null;
 
 /** Collection metadata as stored now; CollectionPage owns it, so AppInner's own copy can be stale. */
@@ -188,7 +196,7 @@ function AppInner() {
 
   // ── Collection (read-only, for auto-tagging on deck import) ──────────────
   // CollectionPage owns all writes; AppInner only reads + writes when receiving orders.
-  const [collection, setCollection] = useLocalStorage<Collection>("mtg-checklist-collection-v2", {});
+  const [collection, setCollection] = useLocalStorage<Collection>(COLLECTION_KEY, {});
   const [collectionMeta, setCollectionMeta] = useLocalStorage<CollectionMeta | null>(COLLECTION_META_KEY, null);
 
   // ── Orders state ──────────────────────────────────────────────────────────
@@ -490,7 +498,7 @@ function AppInner() {
   }
 
   // ── Profile export / import ───────────────────────────────────────────────
-  function handleProfileImport(data: ProfileExport, replace: boolean) {
+  function handleProfileImport(data: ProfileExport, replace: boolean): ImportCounts {
     // Backups must never land on top of sample data (the UI disables this path too).
     if (isDemoActiveNow()) return { newDecks: 0, newCards: 0, newOrders: 0, newTrades: 0 };
     if (replace) {
@@ -694,8 +702,9 @@ function AppInner() {
   /** The Calculator's back control: return to wherever it was opened from. */
   function leaveTrade() {
     closeTrade();
-    if (tradeOrigin === "collection") setView("collection");
-    else setTxSubTab(tradeOrigin === "link" ? "binder" : tradeOrigin);
+    const { view: backView, subTab } = TRADE_RETURN[tradeOrigin];
+    setView(backView);
+    if (subTab) setTxSubTab(subTab);
     window.scrollTo({ top: 0, behavior: "instant" });
   }
 

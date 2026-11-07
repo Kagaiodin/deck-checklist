@@ -4,6 +4,7 @@ import "./CollectionPage.css";
 import type { Card, Collection, CollectionMeta, CollectionPrinting, Deck } from "../../types/index";
 import type { CollectionFilterKey, CollectionSortKey, CommittedInfo, EditingPrinting } from "../../types/collection";
 import { useLocalStorage } from "../../hooks/useLocalStorage";
+import { COLLECTION_KEY, COLLECTION_META_KEY } from "./storageKeys";
 import { parseCollectionCSV } from "../../utils/csvParser";
 import { groupCollectionBySet, type SetGroupRow } from "../../utils/collectionGroups";
 
@@ -115,10 +116,10 @@ interface CollectionPageProps {
 export function CollectionPage({ decks, onCollectionChange, onOpenTrade }: CollectionPageProps) {
   // ── Persisted state ────────────────────────────────────────────────────────
   const [collection, setCollection] = useLocalStorage<Collection>(
-    "mtg-checklist-collection-v2", {},
+    COLLECTION_KEY, {},
   );
   const [collectionMeta, setCollectionMeta] = useLocalStorage<CollectionMeta | null>(
-    "mtg-checklist-collection-meta-v2", null,
+    COLLECTION_META_KEY, null,
   );
 
   // ── Local UI state ─────────────────────────────────────────────────────────

@@ -1,6 +1,6 @@
 import type { TradeLogEntry } from "../../types/trade";
 import { useEffect, useState } from "react";
-import type { Deck, ErrorQueueItem, Collection, CollectionMeta, Order, ProfileExport } from "../../types/index";
+import type { Deck, ErrorQueueItem, Collection, CollectionMeta, Order, ImportCounts, ProfileExport } from "../../types/index";
 import {
   supportsFileSystemAccess, getLinkedFileName,
   pickSaveHandle, writeLinkedFile,
@@ -29,7 +29,7 @@ interface Props {
   vendorHistory: string[];
 
   // Passed through to GoogleDriveBackup, which manages its own import flow
-  onImport: (data: ProfileExport, replace: boolean) => { newDecks: number; newCards: number; newOrders: number; newTrades?: number };
+  onImport: (data: ProfileExport, replace: boolean) => ImportCounts;
   showToast: (t: ToastInput) => void;
 
   // Import lives in a top-level modal (ImportBackupModal) — this button just opens it

@@ -1,0 +1,9 @@
+/* List row shared by Binder (li) and the trade ledger (button). Panel CSS adds what differs. */
+.tx-row {
+  display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 8px 16px;
+  border: 0; border-bottom: 1px solid var(--border);
+}
+.tx-row:hover { background: var(--hover-fill); }
+.tx-row-main { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1; }
+.tx-row-name { font-size: 14px; font-weight: 500; }
+.tx-row-sub { font-size: 12px; color: var(--text-muted); }

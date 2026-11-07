@@ -12,11 +12,19 @@ export function sanitizeExcluded(raw: unknown): string[] {
   return Array.isArray(raw) ? raw.filter((k): k is string => typeof k === "string") : [];
 }
 
+/** Raw stored text (null if unset or storage is blocked). */
+function readRaw(): string | null {
+  try { return window.localStorage.getItem(BINDER_EXCLUDED_KEY); } catch { return null; }
+}
+
+/** Parses stored text into a clean list; anything unreadable is an empty list. */
+function parseExcluded(raw: string | null): string[] {
+  try { return sanitizeExcluded(JSON.parse(raw ?? "[]")); } catch { return []; }
+}
+
 /** Reads the exclude list straight from storage. */
 export function readBinderExcluded(): string[] {
-  try {
-    return sanitizeExcluded(JSON.parse(window.localStorage.getItem(BINDER_EXCLUDED_KEY) ?? "[]"));
-  } catch { return []; }
+  return parseExcluded(readRaw());
 }
 
 /** Writes the list and tells every live reader (Binder, backups) to re-read it. */
@@ -31,13 +39,13 @@ function subscribe(cb: () => void) {
   return () => { window.removeEventListener(CHANGE_EVENT, cb); window.removeEventListener("storage", cb); };
 }
 function snapshot(): string {
-  try { return window.localStorage.getItem(BINDER_EXCLUDED_KEY) ?? "[]"; } catch { return "[]"; }
+  return readRaw() ?? "[]";
 }
 
 /** The current exclude list; one shared store, so every component sees the same list. */
 export function useBinderExcludedList(): string[] {
   const raw = useSyncExternalStore(subscribe, snapshot, () => "[]");
-  return useMemo(() => { try { return sanitizeExcluded(JSON.parse(raw)); } catch { return []; } }, [raw]);
+  return useMemo(() => parseExcluded(raw), [raw]);
 }
 
 /** Lowercase names the user keeps out of the Binder. */
