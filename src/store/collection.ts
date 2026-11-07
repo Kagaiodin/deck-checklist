@@ -36,30 +36,28 @@ export function mergeCollections(base: Collection, incoming: Collection): { merg
 }
 
 /**
- * Stores every set code in its canonical form (#196). Printings that only differed in set case
- * become one, keeping the larger quantity: the backup merge used to compare case-sensitively,
- * so such a pair is the same cards seen from two devices. Hands back `collection` itself when
- * nothing needed changing.
+ * Stores every set code in its canonical form (#196). A printing whose set code was in another
+ * case merges into the first printing already in stored form that is the same Printing, keeping
+ * the larger quantity: the backup merge used to compare case-sensitively, so such a pair is the
+ * same cards seen from two devices. Printings already in stored form never merge with each other.
+ * Hands back `collection` itself when nothing needed changing.
  */
 function normalizeSets(collection: Collection): Collection {
+  const stored = (p: CollectionPrinting) => p.set === normalizeSet(p.set);
   let out: Collection | null = null;
   for (const [name, printings] of Object.entries(collection)) {
-    if (!Array.isArray(printings) || printings.every(p => p.set === normalizeSet(p.set))) continue;
-    const merged: { printing: CollectionPrinting; changed: boolean }[] = [];
-    for (const p of printings) {
-      const set = normalizeSet(p.set);
-      const changed = set !== p.set;
-      const printing: CollectionPrinting = changed ? withSet(p, set) : p;
-      const twin = merged.find(m => samePrinting(m.printing, printing));
-      if (twin && (changed || twin.changed)) {
-        if (printing.quantity > twin.printing.quantity) twin.printing = { ...twin.printing, quantity: printing.quantity };
-        twin.changed = true;
-      } else {
-        merged.push({ printing, changed });
-      }
-    }
+    if (!Array.isArray(printings) || printings.every(stored)) continue;
+    const result: (CollectionPrinting | null)[] = [...printings];
+    printings.forEach((p, i) => {
+      if (stored(p)) return;
+      const twin = printings.findIndex(o => stored(o) && samePrinting(o, p));
+      if (twin < 0) { result[i] = withSet(p, normalizeSet(p.set)); return; }
+      const kept = result[twin]!;
+      result[twin] = { ...kept, quantity: Math.max(kept.quantity, p.quantity) };
+      result[i] = null;
+    });
     out ??= { ...collection };
-    out[name] = merged.map(m => m.printing);
+    out[name] = result.filter((p): p is CollectionPrinting => p !== null);
   }
   return out ?? collection;
 }

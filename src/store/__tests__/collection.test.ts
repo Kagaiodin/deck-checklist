@@ -172,6 +172,21 @@ describe("createCollectionStore — set codes", () => {
     });
   });
 
+  it("merges a case variant into one twin only, and never merges printings that already shared a case", () => {
+    const stored: Collection = {
+      "counterspell": [
+        { quantity: 1, set: "mh2", collectorNumber: "267" },
+        { quantity: 2, set: "MH2", collectorNumber: "267" },
+        { quantity: 3, set: "MH2", collectorNumber: "267" },
+      ],
+    };
+    const store = createCollectionStore(fakeStorage({ collection: JSON.stringify(stored) }).storage);
+    expect(store.get()["counterspell"]).toEqual([
+      { quantity: 2, set: "MH2", collectorNumber: "267" },
+      { quantity: 3, set: "MH2", collectorNumber: "267" },
+    ]);
+  });
+
   it("uppercases set codes on update and replace", () => {
     const { storage, data } = fakeStorage();
     const store = createCollectionStore(storage);
