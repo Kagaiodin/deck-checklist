@@ -3,7 +3,10 @@ import type { Trade, TradeCard } from "../../types/trade";
 import { DEFAULT_SETTINGS } from "../../types/trade";
 import { tradeToLogEntry } from "../../utils/tradeLedger";
 import type { DemoValues } from "./demoMode";
-import { COLLECTION_KEY, COLLECTION_META_KEY } from "../collection/storageKeys";
+import {
+  DECKS_KEY, COLLECTION_KEY, COLLECTION_META_KEY, ORDERS_KEY, VENDOR_HISTORY_KEY, ERRORS_KEY,
+  TRADE_STORAGE_KEY, TRADE_LEDGER_KEY, BINDER_EXCLUDED_KEY, ONBOARDING_DISMISSED_KEY,
+} from "../../store/storageKeys";
 
 const DAY = 86_400_000;
 
@@ -419,20 +422,20 @@ export function buildDemoData(now: number): DemoValues {
   ];
 
   return {
-    "mtg-checklist-decks": JSON.stringify(decks),
+    [DECKS_KEY]: JSON.stringify(decks),
     [COLLECTION_KEY]: JSON.stringify(collection),
     [COLLECTION_META_KEY]: JSON.stringify({
       fileName: "sample-collection.csv",
       importedAt: now - 7 * DAY,
       cardCount: Object.keys(collection).length,
     }),
-    "mtg-checklist-orders-v1": JSON.stringify(orders),
-    "mtg-checklist-vendor-history": JSON.stringify(["Card Kingdom", "TCGplayer", "ManaPool", "Face to Face"]),
-    "mtg-checklist-errors": "{}",
-    "fetchlist-trade": JSON.stringify({ mine, theirs, settings }),
-    "mtg-checklist-trade-ledger-v1": JSON.stringify(ledger),
+    [ORDERS_KEY]: JSON.stringify(orders),
+    [VENDOR_HISTORY_KEY]: JSON.stringify(["Card Kingdom", "TCGplayer", "ManaPool", "Face to Face"]),
+    [ERRORS_KEY]: "{}",
+    [TRADE_STORAGE_KEY]: JSON.stringify({ mine, theirs, settings }),
+    [TRADE_LEDGER_KEY]: JSON.stringify(ledger),
     // Binder exclude list starts empty so demo exclusions never touch the real one.
-    "mtg-checklist-binder-excluded-v1": "[]",
-    "fetchlist:onboarding:dismissed": "true",
+    [BINDER_EXCLUDED_KEY]: "[]",
+    [ONBOARDING_DISMISSED_KEY]: "true",
   };
 }

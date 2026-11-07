@@ -1,4 +1,4 @@
-import { COLLECTION_KEY, COLLECTION_META_KEY } from "../collection/storageKeys";
+import { keysOfKind } from "../../store/storageKeys";
 
 export const DEMO_ACTIVE_KEY = "fetchlist:demo:active";
 export const DEMO_SNAPSHOT_KEY = "fetchlist:demo:snapshot";
@@ -8,23 +8,8 @@ export const DEMO_VERSION_KEY = "fetchlist:demo:version";
 
 export type DemoSource = "link" | "settings";
 
-// Keys replaced while demo mode is active. UI preference keys are deliberately absent.
-export const MANAGED_KEYS = [
-  "mtg-checklist-decks",
-  COLLECTION_KEY,
-  COLLECTION_META_KEY,
-  "mtg-checklist-orders-v1",
-  "mtg-checklist-vendor-history",
-  "mtg-checklist-errors",
-  "fetchlist-trade",
-  "mtg-checklist-trade-ledger-v1",
-  "mtg-checklist-binder-excluded-v1",
-  "fetchlist-last-vendor",
-  "fetchlist-vendor-last-used",
-  "fetchlist:onboarding:dismissed",
-  // Holds deck ids, so real and demo dismissals must not mix.
-  "fetchlist-coachmark-dismissed-decks",
-] as const;
+// Keys replaced while demo mode is active: User data and Working state. Preferences are left alone.
+export const MANAGED_KEYS = keysOfKind("user-data", "working-state");
 
 export function isDemoActive(storage: Storage): boolean {
   return storage.getItem(DEMO_ACTIVE_KEY) === "true";
@@ -105,18 +90,11 @@ export function exitDemo(storage: Storage): { recovered: boolean } {
   return { recovered: snapshot === null };
 }
 
-// Keys that count as the user's own data when deciding whether to confirm a replace.
-const DATA_KEYS = [
-  "mtg-checklist-decks",
-  COLLECTION_KEY,
-  "mtg-checklist-orders-v1",
-  "mtg-checklist-trade-ledger-v1",
-  "mtg-checklist-errors",
-  "fetchlist-trade",
-] as const;
+// User data: what counts as the user's own when deciding whether to confirm a replace.
+const USER_DATA_KEYS = keysOfKind("user-data");
 
 export function hasRealData(storage: Storage): boolean {
-  return DATA_KEYS.some((key) => {
+  return USER_DATA_KEYS.some((key) => {
     const raw = storage.getItem(key);
     if (raw === null) return false;
     try {

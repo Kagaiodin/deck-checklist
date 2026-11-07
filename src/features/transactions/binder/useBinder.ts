@@ -2,8 +2,7 @@ import { useCallback, useMemo, useSyncExternalStore } from "react";
 import type { Collection, Deck } from "../../../types/index";
 import { useCommittedInfo } from "../../collection/hooks/useCommittedInfo";
 import { deriveBinder, type Binder } from "./binderSurplus";
-
-export const BINDER_EXCLUDED_KEY = "mtg-checklist-binder-excluded-v1";
+import { BINDER_EXCLUDED_KEY } from "../../../store/storageKeys";
 
 const CHANGE_EVENT = "fetchlist:binder-excluded-change";
 

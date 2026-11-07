@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from "react";
 import type { Collection, CollectionMeta, CollectionPrinting } from "../types/index";
 import { normalizeSet, samePrinting } from "../utils/printing";
-import { COLLECTION_KEY, COLLECTION_META_KEY } from "../features/collection/storageKeys";
+import { COLLECTION_KEY, COLLECTION_META_KEY } from "./storageKeys";
 
 /** Where the store keeps the Collection between sessions. One method per key, so key ownership stays visible. */
 export interface CollectionStorage {

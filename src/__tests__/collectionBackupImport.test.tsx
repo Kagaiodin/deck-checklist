@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { screen, waitFor, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderApp } from "../test/renderApp";
-import { COLLECTION_KEY, COLLECTION_META_KEY } from "../features/collection/storageKeys";
+import { COLLECTION_KEY, COLLECTION_META_KEY } from "../store/storageKeys";
 import type { ProfileExport } from "../types/index";
 
 // App-level: a backup import works against the one live Collection.

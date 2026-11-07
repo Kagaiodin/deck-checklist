@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, within, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { TradePage } from "../TradePage";
-import { TRADE_STORAGE_KEY } from "../hooks/useTrade";
+import { TRADE_STORAGE_KEY } from "../../../store/storageKeys";
 import * as scryfall from "../../../utils/scryfallSearch";
 import { encodeTrade } from "../../../utils/tradeShare";
 import { DEFAULT_SETTINGS, type Trade, type TradeCard, type TradeSide } from "../../../types/trade";

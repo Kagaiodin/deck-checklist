@@ -2,9 +2,8 @@ import { useCallback } from "react";
 import type { CollectionStore } from "../../../store/collection";
 import type { Trade, TradeLogCard, TradeLogEntry } from "../../../types/trade";
 import { useLocalStorage } from "../../../hooks/useLocalStorage";
+import { TRADE_LEDGER_KEY } from "../../../store/storageKeys";
 import { applyTradeToCollection, sortLedger, tradeToLogEntry, type LogMeta } from "../../../utils/tradeLedger";
-
-export const TRADE_LEDGER_KEY = "mtg-checklist-trade-ledger-v1";
 
 export interface LogTradeResult {
   entry: TradeLogEntry;

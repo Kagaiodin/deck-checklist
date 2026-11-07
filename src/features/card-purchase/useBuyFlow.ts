@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import type { Card, Order, OrderCard } from "../../types/index";
+import { LAST_VENDOR_KEY, VENDOR_LAST_USED_KEY } from "../../store/storageKeys";
 
 // ── Vendor definitions ────────────────────────────────────────────────────────
 
@@ -48,11 +49,6 @@ export const VENDORS: Vendor[] = [
     sendMethodDesc: "Copies list to clipboard — paste in any site",
   },
 ];
-
-// ── localStorage keys ─────────────────────────────────────────────────────────
-
-const LAST_VENDOR_KEY = "fetchlist-last-vendor";
-const VENDOR_LAST_USED_KEY = "fetchlist-vendor-last-used";
 
 function getLastVendorId(): string | null {
   try { return localStorage.getItem(LAST_VENDOR_KEY); } catch { return null; }

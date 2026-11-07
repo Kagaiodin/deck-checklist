@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
-import { useTradeLedger, TRADE_LEDGER_KEY } from "../useTradeLedger";
+import { useTradeLedger } from "../useTradeLedger";
+import { TRADE_LEDGER_KEY } from "../../../../store/storageKeys";
 import { DEFAULT_SETTINGS, type Trade, type TradeCard } from "../../../../types/trade";
 import type { CollectionMeta } from "../../../../types/index";
 import { memoryCollectionStore } from "../../../../test/memoryCollectionStore";

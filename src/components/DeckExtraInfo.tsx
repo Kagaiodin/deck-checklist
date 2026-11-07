@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import type { DeckExtraInfo as DeckExtraInfoType } from "../types/index";
+import { EXTRA_INFO_OPEN_KEY } from "../store/storageKeys";
 
 interface Props {
   extraInfo: DeckExtraInfoType | undefined;
@@ -13,15 +14,13 @@ function tokenDotClass(typeLine: string): string {
   return "ei-dot-copy";
 }
 
-const LS_KEY = "fetchlist:extrainfo-open";
-
 export function DeckExtraInfo({ extraInfo, isLoading }: Props) {
   const [open, setOpen] = useState(() => {
-    try { return localStorage.getItem(LS_KEY) === "1"; } catch { return false; }
+    try { return localStorage.getItem(EXTRA_INFO_OPEN_KEY) === "1"; } catch { return false; }
   });
 
   useEffect(() => {
-    try { localStorage.setItem(LS_KEY, open ? "1" : "0"); } catch { /* storage unavailable: not remembered */ }
+    try { localStorage.setItem(EXTRA_INFO_OPEN_KEY, open ? "1" : "0"); } catch { /* storage unavailable: not remembered */ }
   }, [open]);
 
   if (!extraInfo && !isLoading) return null;

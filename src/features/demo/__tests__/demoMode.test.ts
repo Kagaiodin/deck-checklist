@@ -50,12 +50,6 @@ describe("demoMode", () => {
     ]);
   });
 
-  it("never manages UI preference keys", () => {
-    for (const k of ["fl-theme-mode", "fl-theme-accent", "fl-sidebar-collapsed", "fetchlist:extrainfo-open"]) {
-      expect(MANAGED_KEYS).not.toContain(k);
-    }
-  });
-
   it("is a no-op when demo is already active (snapshot is not overwritten)", () => {
     localStorage.setItem("mtg-checklist-decks", "real");
     enterDemo(localStorage, { "mtg-checklist-decks": "demo1" }, "settings");

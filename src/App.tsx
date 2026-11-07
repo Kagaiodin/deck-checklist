@@ -46,9 +46,8 @@ import type { ToastInput } from "./features/profile/ProfileExportImport";
 import { BuyListSheet } from "./features/card-purchase/BuyListSheet";
 import { useBuyFlow } from "./features/card-purchase/useBuyFlow";
 import { collectionStore, mergeCollections, useCollection } from "./store/collection";
+import { DECKS_KEY, ERRORS_KEY, ORDERS_KEY, VENDOR_HISTORY_KEY, ONBOARDING_DISMISSED_KEY, SIDEBAR_COLLAPSED_KEY } from "./store/storageKeys";
 import "./features/card-purchase/buy-flow.css";
-
-const ONBOARDING_KEY = "fetchlist:onboarding:dismissed";
 
 /** Where the Calculator's back control returns to, for each place it can be opened from. */
 const TRADE_RETURN: Record<TradeOrigin, { view: "collection" | "transactions"; subTab?: TransactionsTab }> = {
@@ -72,7 +71,7 @@ function AppInner() {
   const [deckUrl, setDeckUrl] = useState("");
   const [deckFormat, setDeckFormat] = useState("");
   const [importAsBuilt, setImportAsBuilt] = useState(false);
-  const [allErrors, setAllErrors] = useLocalStorage<Record<string, ErrorQueueItem[]>>("mtg-checklist-errors", {});
+  const [allErrors, setAllErrors] = useLocalStorage<Record<string, ErrorQueueItem[]>>(ERRORS_KEY, {});
   const [validating, setValidating] = useState(false);
   const [progress, setProgress] = useState<ValidationProgress>({ total: 0, validated: 0 });
   const [importError, setImportError] = useState<string | null>(null);
@@ -88,7 +87,7 @@ function AppInner() {
   const [renamingDeckId, setRenamingDeckId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(() => {
-    try { return localStorage.getItem("fl-sidebar-collapsed") !== "true"; }
+    try { return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) !== "true"; }
     catch { return true; }
   });
   const [archidektFetching, setArchidektFetching] = useState(false);
@@ -106,7 +105,7 @@ function AppInner() {
 
   // ── Sidebar persistence + keyboard shortcut ───────────────────────────────
   useEffect(() => {
-    try { localStorage.setItem("fl-sidebar-collapsed", sidebarOpen ? "false" : "true"); }
+    try { localStorage.setItem(SIDEBAR_COLLAPSED_KEY, sidebarOpen ? "false" : "true"); }
     catch { /* storage unavailable: the preference just isn't remembered */ }
   }, [sidebarOpen]);
 
@@ -122,7 +121,7 @@ function AppInner() {
   }, []);
 
   // ── Onboarding modal ──────────────────────────────────────────────────────
-  const [onboardingDismissed, setOnboardingDismissed] = useLocalStorage<boolean>(ONBOARDING_KEY, false);
+  const [onboardingDismissed, setOnboardingDismissed] = useLocalStorage<boolean>(ONBOARDING_DISMISSED_KEY, false);
   const showOnboarding = state.decks.length === 0 && !onboardingDismissed;
 
   function dismissOnboarding() {
@@ -174,8 +173,8 @@ function AppInner() {
   const { collection, meta: collectionMeta } = useCollection();
 
   // ── Orders state ──────────────────────────────────────────────────────────
-  const [orders, setOrders] = useLocalStorage<Order[]>("mtg-checklist-orders-v1", []);
-  const [recentVendors, setRecentVendors] = useLocalStorage<string[]>("mtg-checklist-vendor-history", []);
+  const [orders, setOrders] = useLocalStorage<Order[]>(ORDERS_KEY, []);
+  const [recentVendors, setRecentVendors] = useLocalStorage<string[]>(VENDOR_HISTORY_KEY, []);
   const [notificationFilterIds, setNotificationFilterIds] = useState<string[] | null>(null);
 
   // ── Toast system ──────────────────────────────────────────────────────────
@@ -1582,13 +1581,13 @@ function AppInner() {
 }
 
 function PersistenceWrapper({ children }: { children: (decks: Deck[]) => React.ReactNode }) {
-  const [savedDecks] = useLocalStorage<Deck[]>("mtg-checklist-decks", []);
+  const [savedDecks] = useLocalStorage<Deck[]>(DECKS_KEY, []);
   return <>{children(savedDecks)}</>;
 }
 
 function PersistenceSync() {
   const { state } = useDecks();
-  const [, setSavedDecks] = useLocalStorage<Deck[]>("mtg-checklist-decks", []);
+  const [, setSavedDecks] = useLocalStorage<Deck[]>(DECKS_KEY, []);
 
   useEffect(() => {
     setSavedDecks(state.decks);

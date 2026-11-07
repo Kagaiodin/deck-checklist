@@ -1,26 +1,18 @@
 import { describe, it, expect } from "vitest";
 import ts from "typescript";
-import { MANAGED_KEYS } from "../features/demo/demoMode";
+import { STORAGE_KEYS } from "../store/storageKeys";
 
 // Static scan of every localStorage key in src/. Guards two rules:
 // 1. One module writes each key. Two useLocalStorage copies of one key never sync, so the
 //    second writer saves stale data over the first (the order-receive bug, #189).
-// 2. Every key is either swapped by demo mode (MANAGED_KEYS) or deliberately exempt below,
-//    so new persisted data cannot leak between demo and real data unnoticed.
+// 2. Every key is registered in src/store/storageKeys.ts with its kind, which decides whether
+//    demo mode swaps it, so new persisted data cannot leak between demo and real data unnoticed.
 // Keys must be string literals or string constants so this scan can resolve them.
 
 /** Keys written from more than one module on purpose. Each entry needs a reason and a way out. */
 const SHARED_WRITERS: Record<string, string> = {};
 
-/** Keys that demo mode leaves alone: UI preferences that are not the user's data. */
-const DEMO_EXEMPT: Record<string, string> = {
-  "fl-theme-mode": "UI preference",
-  "fl-theme-accent": "UI preference",
-  "fl-sidebar-collapsed": "UI preference",
-  "fetchlist:extrainfo-open": "UI preference",
-};
-
-// demo/ swaps every managed key by design; useLocalStorage.ts is the generic hook itself.
+// demo/ swaps every managed key by design (its own demo:* keys are its bookkeeping, not app data); useLocalStorage.ts is the generic hook itself.
 const SKIP = [/__tests__\//, /^test\//, /\.test\.tsx?$/, /^features\/demo\//, /^hooks\/useLocalStorage\.ts$/];
 
 type Usage = { writers: Set<string>; readers: Set<string> };
@@ -98,7 +90,7 @@ function scan() {
 }
 
 const { usage, unresolved } = scan();
-const managed = new Set<string>(MANAGED_KEYS);
+const registered = new Set<string>(STORAGE_KEYS.map(e => e.key));
 
 describe("localStorage keys", () => {
   it("finds the app's keys (the scan is not silently empty)", () => {
@@ -122,16 +114,19 @@ describe("localStorage keys", () => {
     expect(stale, "Only one module writes this key now. Remove its SHARED_WRITERS entry in the same commit that removed the second writer.").toEqual([]);
   });
 
-  it("every key is demo-managed or explicitly exempt", () => {
-    const uncovered = [...usage.keys()].filter(k => !managed.has(k) && !(k in DEMO_EXEMPT));
-    expect(uncovered, "Add the key to MANAGED_KEYS in src/features/demo/demoMode.ts so demo mode swaps it, or to DEMO_EXEMPT here if it is a UI preference.").toEqual([]);
+  it("every key is registered", () => {
+    const unregistered = [...usage.keys()].filter(k => !registered.has(k));
+    expect(
+      unregistered,
+      "Declare the key in src/store/storageKeys.ts: export a constant, use it at the call site, and add a STORAGE_KEYS entry with its kind (User data, Working state or Preference; see GLOSSARY.md) and its backup field.",
+    ).toEqual([]);
   });
 
-  it("MANAGED_KEYS and DEMO_EXEMPT only list keys the app uses", () => {
-    const unused = [...managed, ...Object.keys(DEMO_EXEMPT)].filter(k => !usage.has(k));
+  it("STORAGE_KEYS only lists keys the app uses", () => {
+    const unused = [...registered].filter(k => !usage.has(k));
     expect(
       unused,
-      "No module reads or writes this key as `localStorage.getItem/setItem/removeItem(KEY)` or `useLocalStorage(KEY)`, so the scan thinks the app doesn't use it. If you moved the calls behind an injected storage parameter (`storage.getItem(KEY)`), the scan can't see them: call `window.localStorage` with the key constant directly, for example in an adapter with one method per key. Otherwise drop the stale entry.",
+      "No module reads or writes this key as `localStorage.getItem/setItem/removeItem(KEY)` or `useLocalStorage(KEY)`, so the scan thinks the app doesn't use it. If you moved the calls behind an injected storage parameter (`storage.getItem(KEY)`), the scan can't see them: call `window.localStorage` with the key constant directly, for example in an adapter with one method per key. Otherwise drop the stale STORAGE_KEYS entry.",
     ).toEqual([]);
   });
 });

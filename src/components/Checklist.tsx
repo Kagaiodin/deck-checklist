@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import type { Card, Deck, AcquisitionSource } from "../types/index";
 import { useLocalStorage } from "../hooks/useLocalStorage";
+import { COACHMARK_DISMISSED_KEY } from "../store/storageKeys";
 import { ACQUISITION_SOURCES } from "../types/index";
 import { CardRowOverflowMenu } from "./CardRowOverflowMenu";
 import { CardRowSheet } from "./CardRowSheet";
@@ -274,7 +275,7 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
 
   // Coachmark dismissal — persisted per deck ID
   const [dismissedDeckIds, setDismissedDeckIds] = useLocalStorage<string[]>(
-    "fetchlist-coachmark-dismissed-decks",
+    COACHMARK_DISMISSED_KEY,
     []
   );
   function dismissCoachmark() {
