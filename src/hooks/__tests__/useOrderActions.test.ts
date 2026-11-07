@@ -56,13 +56,14 @@ describe("useOrderActions", () => {
       });
     });
 
-    it("merges every order card, freeform included, into the collection and re-applies it", () => {
+    it("merges every order card, freeform included, into the collection", () => {
       const { result, store, dispatch } = setup([order()], { "sol ring": [{ quantity: 1 }] });
       act(() => result.current.handleMarkReceived("o1"));
       const merged = store.get();
       expect(merged["sol ring"]).toEqual([{ quantity: 2 }]);
       expect(merged["freeform card"]).toEqual([{ quantity: 2 }]);
-      expect(dispatch).toHaveBeenLastCalledWith({ type: "APPLY_COLLECTION", payload: merged });
+      // Re-tagging follows from the store change (DeckProvider), not a dispatch here.
+      expect(dispatch.mock.calls.some(([a]) => a.type === "APPLY_COLLECTION")).toBe(false);
     });
 
     it("updates the card count on the stored collection meta", () => {

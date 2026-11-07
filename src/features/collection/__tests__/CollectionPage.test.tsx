@@ -61,7 +61,7 @@ vi.mock("react-virtuoso", async () => {
 });
 
 import { CollectionPage } from "../CollectionPage";
-import { resetForTests } from "../../../store/collection";
+import { collectionStore, resetForTests } from "../../../store/collection";
 
 const COLLECTION_KEY = "mtg-checklist-collection-v2";
 const META_KEY = "mtg-checklist-collection-meta-v2";
@@ -108,9 +108,11 @@ function setup(opts: {
   const store = installStorage(
     opts.collection === null ? {} : { collection: opts.collection ?? base, meta },
   );
+  // Called with the new Collection on every change (DeckProvider re-tags decks from these).
   const onCollectionChange = vi.fn();
+  collectionStore.subscribe(() => onCollectionChange(collectionStore.get()));
   const utils = render(
-    <CollectionPage decks={opts.decks ?? []} onCollectionChange={onCollectionChange} onOpenTrade={opts.onOpenTrade} />,
+    <CollectionPage decks={opts.decks ?? []} onOpenTrade={opts.onOpenTrade} />,
   );
   return { ...utils, store, onCollectionChange };
 }
@@ -576,7 +578,7 @@ describe("CollectionPage — group by set", () => {
 
   it("Remove all in a group only removes that set's printings", async () => {
     const store = installStorage({ collection: setCollection(), meta });
-    render(<CollectionPage decks={[]} onCollectionChange={vi.fn()} />);
+    render(<CollectionPage decks={[]} />);
     await groupBySet();
     const rows = [...document.querySelectorAll('[data-collection-key="sol ring"]')];
     expect(rows).toHaveLength(2); // one per set

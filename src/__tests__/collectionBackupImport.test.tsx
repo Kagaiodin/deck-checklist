@@ -54,4 +54,26 @@ describe("importing a backup", () => {
     expect(Object.keys(stored(COLLECTION_KEY)).sort()).toEqual(["counterspell", "lightning bolt", "sol ring"]);
     expect(stored(COLLECTION_META_KEY)).toEqual({ fileName: "mine.csv", importedAt: 1, cardCount: 3 });
   });
+
+  const deck = (source?: string) => ({
+    id: "d1", name: "Atraxa", createdAt: 1,
+    cards: [{ id: "c1", name: "Sol Ring", quantity: 1, acquired: false, color: [], type: "Artifact", source }],
+  });
+  const ringSource = () => stored("mtg-checklist-decks")?.[0]?.cards[0]?.source;
+
+  it("re-tags decks against the merged Collection", async () => {
+    const user = userEvent.setup();
+    store.set("mtg-checklist-decks", JSON.stringify([deck()]));
+    render(<App />);
+    await importBackup(user, { collection: { "sol ring": [{ quantity: 1 }] } });
+    await waitFor(() => expect(ringSource()).toBe("owned"));
+  });
+
+  it("re-tags the restored decks against the restored Collection on replace", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await importBackup(user, { decks: [deck()] as ProfileExport["decks"], collection: { "sol ring": [{ quantity: 1 }] } }, { replace: true });
+    await waitFor(() => expect(stored("mtg-checklist-decks")).toHaveLength(1));
+    await waitFor(() => expect(ringSource()).toBe("owned"));
+  });
 });

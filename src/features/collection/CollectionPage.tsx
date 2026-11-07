@@ -105,14 +105,13 @@ function GroupedRowItem(
 
 interface CollectionPageProps {
   decks: Deck[];
-  onCollectionChange: (collection: Collection) => void;
   /** Opens the Trade calculator (its own route). Omit to hide the menu entry. */
   onOpenTrade?: () => void;
 }
 
 // ── Page root ────────────────────────────────────────────────────────────────
 
-export function CollectionPage({ decks, onCollectionChange, onOpenTrade }: CollectionPageProps) {
+export function CollectionPage({ decks, onOpenTrade }: CollectionPageProps) {
   // ── Persisted state ────────────────────────────────────────────────────────
   const { collection, meta: collectionMeta } = useCollection();
 
@@ -244,7 +243,6 @@ export function CollectionPage({ decks, onCollectionChange, onOpenTrade }: Colle
   function handleUndo() {
     if (!snapshotRef.current) return;
     collectionStore.replace(snapshotRef.current.collection, snapshotRef.current.meta);
-    onCollectionChange(snapshotRef.current.collection);
     snapshotRef.current = null;
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     setUndoToast(null);
@@ -253,7 +251,6 @@ export function CollectionPage({ decks, onCollectionChange, onOpenTrade }: Colle
   // ── Collection mutators ────────────────────────────────────────────────────
   function applyCollection(updated: Collection, meta: CollectionMeta) {
     collectionStore.replace(updated, meta);
-    onCollectionChange(updated);
   }
 
   function importCollectionFile(file: File) {
@@ -285,13 +282,11 @@ export function CollectionPage({ decks, onCollectionChange, onOpenTrade }: Colle
     showUndoToast("Collection cleared.");
     collectionStore.replace({}, null);
     setCollectionError(null);
-    onCollectionChange({});
   }
 
   /** Edits the current Collection; `source` names the meta if this is the first card. */
   function mutateCollection(fn: (current: Collection) => Collection, source?: string) {
     collectionStore.update(fn, { source });
-    onCollectionChange(collectionStore.get());
   }
 
   function handleIncrement(key: string, idx?: number) {

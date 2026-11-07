@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { useTradeLedger, TRADE_LEDGER_KEY } from "../useTradeLedger";
 import { DEFAULT_SETTINGS, type Trade, type TradeCard } from "../../../../types/trade";
@@ -18,7 +18,7 @@ const card: TradeCard = { id: "i", name: "Sol Ring", scryfallId: "x", set: "cmm"
 const trade: Trade = { mine: { cards: [card], cash: [] }, theirs: { cards: [], cash: [] }, settings: { ...DEFAULT_SETTINGS }, readOnly: false };
 
 function setup(meta: CollectionMeta | null = null) {
-  const deps = { collection: memoryCollectionStore({ "sol ring": [{ quantity: 2 }] }, meta), dispatch: vi.fn() };
+  const deps = { collection: memoryCollectionStore({ "sol ring": [{ quantity: 2 }] }, meta) };
   return { deps, ...renderHook(() => useTradeLedger(deps)) };
 }
 
@@ -27,7 +27,7 @@ describe("useTradeLedger", () => {
     expect(setup().result.current.entries).toEqual([]);
   });
 
-  it("logTrade records the entry, applies the Collection and re-tags decks", () => {
+  it("logTrade records the entry and applies it to the Collection", () => {
     const { result, deps } = setup();
     let out!: ReturnType<typeof result.current.logTrade>;
     act(() => { out = result.current.logTrade(trade, { date: 5, counterparty: "Sam", notes: "" }); });
@@ -35,7 +35,6 @@ describe("useTradeLedger", () => {
     expect(JSON.parse(store.get(TRADE_LEDGER_KEY)!)[0]).toMatchObject({ counterparty: "Sam" });
     expect(out.shortfall).toEqual([]);
     expect(deps.collection.get()).toEqual({ "sol ring": [{ quantity: 1 }] });
-    expect(deps.dispatch).toHaveBeenCalledWith({ type: "APPLY_COLLECTION", payload: deps.collection.get() });
   });
 
   it("keeps stored import metadata and only updates the card count", () => {

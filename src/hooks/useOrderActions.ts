@@ -49,8 +49,8 @@ export function useOrderActions({
     }
 
     // Merge into collection (Option A: quantity only, no set/CN)
+    // DeckProvider re-tags decks from the change.
     collection.update(c => mergeOrderCardsIntoCollection(order.cards, c), { source: "Order receipt" });
-    dispatch({ type: "APPLY_COLLECTION", payload: collection.get() });
   }
 
   function handleMarkCancelled(orderId: string) {
@@ -66,7 +66,7 @@ export function useOrderActions({
       dispatch({ type: "UNSET_CARD_SOURCES", payload: { deckId, cardIds } });
     }
 
-    // Re-apply collection now that manuallyTagged is cleared
+    // Re-apply collection now that manuallyTagged is cleared (the Collection itself didn't change)
     const current = collection.get();
     if (Object.keys(current).length > 0) {
       dispatch({ type: "APPLY_COLLECTION", payload: current });

@@ -448,7 +448,7 @@ function AppInner() {
   });
 
   const { entries: ledger, setEntries: setLedger, logTrade, deleteEntry: deleteLedgerEntry } = useTradeLedger({
-    collection: collectionStore, dispatch,
+    collection: collectionStore,
   });
   // The exclude list is a shared external store, so backups always carry the current one.
   const binderExcluded = useBinderExcludedList();
@@ -1513,7 +1513,6 @@ function AppInner() {
         {view === "collection" && (
           <CollectionPage
             decks={state.decks}
-            onCollectionChange={updated => dispatch({ type: "APPLY_COLLECTION", payload: updated })}
             onOpenTrade={() => openTrade("collection")}
           />
         )}

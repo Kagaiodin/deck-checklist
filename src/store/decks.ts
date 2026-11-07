@@ -1,6 +1,7 @@
 import type { Deck, Collection, DeckNotification, DeckExtraInfo } from "../types/index";
 import { applyCollectionToCards } from "../utils/csvParser";
-import { useReducer, createContext, useContext, createElement } from "react";
+import { useReducer, createContext, useContext, createElement, useEffect } from "react";
+import { collectionStore } from "./collection";
 import type { Dispatch, ReactNode } from "react";
 
 type DeckState = {
@@ -266,6 +267,16 @@ const DeckContext = createContext<{ state: DeckState; dispatch: Dispatch<DeckAct
 
 export function DeckProvider({ children, initialDecks = [] }: { children: ReactNode; initialDecks?: Deck[] }) {
   const [state, dispatch] = useReducer(deckReducer, { decks: initialDecks });
+  // Every Collection change re-tags decks. The starting Collection doesn't: stored decks already match it.
+  useEffect(() => {
+    let last = collectionStore.get();
+    return collectionStore.subscribe(() => {
+      const next = collectionStore.get();
+      if (next === last) return;
+      last = next;
+      dispatch({ type: "APPLY_COLLECTION", payload: next });
+    });
+  }, []);
   return createElement(DeckContext.Provider, { value: { state, dispatch } }, children);
 }
 
