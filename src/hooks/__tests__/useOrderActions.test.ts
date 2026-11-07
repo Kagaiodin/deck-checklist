@@ -17,13 +17,13 @@ const order = (over: Partial<Order> = {}): Order => ({
   ...over,
 });
 
-function setup(orders: Order[], collection: Collection = {}) {
+function setup(orders: Order[], collection: Collection = {}, meta: CollectionMeta | null = null) {
   const setOrders = vi.fn();
   const setCollection = vi.fn();
   const setCollectionMeta = vi.fn();
   const dispatch = vi.fn();
   const { result } = renderHook(() =>
-    useOrderActions({ orders, setOrders, collection, setCollection, setCollectionMeta, dispatch }),
+    useOrderActions({ orders, setOrders, readCollection: () => collection, readCollectionMeta: () => meta, setCollection, setCollectionMeta, dispatch }),
   );
   return { result, setOrders, setCollection, setCollectionMeta, dispatch };
 }
@@ -67,18 +67,18 @@ describe("useOrderActions", () => {
       expect(dispatch).toHaveBeenLastCalledWith({ type: "APPLY_COLLECTION", payload: merged });
     });
 
-    it("updates the card count on existing collection meta", () => {
-      const { result, setCollection, setCollectionMeta } = setup([order()]);
+    it("updates the card count on the stored collection meta", () => {
+      const stored: CollectionMeta = { fileName: "mine.csv", importedAt: 5, cardCount: 1 };
+      const { result, setCollection, setCollectionMeta } = setup([order()], {}, stored);
       act(() => result.current.handleMarkReceived("o1"));
       const merged = setCollection.mock.calls[0][0] as Collection;
-      const prev: CollectionMeta = { fileName: "mine.csv", importedAt: 5, cardCount: 1 };
-      expect(applyUpdater(setCollectionMeta, prev)).toEqual({ ...prev, cardCount: Object.keys(merged).length });
+      expect(setCollectionMeta).toHaveBeenCalledWith({ ...stored, cardCount: Object.keys(merged).length });
     });
 
     it("creates collection meta when none exists", () => {
       const { result, setCollectionMeta } = setup([order()]);
       act(() => result.current.handleMarkReceived("o1"));
-      const meta = applyUpdater<CollectionMeta | null>(setCollectionMeta, null)!;
+      const meta = setCollectionMeta.mock.calls[0][0] as CollectionMeta;
       expect(meta.fileName).toBe("Order receipt");
       expect(meta.cardCount).toBe(4);
     });

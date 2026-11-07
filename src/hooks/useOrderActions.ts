@@ -24,7 +24,10 @@ function cardsByDeckFor(order: Order): Map<string, string[]> {
 interface OrderActionsDeps {
   orders: Order[];
   setOrders: Dispatch<SetStateAction<Order[]>>;
-  collection: Collection;
+  /** Reads the Collection fresh from storage; App's own copy goes stale while Collection is open. */
+  readCollection: () => Collection;
+  /** Collection metadata as stored now; CollectionPage owns it, so App's own copy can be stale. */
+  readCollectionMeta: () => CollectionMeta | null;
   setCollection: Dispatch<SetStateAction<Collection>>;
   setCollectionMeta: Dispatch<SetStateAction<CollectionMeta | null>>;
   dispatch: Dispatch<DeckAction>;
@@ -34,7 +37,8 @@ interface OrderActionsDeps {
 export function useOrderActions({
   orders,
   setOrders,
-  collection,
+  readCollection,
+  readCollectionMeta,
   setCollection,
   setCollectionMeta,
   dispatch,
@@ -52,12 +56,13 @@ export function useOrderActions({
     }
 
     // Merge into collection (Option A: quantity only, no set/CN)
-    const updatedCollection = mergeOrderCardsIntoCollection(order.cards, collection);
+    const updatedCollection = mergeOrderCardsIntoCollection(order.cards, readCollection());
     setCollection(updatedCollection);
-    setCollectionMeta(prev => prev
-      ? { ...prev, cardCount: Object.keys(updatedCollection).length }
-      : { fileName: "Order receipt", importedAt: Date.now(), cardCount: Object.keys(updatedCollection).length }
-    );
+    const cardCount = Object.keys(updatedCollection).length;
+    const storedMeta = readCollectionMeta();
+    setCollectionMeta(storedMeta
+      ? { ...storedMeta, cardCount }
+      : { fileName: "Order receipt", importedAt: Date.now(), cardCount });
     dispatch({ type: "APPLY_COLLECTION", payload: updatedCollection });
   }
 
@@ -75,6 +80,7 @@ export function useOrderActions({
     }
 
     // Re-apply collection now that manuallyTagged is cleared
+    const collection = readCollection();
     if (Object.keys(collection).length > 0) {
       dispatch({ type: "APPLY_COLLECTION", payload: collection });
     }
