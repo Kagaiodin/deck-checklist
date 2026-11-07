@@ -47,6 +47,7 @@ import type { ToastInput } from "./features/profile/ProfileExportImport";
 import { BuyListSheet } from "./features/card-purchase/BuyListSheet";
 import { useBuyFlow } from "./features/card-purchase/useBuyFlow";
 import { COLLECTION_KEY, COLLECTION_META_KEY } from "./features/collection/storageKeys";
+import { collectionStore } from "./store/collection";
 import "./features/card-purchase/buy-flow.css";
 
 const ONBOARDING_KEY = "fetchlist:onboarding:dismissed";
@@ -64,16 +65,6 @@ const isTradePath = () => /^\/trade\/?$/.test(window.location.pathname);
 
 /** `/trade` or a `/#trade=…` share link opens the trade Calculator (under Transactions → Binder) instead of the default tab. */
 const openedWithTradeLink = () => isTradePath() || extractPayload(window.location.hash) !== null;
-
-/** Collection metadata as stored now; CollectionPage owns it, so AppInner's own copy can be stale. */
-function readCollectionMeta(): CollectionMeta | null {
-  try {
-    const raw = window.localStorage.getItem(COLLECTION_META_KEY);
-    return raw ? (JSON.parse(raw) as CollectionMeta) : null;
-  } catch {
-    return null;
-  }
-}
 
 /**
  * The Collection as it is right now. AppInner's own copy is only refreshed on reload
@@ -469,11 +460,11 @@ function AppInner() {
   }
 
   const { handleMarkReceived, handleMarkCancelled } = useOrderActions({
-    orders, setOrders, readCollection, readCollectionMeta, setCollection, setCollectionMeta, dispatch,
+    orders, setOrders, collection: collectionStore, dispatch,
   });
 
   const { entries: ledger, setEntries: setLedger, logTrade, deleteEntry: deleteLedgerEntry } = useTradeLedger({
-    readCollection, readCollectionMeta, setCollection, setCollectionMeta, dispatch,
+    collection: collectionStore, dispatch,
   });
   // The exclude list is a shared external store, so backups always carry the current one.
   const binderExcluded = useBinderExcludedList();

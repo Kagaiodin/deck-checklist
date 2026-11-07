@@ -1,6 +1,7 @@
-import { useCallback, type Dispatch, type SetStateAction } from "react";
-import type { Collection, CollectionMeta } from "../../../types/index";
+import { useCallback, type Dispatch } from "react";
+import type { Collection } from "../../../types/index";
 import type { DeckAction } from "../../../store/decks";
+import type { CollectionStore } from "../../../store/collection";
 import type { Trade, TradeLogCard, TradeLogEntry } from "../../../types/trade";
 import { useLocalStorage } from "../../../hooks/useLocalStorage";
 import { applyTradeToCollection, sortLedger, tradeToLogEntry, type LogMeta } from "../../../utils/tradeLedger";
@@ -15,32 +16,22 @@ export interface LogTradeResult {
 }
 
 interface LedgerDeps {
-  /** Reads the Collection fresh from storage; App's own copy goes stale while Collection is open. */
-  readCollection: () => Collection;
-  /** Collection metadata as stored now; CollectionPage owns it, so App's own copy can be stale. */
-  readCollectionMeta: () => CollectionMeta | null;
-  setCollection: Dispatch<SetStateAction<Collection>>;
-  setCollectionMeta: Dispatch<SetStateAction<CollectionMeta | null>>;
+  collection: CollectionStore;
   dispatch: Dispatch<DeckAction>;
 }
 
 /** The trade ledger (newest first) and the only path by which a trade changes the Collection. */
-export function useTradeLedger({ readCollection, readCollectionMeta, setCollection, setCollectionMeta, dispatch }: LedgerDeps) {
+export function useTradeLedger({ collection: store, dispatch }: LedgerDeps) {
   const [entries, setEntries] = useLocalStorage<TradeLogEntry[]>(TRADE_LEDGER_KEY, []);
 
   const logTrade = useCallback((trade: Trade, meta: LogMeta): LogTradeResult => {
     const entry = tradeToLogEntry(trade, meta);
-    const { collection, shortfall } = applyTradeToCollection(readCollection(), entry.cardsOut, entry.cardsIn);
+    const { collection, shortfall } = applyTradeToCollection(store.get(), entry.cardsOut, entry.cardsIn);
     setEntries(prev => sortLedger([entry, ...prev]));
-    setCollection(collection);
-    const cardCount = Object.keys(collection).length;
-    const storedMeta = readCollectionMeta();
-    setCollectionMeta(storedMeta
-      ? { ...storedMeta, cardCount }
-      : { fileName: "Trade log", importedAt: Date.now(), cardCount });
+    store.update(() => collection, { source: "Trade log" });
     dispatch({ type: "APPLY_COLLECTION", payload: collection });
     return { entry, collection, shortfall };
-  }, [readCollection, readCollectionMeta, setEntries, setCollection, setCollectionMeta, dispatch]);
+  }, [store, setEntries, dispatch]);
 
   /** Removes the entry only. Collection is deliberately left as the trade changed it. */
   const deleteEntry = useCallback((id: string) => setEntries(prev => prev.filter(e => e.id !== id)), [setEntries]);
