@@ -30,7 +30,7 @@
   whole. See `.claude/rules/css.md`.
 
 ## Git and work tracking
-- Branches: `feat/<desc>`, `fix/<desc>`, `chore/<desc>`. Commits: `feat|fix|refactor|style|chore: description`, one logical change each.
+- Branches: `<type>/<desc>`. Commits: `<type>: description`, one logical change each. Types: `feat|fix|refactor|test|style|chore`.
 - Enforced mechanically: hooks in `.claude/hooks/` block commit/push on `main` and run build +
   tests before every push; CI runs `npm run verify` on PRs. Create the feature branch in its
   own command (a hook sees the branch before a compound `checkout && commit` runs).
