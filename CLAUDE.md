@@ -4,6 +4,7 @@
 - React/TypeScript app for Magic: The Gathering deck management and card checklists
 - Deployed on Cloudflare Workers — do not break Workers compatibility
 - State managed via DeckProvider (src/store/)
+- Code judgement calls (naming, stores, hook dependencies): `CODING_STANDARDS.md`
 
 ## Testing
 - `npm test` / `npm run test:watch` / `npm run test:coverage`; `npm run verify` = lint + build + coverage (what CI runs). `eslint-suppressions.json` freezes existing React Compiler violations; after fixing one, run `npx eslint . --prune-suppressions`
@@ -12,6 +13,7 @@
   `src/features/<feature>/`). New utils, store logic, hooks, and interactive components
   need a test; find the nearest `__tests__/` and copy its pattern.
 - Coverage floors are enforced in vitest.config — `npm run test:coverage` fails below them.
+- App-level tests (render the whole `<App />`) use `renderApp({ storage })` from `src/test/renderApp.tsx`: it seeds storage, resets the Collection store and stubs the browser APIs.
 
 ## Demo mode
 - Demo data lives in `src/features/demo/demoData.ts`; the localStorage keys it swaps are `MANAGED_KEYS` in `demoMode.ts`.
@@ -20,27 +22,8 @@
 - When adding a feature or changing a data shape, consider whether the demo needs sample data or an update to `demoData.test.ts`. Say so in the PR.
 - Demo decks must stay full 100-card Commander lists (singleton apart from basics).
 
-## Design workflow
-- Open Design project for this repo: `5c6d105f-c086-441b-ad55-2e3403c89799` (pass as `project` to the open-design tools). If the open-design MCP is available, use it to read the artifact/files directly (`get_artifact`, `get_file`) instead of asking for a local export.
-- Create designs with the open-design MCP's generate option (`start_run`, then poll `get_run`), not by hand-writing
-  mockups with `write_file`. When a large chunk of work is complete (a whole pass implemented, not each small change), ask the user
-  whether to run a review, then use `start_run` again to check the result against the spec
-  (`docs/specs/<feature>-spec.md`) and confirm it meets it.
-- Open Design skills to pass to `start_run`:
-  - New pages/components: `frontend-design`
-  - Existing UI: `redesign-existing-projects`
-  - Polish pass once an artifact exists: `impeccable-design-polish`
-  - Review of a completed pass: `plan-design-review` (optionally `web-design-guidelines` for accessibility)
-- New feature / new page / unknown visual direction → Open Design first, then implement
-  from the local artifact (see the `implement-from-open-design` skill)
-- Existing component / layout fix / refactor → Claude Code directly
-- For visual decisions on existing components, show inline HTML mockup options and get
-  approval before touching source files
-- Tech specs: `docs/specs/<feature>-spec.md`; design briefs: `docs/specs/<feature>-design-brief.md`
-
-## Screenshots
-- Screenshot passes (capture + visual review) go to a subagent so the images stay out of the main context; images are re-billed on every later call.
-- Prefer `npm run screenshots` / `screenshots:diff` and crop to the component over reading full-page PNGs.
+## Design and screenshots
+- UI or visual work (new pages, redesigns, visual changes to existing components, screenshots): read `docs/agents/design-workflow.md` first.
 
 ## CSS
 - `src/tokens.css` holds all custom properties; `src/App.css` is ~2500 lines — never read it
