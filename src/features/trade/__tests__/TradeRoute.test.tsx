@@ -20,7 +20,6 @@ beforeEach(() => {
 afterEach(() => {
   window.location.hash = "";
   window.history.replaceState(null, "", "/");
-  vi.unstubAllGlobals();
 });
 
 // Top-level tabs render a short and a full label, so match by prefix inside the header nav.

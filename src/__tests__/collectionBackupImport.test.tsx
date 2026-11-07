@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { screen, waitFor, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderApp } from "../test/renderApp";
@@ -10,7 +10,6 @@ import type { ProfileExport } from "../types/index";
 beforeEach(() => {
   window.history.replaceState(null, "", "/");
 });
-afterEach(() => vi.unstubAllGlobals());
 
 async function importBackup(user: ReturnType<typeof userEvent.setup>, backup: Partial<ProfileExport>, { replace = false } = {}) {
   await user.click(screen.getByRole("button", { name: /^Decks/ }));

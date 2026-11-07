@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderApp } from "../test/renderApp";
@@ -10,7 +10,6 @@ import { COLLECTION_KEY, COLLECTION_META_KEY } from "../features/collection/stor
 beforeEach(() => {
   window.history.replaceState(null, "", "/");
 });
-afterEach(() => vi.unstubAllGlobals());
 
 describe("receiving an order after editing the Collection", () => {
   it("keeps cards added on the Collection page", async () => {

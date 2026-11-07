@@ -23,7 +23,7 @@
 - Demo decks must stay full 100-card Commander lists (singleton apart from basics).
 
 ## Design and screenshots
-- UI or visual work (new pages, redesigns, screenshots): read `docs/agents/design-workflow.md` first.
+- UI or visual work (new pages, redesigns, visual changes to existing components, screenshots): read `docs/agents/design-workflow.md` first.
 
 ## CSS
 - `src/tokens.css` holds all custom properties; `src/App.css` is ~2500 lines — never read it

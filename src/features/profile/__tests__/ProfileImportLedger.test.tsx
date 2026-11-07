@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { screen, fireEvent, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderApp } from "../../../test/renderApp";
@@ -12,7 +12,6 @@ const EXCLUDED_KEY = "mtg-checklist-binder-excluded-v1";
 beforeEach(() => {
   window.history.replaceState(null, "", "/");
 });
-afterEach(() => vi.unstubAllGlobals());
 
 const entry = (id: string, date: number) => ({ id, date, cardsOut: [], cardsIn: [], cash: { out: 0, in: 3 }, totals: { out: 0, in: 3 } });
 const backup = (extra: Record<string, unknown>) => ({
