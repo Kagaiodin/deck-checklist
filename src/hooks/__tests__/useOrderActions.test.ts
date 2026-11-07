@@ -22,7 +22,7 @@ function setup(orders: Order[], collection: Collection = {}, meta: CollectionMet
   const setOrders = vi.fn();
   const dispatch = vi.fn();
   const store = memoryCollectionStore(collection, meta);
-  const { result } = renderHook(() => useOrderActions({ orders, setOrders, collection: store, dispatch }));
+  const { result } = renderHook(() => useOrderActions({ orders, setOrders, collectionStore: store, dispatch }));
   return { result, setOrders, store, dispatch };
 }
 

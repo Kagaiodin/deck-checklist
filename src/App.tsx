@@ -444,11 +444,11 @@ function AppInner() {
   }
 
   const { handleMarkReceived, handleMarkCancelled } = useOrderActions({
-    orders, setOrders, collection: collectionStore, dispatch,
+    orders, setOrders, collectionStore, dispatch,
   });
 
   const { entries: ledger, setEntries: setLedger, logTrade, deleteEntry: deleteLedgerEntry } = useTradeLedger({
-    collection: collectionStore,
+    collectionStore,
   });
   // The exclude list is a shared external store, so backups always carry the current one.
   const binderExcluded = useBinderExcludedList();

@@ -12,20 +12,20 @@ export interface LogTradeResult {
 }
 
 interface LedgerDeps {
-  collection: CollectionStore;
+  collectionStore: CollectionStore;
 }
 
 /** The trade ledger (newest first) and the only path by which a trade changes the Collection. */
-export function useTradeLedger({ collection: store }: LedgerDeps) {
+export function useTradeLedger({ collectionStore }: LedgerDeps) {
   const [entries, setEntries] = useLocalStorage<TradeLogEntry[]>(TRADE_LEDGER_KEY, []);
 
   const logTrade = useCallback((trade: Trade, meta: LogMeta): LogTradeResult => {
     const entry = tradeToLogEntry(trade, meta);
-    const { collection, shortfall } = applyTradeToCollection(store.get(), entry.cardsOut, entry.cardsIn);
+    const { collection, shortfall } = applyTradeToCollection(collectionStore.get(), entry.cardsOut, entry.cardsIn);
     setEntries(prev => sortLedger([entry, ...prev]));
-    store.update(() => collection, { source: "Trade log" });
+    collectionStore.update(() => collection, { source: "Trade log" });
     return { entry, shortfall };
-  }, [store, setEntries]);
+  }, [collectionStore, setEntries]);
 
   /** Removes the entry only. Collection is deliberately left as the trade changed it. */
   const deleteEntry = useCallback((id: string) => setEntries(prev => prev.filter(e => e.id !== id)), [setEntries]);

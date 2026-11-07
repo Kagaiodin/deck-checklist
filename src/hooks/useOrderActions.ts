@@ -25,7 +25,7 @@ function cardsByDeckFor(order: Order): Map<string, string[]> {
 interface OrderActionsDeps {
   orders: Order[];
   setOrders: Dispatch<SetStateAction<Order[]>>;
-  collection: CollectionStore;
+  collectionStore: CollectionStore;
   dispatch: Dispatch<DeckAction>;
 }
 
@@ -33,7 +33,7 @@ interface OrderActionsDeps {
 export function useOrderActions({
   orders,
   setOrders,
-  collection,
+  collectionStore,
   dispatch,
 }: OrderActionsDeps) {
   function handleMarkReceived(orderId: string) {
@@ -50,7 +50,7 @@ export function useOrderActions({
 
     // Merge into collection (Option A: quantity only, no set/CN)
     // DeckProvider re-tags decks from the change.
-    collection.update(c => mergeOrderCardsIntoCollection(order.cards, c), { source: "Order receipt" });
+    collectionStore.update(c => mergeOrderCardsIntoCollection(order.cards, c), { source: "Order receipt" });
   }
 
   function handleMarkCancelled(orderId: string) {
@@ -67,7 +67,7 @@ export function useOrderActions({
     }
 
     // Re-apply collection now that manuallyTagged is cleared (the Collection itself didn't change)
-    const current = collection.get();
+    const current = collectionStore.get();
     if (Object.keys(current).length > 0) {
       dispatch({ type: "APPLY_COLLECTION", payload: current });
     }
