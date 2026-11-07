@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { collectionStore, createCollectionStore, mergeCollections, resetForTests, useCollection, type CollectionStorage } from "../collection";
-import { COLLECTION_KEY, COLLECTION_META_KEY } from "../../features/collection/storageKeys";
+import { COLLECTION_KEY, COLLECTION_META_KEY } from "../storageKeys";
 import type { Collection, CollectionMeta } from "../../types/index";
 
 /** In-memory stand-in for the two localStorage keys. */

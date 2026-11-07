@@ -17,3 +17,15 @@ One row of a trade: a card, its finish, condition and price. Two Trade lines wit
 
 **Collection meta**:
 Where the Collection came from (file name, import time) and its card-name count. Absent until the first import or first card added.
+
+**User data**:
+What the user made and would be upset to lose: their decks, Collection, orders, trade log, deck errors and the trade in progress. Demo mode sets it aside and puts it back afterwards, and the app asks before replacing it.
+_Avoid_: Profile, state
+
+**Working state**:
+What the app remembers about how the user works, rather than what they made: Collection meta, vendor history, the last vendor used, binder exclusions, and which hints were dismissed. Demo mode sets it aside like User data, so real and sample sessions don't mix, but losing it costs convenience, not the user's work.
+_Avoid_: Settings, cache
+
+**Preference**:
+How the user likes the app to look: theme, accent, a collapsed sidebar, an open panel. It isn't tied to any data, so demo mode leaves it alone.
+_Avoid_: Setting

@@ -31,10 +31,23 @@ describe("demoMode", () => {
     expect(localStorage.getItem("fetchlist:demo:source")).toBeNull();
   });
 
-  it("never manages UI preference keys", () => {
-    for (const k of ["fl-theme-mode", "fl-theme-accent", "fl-sidebar-collapsed", "fetchlist:extrainfo-open"]) {
-      expect(MANAGED_KEYS).not.toContain(k);
-    }
+  // Pinned by value: these are real users' saved keys. A renamed or dropped key strands their data.
+  it("manages exactly the User data and Working state keys", () => {
+    expect([...MANAGED_KEYS].sort()).toEqual([
+      "fetchlist-coachmark-dismissed-decks",
+      "fetchlist-last-vendor",
+      "fetchlist-trade",
+      "fetchlist-vendor-last-used",
+      "fetchlist:onboarding:dismissed",
+      "mtg-checklist-binder-excluded-v1",
+      "mtg-checklist-collection-meta-v2",
+      "mtg-checklist-collection-v2",
+      "mtg-checklist-decks",
+      "mtg-checklist-errors",
+      "mtg-checklist-orders-v1",
+      "mtg-checklist-trade-ledger-v1",
+      "mtg-checklist-vendor-history",
+    ]);
   });
 
   it("is a no-op when demo is already active (snapshot is not overwritten)", () => {
@@ -174,9 +187,24 @@ describe("demoMode", () => {
       ["mtg-checklist-collection-v2", '{"Sol Ring":{"owned":1}}'],
       ["mtg-checklist-orders-v1", '[{"id":"o1"}]'],
       ["fetchlist-trade", JSON.stringify({ mine: { cards: [{ id: "c" }], cash: [] }, theirs: { cards: [], cash: [] } })],
+      ["mtg-checklist-errors", '{"d1":[{"name":"Sol Ring"}]}'],
+      ["mtg-checklist-trade-ledger-v1", '[{"id":"t1"}]'],
     ])("is true when %s holds data", (key, value) => {
       localStorage.setItem(key, value);
       expect(hasRealData(localStorage)).toBe(true);
+    });
+
+    it.each([
+      ["mtg-checklist-collection-meta-v2", '{"fileName":"a.csv","importedAt":1,"cardCount":3}'],
+      ["mtg-checklist-vendor-history", '["Card Kingdom"]'],
+      ["mtg-checklist-binder-excluded-v1", '["c1"]'],
+      ["fetchlist-last-vendor", '"Card Kingdom"'],
+      ["fetchlist-vendor-last-used", '{"Card Kingdom":1}'],
+      ["fetchlist:onboarding:dismissed", "true"],
+      ["fetchlist-coachmark-dismissed-decks", '["d1"]'],
+    ])("is false when only the Working state key %s holds data", (key, value) => {
+      localStorage.setItem(key, value);
+      expect(hasRealData(localStorage)).toBe(false);
     });
 
     it("treats unparseable values as real data (never silently overwrite)", () => {

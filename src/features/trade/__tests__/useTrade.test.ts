@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, act, waitFor } from "@testing-library/react";
-import { useTrade, TRADE_STORAGE_KEY, emptyTrade } from "../hooks/useTrade";
+import { useTrade, emptyTrade } from "../hooks/useTrade";
+import { TRADE_STORAGE_KEY } from "../../../store/storageKeys";
 import type { Trade, TradeCard } from "../../../types/trade";
 
 const card = (over: Partial<Omit<TradeCard, "id">> = {}): Omit<TradeCard, "id"> => ({

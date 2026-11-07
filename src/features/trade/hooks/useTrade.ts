@@ -13,8 +13,8 @@ import { basePriceFor, fairness, isSideEmpty, sideTotals } from "../../../utils/
 import { fetchPrices, priceKey } from "../../../utils/scryfallSearch";
 import type { ScryfallPrinting } from "../../../utils/scryfallSearch";
 import { normalizeSet } from "../../../utils/printing";
+import { TRADE_STORAGE_KEY } from "../../../store/storageKeys";
 
-export const TRADE_STORAGE_KEY = "fetchlist-trade";
 const HISTORY_LIMIT = 50;
 
 export type SideKey = "mine" | "theirs";

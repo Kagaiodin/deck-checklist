@@ -2,8 +2,7 @@ import { render } from "@testing-library/react";
 import { onTestFinished, vi } from "vitest";
 import App from "../App";
 import { resetForTests } from "../store/collection";
-
-const ONBOARDING_DISMISSED_KEY = "fetchlist:onboarding:dismissed";
+import { ONBOARDING_DISMISSED_KEY } from "../store/storageKeys";
 
 /**
  * Renders the whole `<App />` over in-memory localStorage seeded with `storage`

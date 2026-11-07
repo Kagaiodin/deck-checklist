@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderApp } from "../test/renderApp";
-import { COLLECTION_KEY, COLLECTION_META_KEY } from "../features/collection/storageKeys";
+import { COLLECTION_KEY, COLLECTION_META_KEY } from "../store/storageKeys";
 
 // App-level regression: App and CollectionPage each hold a copy of the Collection.
 // Edits made on the Collection page must survive a later "Mark received" on an order.

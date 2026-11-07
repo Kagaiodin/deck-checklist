@@ -16,9 +16,9 @@
 - App-level tests (render the whole `<App />`) use `renderApp({ storage })` from `src/test/renderApp.tsx`: it seeds storage, resets the Collection store and stubs the browser APIs.
 
 ## Demo mode
-- Demo data lives in `src/features/demo/demoData.ts`; the localStorage keys it swaps are `MANAGED_KEYS` in `demoMode.ts`.
-- New localStorage keys: `src/__tests__/storageKeys.test.ts` fails until the key is in `MANAGED_KEYS` or its `DEMO_EXEMPT` list,
-  and when a second module writes an existing key.
+- Demo data lives in `src/features/demo/demoData.ts`; demo mode swaps the User data and Working state keys (GLOSSARY.md).
+- New localStorage keys: register them in `src/store/storageKeys.ts` with a kind and backup field. `src/__tests__/storageKeys.test.ts`
+  fails on an unregistered key and when a second module writes an existing key.
 - When adding a feature or changing a data shape, consider whether the demo needs sample data or an update to `demoData.test.ts`. Say so in the PR.
 - Demo decks must stay full 100-card Commander lists (singleton apart from basics).
 
@@ -30,7 +30,7 @@
   whole. See `.claude/rules/css.md`.
 
 ## Git and work tracking
-- Branches: `feat/<desc>`, `fix/<desc>`, `chore/<desc>`. Commits: `feat|fix|refactor|style|chore: description`, one logical change each.
+- Branches: `<type>/<desc>`. Commits: `<type>: description`, one logical change each. Types: `feat|fix|refactor|test|style|chore`.
 - Enforced mechanically: hooks in `.claude/hooks/` block commit/push on `main` and run build +
   tests before every push; CI runs `npm run verify` on PRs. Create the feature branch in its
   own command (a hook sees the branch before a compound `checkout && commit` runs).

@@ -1,10 +1,8 @@
 import { useState, useEffect } from "react";
+import { THEME_MODE_KEY, THEME_ACCENT_KEY } from "../store/storageKeys";
 
 export type ThemeMode   = "dark" | "light";
 export type ThemeAccent = "indigo" | "sapphire" | "emerald" | "ember";
-
-const MODE_KEY   = "fl-theme-mode";
-const ACCENT_KEY = "fl-theme-accent";
 
 function applyTheme(mode: ThemeMode, accent: ThemeAccent) {
   const el = document.documentElement;
@@ -14,17 +12,17 @@ function applyTheme(mode: ThemeMode, accent: ThemeAccent) {
 
 export function useTheme() {
   const [mode, setModeState] = useState<ThemeMode>(() => {
-    return (localStorage.getItem(MODE_KEY) as ThemeMode) ?? "dark";
+    return (localStorage.getItem(THEME_MODE_KEY) as ThemeMode) ?? "dark";
   });
   const [accent, setAccentState] = useState<ThemeAccent>(() => {
-    return (localStorage.getItem(ACCENT_KEY) as ThemeAccent) ?? "indigo";
+    return (localStorage.getItem(THEME_ACCENT_KEY) as ThemeAccent) ?? "indigo";
   });
 
   // Apply on mount and whenever state changes
   useEffect(() => {
     applyTheme(mode, accent);
-    localStorage.setItem(MODE_KEY, mode);
-    localStorage.setItem(ACCENT_KEY, accent);
+    localStorage.setItem(THEME_MODE_KEY, mode);
+    localStorage.setItem(THEME_ACCENT_KEY, accent);
   }, [mode, accent]);
 
   const setMode    = (m: ThemeMode)   => setModeState(m);
