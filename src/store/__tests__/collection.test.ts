@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { renderHook, act } from "@testing-library/react";
-import { collectionStore, createCollectionStore, mergeCollections, resetForTests, samePrinting, useCollection, type CollectionStorage } from "../collection";
+import { collectionStore, createCollectionStore, mergeCollections, resetForTests, useCollection, type CollectionStorage } from "../collection";
 import { COLLECTION_KEY, COLLECTION_META_KEY } from "../../features/collection/storageKeys";
 import type { Collection, CollectionMeta } from "../../types/index";
 
@@ -152,13 +152,42 @@ describe("createCollectionStore — replace and subscribe", () => {
   });
 });
 
-describe("samePrinting", () => {
-  it("matches on set, collector number and foil, ignoring quantity", () => {
-    expect(samePrinting({ quantity: 1, set: "MH2", collectorNumber: "12" }, { quantity: 3, set: "MH2", collectorNumber: "12" })).toBe(true);
-    expect(samePrinting({ quantity: 1 }, { quantity: 1, foil: false })).toBe(true);
-    expect(samePrinting({ quantity: 1, set: "MH2" }, { quantity: 1, set: "MH2", foil: true })).toBe(false);
-    expect(samePrinting({ quantity: 1, set: "MH2", collectorNumber: "12" }, { quantity: 1, set: "MH2", collectorNumber: "13" })).toBe(false);
-    expect(samePrinting({ quantity: 1, set: "MH2" }, { quantity: 1, set: "2XM" })).toBe(false);
+describe("createCollectionStore — set codes", () => {
+  it("uppercases set codes it loads, merging printings that only differed in case into the larger", () => {
+    const stored: Collection = {
+      "counterspell": [
+        { quantity: 1, set: "mh2", collectorNumber: "267" },
+        { quantity: 3, set: "MH2", collectorNumber: "267" },
+        { quantity: 2, set: "mh2", collectorNumber: "267", foil: true },
+      ],
+      "sol ring": [{ quantity: 1 }],
+    };
+    const store = createCollectionStore(fakeStorage({ collection: JSON.stringify(stored) }).storage);
+    expect(store.get()).toEqual({
+      "counterspell": [
+        { quantity: 3, set: "MH2", collectorNumber: "267" },
+        { quantity: 2, set: "MH2", collectorNumber: "267", foil: true },
+      ],
+      "sol ring": [{ quantity: 1 }],
+    });
+  });
+
+  it("uppercases set codes on update and replace", () => {
+    const { storage, data } = fakeStorage();
+    const store = createCollectionStore(storage);
+    store.update(() => ({ "sol ring": [{ quantity: 1, set: "c21", collectorNumber: "263" }] }));
+    expect(store.get()["sol ring"]).toEqual([{ quantity: 1, set: "C21", collectorNumber: "263" }]);
+    expect(JSON.parse(data.collection!)["sol ring"][0].set).toBe("C21");
+
+    store.replace({ "counterspell": [{ quantity: 1, set: "mh2" }] }, null);
+    expect(store.get()["counterspell"]).toEqual([{ quantity: 1, set: "MH2" }]);
+  });
+
+  it("hands back the Collection it was given when the set codes are already uppercase", () => {
+    const store = createCollectionStore(fakeStorage().storage);
+    const next: Collection = { "sol ring": [{ quantity: 1, set: "C21" }] };
+    store.update(() => next);
+    expect(store.get()).toBe(next);
   });
 });
 
@@ -184,6 +213,12 @@ describe("mergeCollections", () => {
 
   it("counts a card as new when the base only has an empty entry for it", () => {
     expect(mergeCollections({ "sol ring": [] }, { "sol ring": [{ quantity: 1 }] }).added).toBe(1);
+  });
+
+  it("keeps one copy of a printing whose set case differs between the two sides", () => {
+    const base: Collection = { "counterspell": [{ quantity: 1, set: "mh2", collectorNumber: "267" }] };
+    const incoming: Collection = { "counterspell": [{ quantity: 1, set: "MH2", collectorNumber: "267" }] };
+    expect(mergeCollections(base, incoming).merged["counterspell"]).toHaveLength(1);
   });
 });
 
