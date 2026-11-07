@@ -61,6 +61,7 @@ vi.mock("react-virtuoso", async () => {
 });
 
 import { CollectionPage } from "../CollectionPage";
+import { resetForTests } from "../../../store/collection";
 
 const COLLECTION_KEY = "mtg-checklist-collection-v2";
 const META_KEY = "mtg-checklist-collection-meta-v2";
@@ -79,6 +80,8 @@ function installStorage(seed: { collection?: Collection; meta?: CollectionMeta |
   for (const target of [globalThis, window]) {
     Object.defineProperty(target, "localStorage", { value: mock, writable: true, configurable: true });
   }
+  // A fresh page load: the Collection store reads the new storage on first use.
+  resetForTests();
   return store;
 }
 
