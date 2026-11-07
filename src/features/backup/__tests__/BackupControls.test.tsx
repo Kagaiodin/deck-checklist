@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { BackupControls } from "../BackupControls";
 import { clearLinkedHandle } from "../../../utils/fileSystemAccess";
@@ -29,19 +29,13 @@ function makeHandle(name: string, overrides: Partial<globalThis.FileSystemFileHa
 }
 
 const baseProps = {
-  decks: [],
-  allErrors: {},
-  collection: {},
-  collectionMeta: null,
-  orders: [],
-  vendorHistory: [],
-  onImport: vi.fn().mockReturnValue({ newDecks: 0, newCards: 0, newOrders: 0 }),
   showToast: vi.fn(),
   importPanelOpen: false,
   onToggleImportPanel: vi.fn(),
 };
 
 describe("BackupControls — File System Access save/load", () => {
+  beforeEach(() => { installMemoryLocalStorage(); });
   afterEach(() => {
     // @ts-expect-error test cleanup
     delete window.showSaveFilePicker;
@@ -49,6 +43,7 @@ describe("BackupControls — File System Access save/load", () => {
     delete window.showOpenFilePicker;
     clearLinkedHandle();
     vi.restoreAllMocks();
+    restoreLocalStorage();
   });
 
   it("falls back to a plain download when the API is unsupported", async () => {
@@ -63,7 +58,7 @@ describe("BackupControls — File System Access save/load", () => {
     expect(showToast.mock.calls[0][0].title).toBe("Profile exported");
   });
 
-  it("includes the trade ledger and Binder exclude list in the backup, on the v1 envelope", async () => {
+  it("exports what's saved, trade ledger and Binder exclude list included, on the v1 envelope", async () => {
     let captured = "";
     const OrigBlob = globalThis.Blob;
     vi.spyOn(globalThis, "Blob").mockImplementation(function (parts?: BlobPart[], opts?: BlobPropertyBag) {
@@ -74,7 +69,10 @@ describe("BackupControls — File System Access save/load", () => {
     URL.revokeObjectURL = vi.fn();
     mockAnchorClick();
     const entry = { id: "e1", date: 1, cardsOut: [], cardsIn: [], cash: { out: 0, in: 3 }, totals: { out: 0, in: 3 } };
-    render(<BackupControls {...baseProps} tradeLedger={[entry]} binderExcluded={["sol ring"]} />);
+    const storage = window.localStorage;
+    storage.setItem("mtg-checklist-trade-ledger-v1", JSON.stringify([entry]));
+    storage.setItem("mtg-checklist-binder-excluded-v1", JSON.stringify(["sol ring"]));
+    render(<BackupControls {...baseProps} />);
     fireEvent.click(screen.getByText("↓ Export backup"));
     await waitFor(() => expect(captured).not.toBe(""));
     const payload = JSON.parse(captured);

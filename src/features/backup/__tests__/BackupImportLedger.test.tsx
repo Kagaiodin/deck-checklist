@@ -3,7 +3,7 @@ import { screen, fireEvent, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderApp } from "../../../test/renderApp";
 
-// App-level wiring of handleBackupImport for the trade ledger and Binder exclude list
+// App-level backup import for the trade ledger and Binder exclude list
 // (spec §11: new fields round-trip, old backups without them, merge dedupes by id).
 
 const LEDGER_KEY = "mtg-checklist-trade-ledger-v1";
@@ -29,18 +29,22 @@ async function importBackup(data: unknown, replace = false) {
 
 describe("Import backup — trade ledger and Binder exclude list", () => {
   it("merge adds only new ledger entries (deduped by id), unions the exclude list, and reports the trade count", async () => {
-    const { stored } = renderApp({ storage: { [LEDGER_KEY]: JSON.stringify([entry("a", 10)]), [EXCLUDED_KEY]: JSON.stringify(["sol ring"]) } });
+    const { stored, reload, remount } = renderApp({ storage: { [LEDGER_KEY]: JSON.stringify([entry("a", 10)]), [EXCLUDED_KEY]: JSON.stringify(["sol ring"]) } });
     await importBackup(backup({ tradeLedger: [entry("a", 10), entry("b", 20), { id: "bad" }], binderExcluded: ["sol ring", "mana crypt"] }));
-    await waitFor(() => expect(stored(LEDGER_KEY)).toHaveLength(2));
+    await waitFor(() => expect(reload).toHaveBeenCalledOnce());
+    remount();
+    expect(stored(LEDGER_KEY)).toHaveLength(2);
     expect(stored(LEDGER_KEY).map((e: { id: string }) => e.id)).toEqual(["b", "a"]); // newest first, malformed entry dropped
     expect([...stored(EXCLUDED_KEY)].sort()).toEqual(["mana crypt", "sol ring"]);
     expect(await screen.findByText(/1 trade added/)).toBeInTheDocument();
   });
 
   it("replace restores the ledger and exclude list from the backup", async () => {
-    const { stored } = renderApp({ storage: { [LEDGER_KEY]: JSON.stringify([entry("old", 5)]), [EXCLUDED_KEY]: JSON.stringify(["old card"]) } });
+    const { stored, reload, remount } = renderApp({ storage: { [LEDGER_KEY]: JSON.stringify([entry("old", 5)]), [EXCLUDED_KEY]: JSON.stringify(["old card"]) } });
     await importBackup(backup({ tradeLedger: [entry("new", 50)], binderExcluded: ["sol ring"] }), true);
-    await waitFor(() => expect(stored(LEDGER_KEY).map((e: { id: string }) => e.id)).toEqual(["new"]));
+    await waitFor(() => expect(reload).toHaveBeenCalledOnce());
+    remount();
+    expect(stored(LEDGER_KEY).map((e: { id: string }) => e.id)).toEqual(["new"]);
     expect(stored(EXCLUDED_KEY)).toEqual(["sol ring"]);
     expect(await screen.findByText(/1 trade added/)).toBeInTheDocument();
   });
@@ -53,8 +57,10 @@ describe("Import backup — trade ledger and Binder exclude list", () => {
   });
 
   it("merge with an old backup (no ledger fields) leaves the ledger and exclude list alone", async () => {
-    const { stored } = renderApp({ storage: { [LEDGER_KEY]: JSON.stringify([entry("keep", 5)]), [EXCLUDED_KEY]: JSON.stringify(["keep card"]) } });
+    const { stored, reload, remount } = renderApp({ storage: { [LEDGER_KEY]: JSON.stringify([entry("keep", 5)]), [EXCLUDED_KEY]: JSON.stringify(["keep card"]) } });
     await importBackup(backup({ orders: [] }));
+    await waitFor(() => expect(reload).toHaveBeenCalledOnce());
+    remount();
     expect(await screen.findByText("Nothing new to import")).toBeInTheDocument();
     expect(stored(LEDGER_KEY)).toHaveLength(1);
     expect(stored(EXCLUDED_KEY)).toEqual(["keep card"]);

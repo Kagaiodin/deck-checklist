@@ -18,7 +18,7 @@ const cases: Case[] = [
   ["DemoConfirmModal", close => <DemoConfirmModal onCancel={close} onConfirm={noop} />],
   ["TradeSheet", close => <TradeSheet title="Trade" chip="x" onClose={close} footer={null}><input /></TradeSheet>],
   ["OnboardingModal", close => <OnboardingModal onDismiss={close} onImportDeck={noop} />],
-  ["ImportBackupModal", close => <ImportBackupModal onImport={() => ({ newDecks: 0, newCards: 0, newOrders: 0 })} showToast={noop} onClose={close} />],
+  ["ImportBackupModal", close => <ImportBackupModal onClose={close} />],
   ["CollectionOverflowSheet", close => <CollectionOverflowSheet collectionMeta={null} onClose={close} onUploadClick={noop} onBulkEditClick={noop} />, 400],
 ];
 

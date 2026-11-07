@@ -9,14 +9,12 @@ import { refreshDeckPrices, needsPriceRefresh } from "./utils/deckCost";
 import type { ValidationProgress } from "./utils/validator";
 import { useLocalStorage } from "./hooks/useLocalStorage";
 import { useOrderActions } from "./hooks/useOrderActions";
-import { readBinderExcluded, writeBinderExcluded, sanitizeExcluded, useBinderExcludedList } from "./features/transactions/binder/useBinder";
 import { useTradeLedger } from "./features/transactions/ledger/useTradeLedger";
 import { Checklist } from "./components/Checklist";
 import { EmptyState } from "./components/EmptyState";
 import { ErrorQueue } from "./components/ErrorQueue";
 import { ProgressTracker } from "./components/ProgressTracker";
-import type { Deck, ErrorQueueItem, AcquisitionSource, Order, ImportCounts, Backup } from "./types/index";
-import { mergeLedger, sanitizeLedger, sortLedger } from "./utils/tradeLedger";
+import type { Deck, ErrorQueueItem, AcquisitionSource, Order } from "./types/index";
 import { applyCollectionToCards } from "./utils/csvParser";
 import { formatOptions } from "./utils/deckFormats";
 import { getDeckColorIdentity, formatRelativeDate, getDeckDomain } from "./utils/deckUtils";
@@ -31,21 +29,23 @@ import { OnboardingModal } from "./features/onboarding/OnboardingModal";
 import { BackupControls } from "./features/backup/BackupControls";
 import { ImportBackupModal } from "./features/backup/ImportBackupModal";
 import { GoogleDriveBackup } from "./features/backup/GoogleDriveBackup";
+import { consumeImportToasts } from "./features/backup/backup";
+import { saveBackupFile, saveToast } from "./features/backup/saveBackupFile";
 import { ThemeToggle } from "./components/ThemeToggle";
 import { BugIcon, LightbulbIcon } from "./components/MenuIcons";
 import { DemoBanner } from "./features/demo/DemoBanner";
 import { DemoConfirmModal } from "./features/demo/DemoConfirmModal";
 import { DemoMenuItem } from "./features/demo/DemoMenuItem";
-import { useDemoTabSync } from "./features/demo/useDemoTabSync";
-import { isDemoActive, isDemoActiveNow, hasRealData, DEMO_BACKUP_HINT } from "./features/demo/demoMode";
+import { useStorageSwapSync } from "./hooks/useStorageSwapSync";
+import { isDemoActive, hasRealData, DEMO_BACKUP_HINT } from "./features/demo/demoMode";
 import {
   startDemo, leaveDemo, consumeRecoveredFlag, hasPendingLinkConfirm, clearPendingLinkConfirm,
 } from "./features/demo/demoControl";
 import { AppLogo } from "./components/AppLogo";
-import type { ToastInput } from "./features/backup/BackupControls";
+import type { ToastInput } from "./types/index";
 import { BuyListSheet } from "./features/card-purchase/BuyListSheet";
 import { useBuyFlow } from "./features/card-purchase/useBuyFlow";
-import { collectionStore, mergeCollections, useCollection } from "./store/collection";
+import { collectionStore, useCollection } from "./store/collection";
 import { ERRORS_KEY, ORDERS_KEY, VENDOR_HISTORY_KEY, ONBOARDING_DISMISSED_KEY, SIDEBAR_COLLAPSED_KEY } from "./store/storageKeys";
 import "./features/card-purchase/buy-flow.css";
 
@@ -137,9 +137,10 @@ function AppInner() {
   // Enter/exit write storage and reload, so this is stable for the page's lifetime.
   const demoActive = isDemoActive(window.localStorage);
   const [demoConfirmOpen, setDemoConfirmOpen] = useState(hasPendingLinkConfirm);
-  useDemoTabSync();
+  useStorageSwapSync();
 
   useEffect(() => {
+    for (const toast of consumeImportToasts()) showToast(toast);
     if (consumeRecoveredFlag()) {
       showToast({
         title: "Demo mode ended",
@@ -170,7 +171,7 @@ function AppInner() {
   }
 
   // ── Collection (one shared store; handlers read it fresh with collectionStore.get()) ──
-  const { collection, meta: collectionMeta } = useCollection();
+  const { collection } = useCollection();
 
   // ── Orders state ──────────────────────────────────────────────────────────
   const [orders, setOrders] = useLocalStorage<Order[]>(ORDERS_KEY, []);
@@ -446,11 +447,9 @@ function AppInner() {
     orders, setOrders, collectionStore, dispatch,
   });
 
-  const { entries: ledger, setEntries: setLedger, logTrade, deleteEntry: deleteLedgerEntry } = useTradeLedger({
+  const { entries: ledger, logTrade, deleteEntry: deleteLedgerEntry } = useTradeLedger({
     collectionStore,
   });
-  // The exclude list is a shared external store, so backups always carry the current one.
-  const binderExcluded = useBinderExcludedList();
   const [ledgerOpenId, setLedgerOpenId] = useState<string | null>(null);
 
   function viewLedgerEntry(id: string) {
@@ -463,62 +462,6 @@ function AppInner() {
   function handleDismissNotification(deckId: string, notificationId: string) {
     dispatch({ type: "DISMISS_NOTIFICATION", payload: { deckId, notificationId } });
     setNotificationFilterIds(null);
-  }
-
-  // ── Backup import ───────────────────────────────────────────────
-  function handleBackupImport(data: Backup, replace: boolean): ImportCounts {
-    // Backups must never land on top of sample data (the UI disables this path too).
-    if (isDemoActiveNow()) return { newDecks: 0, newCards: 0, newOrders: 0, newTrades: 0 };
-    if (replace) {
-      // Replace mode — wipe all and restore from backup
-      dispatch({ type: "SET_DECKS", payload: data.decks ?? [] });
-      setAllErrors(data.errors ?? {});
-      collectionStore.replace(data.collection ?? {}, data.collectionMeta ?? null);
-      setOrders(data.orders ?? []);
-      setLedger(sortLedger(sanitizeLedger(data.tradeLedger)));
-      writeBinderExcluded(sanitizeExcluded(data.binderExcluded));
-      setRecentVendors((data.vendorHistory ?? []).slice(0, 50));
-      return { newDecks: (data.decks ?? []).length, newCards: Object.keys(data.collection ?? {}).length, newOrders: (data.orders ?? []).length, newTrades: sanitizeLedger(data.tradeLedger).length };
-    }
-
-    // Merge mode — only add net-new items
-    const existingDeckIds = new Set(state.decks.map(d => d.id));
-    const newDecks = (data.decks ?? []).filter(d => !existingDeckIds.has(d.id));
-    for (const deck of newDecks) dispatch({ type: "ADD_DECK", payload: deck });
-
-    // Errors — adopt by deck id if not already present
-    const mergedErrors = { ...allErrors };
-    for (const [id, items] of Object.entries(data.errors ?? {})) {
-      if (!mergedErrors[id]) mergedErrors[id] = items;
-    }
-    setAllErrors(mergedErrors);
-
-    // Collection — union printings per card name against the current Collection.
-    // Local meta wins; with none, the backup's is adopted, counted against the merged result.
-    const { merged: mergedCollection, added: newCardKeyCount } = mergeCollections(collectionStore.get(), data.collection ?? {});
-    const localMeta = collectionStore.getMeta();
-    if (!localMeta && data.collectionMeta) {
-      collectionStore.replace(mergedCollection, { ...data.collectionMeta, cardCount: Object.keys(mergedCollection).length });
-    } else {
-      collectionStore.update(() => mergedCollection);
-    }
-
-    // Orders — skip duplicates by id
-    const existingOrderIds = new Set(orders.map(o => o.id));
-    const newOrders = (data.orders ?? []).filter(o => !existingOrderIds.has(o.id));
-    setOrders([...orders, ...newOrders]);
-
-    // Trade ledger — skip duplicates by id; exclude list is a union
-    const { merged: mergedLedger, added: newTrades } = mergeLedger(ledger, sanitizeLedger(data.tradeLedger));
-    setLedger(mergedLedger);
-    const incomingExcluded = sanitizeExcluded(data.binderExcluded);
-    if (incomingExcluded.length) writeBinderExcluded([...new Set([...readBinderExcluded(), ...incomingExcluded])]);
-
-    // Vendor history — union, deduplicated, cap at 50
-    const mergedVendors = [...new Set([...recentVendors, ...(data.vendorHistory ?? [])])].slice(0, 50);
-    setRecentVendors(mergedVendors);
-
-    return { newDecks: newDecks.length, newCards: newCardKeyCount, newOrders: newOrders.length, newTrades };
   }
 
   // ── Archidekt import ───────────────────────────────────────────────────────
@@ -744,11 +687,7 @@ function AppInner() {
       )}
       {/* ── Import backup modal ───────────────────────────────────────────── */}
       {importPanelOpen && (
-        <ImportBackupModal
-          onImport={handleBackupImport}
-          showToast={showToast}
-          onClose={() => setImportPanelOpen(false)}
-        />
+        <ImportBackupModal onClose={() => setImportPanelOpen(false)} />
       )}
       {/* ── Toast container ───────────────────────────────────────────────── */}
       <div className="toast-container" role="status" aria-live="polite">
@@ -928,20 +867,11 @@ function AppInner() {
                     </button>
                     <div className="deck-picker-export-row">
                       <button className="btn btn-ghost btn-sm" disabled={demoActive} onClick={() => {
-                        if (demoActive) return;
                         // Export is fire-and-forget — no need to close the sheet
-                        const filename = `fetchlist-backup-${new Date().toISOString().slice(0, 10)}.json`;
-                        const payload: Backup = {
-                          version: 1, exportedAt: new Date().toISOString(),
-                          decks: state.decks, errors: allErrors,
-                          collection, collectionMeta, orders, vendorHistory: recentVendors,
-                          tradeLedger: ledger, binderExcluded,
-                        };
-                        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
-                        const url = URL.createObjectURL(blob);
-                        Object.assign(document.createElement("a"), { href: url, download: filename }).click();
-                        URL.revokeObjectURL(url);
-                        showToast({ title: "Profile exported", sub: filename, variant: "success", autoDismiss: 2000 });
+                        void saveBackupFile().then(result => {
+                          const toast = saveToast(result);
+                          if (toast) showToast(toast);
+                        });
                       }}>↓ Export backup</button>
                       <button
                         className={`btn btn-ghost btn-sm${importPanelOpen ? " active" : ""}`}
@@ -950,19 +880,7 @@ function AppInner() {
                       >↑ Import backup</button>
                     </div>
                     {demoActive && <p className="demo-backup-hint">{DEMO_BACKUP_HINT}</p>}
-                    <GoogleDriveBackup
-                      decks={state.decks}
-                      allErrors={allErrors}
-                      collection={collection}
-                      collectionMeta={collectionMeta}
-                      orders={orders}
-                      tradeLedger={ledger}
-                      binderExcluded={binderExcluded}
-                      vendorHistory={recentVendors}
-                      onImport={handleBackupImport}
-                      showToast={showToast}
-                      variant="mobile"
-                    />
+                    <GoogleDriveBackup showToast={showToast} variant="mobile" />
                   </div>
                 </div>
               </div>
@@ -1097,15 +1015,6 @@ function AppInner() {
                 </button>
                 <div className="sidebar-backup">
                   <BackupControls
-                    decks={state.decks}
-                    allErrors={allErrors}
-                    collection={collection}
-                    collectionMeta={collectionMeta}
-                    orders={orders}
-                    tradeLedger={ledger}
-                    binderExcluded={binderExcluded}
-                    vendorHistory={recentVendors}
-                    onImport={handleBackupImport}
                     showToast={showToast}
                     importPanelOpen={importPanelOpen}
                     onToggleImportPanel={() => setImportPanelOpen(v => !v)}

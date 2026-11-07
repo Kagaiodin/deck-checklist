@@ -1,13 +1,17 @@
-import { describe, it, expect, vi, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { ImportBackupModal } from "../ImportBackupModal";
 import { clearLinkedHandle } from "../../../utils/fileSystemAccess";
+import { installMemoryLocalStorage, restoreLocalStorage, type MemoryStorage } from "../../demo/__tests__/memoryStorage";
+import { page } from "../../../utils/page";
 
-const baseProps = {
-  onImport: vi.fn(() => ({ newDecks: 1, newCards: 0, newOrders: 0 })),
-  showToast: vi.fn(),
-  onClose: vi.fn(),
-};
+// The modal's own behaviour: picking a file, errors, merge vs replace. What an import writes and
+// which toast it leaves are covered in backup.test.ts.
+
+const baseProps = { onClose: vi.fn() };
+const DECKS_KEY = "mtg-checklist-decks";
+const deck = (id: string) => ({ id, name: id, cards: [] });
+const flash = () => JSON.parse(sessionStorage.getItem("fetchlist:backup:flash") ?? "null");
 
 function uploadFile(input: Element, contents: string, name = "fetchlist-backup-2026-01-01.json") {
   const file = new File([contents], name, { type: "application/json" });
@@ -27,7 +31,16 @@ function makeHandle(name: string, overrides: Partial<globalThis.FileSystemFileHa
 }
 
 describe("ImportBackupModal", () => {
+  let storage: MemoryStorage;
+  let reload: Mock<() => void>;
+  beforeEach(() => {
+    storage = installMemoryLocalStorage();
+    reload = vi.fn<() => void>();
+    vi.spyOn(page, "reload").mockImplementation(reload);
+  });
   afterEach(() => {
+    restoreLocalStorage();
+    sessionStorage.clear();
     // @ts-expect-error test cleanup
     delete window.showSaveFilePicker;
     // @ts-expect-error test cleanup
@@ -79,36 +92,33 @@ describe("ImportBackupModal", () => {
     });
   });
 
-  it("imports a valid backup, toasts, and closes", async () => {
-    const onImport = vi.fn(() => ({ newDecks: 2, newCards: 3, newOrders: 0 }));
-    const showToast = vi.fn();
+  it("merges a valid backup, leaves the summary toast for after the reload, and closes", async () => {
+    storage.setItem(DECKS_KEY, JSON.stringify([deck("mine")]));
     const onClose = vi.fn();
-    render(<ImportBackupModal {...baseProps} onImport={onImport} showToast={showToast} onClose={onClose} />);
+    render(<ImportBackupModal onClose={onClose} />);
 
-    const input = document.querySelector('input[type="file"]')!;
-    uploadFile(input, JSON.stringify({ version: 1, decks: [] }));
+    uploadFile(document.querySelector('input[type="file"]')!, JSON.stringify({ version: 1, decks: [deck("mine"), deck("new")] }));
 
-    await waitFor(() => expect(onImport).toHaveBeenCalledWith({ version: 1, decks: [] }, false));
-    expect(showToast).toHaveBeenCalledWith(
-      expect.objectContaining({ title: "Import complete", sub: "2 decks · 3 collection cards added" })
-    );
+    await waitFor(() => expect(reload).toHaveBeenCalledOnce());
+    expect(JSON.parse(storage.getItem(DECKS_KEY)!).map((d: { id: string }) => d.id)).toEqual(["mine", "new"]);
+    expect(flash()).toEqual([expect.objectContaining({ title: "Import complete", sub: "1 deck added" })]);
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
   it("uses the File System Access open picker when supported, instead of the hidden input", async () => {
-    const payload = { version: 1, decks: [], collection: {}, orders: [] };
+    const payload = { version: 1, decks: [deck("new")], collection: {}, orders: [] };
     const handle = makeHandle("fetchlist-backup.json", {
       getFile: vi.fn().mockResolvedValue({ text: () => Promise.resolve(JSON.stringify(payload)) }),
     });
     window.showSaveFilePicker = vi.fn(); // supportsFileSystemAccess() gates on this existing
     window.showOpenFilePicker = vi.fn().mockResolvedValue([handle]);
-    const onImport = vi.fn().mockReturnValue({ newDecks: 1, newCards: 0, newOrders: 0 });
     const onClose = vi.fn();
 
-    render(<ImportBackupModal {...baseProps} onImport={onImport} onClose={onClose} />);
+    render(<ImportBackupModal onClose={onClose} />);
     fireEvent.click(screen.getByText("Choose file"));
 
-    await waitFor(() => expect(onImport).toHaveBeenCalledWith(payload, false));
+    await waitFor(() => expect(reload).toHaveBeenCalledOnce());
+    expect(JSON.parse(storage.getItem(DECKS_KEY)!)).toEqual([deck("new")]);
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
@@ -120,49 +130,48 @@ describe("ImportBackupModal", () => {
     });
   });
 
+  it("rejects a backup with a damaged field and changes nothing", async () => {
+    storage.setItem(DECKS_KEY, JSON.stringify([deck("mine")]));
+    render(<ImportBackupModal {...baseProps} />);
+    uploadFile(document.querySelector('input[type="file"]')!, JSON.stringify({ version: 1, decks: [], orders: "oops" }));
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("Part of this backup is damaged, so nothing was imported."));
+    expect(JSON.parse(storage.getItem(DECKS_KEY)!)).toEqual([deck("mine")]);
+    expect(reload).not.toHaveBeenCalled();
+  });
+
   it("warns about newer backup versions but still imports", async () => {
-    const onImport = vi.fn(() => ({ newDecks: 1, newCards: 0, newOrders: 0 }));
-    const showToast = vi.fn();
-    render(<ImportBackupModal {...baseProps} onImport={onImport} showToast={showToast} />);
+    render(<ImportBackupModal {...baseProps} />);
     uploadFile(document.querySelector('input[type="file"]')!, JSON.stringify({ version: 2, decks: [] }));
-    await waitFor(() => expect(onImport).toHaveBeenCalled());
-    expect(showToast).toHaveBeenCalledWith(expect.objectContaining({ title: "Newer backup format", variant: "warn" }));
+    await waitFor(() => expect(reload).toHaveBeenCalledOnce());
+    expect(flash()).toContainEqual(expect.objectContaining({ title: "Newer backup format", variant: "warn" }));
   });
 
-  it("toasts 'Nothing new' when every count is zero", async () => {
-    const onImport = vi.fn(() => ({ newDecks: 0, newCards: 0, newOrders: 0 }));
-    const showToast = vi.fn();
-    render(<ImportBackupModal {...baseProps} onImport={onImport} showToast={showToast} />);
-    uploadFile(document.querySelector('input[type="file"]')!, JSON.stringify({ version: 1, decks: [] }));
-    await waitFor(() => expect(showToast).toHaveBeenCalledWith(
-      expect.objectContaining({ title: "Nothing new to import", variant: "neutral" }),
-    ));
-  });
-
-  it("pluralises and includes orders in the summary", async () => {
-    const onImport = vi.fn(() => ({ newDecks: 1, newCards: 0, newOrders: 2 }));
-    const showToast = vi.fn();
-    render(<ImportBackupModal {...baseProps} onImport={onImport} showToast={showToast} />);
-    uploadFile(document.querySelector('input[type="file"]')!, JSON.stringify({ version: 1, orders: [] }));
-    await waitFor(() => expect(showToast).toHaveBeenCalledWith(
-      expect.objectContaining({ sub: "1 deck · 2 orders added" }),
-    ));
-  });
-
-  it("passes replace=true when 'Replace all local data' is checked", async () => {
-    const onImport = vi.fn(() => ({ newDecks: 1, newCards: 0, newOrders: 0 }));
-    render(<ImportBackupModal {...baseProps} onImport={onImport} />);
+  it("replaces all local data when 'Replace all local data' is checked", async () => {
+    storage.setItem(DECKS_KEY, JSON.stringify([deck("mine")]));
+    render(<ImportBackupModal {...baseProps} />);
     fireEvent.click(screen.getByLabelText(/Replace all local data/));
     expect(screen.getByText("This will wipe all existing decks, collection, orders, and trades.")).toBeInTheDocument();
-    uploadFile(document.querySelector('input[type="file"]')!, JSON.stringify({ version: 1, decks: [] }));
-    await waitFor(() => expect(onImport).toHaveBeenCalledWith({ version: 1, decks: [] }, true));
+    uploadFile(document.querySelector('input[type="file"]')!, JSON.stringify({ version: 1, decks: [deck("new")] }));
+    await waitFor(() => expect(reload).toHaveBeenCalledOnce());
+    expect(JSON.parse(storage.getItem(DECKS_KEY)!)).toEqual([deck("new")]);
+  });
+
+  it("shows an error and keeps the modal open when storage is full", async () => {
+    storage.setItem(DECKS_KEY, JSON.stringify([deck("mine")]));
+    storage.failOn.add("mtg-checklist-orders-v1");
+    const onClose = vi.fn();
+    render(<ImportBackupModal onClose={onClose} />);
+    uploadFile(document.querySelector('input[type="file"]')!, JSON.stringify({ version: 1, decks: [deck("new")] }));
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("There isn't enough storage space"));
+    expect(JSON.parse(storage.getItem(DECKS_KEY)!)).toEqual([deck("mine")]);
+    expect(onClose).not.toHaveBeenCalled();
+    expect(reload).not.toHaveBeenCalled();
   });
 
   it("ignores a change event with no file selected", () => {
-    const onImport = vi.fn();
-    render(<ImportBackupModal {...baseProps} onImport={onImport} />);
+    render(<ImportBackupModal {...baseProps} />);
     fireEvent.change(document.querySelector('input[type="file"]')!, { target: { files: [] } });
-    expect(onImport).not.toHaveBeenCalled();
+    expect(reload).not.toHaveBeenCalled();
   });
 
   it("stays silent when the user dismisses the native picker", async () => {

@@ -1,19 +1,6 @@
 import { describe, it, expect } from "vitest";
-import type { Backup } from "../../types/index";
 import { STORAGE_KEYS, keysOfKind } from "../storageKeys";
-
-// Every Backup field that holds saved data. Typed as a Record so adding a field to
-// Backup fails typecheck here until a registry entry claims it.
-const BACKUP_FIELDS: Record<Exclude<keyof Backup, "version" | "exportedAt">, true> = {
-  decks: true,
-  errors: true,
-  collection: true,
-  collectionMeta: true,
-  orders: true,
-  vendorHistory: true,
-  tradeLedger: true,
-  binderExcluded: true,
-};
+import { BACKUP_FIELDS } from "../../features/backup/backup";
 
 describe("storage-key registry", () => {
   // Pinned by value: these are real users' saved keys. A renamed key strands their data.
@@ -50,7 +37,7 @@ describe("storage-key registry", () => {
 
   it("saves each backup field from exactly one key", () => {
     const claimed = STORAGE_KEYS.flatMap(e => (e.backup === false ? [] : [e.backup]));
-    expect([...claimed].sort()).toEqual(Object.keys(BACKUP_FIELDS).sort());
+    expect([...claimed].sort()).toEqual([...BACKUP_FIELDS].sort());
   });
 
   it("says why any User data is left out of backups", () => {

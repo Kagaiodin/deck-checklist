@@ -1,35 +1,13 @@
-import type { TradeLogEntry } from "../../types/trade";
 import { useEffect, useState } from "react";
-import type { Deck, ErrorQueueItem, Collection, CollectionMeta, Order, ImportCounts, Backup } from "../../types/index";
-import {
-  supportsFileSystemAccess, getLinkedFileName,
-  pickSaveHandle, writeLinkedFile,
-} from "../../utils/fileSystemAccess";
+import type { ToastInput } from "../../types/index";
+import { getLinkedFileName, pickSaveHandle } from "../../utils/fileSystemAccess";
 import { GoogleDriveBackup } from "./GoogleDriveBackup";
+import { backupFileName, saveBackupFile, saveToast } from "./saveBackupFile";
 import "./BackupControls.css";
 import { isDemoActiveNow, DEMO_BACKUP_HINT } from "../demo/demoMode";
 import "../demo/demo.css";
 
-export interface ToastInput {
-  title: string;
-  sub?: string;
-  variant: "success" | "warn" | "neutral";
-  autoDismiss?: number;
-}
-
 interface Props {
-  // Data for export
-  decks: Deck[];
-  allErrors: Record<string, ErrorQueueItem[]>;
-  collection: Collection;
-  collectionMeta: CollectionMeta | null;
-  orders: Order[];
-  tradeLedger?: TradeLogEntry[];
-  binderExcluded?: string[];
-  vendorHistory: string[];
-
-  // Passed through to GoogleDriveBackup, which manages its own import flow
-  onImport: (data: Backup, replace: boolean) => ImportCounts;
   showToast: (t: ToastInput) => void;
 
   // Import lives in a top-level modal (ImportBackupModal) — this button just opens it
@@ -37,13 +15,9 @@ interface Props {
   onToggleImportPanel: () => void;
 }
 
-export function BackupControls({
-  decks, allErrors, collection, collectionMeta, orders, tradeLedger, binderExcluded, vendorHistory,
-  onImport, showToast,
-  importPanelOpen, onToggleImportPanel,
-}: Props) {
+/** The sidebar's backup buttons: export, import, and Google Drive. The backup itself comes from storage (backup.ts). */
+export function BackupControls({ showToast, importPanelOpen, onToggleImportPanel }: Props) {
   const [linkedFileName, setLinkedFileName] = useState<string | null>(getLinkedFileName());
-  const fsaSupported = supportsFileSystemAccess();
   const demo = isDemoActiveNow();
 
   // ImportBackupModal can link a new file via the FSA open picker (Tier 1)
@@ -53,50 +27,16 @@ export function BackupControls({
     if (!importPanelOpen) setLinkedFileName(getLinkedFileName());
   }, [importPanelOpen]);
 
-  function buildPayload(): Backup {
-    return {
-      version: 1,
-      exportedAt: new Date().toISOString(),
-      decks,
-      errors: allErrors,
-      collection,
-      collectionMeta,
-      orders,
-      vendorHistory,
-      tradeLedger,
-      binderExcluded,
-    };
-  }
-
-  // ── Export ───────────────────────────────────────────────────────────────────
   async function handleExport() {
-    if (demo) return;
-    const filename = `fetchlist-backup-${new Date().toISOString().slice(0, 10)}.json`;
-    const contents = JSON.stringify(buildPayload(), null, 2);
-
-    if (fsaSupported) {
-      try {
-        if (!getLinkedFileName()) await pickSaveHandle(filename);
-        await writeLinkedFile(contents);
-        setLinkedFileName(getLinkedFileName());
-        showToast({ title: "Saved to file", sub: getLinkedFileName() ?? undefined, variant: "success", autoDismiss: 2000 });
-        return;
-      } catch (err) {
-        if ((err as DOMException)?.name === "AbortError") return; // user dismissed the picker
-        // fall through to the download fallback below
-      }
-    }
-
-    const blob = new Blob([contents], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    Object.assign(document.createElement("a"), { href: url, download: filename }).click();
-    URL.revokeObjectURL(url);
-    showToast({ title: "Profile exported", sub: filename, variant: "success", autoDismiss: 2000 });
+    const result = await saveBackupFile();
+    if (result.kind === "linked") setLinkedFileName(result.fileName);
+    const toast = saveToast(result);
+    if (toast) showToast(toast);
   }
 
   async function handleChangeLinkedFile() {
     try {
-      await pickSaveHandle(`fetchlist-backup-${new Date().toISOString().slice(0, 10)}.json`);
+      await pickSaveHandle(backupFileName());
       setLinkedFileName(getLinkedFileName());
     } catch (err) {
       if ((err as DOMException)?.name !== "AbortError") throw err;
@@ -126,19 +66,7 @@ export function BackupControls({
           </button>
         </div>
         {demo && <p className="demo-backup-hint">{DEMO_BACKUP_HINT}</p>}
-        <GoogleDriveBackup
-          decks={decks}
-          allErrors={allErrors}
-          collection={collection}
-          collectionMeta={collectionMeta}
-          orders={orders}
-          tradeLedger={tradeLedger}
-          binderExcluded={binderExcluded}
-          vendorHistory={vendorHistory}
-          onImport={onImport}
-          showToast={showToast}
-          variant="sidebar"
-        />
+        <GoogleDriveBackup showToast={showToast} variant="sidebar" />
       </div>
     </div>
   );

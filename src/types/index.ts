@@ -150,3 +150,11 @@ export interface ImportCounts {
   newOrders: number;
   newTrades?: number;
 }
+
+/** A toast notification, as passed to App's showToast. */
+export interface ToastInput {
+  title: string;
+  sub?: string;
+  variant: "success" | "warn" | "neutral";
+  autoDismiss?: number;
+}
