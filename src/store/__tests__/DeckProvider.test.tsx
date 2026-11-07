@@ -1,9 +1,18 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { useEffect } from "react";
 import { render, screen, fireEvent, act } from "@testing-library/react";
 import { DeckProvider, useDecks } from "../decks";
 import { collectionStore } from "../collection";
+import { DECKS_KEY } from "../storageKeys";
+import { MemoryStorage } from "../../features/demo/__tests__/memoryStorage";
 import type { Card, Deck } from "../../types/index";
+
+// DeckProvider saves the decks, so every test gets its own storage; otherwise one test's decks load
+// into the next. Stubbed because jsdom's localStorage persists across a file's tests, and Node 25+'s
+// built-in one (undefined without --localstorage-file) hides it, so CI and local runs differ.
+let storage: MemoryStorage;
+beforeEach(() => { storage = new MemoryStorage(); vi.stubGlobal("localStorage", storage); });
+afterEach(() => { vi.unstubAllGlobals(); });
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -39,15 +48,6 @@ describe("DeckProvider", () => {
     expect(screen.getByTestId("child")).toBeInTheDocument();
   });
 
-  it("starts with an empty deck list when no initialDecks are provided", () => {
-    render(
-      <DeckProvider>
-        <DeckCountDisplay />
-      </DeckProvider>
-    );
-    expect(screen.getByTestId("count").textContent).toBe("0");
-  });
-
   it("initialises state with the provided initialDecks prop", () => {
     render(
       <DeckProvider initialDecks={[makeDeck({ id: "d1", name: "Burn" })]}>
@@ -68,6 +68,35 @@ describe("DeckProvider", () => {
     expect(screen.getByTestId("count").textContent).toBe("0");
     fireEvent.click(screen.getByRole("button"));
     expect(screen.getByTestId("count").textContent).toBe("1");
+  });
+});
+
+// ── Saving ────────────────────────────────────────────────────────────────────
+
+describe("DeckProvider — saved decks", () => {
+  const saved = () => JSON.parse(storage.getItem(DECKS_KEY) ?? "null") as Deck[] | null;
+
+  it("starts empty when nothing is saved", () => {
+    render(<DeckProvider><DeckCountDisplay /></DeckProvider>);
+    expect(screen.getByTestId("count").textContent).toBe("0");
+  });
+
+  it("starts from the saved decks", () => {
+    storage.setItem(DECKS_KEY, JSON.stringify([makeDeck({ id: "d1", name: "Burn" })]));
+    render(<DeckProvider><DeckCountDisplay /></DeckProvider>);
+    expect(screen.getByTestId("count").textContent).toBe("1");
+  });
+
+  it("starts empty when the saved decks can't be read", () => {
+    storage.setItem(DECKS_KEY, "{oops");
+    render(<DeckProvider><DeckCountDisplay /></DeckProvider>);
+    expect(screen.getByTestId("count").textContent).toBe("0");
+  });
+
+  it("saves the decks after every change", () => {
+    render(<DeckProvider><AddDeckButton deck={makeDeck({ id: "d1", name: "Burn" })} /></DeckProvider>);
+    fireEvent.click(screen.getByRole("button"));
+    expect(saved()?.map(d => d.id)).toEqual(["d1"]);
   });
 });
 

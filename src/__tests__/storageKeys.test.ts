@@ -3,8 +3,9 @@ import ts from "typescript";
 import { STORAGE_KEYS } from "../store/storageKeys";
 
 // Static scan of every localStorage key in src/. Guards two rules:
-// 1. One module writes each key. Two useLocalStorage copies of one key never sync, so the
-//    second writer saves stale data over the first (the order-receive bug, #189).
+// 1. One module writes each key, through at most one useLocalStorage copy. Two copies of one key
+//    never sync, so the second saves stale data over the first (the order-receive bug, #189),
+//    even when both sit in one module (App.tsx's two decks copies, #204).
 // 2. Every key is registered in src/store/storageKeys.ts with its kind, which decides whether
 //    demo mode swaps it, so new persisted data cannot leak between demo and real data unnoticed.
 // Keys must be string literals or string constants so this scan can resolve them.
@@ -15,7 +16,7 @@ const SHARED_WRITERS: Record<string, string> = {};
 // demo/ swaps every managed key by design (its own demo:* keys are its bookkeeping, not app data); useLocalStorage.ts is the generic hook itself.
 const SKIP = [/__tests__\//, /^test\//, /\.test\.tsx?$/, /^features\/demo\//, /^hooks\/useLocalStorage\.ts$/];
 
-type Usage = { writers: Set<string>; readers: Set<string> };
+type Usage = { writers: Set<string>; readers: Set<string>; hookCopies: string[] };
 
 // Raw source of every file under src/, keyed "../<path>" relative to this folder.
 const SOURCES = import.meta.glob<string>(["../**/*.ts", "../**/*.tsx", "!../**/*.d.ts"], { query: "?raw", import: "default", eager: true });
@@ -46,9 +47,10 @@ function scan() {
 
   const usage = new Map<string, Usage>();
   const unresolved: string[] = [];
-  const record = (key: string, file: string, write: boolean) => {
-    const u = usage.get(key) ?? { writers: new Set(), readers: new Set() };
+  const record = (key: string, file: string, write: boolean, hookCallSite?: string) => {
+    const u = usage.get(key) ?? { writers: new Set(), readers: new Set(), hookCopies: [] };
     (write ? u.writers : u.readers).add(file);
+    if (hookCallSite) u.hookCopies.push(hookCallSite);
     usage.set(key, u);
   };
 
@@ -69,7 +71,8 @@ function scan() {
       if (ts.isCallExpression(node)) {
         const callee = node.expression;
         let write: boolean | undefined;
-        if (ts.isIdentifier(callee) && callee.text === "useLocalStorage") write = true;
+        const isHookCall = ts.isIdentifier(callee) && callee.text === "useLocalStorage";
+        if (isHookCall) write = true;
         else if (ts.isPropertyAccessExpression(callee) && /(^|\.)localStorage$/.test(callee.expression.getText(sf))) {
           const method = callee.name.text;
           if (method === "getItem") write = false;
@@ -79,7 +82,7 @@ function scan() {
           const key = resolve(node.arguments[0]);
           const { line } = sf.getLineAndCharacterOfPosition(node.getStart(sf));
           if (key === undefined) unresolved.push(`${rel}:${line + 1}`);
-          else record(key, rel, write);
+          else record(key, rel, write, isHookCall ? `${rel}:${line + 1}` : undefined);
         }
       }
       ts.forEachChild(node, visit);
@@ -106,6 +109,14 @@ describe("localStorage keys", () => {
     expect(
       shared.filter(s => !(s.split(":")[0] in SHARED_WRITERS)),
       "Two modules write this key, and their copies never sync (#189). Move every write into one module, or list the key in SHARED_WRITERS with a reason and a way out.",
+    ).toEqual([]);
+  });
+
+  it("each key has at most one useLocalStorage copy", () => {
+    const copies = [...usage].filter(([, u]) => u.hookCopies.length > 1).map(([k, u]) => `${k}: ${u.hookCopies.join(", ")}`);
+    expect(
+      copies,
+      "Each useLocalStorage call holds its own copy of the key, and the copies never sync (#189, #204). Keep one copy and pass its value or setter down, or move the state into one owner (see CODING_STANDARDS.md).",
     ).toEqual([]);
   });
 

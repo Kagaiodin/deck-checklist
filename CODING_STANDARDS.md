@@ -13,6 +13,8 @@ Persisted state that more than one part of the app reads or writes lives in one 
 - Components and providers import the singleton (`collectionStore`, `useCollection()`), as `App.tsx` and `CollectionPage.tsx` do.
 - Hooks receive the store as a dependency instead of importing it, so tests can pass `memoryCollectionStore()`. See `useTradeLedger({ collectionStore })` and `useOrderActions({ collectionStore, ... })`.
 
+Known exception: the decks live in `DeckProvider`'s reducer, which loads and saves them itself (#204). That meets the rule's aim: one in-memory owner, every change dispatched, so nothing saves a stale copy. Move them to a store if code outside React needs to read them, as the planned backup module may.
+
 ## The store derives its own values
 
 Values computed from a store's state belong to the store, not its callers. The Collection's `cardCount` is one example: `collectionStore.update()` keeps it in step with the Collection. Callers pass the new state plus anything only they know, such as a `source` label or an import's file name. They do not compute counts or meta themselves.
