@@ -13,13 +13,13 @@ Persisted state that more than one part of the app reads or writes lives in one 
 - Components and providers import the singleton (`collectionStore`, `useCollection()`), as `App.tsx` and `CollectionPage.tsx` do.
 - Hooks receive the store as a dependency instead of importing it, so tests can pass `memoryCollectionStore()`. See `useTradeLedger({ collectionStore })` and `useOrderActions({ collectionStore, ... })`.
 
-Known exception: the decks live in `DeckProvider`'s reducer, which loads and saves them itself (#204). That meets the rule's aim: one in-memory owner, every change dispatched, so nothing saves a stale copy. Move them to a store if code outside React needs to read them, as the planned backup module may.
+Known exception: the decks live in `DeckProvider`'s reducer, which loads and saves them itself (#204). That meets the rule's aim: one in-memory owner, every change dispatched, so nothing saves a stale copy. Move them to a store if code outside React needs to read them live. The backup module doesn't: it reads and writes storage, then reloads the page (#206).
 
 ## The store derives its own values
 
 Values computed from a store's state belong to the store, not its callers. The Collection's `cardCount` is one example: `collectionStore.update()` keeps it in step with the Collection. Callers pass the new state plus anything only they know, such as a `source` label or an import's file name. They do not compute counts or meta themselves.
 
-Known exception: the backup-merge path in `App.tsx` computes `cardCount` before calling `collectionStore.replace()`. A store method that keeps the count should replace it.
+Known exception: a backup import (`src/features/backup/backup.ts`) computes the merged Collection meta's `cardCount` itself. It writes storage and reloads rather than going through the store, and the store doesn't recount on load.
 
 ## Hooks take readers, not render-time values
 
