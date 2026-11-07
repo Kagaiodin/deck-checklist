@@ -16,7 +16,7 @@ Verified on macOS with the repo's own `node_modules/playwright`; not tried in a 
 npx tsx .claude/skills/run-deck-checklist/driver.mts --view collection --width 375
 ```
 
-Flags: `--view decks|collection|orders` (default `decks`), `--width <px>` (default 1280), `--flow orders`,
+Flags: `--view decks|collection|orders` (default `decks`), `--width <px>` (default 1280), `--flow orders|backup`,
 `--empty` (seed nothing: first-run state), `--out <dir>` (default `/tmp/deck-checklist-shots`).
 The screenshot path is printed, e.g. `/tmp/deck-checklist-shots/collection-375.png`.
 
@@ -25,6 +25,11 @@ The screenshot path is printed, e.g. `/tmp/deck-checklist-shots/collection-375.p
 # (order status, collection merge, order_cancelled deck notification) and that it survives a reload.
 npx tsx .claude/skills/run-deck-checklist/driver.mts --view orders --flow orders
 # prints: flow orders: OK (received, cancelled, persisted across reload)
+
+# Backup import: merge-imports a file with one new deck while a second tab is open; asserts both tabs
+# reload, the "Import complete" toast shows after the reload, and the deck is saved.
+npx tsx .claude/skills/run-deck-checklist/driver.mts --flow backup
+# prints: flow backup: OK (merged, reloaded both tabs, toast after reload)
 ```
 
 The driver uses an existing dev server on `:5173` if one is up (it serves whatever branch the working tree is on),

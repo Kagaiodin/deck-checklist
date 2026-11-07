@@ -3,7 +3,7 @@
  * optionally runs a named flow, takes a screenshot, and fails on console/page errors.
  *
  *   npx tsx .claude/skills/run-deck-checklist/driver.mts [--view decks|collection|orders] [--width 1280]
- *        [--flow orders] [--out <dir>] [--empty]
+ *        [--flow orders|backup] [--out <dir>] [--empty]
  *
  * Expects the dev server on :5173 (starts one itself if nothing is listening, and stops only that one).
  * Seed data is the demo dataset written as ordinary data (demo mode is NOT switched on), so everything behaves like a
@@ -97,8 +97,29 @@ try {
     assert.equal(statusOf(after, "demo-order-1"), "received");
     assert.equal(statusOf(after, "demo-order-2"), "cancelled");
     console.log("flow orders: OK (received, cancelled, persisted across reload)");
+  } else if (FLOW === "backup") {
+    // Merge-import a backup with one new deck while a second tab is open; both tabs reload,
+    // the summary toast shows after the reload, and the deck is saved.
+    const other = await ctx.newPage();
+    await other.goto(BASE);
+    const before = await read(page);
+    const backup = { version: 1, exportedAt: new Date().toISOString(), decks: [...before.decks, { id: "imported-1", name: "Imported Deck", createdAt: 1, cards: [] }] };
+    await page.getByRole("button", { name: "↑ Import backup" }).first().click();
+    const otherReloaded = other.waitForEvent("load", { timeout: 5000 });
+    const reloaded = page.waitForEvent("load", { timeout: 5000 });
+    await page.locator('.import-backup-modal input[type="file"]').setInputFiles({ name: "fetchlist-backup.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(backup)) });
+    await reloaded;
+    await page.getByText("Import complete").waitFor({ timeout: 5000 });
+    await page.getByText("1 deck added").waitFor();
+    await otherReloaded;
+    const after = await read(page);
+    assert.equal(after.decks.length, before.decks.length + 1, "one deck added");
+    assert.ok(after.decks.some((d: { id: string }) => d.id === "imported-1"));
+    assert.deepEqual(after.collection, before.collection, "Collection untouched");
+    await other.close();
+    console.log("flow backup: OK (merged, reloaded both tabs, toast after reload)");
   } else if (FLOW) {
-    throw new Error(`unknown --flow ${FLOW} (known: orders)`);
+    throw new Error(`unknown --flow ${FLOW} (known: orders, backup)`);
   }
 
   const shot = `${OUT}/${VIEW}-${WIDTH}${FLOW ? `-${FLOW}` : ""}.png`;
