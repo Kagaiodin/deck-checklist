@@ -1,5 +1,4 @@
 import { useCallback, type Dispatch } from "react";
-import type { Collection } from "../../../types/index";
 import type { DeckAction } from "../../../store/decks";
 import type { CollectionStore } from "../../../store/collection";
 import type { Trade, TradeLogCard, TradeLogEntry } from "../../../types/trade";
@@ -10,8 +9,6 @@ export const TRADE_LEDGER_KEY = "mtg-checklist-trade-ledger-v1";
 
 export interface LogTradeResult {
   entry: TradeLogEntry;
-  /** The Collection after the trade, for callers that hold their own copy. */
-  collection: Collection;
   shortfall: TradeLogCard[];
 }
 
@@ -30,7 +27,7 @@ export function useTradeLedger({ collection: store, dispatch }: LedgerDeps) {
     setEntries(prev => sortLedger([entry, ...prev]));
     store.update(() => collection, { source: "Trade log" });
     dispatch({ type: "APPLY_COLLECTION", payload: collection });
-    return { entry, collection, shortfall };
+    return { entry, shortfall };
   }, [store, setEntries, dispatch]);
 
   /** Removes the entry only. Collection is deliberately left as the trade changed it. */

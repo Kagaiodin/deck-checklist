@@ -33,9 +33,9 @@ describe("useTradeLedger", () => {
     act(() => { out = result.current.logTrade(trade, { date: 5, counterparty: "Sam", notes: "" }); });
     expect(result.current.entries).toHaveLength(1);
     expect(JSON.parse(store.get(TRADE_LEDGER_KEY)!)[0]).toMatchObject({ counterparty: "Sam" });
-    expect(out.collection["sol ring"][0].quantity).toBe(1);
-    expect(deps.collection.get()).toEqual(out.collection);
-    expect(deps.dispatch).toHaveBeenCalledWith({ type: "APPLY_COLLECTION", payload: out.collection });
+    expect(out.shortfall).toEqual([]);
+    expect(deps.collection.get()).toEqual({ "sol ring": [{ quantity: 1 }] });
+    expect(deps.dispatch).toHaveBeenCalledWith({ type: "APPLY_COLLECTION", payload: deps.collection.get() });
   });
 
   it("keeps stored import metadata and only updates the card count", () => {

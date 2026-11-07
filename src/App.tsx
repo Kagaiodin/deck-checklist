@@ -15,9 +15,8 @@ import { Checklist } from "./components/Checklist";
 import { EmptyState } from "./components/EmptyState";
 import { ErrorQueue } from "./components/ErrorQueue";
 import { ProgressTracker } from "./components/ProgressTracker";
-import type { Deck, ErrorQueueItem, AcquisitionSource, Collection, CollectionMeta, Order, ImportCounts, ProfileExport } from "./types/index";
-import type { Trade } from "./types/trade";
-import { mergeLedger, sanitizeLedger, sortLedger, type LogMeta } from "./utils/tradeLedger";
+import type { Deck, ErrorQueueItem, AcquisitionSource, Order, ImportCounts, ProfileExport } from "./types/index";
+import { mergeLedger, sanitizeLedger, sortLedger } from "./utils/tradeLedger";
 import { applyCollectionToCards } from "./utils/csvParser";
 import { formatOptions } from "./utils/deckFormats";
 import { getDeckColorIdentity, formatRelativeDate, getDeckDomain } from "./utils/deckUtils";
@@ -46,8 +45,7 @@ import { AppLogo } from "./components/AppLogo";
 import type { ToastInput } from "./features/profile/ProfileExportImport";
 import { BuyListSheet } from "./features/card-purchase/BuyListSheet";
 import { useBuyFlow } from "./features/card-purchase/useBuyFlow";
-import { COLLECTION_KEY, COLLECTION_META_KEY } from "./features/collection/storageKeys";
-import { collectionStore } from "./store/collection";
+import { collectionStore, mergeCollections, useCollection } from "./store/collection";
 import "./features/card-purchase/buy-flow.css";
 
 const ONBOARDING_KEY = "fetchlist:onboarding:dismissed";
@@ -65,19 +63,6 @@ const isTradePath = () => /^\/trade\/?$/.test(window.location.pathname);
 
 /** `/trade` or a `/#trade=…` share link opens the trade Calculator (under Transactions → Binder) instead of the default tab. */
 const openedWithTradeLink = () => isTradePath() || extractPayload(window.location.hash) !== null;
-
-/**
- * The Collection as it is right now. AppInner's own copy is only refreshed on reload
- * (CollectionPage owns the writes), so Trade reads storage fresh each time it opens.
- */
-function readCollection(): Collection {
-  try {
-    const raw = window.localStorage.getItem(COLLECTION_KEY);
-    return raw ? (JSON.parse(raw) as Collection) : {};
-  } catch {
-    return {};
-  }
-}
 
 function AppInner() {
   const { state, dispatch } = useDecks();
@@ -99,7 +84,6 @@ function AppInner() {
   const [tradeOrigin, setTradeOrigin] = useState<TradeOrigin>(() => (openedWithTradeLink() ? "link" : "collection"));
   const [tradeKey, setTradeKey] = useState(0);
   const [tradeSeed, setTradeSeed] = useState<TradeSeed | undefined>(undefined);
-  const [tradeCollection, setTradeCollection] = useState<Collection>(readCollection);
   const [showImport, setShowImport] = useState(false);
   const [renamingDeckId, setRenamingDeckId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
@@ -186,10 +170,8 @@ function AppInner() {
     }
   }
 
-  // ── Collection (read-only, for auto-tagging on deck import) ──────────────
-  // CollectionPage owns all writes; AppInner only reads + writes when receiving orders.
-  const [collection, setCollection] = useLocalStorage<Collection>(COLLECTION_KEY, {});
-  const [collectionMeta, setCollectionMeta] = useLocalStorage<CollectionMeta | null>(COLLECTION_META_KEY, null);
+  // ── Collection (one shared store; handlers read it fresh with collectionStore.get()) ──
+  const { collection, meta: collectionMeta } = useCollection();
 
   // ── Orders state ──────────────────────────────────────────────────────────
   const [orders, setOrders] = useLocalStorage<Order[]>("mtg-checklist-orders-v1", []);
@@ -257,8 +239,9 @@ function AppInner() {
       const result = await validateDecklist(parsed, p => setProgress(p));
 
       // Auto-tag owned cards from collection before creating deck
-      const collectionTagged = Object.keys(collection).length > 0
-        ? applyCollectionToCards(result.cards, collection)
+      const current = collectionStore.get();
+      const collectionTagged = Object.keys(current).length > 0
+        ? applyCollectionToCards(result.cards, current)
         : result.cards;
 
       const taggedCards = importAsBuilt
@@ -328,8 +311,9 @@ function AppInner() {
     } else {
       // Unmarking as built — clear checkboxes and re-apply collection tagging
       const reset = deck.cards.map(c => ({ ...c, acquired: false, source: undefined, manuallyTagged: false }));
-      const retagged = Object.keys(collection).length > 0
-        ? applyCollectionToCards(reset, collection)
+      const current = collectionStore.get();
+      const retagged = Object.keys(current).length > 0
+        ? applyCollectionToCards(reset, current)
         : reset;
       dispatch({ type: "SET_CARDS", payload: { deckId, cards: retagged } });
     }
@@ -394,7 +378,7 @@ function AppInner() {
       if (parsed.length === 0) return { success: false, error: "Invalid card format." };
       const result = await validateDecklist(parsed);
       if (result.cards.length > 0) {
-        const [tagged] = applyCollectionToCards(result.cards, collection);
+        const [tagged] = applyCollectionToCards(result.cards, collectionStore.get());
         dispatch({ type: "ADD_CARD", payload: { deckId: activeDeckId, card: tagged } });
         return { success: true };
       }
@@ -470,13 +454,6 @@ function AppInner() {
   const binderExcluded = useBinderExcludedList();
   const [ledgerOpenId, setLedgerOpenId] = useState<string | null>(null);
 
-  /** Log this trade: writes the ledger and Collection, then refreshes the Calculator's own Collection copy. */
-  function handleLogTrade(trade: Trade, meta: LogMeta) {
-    const result = logTrade(trade, meta);
-    setTradeCollection(result.collection);
-    return result;
-  }
-
   function viewLedgerEntry(id: string) {
     closeTrade();
     setLedgerOpenId(id);
@@ -497,8 +474,7 @@ function AppInner() {
       // Replace mode — wipe all and restore from backup
       dispatch({ type: "SET_DECKS", payload: data.decks ?? [] });
       setAllErrors(data.errors ?? {});
-      setCollection(data.collection ?? {});
-      setCollectionMeta(data.collectionMeta ?? null);
+      collectionStore.replace(data.collection ?? {}, data.collectionMeta ?? null);
       setOrders(data.orders ?? []);
       setLedger(sortLedger(sanitizeLedger(data.tradeLedger)));
       writeBinderExcluded(sanitizeExcluded(data.binderExcluded));
@@ -518,25 +494,15 @@ function AppInner() {
     }
     setAllErrors(mergedErrors);
 
-    // Collection — union printings per card name, deduping by set+collectorNumber+foil
-    const mergedCollection = { ...collection };
-    let newCardKeyCount = 0;
-    for (const [name, printings] of Object.entries(data.collection ?? {})) {
-      const existing = mergedCollection[name] ?? [];
-      if (existing.length === 0) newCardKeyCount++;
-      const deduped = [...existing];
-      for (const p of printings) {
-        const isDup = deduped.some(
-          e => e.set === p.set && e.collectorNumber === p.collectorNumber && (e.foil ?? false) === (p.foil ?? false)
-        );
-        if (!isDup) deduped.push(p);
-      }
-      mergedCollection[name] = deduped;
+    // Collection — union printings per card name against the current Collection.
+    // Local meta wins; with none, the backup's is adopted, counted against the merged result.
+    const { merged: mergedCollection, added: newCardKeyCount } = mergeCollections(collectionStore.get(), data.collection ?? {});
+    const localMeta = collectionStore.getMeta();
+    if (!localMeta && data.collectionMeta) {
+      collectionStore.replace(mergedCollection, { ...data.collectionMeta, cardCount: Object.keys(mergedCollection).length });
+    } else {
+      collectionStore.update(() => mergedCollection);
     }
-    setCollection(mergedCollection);
-
-    // CollectionMeta — adopt if local is null
-    if (!collectionMeta && data.collectionMeta) setCollectionMeta(data.collectionMeta);
 
     // Orders — skip duplicates by id
     const existingOrderIds = new Set(orders.map(o => o.id));
@@ -667,8 +633,6 @@ function AppInner() {
 
   function switchView(v: "decks" | "collection" | "transactions") {
     if (tradeOpen) closeTrade();
-    // CollectionPage writes localStorage on its own, so re-read for the Binder when Transactions opens.
-    if (v === "transactions") setTradeCollection(readCollection());
     setView(v);
     window.scrollTo({ top: 0, behavior: "instant" });
   }
@@ -678,7 +642,6 @@ function AppInner() {
     setTradeOrigin(origin);
     setTradeSeed(seed);
     setView("transactions");
-    setTradeCollection(readCollection());
     setTradeKey(k => k + 1);
     setTradeOpen(true);
   }
@@ -707,8 +670,7 @@ function AppInner() {
       setTradeOrigin("link");
       setTradeSeed(undefined);
       setView("transactions");
-      setTradeCollection(readCollection());
-      setTradeKey(k => k + 1);
+        setTradeKey(k => k + 1);
       setTradeOpen(true);
     }
     window.addEventListener("hashchange", onHashChange);
@@ -1560,11 +1522,11 @@ function AppInner() {
           tradeOpen ? (
             <TradePage
               key={tradeKey}
-              collection={tradeCollection}
+              collection={collection}
               decks={state.decks}
               origin={tradeOrigin}
               seed={tradeSeed}
-              onLogTrade={handleLogTrade}
+              onLogTrade={logTrade}
               onViewEntry={viewLedgerEntry}
               onBack={leaveTrade}
             />
@@ -1572,7 +1534,7 @@ function AppInner() {
             <TransactionsPage
               subTab={txSubTab}
               onSubTabChange={setTxSubTab}
-              collection={tradeCollection}
+              collection={collection}
               onOpenTrade={seed => openTrade(txSubTab === "trades" ? "trades" : "binder", seed)}
               onViewCollection={() => switchView("collection")}
               ledger={ledger}
