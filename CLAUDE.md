@@ -55,3 +55,17 @@
 - Active work is tracked in GitHub Issues — check open issues before starting. When pausing
   mid-feature, comment on the issue with last known state and the blocking question; link the
   spec file in the issue body.
+
+## Agent skills
+
+### Issue tracker
+
+GitHub Issues on Kagaiodin/deck-checklist, via the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default five-role vocabulary (needs-triage, needs-info, ready-for-agent, ready-for-human, wontfix). See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: `GLOSSARY.md` + `docs/adr/` at the repo root, created lazily. See `docs/agents/domain.md`.
