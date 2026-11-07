@@ -11,7 +11,7 @@ import {
 } from "../../../types/trade";
 import { basePriceFor, fairness, isSideEmpty, sideTotals } from "../../../utils/tradePricing";
 import { fetchPrices, priceKey } from "../../../utils/scryfallSearch";
-import type { Printing } from "../../../utils/scryfallSearch";
+import type { ScryfallPrinting } from "../../../utils/scryfallSearch";
 
 export const TRADE_STORAGE_KEY = "fetchlist-trade";
 const HISTORY_LIMIT = 50;
@@ -89,7 +89,7 @@ type Action =
   | { type: "redo" }
   | { type: "open"; trade: Trade }
   | { type: "fork"; previous: Trade }
-  | { type: "applyPrices"; prices: Map<string, Printing>; at: number };
+  | { type: "applyPrices"; prices: Map<string, ScryfallPrinting>; at: number };
 
 const sameLine = (a: Omit<TradeCard, "id">, b: TradeCard) =>
   a.set.toLowerCase() === b.set.toLowerCase() &&

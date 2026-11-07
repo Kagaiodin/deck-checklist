@@ -18,8 +18,8 @@ interface ScryfallPrintingRaw {
   card_faces?: { image_uris?: ScryfallImageUris }[];
 }
 
-/** A printing as the trade screen needs it (no trade state yet). */
-export interface Printing {
+/** A Scryfall search result (not a Collection Printing; see GLOSSARY.md). */
+export interface ScryfallPrinting {
   scryfallId: string;
   name: string;
   set: string;
@@ -30,7 +30,7 @@ export interface Printing {
   prices: ScryfallPrices;
 }
 
-export function toPrinting(raw: ScryfallPrintingRaw): Printing {
+export function toScryfallPrinting(raw: ScryfallPrintingRaw): ScryfallPrinting {
   const img = raw.image_uris ?? raw.card_faces?.[0]?.image_uris;
   return {
     scryfallId: raw.id,
@@ -55,13 +55,13 @@ export async function autocomplete(query: string, signal?: AbortSignal): Promise
 }
 
 /** Every printing of an exact card name, newest first. Empty when nothing matches (Scryfall 404). */
-export async function searchPrintings(name: string, signal?: AbortSignal): Promise<Printing[]> {
+export async function searchPrintings(name: string, signal?: AbortSignal): Promise<ScryfallPrinting[]> {
   const q = encodeURIComponent(`!"${name.replace(/"/g, "")}"`);
   const res = await fetch(`${BASE}/cards/search?q=${q}&unique=prints&order=released`, { signal });
   if (res.status === 404) return [];
   if (!res.ok) throw new Error(`Scryfall error ${res.status}`);
   const body = (await res.json()) as { data?: ScryfallPrintingRaw[] };
-  return (body.data ?? []).map(toPrinting);
+  return (body.data ?? []).map(toScryfallPrinting);
 }
 
 export interface PriceLookup {
@@ -78,8 +78,8 @@ export const priceKey = (l: PriceLookup) => l.scryfallId || `${l.set.toLowerCase
  * Returns a map keyed by `priceKey`. Batches that fail are simply absent from the map so the
  * caller can leave the prior price and mark those rows stale.
  */
-export async function fetchPrices(lookups: PriceLookup[]): Promise<Map<string, Printing>> {
-  const out = new Map<string, Printing>();
+export async function fetchPrices(lookups: PriceLookup[]): Promise<Map<string, ScryfallPrinting>> {
+  const out = new Map<string, ScryfallPrinting>();
   for (let i = 0; i < lookups.length; i += BATCH_SIZE) {
     const chunk = lookups.slice(i, i + BATCH_SIZE);
     try {
@@ -95,7 +95,7 @@ export async function fetchPrices(lookups: PriceLookup[]): Promise<Map<string, P
       if (!res.ok) continue;
       const body = (await res.json()) as { data?: ScryfallPrintingRaw[] };
       for (const raw of body.data ?? []) {
-        const p = toPrinting(raw);
+        const p = toScryfallPrinting(raw);
         out.set(p.scryfallId, p);
         out.set(`${p.set.toLowerCase()}:${p.collectorNumber}`, p);
       }

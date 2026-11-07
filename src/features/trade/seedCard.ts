@@ -1,6 +1,6 @@
 import type { Finish, TradeCard } from "../../types/trade";
 import { basePriceFor } from "../../utils/tradePricing";
-import { fetchPrices, priceKey, searchPrintings, type Printing } from "../../utils/scryfallSearch";
+import { fetchPrices, priceKey, searchPrintings, type ScryfallPrinting } from "../../utils/scryfallSearch";
 import { displayName } from "./format";
 
 /**
@@ -25,7 +25,7 @@ export interface TradeSeed {
 
 /** Builds a priced "My offer" card (quantity 1) from a seed; unpriced if Scryfall can't be reached. */
 export async function seedToTradeCard(seed: TradeSeed): Promise<Omit<TradeCard, "id">> {
-  let found: Printing | undefined;
+  let found: ScryfallPrinting | undefined;
   try {
     if (seed.set && seed.collectorNumber) {
       const prices = await fetchPrices([{ set: seed.set, collectorNumber: seed.collectorNumber }]);

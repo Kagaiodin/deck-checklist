@@ -14,7 +14,7 @@ vi.mock("../../../utils/scryfallSearch", async (orig) => ({
 const fetchPricesMock = vi.mocked(scryfall.fetchPrices);
 const searchMock = vi.mocked(scryfall.searchPrintings);
 
-const printing = (over: Partial<scryfall.Printing> = {}): scryfall.Printing => ({
+const printing = (over: Partial<scryfall.ScryfallPrinting> = {}): scryfall.ScryfallPrinting => ({
   scryfallId: "p1", name: "Sol Ring", set: "cmm", setName: "Commander Masters", collectorNumber: "410",
   finishes: ["nonfoil", "foil"], imageUrl: "sol.jpg", prices: { usd: "1.60", usd_foil: "4.00" }, ...over,
 });

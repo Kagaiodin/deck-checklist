@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { CONDITIONS, CONDITION_MULTIPLIERS, type Condition, type Finish, type TradeCard } from "../../../types/trade";
 import { basePriceFor } from "../../../utils/tradePricing";
-import { autocomplete, searchPrintings, type Printing } from "../../../utils/scryfallSearch";
+import { autocomplete, searchPrintings, type ScryfallPrinting } from "../../../utils/scryfallSearch";
 import type { SideKey } from "../hooks/useTrade";
 import { FINISH_LABEL, usd } from "../format";
 import { TradeSheet } from "./TradeSheet";
@@ -19,7 +19,7 @@ export function CardSearchSheet({ side, onAdd, onClose }: CardSearchSheetProps) 
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [active, setActive] = useState(0);
   const [pickedName, setPickedName] = useState<string | null>(null);
-  const [printings, setPrintings] = useState<Printing[]>([]);
+  const [printings, setPrintings] = useState<ScryfallPrinting[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [printIdx, setPrintIdx] = useState(0);
@@ -69,7 +69,7 @@ export function CardSearchSheet({ side, onAdd, onClose }: CardSearchSheetProps) 
     }
   }
 
-  const printing: Printing | undefined = printings[printIdx];
+  const printing: ScryfallPrinting | undefined = printings[printIdx];
   const activeFinish: Finish = printing && !printing.finishes.includes(finish) ? printing.finishes[0] : finish;
   const base = printing ? basePriceFor(printing.prices, activeFinish) : null;
 

@@ -11,7 +11,7 @@ vi.mock("../../../utils/scryfallSearch", async (orig) => ({
   searchPrintings: vi.fn(),
 }));
 
-const printing = (over: Partial<scryfall.Printing> = {}): scryfall.Printing => ({
+const printing = (over: Partial<scryfall.ScryfallPrinting> = {}): scryfall.ScryfallPrinting => ({
   scryfallId: "p1", name: "Lightning Bolt", set: "2xm", setName: "Double Masters", collectorNumber: "117",
   finishes: ["nonfoil", "foil"] as Finish[], imageUrl: "bolt.jpg", prices: { usd: "1.40", usd_foil: "4.20" }, ...over,
 });

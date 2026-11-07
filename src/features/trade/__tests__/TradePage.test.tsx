@@ -18,7 +18,7 @@ const autocompleteMock = vi.mocked(scryfall.autocomplete);
 const searchMock = vi.mocked(scryfall.searchPrintings);
 const fetchPricesMock = vi.mocked(scryfall.fetchPrices);
 
-const printing = (over: Partial<scryfall.Printing> = {}): scryfall.Printing => ({
+const printing = (over: Partial<scryfall.ScryfallPrinting> = {}): scryfall.ScryfallPrinting => ({
   scryfallId: "p-bolt", name: "Lightning Bolt", set: "2xm", setName: "Double Masters", collectorNumber: "117",
   finishes: ["nonfoil", "foil"], imageUrl: "bolt.jpg", prices: { usd: "10.00", usd_foil: "20.00" }, ...over,
 });
