@@ -585,6 +585,6 @@ describe("CollectionPage — group by set", () => {
     await u().click(within(rows[1] as HTMLElement).getByRole("button", { expanded: false }));
     await u().click(within(rows[1] as HTMLElement).getByRole("button", { name: "Remove all" }));
     const saved = JSON.parse(store.get(COLLECTION_KEY)!);
-    expect(saved["sol ring"]).toEqual([{ quantity: 1, set: "c21", collectorNumber: "5" }]);
+    expect(saved["sol ring"]).toEqual([{ quantity: 1, set: "C21", collectorNumber: "5" }]);
   });
 });

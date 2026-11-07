@@ -7,6 +7,7 @@ import { fairness, sideTotals } from "../../../utils/tradePricing";
 import { deriveBinder } from "../../transactions/binder/binderSurplus";
 import type { Deck, Order, Collection } from "../../../types/index";
 import type { Trade, TradeLogEntry } from "../../../types/trade";
+import { printingOf, samePrinting } from "../../../utils/printing";
 
 const NOW = Date.UTC(2026, 9, 16, 12, 0, 0);
 const DAY = 86_400_000;
@@ -57,9 +58,7 @@ describe("demo trade ledger", () => {
   it("holds each received card's printing, and gives away none that a deck uses", () => {
     for (const e of ledger) {
       for (const c of e.cardsIn) {
-        const printing = (collection[c.name.toLowerCase()] ?? []).find(
-          (p) => p.set === c.set && p.collectorNumber === c.collectorNumber,
-        );
+        const printing = (collection[c.name.toLowerCase()] ?? []).find((p) => samePrinting(p, printingOf(c)));
         expect(printing?.quantity ?? 0).toBeGreaterThanOrEqual(c.quantity);
       }
       for (const c of e.cardsOut) expect(committed.has(c.name.toLowerCase())).toBe(false);
