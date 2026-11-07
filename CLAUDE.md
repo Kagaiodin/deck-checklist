@@ -12,6 +12,7 @@
   `src/features/<feature>/`). New utils, store logic, hooks, and interactive components
   need a test; find the nearest `__tests__/` and copy its pattern.
 - Coverage floors are enforced in vitest.config — `npm run test:coverage` fails below them.
+- App-level tests (render the whole `<App />`) use `renderApp({ storage })` from `src/test/renderApp.tsx`: it seeds storage, resets the Collection store and stubs the browser APIs.
 
 ## Demo mode
 - Demo data lives in `src/features/demo/demoData.ts`; the localStorage keys it swaps are `MANAGED_KEYS` in `demoMode.ts`.
