@@ -3,8 +3,7 @@ import { Virtuoso, GroupedVirtuoso, type VirtuosoHandle, type GroupedVirtuosoHan
 import "./CollectionPage.css";
 import type { Card, Collection, CollectionMeta, CollectionPrinting, Deck } from "../../types/index";
 import type { CollectionFilterKey, CollectionSortKey, CommittedInfo, EditingPrinting } from "../../types/collection";
-import { useLocalStorage } from "../../hooks/useLocalStorage";
-import { COLLECTION_KEY, COLLECTION_META_KEY } from "./storageKeys";
+import { collectionStore, useCollection } from "../../store/collection";
 import { parseCollectionCSV } from "../../utils/csvParser";
 import { groupCollectionBySet, type SetGroupRow } from "../../utils/collectionGroups";
 
@@ -106,21 +105,15 @@ function GroupedRowItem(
 
 interface CollectionPageProps {
   decks: Deck[];
-  onCollectionChange: (collection: Collection) => void;
   /** Opens the Trade calculator (its own route). Omit to hide the menu entry. */
   onOpenTrade?: () => void;
 }
 
 // ── Page root ────────────────────────────────────────────────────────────────
 
-export function CollectionPage({ decks, onCollectionChange, onOpenTrade }: CollectionPageProps) {
+export function CollectionPage({ decks, onOpenTrade }: CollectionPageProps) {
   // ── Persisted state ────────────────────────────────────────────────────────
-  const [collection, setCollection] = useLocalStorage<Collection>(
-    COLLECTION_KEY, {},
-  );
-  const [collectionMeta, setCollectionMeta] = useLocalStorage<CollectionMeta | null>(
-    COLLECTION_META_KEY, null,
-  );
+  const { collection, meta: collectionMeta } = useCollection();
 
   // ── Local UI state ─────────────────────────────────────────────────────────
   const [quickAddOpen,        setQuickAddOpen]         = useState(false);
@@ -249,9 +242,7 @@ export function CollectionPage({ decks, onCollectionChange, onOpenTrade }: Colle
 
   function handleUndo() {
     if (!snapshotRef.current) return;
-    setCollection(snapshotRef.current.collection);
-    setCollectionMeta(snapshotRef.current.meta);
-    onCollectionChange(snapshotRef.current.collection);
+    collectionStore.replace(snapshotRef.current.collection, snapshotRef.current.meta);
     snapshotRef.current = null;
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     setUndoToast(null);
@@ -259,9 +250,7 @@ export function CollectionPage({ decks, onCollectionChange, onOpenTrade }: Colle
 
   // ── Collection mutators ────────────────────────────────────────────────────
   function applyCollection(updated: Collection, meta: CollectionMeta) {
-    setCollection(updated);
-    setCollectionMeta(meta);
-    onCollectionChange(updated);
+    collectionStore.replace(updated, meta);
   }
 
   function importCollectionFile(file: File) {
@@ -291,87 +280,83 @@ export function CollectionPage({ decks, onCollectionChange, onOpenTrade }: Colle
 
   function handleClearCollection() {
     showUndoToast("Collection cleared.");
-    setCollection({});
-    setCollectionMeta(null);
+    collectionStore.replace({}, null);
     setCollectionError(null);
-    onCollectionChange({});
   }
 
-  function mutateCollection(updated: Collection) {
-    setCollection(updated);
-    if (collectionMeta) {
-      setCollectionMeta({ ...collectionMeta, cardCount: Object.keys(updated).length });
-    }
-    onCollectionChange(updated);
+  /** Edits the current Collection; `source` names the meta if this is the first card. */
+  function mutateCollection(fn: (current: Collection) => Collection, source?: string) {
+    collectionStore.update(fn, { source });
   }
 
   function handleIncrement(key: string, idx?: number) {
-    const updated = { ...collection };
-    const printings = Array.isArray(updated[key]) ? [...updated[key]] : [];
-    // Set mode passes the shown printing; otherwise bump the generic one.
-    const gi = idx !== undefined && printings[idx]
-      ? idx
-      : printings.findIndex(p => !p.set && !p.collectorNumber && !p.foil);
-    if (gi >= 0) {
-      printings[gi] = { ...printings[gi], quantity: printings[gi].quantity + 1 };
-    } else {
-      printings.push({ quantity: 1 });
-    }
-    updated[key] = printings;
-    mutateCollection(updated);
+    mutateCollection(current => {
+      const updated = { ...current };
+      const printings = Array.isArray(updated[key]) ? [...updated[key]] : [];
+      // Set mode passes the shown printing; otherwise bump the generic one.
+      const gi = idx !== undefined && printings[idx]
+        ? idx
+        : printings.findIndex(p => !p.set && !p.collectorNumber && !p.foil);
+      if (gi >= 0) {
+        printings[gi] = { ...printings[gi], quantity: printings[gi].quantity + 1 };
+      } else {
+        printings.push({ quantity: 1 });
+      }
+      updated[key] = printings;
+      return updated;
+    });
   }
 
   function handleQuickAdd(name: string, qty: number, foil: boolean) {
     const key = name.toLowerCase();
-    const updated = { ...collection };
-    const printings = Array.isArray(updated[key]) ? [...updated[key]] : [];
-    const match = printings.findIndex(
-      p => !p.set && !p.collectorNumber && (p.foil ?? false) === foil
-    );
-    if (match >= 0) {
-      printings[match] = { ...printings[match], quantity: printings[match].quantity + qty };
-    } else {
-      printings.push({ quantity: qty, foil: foil || undefined });
-    }
-    updated[key] = printings;
-    if (!collectionMeta) {
-      setCollectionMeta({
-        fileName: "Manual entries",
-        importedAt: Date.now(),
-        cardCount: Object.keys(updated).length,
-      });
-    }
-    mutateCollection(updated);
+    mutateCollection(current => {
+      const updated = { ...current };
+      const printings = Array.isArray(updated[key]) ? [...updated[key]] : [];
+      const match = printings.findIndex(
+        p => !p.set && !p.collectorNumber && (p.foil ?? false) === foil
+      );
+      if (match >= 0) {
+        printings[match] = { ...printings[match], quantity: printings[match].quantity + qty };
+      } else {
+        printings.push({ quantity: qty, foil: foil || undefined });
+      }
+      updated[key] = printings;
+      return updated;
+    }, "Manual entries");
   }
 
   function handleRemove(key: string, indices?: number[]) {
-    const updated = { ...collection };
-    const remaining = indices && Array.isArray(updated[key])
-      ? updated[key].filter((_, i) => !indices.includes(i))
-      : [];
-    if (remaining.length > 0) { updated[key] = remaining; } else { delete updated[key]; }
-    mutateCollection(updated);
+    mutateCollection(current => {
+      const updated = { ...current };
+      const remaining = indices && Array.isArray(updated[key])
+        ? updated[key].filter((_, i) => !indices.includes(i))
+        : [];
+      if (remaining.length > 0) { updated[key] = remaining; } else { delete updated[key]; }
+      return updated;
+    });
   }
 
   function handleUpdatePrinting(
     key: string, idx: number, qty: number,
     set: string, cn: string, foil: boolean,
   ) {
-    const updated = { ...collection };
-    const printings = Array.isArray(updated[key]) ? [...updated[key]] : [];
-    if (qty <= 0) {
-      const next = printings.filter((_, i) => i !== idx);
-      if (next.length === 0) { delete updated[key]; } else { updated[key] = next; }
-    } else {
-      printings[idx] = {
-        quantity: qty,
-        set:             set.trim().toUpperCase() || undefined,
-        collectorNumber: cn.trim()                || undefined,
-        foil:            foil                     || undefined,
-      };
-      updated[key] = printings;
-    }
-    mutateCollection(updated);
+    mutateCollection(current => {
+      const updated = { ...current };
+      const printings = Array.isArray(updated[key]) ? [...updated[key]] : [];
+      if (qty <= 0) {
+        const next = printings.filter((_, i) => i !== idx);
+        if (next.length === 0) { delete updated[key]; } else { updated[key] = next; }
+      } else {
+        printings[idx] = {
+          quantity: qty,
+          set:             set.trim().toUpperCase() || undefined,
+          collectorNumber: cn.trim()                || undefined,
+          foil:            foil                     || undefined,
+        };
+        updated[key] = printings;
+      }
+      return updated;
+    });
   }
 
   function commitPrintingEdit() {
