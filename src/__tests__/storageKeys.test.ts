@@ -106,26 +106,32 @@ describe("localStorage keys", () => {
   });
 
   it("every key resolves to a literal or string constant", () => {
-    expect(unresolved).toEqual([]);
+    expect(unresolved, "Pass the key as a literal or a string constant. A generic wrapper like `k => localStorage.getItem(k)` hides the key from this scan; give each key its own call.").toEqual([]);
   });
 
   it("each key has one writing module, apart from the listed exceptions", () => {
     const shared = [...usage].filter(([, u]) => u.writers.size > 1).map(([k, u]) => `${k}: ${[...u.writers].sort().join(", ")}`);
-    expect(shared.filter(s => !(s.split(":")[0] in SHARED_WRITERS))).toEqual([]);
+    expect(
+      shared.filter(s => !(s.split(":")[0] in SHARED_WRITERS)),
+      "Two modules write this key, and their copies never sync (#189). Move every write into one module, or list the key in SHARED_WRITERS with a reason and a way out.",
+    ).toEqual([]);
   });
 
   it("SHARED_WRITERS has no stale entries (remove a key once one module owns it)", () => {
     const stale = Object.keys(SHARED_WRITERS).filter(k => (usage.get(k)?.writers.size ?? 0) <= 1);
-    expect(stale).toEqual([]);
+    expect(stale, "Only one module writes this key now. Remove its SHARED_WRITERS entry in the same commit that removed the second writer.").toEqual([]);
   });
 
   it("every key is demo-managed or explicitly exempt", () => {
     const uncovered = [...usage.keys()].filter(k => !managed.has(k) && !(k in DEMO_EXEMPT));
-    expect(uncovered).toEqual([]);
+    expect(uncovered, "Add the key to MANAGED_KEYS in src/features/demo/demoMode.ts so demo mode swaps it, or to DEMO_EXEMPT here if it is a UI preference.").toEqual([]);
   });
 
   it("MANAGED_KEYS and DEMO_EXEMPT only list keys the app uses", () => {
     const unused = [...managed, ...Object.keys(DEMO_EXEMPT)].filter(k => !usage.has(k));
-    expect(unused).toEqual([]);
+    expect(
+      unused,
+      "No module reads or writes this key as `localStorage.getItem/setItem/removeItem(KEY)` or `useLocalStorage(KEY)`, so the scan thinks the app doesn't use it. If you moved the calls behind an injected storage parameter (`storage.getItem(KEY)`), the scan can't see them: call `window.localStorage` with the key constant directly, for example in an adapter with one method per key. Otherwise drop the stale entry.",
+    ).toEqual([]);
   });
 });

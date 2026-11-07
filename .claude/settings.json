@@ -73,6 +73,11 @@
           },
           {
             "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/block-discard.sh",
+            "statusMessage": "Checking for discarded changes..."
+          },
+          {
+            "type": "command",
             "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/pre-push-gate.sh",
             "if": "Bash(git push *)",
             "timeout": 300,
