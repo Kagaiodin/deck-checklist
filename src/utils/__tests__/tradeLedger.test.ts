@@ -94,17 +94,17 @@ describe("applyTradeToCollection: cards in", () => {
     const r = applyTradeToCollection({ "sol ring": [{ quantity: 1, set: "cmm", collectorNumber: "410" }] }, [], [log({ quantity: 2 })]);
     expect(r.collection["sol ring"]).toEqual([{ quantity: 3, set: "cmm", collectorNumber: "410" }]);
   });
-  it("adds a new full printing, with foil only when foil", () => {
+  it("adds a new full printing with its set code in stored form, with foil only when foil", () => {
     const r = applyTradeToCollection({}, [], [log({ name: "Mana Crypt", set: "2xm", collectorNumber: "1" }), log({ name: "Mana Crypt", set: "2xm", collectorNumber: "1", finish: "foil" })]);
     expect(r.collection["mana crypt"]).toEqual([
-      { quantity: 1, set: "2xm", collectorNumber: "1" },
-      { quantity: 1, set: "2xm", collectorNumber: "1", foil: true },
+      { quantity: 1, set: "2XM", collectorNumber: "1" },
+      { quantity: 1, set: "2XM", collectorNumber: "1", foil: true },
     ]);
   });
   it("applies out before in, so the same card on both sides nets out", () => {
     const c: Collection = { "sol ring": [{ quantity: 1, set: "cmm", collectorNumber: "410" }] };
     const r = applyTradeToCollection(c, [log()], [log()]);
-    expect(r.collection["sol ring"]).toEqual([{ quantity: 1, set: "cmm", collectorNumber: "410" }]);
+    expect(r.collection["sol ring"]).toEqual([{ quantity: 1, set: "CMM", collectorNumber: "410" }]);
   });
 });
 

@@ -1,8 +1,7 @@
 import type { Collection, CollectionPrinting, Deck } from "../../types/index";
-import type { Finish, TradeCard } from "../../types/trade";
+import type { TradeCard } from "../../types/trade";
 import type { OwnedInfo } from "./components/TradeCardRow";
-
-const isFoilFinish = (f: Finish) => f !== "nonfoil";
+import { printingOf, samePrinting } from "../../utils/printing";
 
 /**
  * How many copies of this exact printing + finish the collection holds, and how many copies of the
@@ -13,12 +12,9 @@ const isFoilFinish = (f: Finish) => f !== "nonfoil";
  */
 export function ownedFor(collection: Collection, decks: Deck[], card: Pick<TradeCard, "name" | "set" | "collectorNumber" | "finish">): OwnedInfo | null {
   const key = card.name.toLowerCase();
+  const printing = printingOf(card);
   const owned = (collection[key] ?? [])
-    .filter((p) =>
-      p.set?.toLowerCase() === card.set.toLowerCase() &&
-      p.collectorNumber === card.collectorNumber &&
-      Boolean(p.foil) === isFoilFinish(card.finish)
-    )
+    .filter((p) => samePrinting(p, printing))
     .reduce((n, p) => n + p.quantity, 0);
   if (owned === 0) return null;
 

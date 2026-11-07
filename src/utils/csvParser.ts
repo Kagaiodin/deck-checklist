@@ -1,5 +1,6 @@
 import type { Collection, OrderCard } from "../types/index";
 import { getFrontFaceName } from "./dualface";
+import { normalizeSet } from "./printing";
 
 // ── Column alias lists ────────────────────────────────────────────────────────
 const COUNT_ALIASES     = ["count", "quantity", "qty", "amount", "have"];
@@ -97,7 +98,7 @@ export function parseCollectionCSV(raw: string): Collection {
     const name = rawName.includes(" // ") ? getFrontFaceName(rawName) : rawName;
     const key  = name.toLowerCase();
 
-    const set             = setIdx       >= 0 ? (fields[setIdx]       ?? "").trim().toUpperCase() || undefined : undefined;
+    const set             = setIdx       >= 0 ? normalizeSet(fields[setIdx]) : undefined;
     const collectorNumber = collectorIdx >= 0 ? (fields[collectorIdx] ?? "").trim() || undefined : undefined;
     const foilRaw         = foilIdx      >= 0 ? (fields[foilIdx]      ?? "").trim().toLowerCase() : "";
     const foil            = foilRaw === "true" || foilRaw === "yes" || foilRaw === "1"
