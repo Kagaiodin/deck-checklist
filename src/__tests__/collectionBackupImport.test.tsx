@@ -3,7 +3,7 @@ import { screen, waitFor, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderApp } from "../test/renderApp";
 import { COLLECTION_KEY, COLLECTION_META_KEY } from "../store/storageKeys";
-import type { ProfileExport } from "../types/index";
+import type { Backup } from "../types/index";
 
 // App-level: a backup import works against the one live Collection.
 
@@ -11,7 +11,7 @@ beforeEach(() => {
   window.history.replaceState(null, "", "/");
 });
 
-async function importBackup(user: ReturnType<typeof userEvent.setup>, backup: Partial<ProfileExport>, { replace = false } = {}) {
+async function importBackup(user: ReturnType<typeof userEvent.setup>, backup: Partial<Backup>, { replace = false } = {}) {
   await user.click(screen.getByRole("button", { name: /^Decks/ }));
   await user.click(screen.getAllByRole("button", { name: /Import backup/ })[0]);
   if (replace) await user.click(screen.getByLabelText(/Replace all local data/));
@@ -57,7 +57,7 @@ describe("importing a backup", () => {
   it("re-tags the restored decks against the restored Collection on replace", async () => {
     const user = userEvent.setup();
     const { stored } = renderApp();
-    await importBackup(user, { decks: [deck()] as ProfileExport["decks"], collection: { "sol ring": [{ quantity: 1 }] } }, { replace: true });
+    await importBackup(user, { decks: [deck()] as Backup["decks"], collection: { "sol ring": [{ quantity: 1 }] } }, { replace: true });
     await waitFor(() => expect(stored("mtg-checklist-decks")).toHaveLength(1));
     await waitFor(() => expect(ringSource(stored)).toBe("owned"));
   });

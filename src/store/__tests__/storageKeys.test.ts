@@ -1,10 +1,10 @@
 import { describe, it, expect } from "vitest";
-import type { ProfileExport } from "../../types/index";
+import type { Backup } from "../../types/index";
 import { STORAGE_KEYS, keysOfKind } from "../storageKeys";
 
-// Every ProfileExport field that holds saved data. Typed as a Record so adding a field to
-// ProfileExport fails typecheck here until a registry entry claims it.
-const BACKUP_FIELDS: Record<Exclude<keyof ProfileExport, "version" | "exportedAt">, true> = {
+// Every Backup field that holds saved data. Typed as a Record so adding a field to
+// Backup fails typecheck here until a registry entry claims it.
+const BACKUP_FIELDS: Record<Exclude<keyof Backup, "version" | "exportedAt">, true> = {
   decks: true,
   errors: true,
   collection: true,

@@ -27,7 +27,7 @@ export const EXTRA_INFO_OPEN_KEY = "fetchlist:extrainfo-open";
 
 export type StorageKind = "user-data" | "working-state" | "preference";
 
-/** The ProfileExport field a key is backed up under. Checked against ProfileExport in this module's test. */
+/** The Backup field a key is saved under. Checked against Backup in this module's test. */
 type BackupField = "decks" | "errors" | "collection" | "collectionMeta" | "orders" | "vendorHistory" | "tradeLedger" | "binderExcluded";
 
 type StorageKeyEntry =

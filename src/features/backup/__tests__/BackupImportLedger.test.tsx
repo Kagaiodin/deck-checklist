@@ -3,7 +3,7 @@ import { screen, fireEvent, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderApp } from "../../../test/renderApp";
 
-// App-level wiring of handleProfileImport for the trade ledger and Binder exclude list
+// App-level wiring of handleBackupImport for the trade ledger and Binder exclude list
 // (spec §11: new fields round-trip, old backups without them, merge dedupes by id).
 
 const LEDGER_KEY = "mtg-checklist-trade-ledger-v1";

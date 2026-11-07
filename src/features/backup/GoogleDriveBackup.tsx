@@ -1,12 +1,12 @@
 import type { TradeLogEntry } from "../../types/trade";
 import { useEffect, useState } from "react";
-import type { Deck, ErrorQueueItem, Collection, CollectionMeta, Order, ImportCounts, ProfileExport } from "../../types/index";
+import type { Deck, ErrorQueueItem, Collection, CollectionMeta, Order, ImportCounts, Backup } from "../../types/index";
 import {
   supportsGoogleDrive, getConnectedEmail, isConnected, isExpired,
   connect, disconnect, saveToDrive, loadFromDrive, DriveError,
 } from "../../utils/googleDrive";
 import { DriveConflictModal } from "./DriveConflictModal";
-import type { ToastInput } from "./ProfileExportImport";
+import type { ToastInput } from "./BackupControls";
 import "./GoogleDriveBackup.css";
 import { isDemoActiveNow, DEMO_BACKUP_HINT } from "../demo/demoMode";
 
@@ -19,7 +19,7 @@ interface Props {
   tradeLedger?: TradeLogEntry[];
   binderExcluded?: string[];
   vendorHistory: string[];
-  onImport: (data: ProfileExport, replace: boolean) => ImportCounts;
+  onImport: (data: Backup, replace: boolean) => ImportCounts;
   showToast: (t: ToastInput) => void;
   // Sidebar (desktop, sibling to the Tier 1 chip) vs mobile deck-picker sheet
   // footer (its own boxed unit) — see docs/specs/google-drive-integration-design-brief.md
@@ -84,7 +84,7 @@ export function GoogleDriveBackup({
     );
   }
 
-  function buildPayload(): ProfileExport {
+  function buildPayload(): Backup {
     return {
       version: 1,
       exportedAt: new Date().toISOString(),
@@ -93,7 +93,7 @@ export function GoogleDriveBackup({
   }
 
   function applyDriveContents(text: string): boolean {
-    let parsed: ProfileExport;
+    let parsed: Backup;
     try {
       parsed = JSON.parse(text);
     } catch {
@@ -194,7 +194,7 @@ export function GoogleDriveBackup({
   if (conflict) {
     let driveCounts = { deckCount: 0, cardCount: 0 };
     try {
-      const parsed = JSON.parse(conflict.contents) as ProfileExport;
+      const parsed = JSON.parse(conflict.contents) as Backup;
       driveCounts = { deckCount: (parsed.decks ?? []).length, cardCount: countCards(parsed.decks ?? []) };
     } catch { /* malformed backup — counts stay at 0, modal still lets the user choose */ }
     driveConflictSummary = { modifiedTime: conflict.modifiedTime, ...driveCounts };

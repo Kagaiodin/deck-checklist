@@ -38,7 +38,7 @@
       "count": 1
     }
   },
-  "src/features/profile/ProfileExportImport.tsx": {
+  "src/features/backup/BackupControls.tsx": {
     "react-hooks/set-state-in-effect": {
       "count": 1
     }

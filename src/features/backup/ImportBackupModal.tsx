@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import type { ImportCounts, ProfileExport } from "../../types/index";
-import type { ToastInput } from "./ProfileExportImport";
+import type { ImportCounts, Backup } from "../../types/index";
+import type { ToastInput } from "./BackupControls";
 import { supportsFileSystemAccess, pickOpenHandle, readLinkedFile } from "../../utils/fileSystemAccess";
 import "./ImportBackupModal.css";
 
 interface Props {
-  onImport: (data: ProfileExport, replace: boolean) => ImportCounts;
+  onImport: (data: Backup, replace: boolean) => ImportCounts;
   showToast: (t: ToastInput) => void;
   onClose: () => void;
 }
@@ -66,7 +66,7 @@ export function ImportBackupModal({ onImport, showToast, onClose }: Props) {
       return;
     }
 
-    const data = raw as ProfileExport;
+    const data = raw as Backup;
 
     // Warn for future versions but still attempt import
     if ((data.version as number) > 1) {

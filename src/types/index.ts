@@ -127,9 +127,9 @@ export interface Order {
   cards: OrderCard[];
 }
 
-// ── Profile export envelope ───────────────────────────────────────────────────
+// ── Backup file envelope ───────────────────────────────────────────────────
 
-export interface ProfileExport {
+export interface Backup {
   version: 1;
   exportedAt: string;              // ISO 8601
   decks: Deck[];
@@ -143,7 +143,7 @@ export interface ProfileExport {
   binderExcluded?: string[];
 }
 
-/** What a profile import added; drives the summary toast. */
+/** What a backup import added; drives the summary toast. */
 export interface ImportCounts {
   newDecks: number;
   newCards: number;

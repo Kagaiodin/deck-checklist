@@ -4,7 +4,7 @@ import type { ReactElement } from "react";
 import { DemoConfirmModal } from "../features/demo/DemoConfirmModal";
 import { TradeSheet } from "../features/trade/components/TradeSheet";
 import { OnboardingModal } from "../features/onboarding/OnboardingModal";
-import { ImportBackupModal } from "../features/profile/ImportBackupModal";
+import { ImportBackupModal } from "../features/backup/ImportBackupModal";
 import { CollectionOverflowSheet } from "../features/collection/components/CollectionOverflowSheet";
 
 // Every modal must close on Escape. Axe cannot check keyboard behaviour, so this is the

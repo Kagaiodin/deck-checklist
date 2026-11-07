@@ -1,12 +1,12 @@
 import type { TradeLogEntry } from "../../types/trade";
 import { useEffect, useState } from "react";
-import type { Deck, ErrorQueueItem, Collection, CollectionMeta, Order, ImportCounts, ProfileExport } from "../../types/index";
+import type { Deck, ErrorQueueItem, Collection, CollectionMeta, Order, ImportCounts, Backup } from "../../types/index";
 import {
   supportsFileSystemAccess, getLinkedFileName,
   pickSaveHandle, writeLinkedFile,
 } from "../../utils/fileSystemAccess";
 import { GoogleDriveBackup } from "./GoogleDriveBackup";
-import "./ProfileExportImport.css";
+import "./BackupControls.css";
 import { isDemoActiveNow, DEMO_BACKUP_HINT } from "../demo/demoMode";
 import "../demo/demo.css";
 
@@ -29,7 +29,7 @@ interface Props {
   vendorHistory: string[];
 
   // Passed through to GoogleDriveBackup, which manages its own import flow
-  onImport: (data: ProfileExport, replace: boolean) => ImportCounts;
+  onImport: (data: Backup, replace: boolean) => ImportCounts;
   showToast: (t: ToastInput) => void;
 
   // Import lives in a top-level modal (ImportBackupModal) — this button just opens it
@@ -37,7 +37,7 @@ interface Props {
   onToggleImportPanel: () => void;
 }
 
-export function ProfileExportImport({
+export function BackupControls({
   decks, allErrors, collection, collectionMeta, orders, tradeLedger, binderExcluded, vendorHistory,
   onImport, showToast,
   importPanelOpen, onToggleImportPanel,
@@ -53,7 +53,7 @@ export function ProfileExportImport({
     if (!importPanelOpen) setLinkedFileName(getLinkedFileName());
   }, [importPanelOpen]);
 
-  function buildPayload(): ProfileExport {
+  function buildPayload(): Backup {
     return {
       version: 1,
       exportedAt: new Date().toISOString(),

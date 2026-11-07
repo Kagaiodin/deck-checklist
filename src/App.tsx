@@ -15,7 +15,7 @@ import { Checklist } from "./components/Checklist";
 import { EmptyState } from "./components/EmptyState";
 import { ErrorQueue } from "./components/ErrorQueue";
 import { ProgressTracker } from "./components/ProgressTracker";
-import type { Deck, ErrorQueueItem, AcquisitionSource, Order, ImportCounts, ProfileExport } from "./types/index";
+import type { Deck, ErrorQueueItem, AcquisitionSource, Order, ImportCounts, Backup } from "./types/index";
 import { mergeLedger, sanitizeLedger, sortLedger } from "./utils/tradeLedger";
 import { applyCollectionToCards } from "./utils/csvParser";
 import { formatOptions } from "./utils/deckFormats";
@@ -28,9 +28,9 @@ import { TransactionsPage, type TransactionsTab } from "./features/transactions/
 import type { TradeOrigin } from "./features/trade/TradePage";
 import type { TradeSeed } from "./features/trade/seedCard";
 import { OnboardingModal } from "./features/onboarding/OnboardingModal";
-import { ProfileExportImport } from "./features/profile/ProfileExportImport";
-import { ImportBackupModal } from "./features/profile/ImportBackupModal";
-import { GoogleDriveBackup } from "./features/profile/GoogleDriveBackup";
+import { BackupControls } from "./features/backup/BackupControls";
+import { ImportBackupModal } from "./features/backup/ImportBackupModal";
+import { GoogleDriveBackup } from "./features/backup/GoogleDriveBackup";
 import { ThemeToggle } from "./components/ThemeToggle";
 import { BugIcon, LightbulbIcon } from "./components/MenuIcons";
 import { DemoBanner } from "./features/demo/DemoBanner";
@@ -42,7 +42,7 @@ import {
   startDemo, leaveDemo, consumeRecoveredFlag, hasPendingLinkConfirm, clearPendingLinkConfirm,
 } from "./features/demo/demoControl";
 import { AppLogo } from "./components/AppLogo";
-import type { ToastInput } from "./features/profile/ProfileExportImport";
+import type { ToastInput } from "./features/backup/BackupControls";
 import { BuyListSheet } from "./features/card-purchase/BuyListSheet";
 import { useBuyFlow } from "./features/card-purchase/useBuyFlow";
 import { collectionStore, mergeCollections, useCollection } from "./store/collection";
@@ -188,7 +188,7 @@ function AppInner() {
     }
   }
 
-  // ── Profile export/import panel state (shared across sidebar + mobile sheet) ──
+  // ── Backup import panel state (shared across sidebar + mobile sheet) ──
   const [importPanelOpen, setImportPanelOpen] = useState(false);
 
 
@@ -465,8 +465,8 @@ function AppInner() {
     setNotificationFilterIds(null);
   }
 
-  // ── Profile export / import ───────────────────────────────────────────────
-  function handleProfileImport(data: ProfileExport, replace: boolean): ImportCounts {
+  // ── Backup import ───────────────────────────────────────────────
+  function handleBackupImport(data: Backup, replace: boolean): ImportCounts {
     // Backups must never land on top of sample data (the UI disables this path too).
     if (isDemoActiveNow()) return { newDecks: 0, newCards: 0, newOrders: 0, newTrades: 0 };
     if (replace) {
@@ -745,7 +745,7 @@ function AppInner() {
       {/* ── Import backup modal ───────────────────────────────────────────── */}
       {importPanelOpen && (
         <ImportBackupModal
-          onImport={handleProfileImport}
+          onImport={handleBackupImport}
           showToast={showToast}
           onClose={() => setImportPanelOpen(false)}
         />
@@ -931,7 +931,7 @@ function AppInner() {
                         if (demoActive) return;
                         // Export is fire-and-forget — no need to close the sheet
                         const filename = `fetchlist-backup-${new Date().toISOString().slice(0, 10)}.json`;
-                        const payload: ProfileExport = {
+                        const payload: Backup = {
                           version: 1, exportedAt: new Date().toISOString(),
                           decks: state.decks, errors: allErrors,
                           collection, collectionMeta, orders, vendorHistory: recentVendors,
@@ -959,7 +959,7 @@ function AppInner() {
                       tradeLedger={ledger}
                       binderExcluded={binderExcluded}
                       vendorHistory={recentVendors}
-                      onImport={handleProfileImport}
+                      onImport={handleBackupImport}
                       showToast={showToast}
                       variant="mobile"
                     />
@@ -1096,7 +1096,7 @@ function AppInner() {
                   </svg>
                 </button>
                 <div className="sidebar-backup">
-                  <ProfileExportImport
+                  <BackupControls
                     decks={state.decks}
                     allErrors={allErrors}
                     collection={collection}
@@ -1105,7 +1105,7 @@ function AppInner() {
                     tradeLedger={ledger}
                     binderExcluded={binderExcluded}
                     vendorHistory={recentVendors}
-                    onImport={handleProfileImport}
+                    onImport={handleBackupImport}
                     showToast={showToast}
                     importPanelOpen={importPanelOpen}
                     onToggleImportPanel={() => setImportPanelOpen(v => !v)}
