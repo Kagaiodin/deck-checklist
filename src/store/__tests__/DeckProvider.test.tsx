@@ -7,6 +7,13 @@ import { DECKS_KEY } from "../storageKeys";
 import { MemoryStorage } from "../../features/demo/__tests__/memoryStorage";
 import type { Card, Deck } from "../../types/index";
 
+// DeckProvider saves the decks, so every test gets its own storage; otherwise one test's decks load
+// into the next. Stubbed because jsdom's localStorage persists across a file's tests, and Node 25+'s
+// built-in one (undefined without --localstorage-file) hides it, so CI and local runs differ.
+let storage: MemoryStorage;
+beforeEach(() => { storage = new MemoryStorage(); vi.stubGlobal("localStorage", storage); });
+afterEach(() => { vi.unstubAllGlobals(); });
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function makeDeck(overrides: Partial<Deck> & { id: string; name: string }): Deck {
@@ -67,10 +74,6 @@ describe("DeckProvider", () => {
 // ── Saving ────────────────────────────────────────────────────────────────────
 
 describe("DeckProvider — saved decks", () => {
-  // Node's built-in localStorage shadows jsdom's, so give each test its own.
-  let storage: MemoryStorage;
-  beforeEach(() => { storage = new MemoryStorage(); vi.stubGlobal("localStorage", storage); });
-  afterEach(() => { vi.unstubAllGlobals(); });
   const saved = () => JSON.parse(storage.getItem(DECKS_KEY) ?? "null") as Deck[] | null;
 
   it("starts empty when nothing is saved", () => {
