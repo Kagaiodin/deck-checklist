@@ -762,7 +762,7 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
                             className={`type-pill${filterType.has(t) ? " active" : ""}`}
                             onClick={() => setFilterType(prev => {
                               const next = new Set(prev);
-                              next.has(t) ? next.delete(t) : next.add(t);
+                              if (next.has(t)) next.delete(t); else next.add(t);
                               return next;
                             })}
                           >
@@ -799,7 +799,7 @@ export function Checklist({ deck, editMode, selectMode, onToggleAcquired, onSetS
               title={cf.title}
               onClick={() => setFilterColor(prev => {
                 const next = new Set(prev);
-                next.has(cf.value) ? next.delete(cf.value) : next.add(cf.value);
+                if (next.has(cf.value)) next.delete(cf.value); else next.add(cf.value);
                 return next;
               })}
             >

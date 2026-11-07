@@ -67,7 +67,7 @@ function detectColumnOptional(headers: string[], aliases: string[]): number {
 // ── Main parser ───────────────────────────────────────────────────────────────
 export function parseCollectionCSV(raw: string): Collection {
   // Strip UTF-8 BOM and normalise line endings
-  const text = raw.replace(/^﻿/, "").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+  const text = raw.replace(/^\uFEFF/, "").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
   const lines = text.split("\n").filter(l => l.trim() !== "");
 
   if (lines.length < 2) {

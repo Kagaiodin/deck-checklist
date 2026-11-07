@@ -394,7 +394,7 @@ async function captureCostBreakdown(): Promise<void> {
       const page = await c.newPage();
       await mockPrices(page, opts.fetchMode);
       await page.goto(BASE_URL);
-      try { await page.waitForLoadState("networkidle", { timeout: 10_000 }); } catch {}
+      try { await page.waitForLoadState("networkidle", { timeout: 10_000 }); } catch { /* best effort: settle on the timeout below */ }
       await page.waitForTimeout(SETTLE_MS);
       const mobile = opts.viewport.width < 600;
       await attempt(`select deck ${opts.deckIndex} (${opts.name})`, async () => {
@@ -466,7 +466,7 @@ async function captureTradeAutocomplete(): Promise<void> {
       body: JSON.stringify({ object: "catalog", data: ["Sol Ring", "Sol Talisman", "Solemn Simulacrum", "Solitude", "Sol'kanar the Swamp King"] }),
     }));
     await page.goto(`${BASE_URL}/trade`);
-    try { await page.waitForLoadState("networkidle", { timeout: 10_000 }); } catch {}
+    try { await page.waitForLoadState("networkidle", { timeout: 10_000 }); } catch { /* best effort: settle on the timeout below */ }
     await page.waitForTimeout(SETTLE_MS);
     await attempt("open trade card search", async () => {
       await page.getByRole("button", { name: "Search cards" }).first().click({ timeout: 5_000 });
@@ -512,7 +512,7 @@ async function main(): Promise<void> {
 
     // Navigate once — capture onboarding if present, then dismiss
     await page.goto(BASE_URL);
-    try { await page.waitForLoadState("networkidle", { timeout: 10_000 }); } catch {}
+    try { await page.waitForLoadState("networkidle", { timeout: 10_000 }); } catch { /* best effort: settle on the timeout below */ }
     await page.waitForTimeout(SETTLE_MS);
 
     const hasOnboarding = await page.locator(".onboarding-backdrop").isVisible({ timeout: 1500 }).catch(() => false);
@@ -984,7 +984,7 @@ async function main(): Promise<void> {
         }, emptySeed);
         const emptyPage2 = await emptyCtx2.newPage();
         await emptyPage2.goto(BASE_URL);
-        try { await emptyPage2.waitForLoadState("networkidle", { timeout: 10_000 }); } catch {}
+        try { await emptyPage2.waitForLoadState("networkidle", { timeout: 10_000 }); } catch { /* best effort: settle on the timeout below */ }
         await emptyPage2.waitForTimeout(SETTLE_MS);
         await emptyPage2.locator("button.nav-btn", { hasText: "Collection" }).first().click({ timeout: 5_000 });
         await emptyPage2.waitForTimeout(SETTLE_MS);
@@ -1177,7 +1177,7 @@ async function main(): Promise<void> {
         }, emptySeed3);
         const emptyPage3 = await emptyCtx3.newPage();
         await emptyPage3.goto(BASE_URL);
-        try { await emptyPage3.waitForLoadState("networkidle", { timeout: 10_000 }); } catch {}
+        try { await emptyPage3.waitForLoadState("networkidle", { timeout: 10_000 }); } catch { /* best effort: settle on the timeout below */ }
         await emptyPage3.waitForTimeout(SETTLE_MS);
         await emptyPage3.locator("button.nav-btn", { hasText: "Transactions" }).first().click({ timeout: 5_000 });
         await emptyPage3.waitForTimeout(SETTLE_MS);
@@ -1204,7 +1204,7 @@ async function main(): Promise<void> {
         }, emptySeed4);
         const emptyPage4 = await emptyCtx4.newPage();
         await emptyPage4.goto(BASE_URL);
-        try { await emptyPage4.waitForLoadState("networkidle", { timeout: 10_000 }); } catch {}
+        try { await emptyPage4.waitForLoadState("networkidle", { timeout: 10_000 }); } catch { /* best effort: settle on the timeout below */ }
         await emptyPage4.waitForTimeout(SETTLE_MS);
         await emptyPage4.locator("button.nav-btn", { hasText: "Transactions" }).first().click({ timeout: 5_000 });
         await emptyPage4.waitForTimeout(SETTLE_MS);

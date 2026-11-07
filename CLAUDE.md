@@ -6,7 +6,7 @@
 - State managed via DeckProvider (src/store/)
 
 ## Testing
-- `npm test` / `npm run test:watch` / `npm run test:coverage`; `npm run verify` = build + coverage (what CI runs)
+- `npm test` / `npm run test:watch` / `npm run test:coverage`; `npm run verify` = lint + build + coverage (what CI runs). `eslint-suppressions.json` freezes existing React Compiler violations; after fixing one, run `npx eslint . --prune-suppressions`
 - Vitest config is separate from vite.config.ts (jsdom vs. Workers plugin) — do not merge them
 - Tests live in a `__tests__/` folder next to the code they cover (utils, store, hooks,
   `src/features/<feature>/`). New utils, store logic, hooks, and interactive components

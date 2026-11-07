@@ -9,6 +9,7 @@ import type { TradeSeed } from "./seedCard";
 import { BrokenLinkIcon, RefreshIcon } from "./components/TradeIcons";
 import { EmptyState } from "../../components/EmptyState";
 import "./TradePage.css";
+import { clearTradeHash } from "./tradeHash";
 
 /** Where the Calculator was opened from; decides the back control's label and target. */
 export type TradeOrigin = "collection" | "binder" | "trades" | "link";
@@ -39,11 +40,6 @@ type Load =
   | { status: "shared"; trade: Trade; snapshotAt: number }
   | { status: "version" }
   | { status: "broken" };
-
-/** Drops `#trade=…` from the address bar without adding a history entry. */
-export function clearTradeHash() {
-  if (window.location.hash) window.history.replaceState(null, "", window.location.pathname + window.location.search);
-}
 
 export function TradePage({ collection, decks, origin = "collection", seed, onLogTrade, onViewEntry, onBack }: TradePageProps) {
   const [load, setLoad] = useState<Load>(() => (extractPayload(window.location.hash) ? { status: "decoding" } : { status: "local" }));
