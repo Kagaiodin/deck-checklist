@@ -3,6 +3,8 @@ import { COLLECTION_KEY, COLLECTION_META_KEY } from "../collection/storageKeys";
 export const DEMO_ACTIVE_KEY = "fetchlist:demo:active";
 export const DEMO_SNAPSHOT_KEY = "fetchlist:demo:snapshot";
 export const DEMO_SOURCE_KEY = "fetchlist:demo:source";
+/** Fingerprint of the sample data this demo session was written from; see refreshDemo. */
+export const DEMO_VERSION_KEY = "fetchlist:demo:version";
 
 export type DemoSource = "link" | "settings";
 
@@ -40,7 +42,7 @@ export const DEMO_BACKUP_HINT = "Exit demo mode to back up your data";
 /** Values for managed keys; a key missing from `data` is cleared while in demo. */
 export type DemoValues = Partial<Record<(typeof MANAGED_KEYS)[number], string>>;
 
-export function enterDemo(storage: Storage, data: DemoValues, source: DemoSource): { ok: boolean } {
+export function enterDemo(storage: Storage, data: DemoValues, source: DemoSource, version?: string): { ok: boolean } {
   if (isDemoActive(storage)) return { ok: true };
   const snapshot: Record<string, string | null> = {};
   for (const key of MANAGED_KEYS) snapshot[key] = storage.getItem(key);
@@ -54,11 +56,8 @@ export function enterDemo(storage: Storage, data: DemoValues, source: DemoSource
     // in which a stale tab could write its in-memory data over the demo keys.
     storage.setItem(DEMO_SOURCE_KEY, source);
     storage.setItem(DEMO_ACTIVE_KEY, "true");
-    for (const key of MANAGED_KEYS) {
-      const value = data[key];
-      if (value === undefined) storage.removeItem(key);
-      else storage.setItem(key, value);
-    }
+    writeManaged(storage, data);
+    if (version !== undefined) storage.setItem(DEMO_VERSION_KEY, version);
   } catch {
     // Quota hit midway: put everything back as it was.
     restore(storage, snapshot);
@@ -66,6 +65,32 @@ export function enterDemo(storage: Storage, data: DemoValues, source: DemoSource
     return { ok: false };
   }
   return { ok: true };
+}
+
+/**
+ * Sample data is only written when a demo starts, so a session begun before the sample set changed
+ * keeps the old data. When the stored fingerprint differs from `version` (or is missing, as in
+ * sessions from before fingerprints), rewrite the managed keys in place. The snapshot of the user's
+ * real data is never touched, so Exit still restores it. Returns true when it rewrote anything.
+ */
+export function refreshDemo(storage: Storage, data: DemoValues, version: string): boolean {
+  if (!isDemoActive(storage) || storage.getItem(DEMO_VERSION_KEY) === version) return false;
+  try {
+    writeManaged(storage, data);
+    // Last, so a write that fails midway is retried on the next load.
+    storage.setItem(DEMO_VERSION_KEY, version);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function writeManaged(storage: Storage, data: DemoValues): void {
+  for (const key of MANAGED_KEYS) {
+    const value = data[key];
+    if (value === undefined) storage.removeItem(key);
+    else storage.setItem(key, value);
+  }
 }
 
 /** `recovered` is true when the snapshot was missing or corrupt and managed keys were cleared instead. */
@@ -132,6 +157,7 @@ function clearDemoKeys(storage: Storage): void {
   storage.removeItem(DEMO_ACTIVE_KEY);
   storage.removeItem(DEMO_SNAPSHOT_KEY);
   storage.removeItem(DEMO_SOURCE_KEY);
+  storage.removeItem(DEMO_VERSION_KEY);
 }
 
 function readSnapshot(storage: Storage): Record<string, string | null> | null {

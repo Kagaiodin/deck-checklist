@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach, vi, type Mock } from "vitest";
 import { MemoryStorage } from "./memoryStorage";
-import { bootDemoFromUrl, startDemo, leaveDemo, hasPendingLinkConfirm, clearPendingLinkConfirm, RECOVERED_FLAG } from "../demoControl";
+import { bootDemoFromUrl, startDemo, leaveDemo, refreshStaleDemo, hasPendingLinkConfirm, clearPendingLinkConfirm, RECOVERED_FLAG } from "../demoControl";
 import { isDemoActive } from "../demoMode";
+import { demoDataVersion } from "../demoData";
 
 const NOW = Date.UTC(2026, 9, 16, 12);
 
@@ -32,6 +33,30 @@ describe("startDemo", () => {
     expect(await startDemo("settings", deps())).toBe(false);
     expect(storage.getItem("mtg-checklist-decks")).toBe("real");
     expect(reload).not.toHaveBeenCalled();
+  });
+});
+
+describe("refreshStaleDemo", () => {
+  it("gives a demo started on older sample data the current data, ledger included", async () => {
+    // A session from before the trade ledger existed: active, no fingerprint, no ledger.
+    storage.setItem("fetchlist:demo:active", "true");
+    storage.setItem("fetchlist:demo:snapshot", JSON.stringify({ "mtg-checklist-decks": "real" }));
+    storage.setItem("mtg-checklist-decks", "[]");
+
+    expect(await refreshStaleDemo(deps())).toBe(true);
+
+    expect(JSON.parse(storage.getItem("mtg-checklist-trade-ledger-v1")!)).toHaveLength(2);
+    expect(JSON.parse(storage.getItem("mtg-checklist-decks")!)).toHaveLength(3);
+    expect(storage.getItem("fetchlist:demo:version")).toBe(demoDataVersion());
+    leaveDemo(deps());
+    expect(storage.getItem("mtg-checklist-decks")).toBe("real");
+  });
+
+  it("does nothing for a demo started on the current data, or outside demo mode", async () => {
+    expect(await refreshStaleDemo(deps())).toBe(false);
+    await startDemo("settings", deps());
+    expect(storage.getItem("fetchlist:demo:version")).toBe(demoDataVersion());
+    expect(await refreshStaleDemo(deps())).toBe(false);
   });
 });
 
