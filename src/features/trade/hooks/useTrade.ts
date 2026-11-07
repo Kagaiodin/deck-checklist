@@ -91,6 +91,7 @@ type Action =
   | { type: "fork"; previous: Trade }
   | { type: "applyPrices"; prices: Map<string, Printing>; at: number };
 
+/** The same Trade line, not just the same Printing: condition and price have to match too (see GLOSSARY.md). */
 const sameLine = (a: Omit<TradeCard, "id">, b: TradeCard) =>
   a.set.toLowerCase() === b.set.toLowerCase() &&
   a.collectorNumber === b.collectorNumber &&

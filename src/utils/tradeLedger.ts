@@ -1,16 +1,15 @@
 import type { Collection, CollectionPrinting } from "../types/index";
-import type { Finish, Trade, TradeCard, TradeLogCard, TradeLogEntry, TradeSide } from "../types/trade";
+import type { Trade, TradeCard, TradeLogCard, TradeLogEntry, TradeSide } from "../types/trade";
 import { sideTotals, unitPrice } from "./tradePricing";
 import { getFrontFaceName } from "./dualface";
 import { usd } from "../features/trade/format";
+import { printingOf, samePrinting } from "./printing";
 
 export interface LogMeta {
   date: number;
   counterparty?: string;
   notes?: string;
 }
-
-const isFoilFinish = (f: Finish) => f !== "nonfoil";
 
 /** Collection keys are lowercased front-face names; trade cards may carry the full "A // B" name. */
 export function collectionKey(name: string): string {
@@ -90,9 +89,8 @@ export function applyTradeToCollection(
     const printings = next[key];
     let left = card.quantity;
     if (printings) {
-      const foil = isFoilFinish(card.finish);
-      left -= takeFrom(printings, left, (p) =>
-        p.set?.toLowerCase() === card.set.toLowerCase() && p.collectorNumber === card.collectorNumber && Boolean(p.foil) === foil);
+      const printing = printingOf(card);
+      left -= takeFrom(printings, left, (p) => samePrinting(p, printing));
       if (left > 0) left -= takeFrom(printings, left, (p) => !p.set && !p.collectorNumber);
       if (left > 0) left -= takeFrom(printings, left, () => true);
       const remaining = printings.filter((p) => p.quantity > 0);
@@ -106,11 +104,10 @@ export function applyTradeToCollection(
     if (card.quantity <= 0) continue;
     const key = collectionKey(card.name);
     const printings = next[key] ?? [];
-    const foil = isFoilFinish(card.finish);
-    const match = printings.find((p) =>
-      p.set?.toLowerCase() === card.set.toLowerCase() && p.collectorNumber === card.collectorNumber && Boolean(p.foil) === foil);
+    const { set, collectorNumber, foil } = printingOf(card);
+    const match = printings.find((p) => samePrinting(p, { set, collectorNumber, foil }));
     if (match) match.quantity += card.quantity;
-    else printings.push({ quantity: card.quantity, set: card.set, collectorNumber: card.collectorNumber, ...(foil ? { foil: true } : {}) });
+    else printings.push({ quantity: card.quantity, set, collectorNumber, ...(foil ? { foil: true } : {}) });
     next[key] = printings;
   }
 
