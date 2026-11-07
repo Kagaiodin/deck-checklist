@@ -21,6 +21,7 @@ import { AlphaRail }          from "./components/AlphaRail";
 import { CollectionRow }      from "./components/CollectionRow";
 import { EmptyState }         from "../../components/EmptyState";
 import { BulkEditPanel }      from "./components/BulkEditPanel";
+import { normalizeSet } from "../../utils/printing";
 
 // ── Virtual-list row ─────────────────────────────────────────────────────────
 // Defined at module scope so react-virtuoso gets a stable function reference.
@@ -349,7 +350,7 @@ export function CollectionPage({ decks, onOpenTrade }: CollectionPageProps) {
       } else {
         printings[idx] = {
           quantity: qty,
-          set:             set.trim().toUpperCase() || undefined,
+          set:             normalizeSet(set),
           collectorNumber: cn.trim()                || undefined,
           foil:            foil                     || undefined,
         };

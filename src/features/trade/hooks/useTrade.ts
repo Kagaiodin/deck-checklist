@@ -12,6 +12,7 @@ import {
 import { basePriceFor, fairness, isSideEmpty, sideTotals } from "../../../utils/tradePricing";
 import { fetchPrices, priceKey } from "../../../utils/scryfallSearch";
 import type { Printing } from "../../../utils/scryfallSearch";
+import { normalizeSet } from "../../../utils/printing";
 
 export const TRADE_STORAGE_KEY = "fetchlist-trade";
 const HISTORY_LIMIT = 50;
@@ -93,7 +94,7 @@ type Action =
 
 /** The same Trade line, not just the same Printing: condition and price have to match too (see GLOSSARY.md). */
 const sameLine = (a: Omit<TradeCard, "id">, b: TradeCard) =>
-  a.set.toLowerCase() === b.set.toLowerCase() &&
+  normalizeSet(a.set) === normalizeSet(b.set) &&
   a.collectorNumber === b.collectorNumber &&
   a.name === b.name &&
   a.finish === b.finish &&

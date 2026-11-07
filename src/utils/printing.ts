@@ -17,7 +17,7 @@ export function samePrinting(a: PrintingIdentity, b: PrintingIdentity): boolean 
 }
 
 /** The Collection keeps foil as a yes/no, so etched counts as foil. */
-export const isFoilFinish = (finish: Finish) => finish !== "nonfoil";
+const isFoilFinish = (finish: Finish) => finish !== "nonfoil";
 
 /** The Printing a trade card corresponds to in the Collection. */
 export function printingOf(card: Pick<TradeCard, "set" | "collectorNumber" | "finish">): PrintingIdentity {

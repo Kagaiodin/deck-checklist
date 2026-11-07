@@ -7,19 +7,19 @@ const cp = (o: Partial<CollectionPrinting> = {}): CollectionPrinting => ({ quant
 
 describe("samePrinting", () => {
   it("matches on set, collector number and foil, ignoring quantity", () => {
-    expect(samePrinting(cp({ quantity: 1, set: "MH2", collectorNumber: "12" }), cp({ quantity: 3, set: "MH2", collectorNumber: "12" }))).toBe(true);
-    expect(samePrinting(cp(), cp({ quantity: 1, foil: false }))).toBe(true);
-    expect(samePrinting(cp({ quantity: 1, set: "MH2" }), cp({ quantity: 1, set: "MH2", foil: true }))).toBe(false);
-    expect(samePrinting(cp({ quantity: 1, set: "MH2", collectorNumber: "12" }), cp({ quantity: 1, set: "MH2", collectorNumber: "13" }))).toBe(false);
-    expect(samePrinting(cp({ quantity: 1, set: "MH2" }), cp({ quantity: 1, set: "2XM" }))).toBe(false);
+    expect(samePrinting(cp({ set: "MH2", collectorNumber: "12" }), cp({ quantity: 3, set: "MH2", collectorNumber: "12" }))).toBe(true);
+    expect(samePrinting(cp(), cp({ foil: false }))).toBe(true);
+    expect(samePrinting(cp({ set: "MH2" }), cp({ set: "MH2", foil: true }))).toBe(false);
+    expect(samePrinting(cp({ set: "MH2", collectorNumber: "12" }), cp({ set: "MH2", collectorNumber: "13" }))).toBe(false);
+    expect(samePrinting(cp({ set: "MH2" }), cp({ set: "2XM" }))).toBe(false);
   });
 
   it("matches set codes regardless of case", () => {
-    expect(samePrinting(cp({ quantity: 1, set: "mh2", collectorNumber: "12" }), cp({ quantity: 1, set: "MH2", collectorNumber: "12" }))).toBe(true);
+    expect(samePrinting(cp({ set: "mh2", collectorNumber: "12" }), cp({ set: "MH2", collectorNumber: "12" }))).toBe(true);
   });
 
   it("treats a blank set as no set", () => {
-    expect(samePrinting(cp({ quantity: 1, set: "  " }), cp())).toBe(true);
+    expect(samePrinting(cp({ set: "  " }), cp())).toBe(true);
   });
 });
 

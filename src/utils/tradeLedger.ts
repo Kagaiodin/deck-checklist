@@ -104,10 +104,10 @@ export function applyTradeToCollection(
     if (card.quantity <= 0) continue;
     const key = collectionKey(card.name);
     const printings = next[key] ?? [];
-    const { set, collectorNumber, foil } = printingOf(card);
-    const match = printings.find((p) => samePrinting(p, { set, collectorNumber, foil }));
+    const printing = printingOf(card);
+    const match = printings.find((p) => samePrinting(p, printing));
     if (match) match.quantity += card.quantity;
-    else printings.push({ quantity: card.quantity, set, collectorNumber, ...(foil ? { foil: true } : {}) });
+    else printings.push({ quantity: card.quantity, set: printing.set, collectorNumber: printing.collectorNumber, ...(printing.foil ? { foil: true } : {}) });
     next[key] = printings;
   }
 
