@@ -46,7 +46,7 @@ import type { ToastInput } from "./features/profile/ProfileExportImport";
 import { BuyListSheet } from "./features/card-purchase/BuyListSheet";
 import { useBuyFlow } from "./features/card-purchase/useBuyFlow";
 import { collectionStore, mergeCollections, useCollection } from "./store/collection";
-import { DECKS_KEY, ERRORS_KEY, ORDERS_KEY, VENDOR_HISTORY_KEY, ONBOARDING_DISMISSED_KEY, SIDEBAR_COLLAPSED_KEY } from "./store/storageKeys";
+import { ERRORS_KEY, ORDERS_KEY, VENDOR_HISTORY_KEY, ONBOARDING_DISMISSED_KEY, SIDEBAR_COLLAPSED_KEY } from "./store/storageKeys";
 import "./features/card-purchase/buy-flow.css";
 
 /** Where the Calculator's back control returns to, for each place it can be opened from. */
@@ -1580,31 +1580,10 @@ function AppInner() {
   );
 }
 
-function PersistenceWrapper({ children }: { children: (decks: Deck[]) => React.ReactNode }) {
-  const [savedDecks] = useLocalStorage<Deck[]>(DECKS_KEY, []);
-  return <>{children(savedDecks)}</>;
-}
-
-function PersistenceSync() {
-  const { state } = useDecks();
-  const [, setSavedDecks] = useLocalStorage<Deck[]>(DECKS_KEY, []);
-
-  useEffect(() => {
-    setSavedDecks(state.decks);
-  }, [state.decks, setSavedDecks]);
-
-  return null;
-}
-
 export default function App() {
   return (
-    <PersistenceWrapper>
-      {initialDecks => (
-        <DeckProvider initialDecks={initialDecks}>
-          <PersistenceSync />
-          <AppInner />
-        </DeckProvider>
-      )}
-    </PersistenceWrapper>
+    <DeckProvider>
+      <AppInner />
+    </DeckProvider>
   );
 }

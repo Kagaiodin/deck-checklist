@@ -1,7 +1,8 @@
 import type { Deck, Collection, DeckNotification, DeckExtraInfo } from "../types/index";
 import { applyCollectionToCards } from "../utils/csvParser";
-import { useReducer, createContext, useContext, createElement, useLayoutEffect } from "react";
+import { useReducer, createContext, useContext, createElement, useEffect, useLayoutEffect } from "react";
 import { collectionStore } from "./collection";
+import { DECKS_KEY } from "./storageKeys";
 import type { Dispatch, ReactNode } from "react";
 
 type DeckState = {
@@ -265,8 +266,28 @@ export function deckReducer(state: DeckState, action: DeckAction): DeckState {
 
 const DeckContext = createContext<{ state: DeckState; dispatch: Dispatch<DeckAction> } | undefined>(undefined);
 
-export function DeckProvider({ children, initialDecks = [] }: { children: ReactNode; initialDecks?: Deck[] }) {
-  const [state, dispatch] = useReducer(deckReducer, { decks: initialDecks });
+function loadDecks(): Deck[] {
+  try {
+    const raw = window.localStorage.getItem(DECKS_KEY);
+    return raw ? (JSON.parse(raw) as Deck[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Owns the decks: loads them from localStorage once and saves them after every change, so there is
+ * no second copy to drift (#204). `initialDecks` replaces the saved decks; tests use it.
+ */
+export function DeckProvider({ children, initialDecks }: { children: ReactNode; initialDecks?: Deck[] }) {
+  const [state, dispatch] = useReducer(deckReducer, initialDecks, decks => ({ decks: decks ?? loadDecks() }));
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(DECKS_KEY, JSON.stringify(state.decks));
+    } catch {
+      // Quota exceeded or storage unavailable: keep working in memory.
+    }
+  }, [state.decks]);
   // Every Collection change re-tags decks. The starting Collection doesn't: stored decks already match it.
   // Layout effects run before children's passive effects, so a change made on mount isn't missed.
   useLayoutEffect(() => {
