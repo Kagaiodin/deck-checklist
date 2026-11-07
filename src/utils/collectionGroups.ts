@@ -1,4 +1,5 @@
 import type { CollectionPrinting } from "../types/index";
+import { normalizeSet } from "./printing";
 
 interface Entry {
   name: string;
@@ -47,7 +48,7 @@ export function groupCollectionBySet(
   for (const { name, printings } of entries) {
     printings.forEach((p, idx) => {
       if (!printingFilter(p)) return;
-      const set = p.set?.trim().toUpperCase() || null;
+      const set = normalizeSet(p.set) ?? null;
       let rows = bySet.get(set);
       if (!rows) { rows = new Map(); bySet.set(set, rows); }
       let row = rows.get(name);

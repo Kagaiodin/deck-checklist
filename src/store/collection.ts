@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from "react";
 import type { Collection, CollectionMeta, CollectionPrinting } from "../types/index";
+import { normalizeSet, samePrinting } from "../utils/printing";
 import { COLLECTION_KEY, COLLECTION_META_KEY } from "../features/collection/storageKeys";
 
 /** Where the store keeps the Collection between sessions. One method per key, so key ownership stays visible. */
@@ -13,11 +14,6 @@ export interface CollectionStorage {
 export interface CollectionState {
   collection: Collection;
   meta: CollectionMeta | null;
-}
-
-/** The same printing of a card: set, collector number and foil match. Quantity doesn't count. */
-export function samePrinting(a: CollectionPrinting, b: CollectionPrinting): boolean {
-  return a.set === b.set && a.collectorNumber === b.collectorNumber && (a.foil ?? false) === (b.foil ?? false);
 }
 
 /**
@@ -39,6 +35,39 @@ export function mergeCollections(base: Collection, incoming: Collection): { merg
   return { merged, added };
 }
 
+/**
+ * Stores every set code in its canonical form (#196). A printing whose set code was in another
+ * case merges into the first printing already in stored form that is the same Printing, keeping
+ * the larger quantity: the backup merge used to compare case-sensitively, so such a pair is the
+ * same cards seen from two devices. Printings already in stored form never merge with each other.
+ * Hands back `collection` itself when nothing needed changing.
+ */
+function normalizeSets(collection: Collection): Collection {
+  const stored = (p: CollectionPrinting) => p.set === normalizeSet(p.set);
+  let out: Collection | null = null;
+  for (const [name, printings] of Object.entries(collection)) {
+    if (!Array.isArray(printings) || printings.every(stored)) continue;
+    const result: (CollectionPrinting | null)[] = [...printings];
+    printings.forEach((p, i) => {
+      if (stored(p)) return;
+      const twin = printings.findIndex(o => stored(o) && samePrinting(o, p));
+      if (twin < 0) { result[i] = withSet(p, normalizeSet(p.set)); return; }
+      const kept = result[twin]!;
+      result[twin] = { ...kept, quantity: Math.max(kept.quantity, p.quantity) };
+      result[i] = null;
+    });
+    out ??= { ...collection };
+    out[name] = result.filter((p): p is CollectionPrinting => p !== null);
+  }
+  return out ?? collection;
+}
+
+function withSet(p: CollectionPrinting, set: string | undefined): CollectionPrinting {
+  const next = { ...p, set };
+  if (set === undefined) delete next.set;
+  return next;
+}
+
 function parse<T>(load: () => string | null, fallback: T): T {
   try {
     const raw = load();
@@ -55,14 +84,15 @@ export function createCollectionStore(storage: CollectionStorage) {
   /** Loads on first use, so anything that rewrites storage at boot (demo refresh) runs first. */
   function current(): CollectionState {
     state ??= {
-      collection: parse<Collection>(() => storage.loadCollection(), {}),
+      collection: normalizeSets(parse<Collection>(() => storage.loadCollection(), {})),
       meta: parse<CollectionMeta | null>(() => storage.loadMeta(), null),
     };
     return state;
   }
 
-  function commit(next: CollectionState) {
+  function commit(given: CollectionState) {
     const prev = current();
+    const next = { ...given, collection: normalizeSets(given.collection) };
     if (next.collection === prev.collection && next.meta === prev.meta) return;
     state = next;
     // Memory is the source of truth; a full or blocked storage only costs persistence.

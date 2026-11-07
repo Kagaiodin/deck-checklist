@@ -380,7 +380,7 @@ export function buildDemoData(now: number): DemoValues {
   addOwned("Force of Will", 1);
   addOwned("Mystic Remora", 1);
   // The second Demonic Tutor is the one received in demo-trade-1, so it carries that printing.
-  collection["demonic tutor"].push({ quantity: 1, set: "sta", collectorNumber: "71" });
+  collection["demonic tutor"].push({ quantity: 1, set: "STA", collectorNumber: "71" });
 
   const trade: Trade = {
     mine: {
