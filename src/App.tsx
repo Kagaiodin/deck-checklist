@@ -670,7 +670,7 @@ function AppInner() {
       setTradeOrigin("link");
       setTradeSeed(undefined);
       setView("transactions");
-        setTradeKey(k => k + 1);
+      setTradeKey(k => k + 1);
       setTradeOpen(true);
     }
     window.addEventListener("hashchange", onHashChange);
