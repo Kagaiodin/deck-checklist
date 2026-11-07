@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import type { Collection, Deck } from "../../../types/index";
 import type { Finish, TradeCard } from "../../../types/trade";
 import { basePriceFor } from "../../../utils/tradePricing";
-import { fetchPrices, priceKey, searchPrintings, type Printing } from "../../../utils/scryfallSearch";
+import { fetchPrices, priceKey, searchPrintings, type ScryfallPrinting } from "../../../utils/scryfallSearch";
 import { collectionEntries } from "../collectionMatch";
 import { FINISH_LABEL, displayName } from "../format";
 import { PlusIcon } from "./TradeIcons";
@@ -50,13 +50,13 @@ export function CollectionPickerSheet({ collection, decks, onAdd, onClose }: Col
     const known = chosen.filter((e) => e.printing.set && e.printing.collectorNumber);
     const prices = known.length
       ? await fetchPrices(known.map((e) => ({ set: e.printing.set!, collectorNumber: e.printing.collectorNumber! })))
-      : new Map<string, Printing>();
+      : new Map<string, ScryfallPrinting>();
 
     const cards = await Promise.all(
       chosen.map(async (e): Promise<Omit<TradeCard, "id">> => {
         const { printing } = e;
         const finish: Finish = printing.foil ? "foil" : "nonfoil";
-        let found: Printing | undefined;
+        let found: ScryfallPrinting | undefined;
         if (printing.set && printing.collectorNumber) {
           found = prices.get(priceKey({ set: printing.set, collectorNumber: printing.collectorNumber }));
         } else {

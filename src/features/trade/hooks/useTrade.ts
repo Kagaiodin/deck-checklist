@@ -11,7 +11,7 @@ import {
 } from "../../../types/trade";
 import { basePriceFor, fairness, isSideEmpty, sideTotals } from "../../../utils/tradePricing";
 import { fetchPrices, priceKey } from "../../../utils/scryfallSearch";
-import type { Printing } from "../../../utils/scryfallSearch";
+import type { ScryfallPrinting } from "../../../utils/scryfallSearch";
 import { normalizeSet } from "../../../utils/printing";
 
 export const TRADE_STORAGE_KEY = "fetchlist-trade";
@@ -90,7 +90,7 @@ type Action =
   | { type: "redo" }
   | { type: "open"; trade: Trade }
   | { type: "fork"; previous: Trade }
-  | { type: "applyPrices"; prices: Map<string, Printing>; at: number };
+  | { type: "applyPrices"; prices: Map<string, ScryfallPrinting>; at: number };
 
 /** The same Trade line, not just the same Printing: condition and price have to match too (see GLOSSARY.md). */
 const sameLine = (a: Omit<TradeCard, "id">, b: TradeCard) =>

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import type { Finish } from "../../types/trade";
-import { autocomplete, searchPrintings, fetchPrices, toPrinting, priceKey } from "../scryfallSearch";
+import { autocomplete, searchPrintings, fetchPrices, toScryfallPrinting, priceKey } from "../scryfallSearch";
 
 const raw = (over = {}) => ({
   id: "id1", name: "Sol Ring", set: "cmd", set_name: "Commander", collector_number: "1",
@@ -18,15 +18,15 @@ beforeEach(() => {
 });
 afterEach(() => vi.unstubAllGlobals());
 
-describe("toPrinting", () => {
+describe("toScryfallPrinting", () => {
   it("maps fields and uses the small image", () => {
-    expect(toPrinting(raw())).toMatchObject({
+    expect(toScryfallPrinting(raw())).toMatchObject({
       scryfallId: "id1", set: "cmd", setName: "Commander", collectorNumber: "1",
       finishes: ["nonfoil", "foil"], imageUrl: "small.jpg",
     });
   });
   it("falls back to the front face image and default finish/prices", () => {
-    const p = toPrinting(raw({ image_uris: undefined, card_faces: [{ image_uris: { normal: "face.jpg" } }], finishes: undefined, prices: undefined }));
+    const p = toScryfallPrinting(raw({ image_uris: undefined, card_faces: [{ image_uris: { normal: "face.jpg" } }], finishes: undefined, prices: undefined }));
     expect(p.imageUrl).toBe("face.jpg");
     expect(p.finishes).toEqual(["nonfoil"]);
     expect(p.prices).toEqual({});
