@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
+import { useEffect } from "react";
 import { render, screen, fireEvent, act } from "@testing-library/react";
 import { DeckProvider, useDecks } from "../decks";
 import { collectionStore } from "../collection";
@@ -110,6 +111,15 @@ describe("DeckProvider — Collection changes", () => {
   it("leaves decks alone for the Collection it starts with", () => {
     // Stored decks already reflect the stored Collection; mounting must not re-tag them.
     mount("owned");
+    expect(screen.getByTestId("source").textContent).toBe("owned");
+  });
+
+  it("re-tags for a change a child makes while mounting", () => {
+    function AddsOnMount() {
+      useEffect(() => collectionStore.update(c => ({ ...c, "sol ring": [{ quantity: 1 }] })), []);
+      return null;
+    }
+    render(<DeckProvider initialDecks={[makeDeck({ id: "d1", name: "A", cards: [ring()] })]}><AddsOnMount /><Probe /></DeckProvider>);
     expect(screen.getByTestId("source").textContent).toBe("owned");
   });
 

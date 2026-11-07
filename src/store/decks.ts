@@ -1,6 +1,6 @@
 import type { Deck, Collection, DeckNotification, DeckExtraInfo } from "../types/index";
 import { applyCollectionToCards } from "../utils/csvParser";
-import { useReducer, createContext, useContext, createElement, useEffect } from "react";
+import { useReducer, createContext, useContext, createElement, useLayoutEffect } from "react";
 import { collectionStore } from "./collection";
 import type { Dispatch, ReactNode } from "react";
 
@@ -268,7 +268,8 @@ const DeckContext = createContext<{ state: DeckState; dispatch: Dispatch<DeckAct
 export function DeckProvider({ children, initialDecks = [] }: { children: ReactNode; initialDecks?: Deck[] }) {
   const [state, dispatch] = useReducer(deckReducer, { decks: initialDecks });
   // Every Collection change re-tags decks. The starting Collection doesn't: stored decks already match it.
-  useEffect(() => {
+  // Layout effects run before children's passive effects, so a change made on mount isn't missed.
+  useLayoutEffect(() => {
     let last = collectionStore.get();
     return collectionStore.subscribe(() => {
       const next = collectionStore.get();
