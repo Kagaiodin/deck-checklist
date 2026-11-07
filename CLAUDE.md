@@ -4,6 +4,7 @@
 - React/TypeScript app for Magic: The Gathering deck management and card checklists
 - Deployed on Cloudflare Workers — do not break Workers compatibility
 - State managed via DeckProvider (src/store/)
+- Code judgement calls (naming, stores, hook dependencies): `CODING_STANDARDS.md`
 
 ## Testing
 - `npm test` / `npm run test:watch` / `npm run test:coverage`; `npm run verify` = lint + build + coverage (what CI runs). `eslint-suppressions.json` freezes existing React Compiler violations; after fixing one, run `npx eslint . --prune-suppressions`
