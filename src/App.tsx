@@ -468,7 +468,7 @@ function AppInner() {
   }
 
   const { handleMarkReceived, handleMarkCancelled } = useOrderActions({
-    orders, setOrders, collection, setCollection, setCollectionMeta, dispatch,
+    orders, setOrders, readCollection, readCollectionMeta, setCollection, setCollectionMeta, dispatch,
   });
 
   const { entries: ledger, setEntries: setLedger, logTrade, deleteEntry: deleteLedgerEntry } = useTradeLedger({
