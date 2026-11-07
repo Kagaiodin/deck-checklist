@@ -80,7 +80,7 @@ describe("Trade route", () => {
     expect(screen.queryByRole("heading", { name: "Trade" })).not.toBeInTheDocument();
   });
 
-  it("offers cards from the current collection, read fresh from storage", async () => {
+  it("offers cards from the current collection", async () => {
     store.set("mtg-checklist-collection-v2", JSON.stringify({ "sol ring": [{ quantity: 2, set: "cmm", collectorNumber: "410" }] }));
     store.set("mtg-checklist-collection-meta-v2", JSON.stringify({ fileName: "x.csv", importedAt: 0, cardCount: 1 }));
     render(<App />);
@@ -173,8 +173,8 @@ describe("Trade route", () => {
     });
 
     it("on confirm removes the card from Collection, records the entry, empties the Calculator and links to the entry", async () => {
-      await toCalculator();
       store.set("mtg-checklist-collection-meta-v2", JSON.stringify({ fileName: "mine.csv", importedAt: 42, cardCount: 7 }));
+      await toCalculator();
       await userEvent.click(screen.getByRole("button", { name: "Log this trade" }));
       await userEvent.type(screen.getByLabelText("Who with"), "Sam");
       await userEvent.click(screen.getByRole("button", { name: "Log trade" }));

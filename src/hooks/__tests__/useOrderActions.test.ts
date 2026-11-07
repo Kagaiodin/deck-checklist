@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { useOrderActions } from "../useOrderActions";
 import type { Collection, CollectionMeta, Order } from "../../types/index";
+import { memoryCollectionStore } from "../../test/memoryCollectionStore";
 
 const order = (over: Partial<Order> = {}): Order => ({
   id: "o1",
@@ -19,13 +20,10 @@ const order = (over: Partial<Order> = {}): Order => ({
 
 function setup(orders: Order[], collection: Collection = {}, meta: CollectionMeta | null = null) {
   const setOrders = vi.fn();
-  const setCollection = vi.fn();
-  const setCollectionMeta = vi.fn();
   const dispatch = vi.fn();
-  const { result } = renderHook(() =>
-    useOrderActions({ orders, setOrders, readCollection: () => collection, readCollectionMeta: () => meta, setCollection, setCollectionMeta, dispatch }),
-  );
-  return { result, setOrders, setCollection, setCollectionMeta, dispatch };
+  const store = memoryCollectionStore(collection, meta);
+  const { result } = renderHook(() => useOrderActions({ orders, setOrders, collectionStore: store, dispatch }));
+  return { result, setOrders, store, dispatch };
 }
 
 /** Runs the updater passed to a React setState mock against a starting value. */
@@ -58,36 +56,34 @@ describe("useOrderActions", () => {
       });
     });
 
-    it("merges every order card, freeform included, into the collection and re-applies it", () => {
-      const { result, setCollection, dispatch } = setup([order()], { "sol ring": [{ quantity: 1 }] });
+    it("merges every order card, freeform included, into the collection", () => {
+      const { result, store, dispatch } = setup([order()], { "sol ring": [{ quantity: 1 }] });
       act(() => result.current.handleMarkReceived("o1"));
-      const merged = setCollection.mock.calls[0][0] as Collection;
+      const merged = store.get();
       expect(merged["sol ring"]).toEqual([{ quantity: 2 }]);
       expect(merged["freeform card"]).toEqual([{ quantity: 2 }]);
-      expect(dispatch).toHaveBeenLastCalledWith({ type: "APPLY_COLLECTION", payload: merged });
+      // Re-tagging follows from the store change (DeckProvider), not a dispatch here.
+      expect(dispatch.mock.calls.some(([a]) => a.type === "APPLY_COLLECTION")).toBe(false);
     });
 
     it("updates the card count on the stored collection meta", () => {
       const stored: CollectionMeta = { fileName: "mine.csv", importedAt: 5, cardCount: 1 };
-      const { result, setCollection, setCollectionMeta } = setup([order()], {}, stored);
+      const { result, store } = setup([order()], {}, stored);
       act(() => result.current.handleMarkReceived("o1"));
-      const merged = setCollection.mock.calls[0][0] as Collection;
-      expect(setCollectionMeta).toHaveBeenCalledWith({ ...stored, cardCount: Object.keys(merged).length });
+      expect(store.getMeta()).toEqual({ ...stored, cardCount: 4 });
     });
 
     it("creates collection meta when none exists", () => {
-      const { result, setCollectionMeta } = setup([order()]);
+      const { result, store } = setup([order()]);
       act(() => result.current.handleMarkReceived("o1"));
-      const meta = setCollectionMeta.mock.calls[0][0] as CollectionMeta;
-      expect(meta.fileName).toBe("Order receipt");
-      expect(meta.cardCount).toBe(4);
+      expect(store.getMeta()).toEqual({ fileName: "Order receipt", importedAt: Date.now(), cardCount: 4 });
     });
 
     it("does nothing for an unknown order id", () => {
-      const { result, setOrders, setCollection, dispatch } = setup([order()]);
+      const { result, setOrders, store, dispatch } = setup([order()]);
       act(() => result.current.handleMarkReceived("missing"));
       expect(setOrders).not.toHaveBeenCalled();
-      expect(setCollection).not.toHaveBeenCalled();
+      expect(store.get()).toEqual({});
       expect(dispatch).not.toHaveBeenCalled();
     });
   });
@@ -100,11 +96,12 @@ describe("useOrderActions", () => {
     });
 
     it("unsets card sources per deck and does not touch the collection store", () => {
-      const { result, dispatch, setCollection } = setup([order()]);
+      const { result, dispatch, store } = setup([order()], { "sol ring": [{ quantity: 1 }] });
+      const before = store.getSnapshot();
       act(() => result.current.handleMarkCancelled("o1"));
       expect(dispatch).toHaveBeenCalledWith({ type: "UNSET_CARD_SOURCES", payload: { deckId: "d1", cardIds: ["c1", "c2"] } });
       expect(dispatch).toHaveBeenCalledWith({ type: "UNSET_CARD_SOURCES", payload: { deckId: "d2", cardIds: ["c3"] } });
-      expect(setCollection).not.toHaveBeenCalled();
+      expect(store.getSnapshot()).toBe(before);
     });
 
     it("re-applies the collection only when it is non-empty", () => {

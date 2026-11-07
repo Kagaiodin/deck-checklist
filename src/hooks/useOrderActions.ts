@@ -1,6 +1,7 @@
 import type { Dispatch, SetStateAction } from "react";
-import type { Collection, CollectionMeta, DeckNotification, Order } from "../types/index";
+import type { DeckNotification, Order } from "../types/index";
 import type { DeckAction } from "../store/decks";
+import type { CollectionStore } from "../store/collection";
 import { mergeOrderCardsIntoCollection } from "../utils/csvParser";
 
 function orderLabelForNotification(order: Order): string {
@@ -24,12 +25,7 @@ function cardsByDeckFor(order: Order): Map<string, string[]> {
 interface OrderActionsDeps {
   orders: Order[];
   setOrders: Dispatch<SetStateAction<Order[]>>;
-  /** Reads the Collection fresh from storage; App's own copy goes stale while Collection is open. */
-  readCollection: () => Collection;
-  /** Collection metadata as stored now; CollectionPage owns it, so App's own copy can be stale. */
-  readCollectionMeta: () => CollectionMeta | null;
-  setCollection: Dispatch<SetStateAction<Collection>>;
-  setCollectionMeta: Dispatch<SetStateAction<CollectionMeta | null>>;
+  collectionStore: CollectionStore;
   dispatch: Dispatch<DeckAction>;
 }
 
@@ -37,10 +33,7 @@ interface OrderActionsDeps {
 export function useOrderActions({
   orders,
   setOrders,
-  readCollection,
-  readCollectionMeta,
-  setCollection,
-  setCollectionMeta,
+  collectionStore,
   dispatch,
 }: OrderActionsDeps) {
   function handleMarkReceived(orderId: string) {
@@ -56,14 +49,8 @@ export function useOrderActions({
     }
 
     // Merge into collection (Option A: quantity only, no set/CN)
-    const updatedCollection = mergeOrderCardsIntoCollection(order.cards, readCollection());
-    setCollection(updatedCollection);
-    const cardCount = Object.keys(updatedCollection).length;
-    const storedMeta = readCollectionMeta();
-    setCollectionMeta(storedMeta
-      ? { ...storedMeta, cardCount }
-      : { fileName: "Order receipt", importedAt: Date.now(), cardCount });
-    dispatch({ type: "APPLY_COLLECTION", payload: updatedCollection });
+    // DeckProvider re-tags decks from the change.
+    collectionStore.update(c => mergeOrderCardsIntoCollection(order.cards, c), { source: "Order receipt" });
   }
 
   function handleMarkCancelled(orderId: string) {
@@ -79,10 +66,10 @@ export function useOrderActions({
       dispatch({ type: "UNSET_CARD_SOURCES", payload: { deckId, cardIds } });
     }
 
-    // Re-apply collection now that manuallyTagged is cleared
-    const collection = readCollection();
-    if (Object.keys(collection).length > 0) {
-      dispatch({ type: "APPLY_COLLECTION", payload: collection });
+    // Re-apply collection now that manuallyTagged is cleared (the Collection itself didn't change)
+    const current = collectionStore.get();
+    if (Object.keys(current).length > 0) {
+      dispatch({ type: "APPLY_COLLECTION", payload: current });
     }
 
     // Add deck notifications so user knows which cards to review

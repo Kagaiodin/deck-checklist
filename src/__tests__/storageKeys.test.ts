@@ -10,10 +10,7 @@ import { MANAGED_KEYS } from "../features/demo/demoMode";
 // Keys must be string literals or string constants so this scan can resolve them.
 
 /** Keys written from more than one module on purpose. Each entry needs a reason and a way out. */
-const SHARED_WRITERS: Record<string, string> = {
-  "mtg-checklist-collection-v2": "App and CollectionPage both hold a copy until the Collection store lands (architecture candidate 1)",
-  "mtg-checklist-collection-meta-v2": "same as the Collection key",
-};
+const SHARED_WRITERS: Record<string, string> = {};
 
 /** Keys that demo mode leaves alone: UI preferences that are not the user's data. */
 const DEMO_EXEMPT: Record<string, string> = {
