@@ -22,7 +22,8 @@ import { applyCollectionToCards } from "./utils/csvParser";
 import { formatOptions } from "./utils/deckFormats";
 import { getDeckColorIdentity, formatRelativeDate, getDeckDomain } from "./utils/deckUtils";
 import { CollectionPage } from "./features/collection/CollectionPage";
-import { TradePage, clearTradeHash } from "./features/trade/TradePage";
+import { TradePage } from "./features/trade/TradePage";
+import { clearTradeHash } from "./features/trade/tradeHash";
 import { extractPayload } from "./utils/tradeShare";
 import { TransactionsPage, type TransactionsTab } from "./features/transactions/TransactionsPage";
 import type { TradeOrigin } from "./features/trade/TradePage";
@@ -131,7 +132,7 @@ function AppInner() {
   // ── Sidebar persistence + keyboard shortcut ───────────────────────────────
   useEffect(() => {
     try { localStorage.setItem("fl-sidebar-collapsed", sidebarOpen ? "false" : "true"); }
-    catch {}
+    catch { /* storage unavailable: the preference just isn't remembered */ }
   }, [sidebarOpen]);
 
   useEffect(() => {
@@ -1062,7 +1063,7 @@ function AppInner() {
                       const acquiredCards = deck.cards.filter(c => c.acquired).reduce((s, c) => s + c.quantity, 0);
                       const pct = totalCards > 0 ? Math.round((acquiredCards / totalCards) * 100) : 0;
                       const isComplete = totalCards > 0 && acquiredCards === totalCards;
-                      const initials = deck.name.replace(/^(Cmdr|EDH|Commander)[:–\-]\s*/i, "").charAt(0).toUpperCase();
+                      const initials = deck.name.replace(/^(Cmdr|EDH|Commander)[:–-]\s*/i, "").charAt(0).toUpperCase();
                       const colors = getDeckColorIdentity(deck);
                       const isDeleting = deletingDeckId === deck.id;
                       return (
@@ -1102,7 +1103,7 @@ function AppInner() {
                               ) : (
                                 <button
                                   className={`deck-built-badge${deck.isBuilt ? " is-built" : ""}`}
-                                  onClick={e => { e.stopPropagation(); deck.isBuilt ? setUnmarkingBuiltDeckId(deck.id) : handleToggleDeckBuilt(deck.id); }}
+                                  onClick={e => { e.stopPropagation(); if (deck.isBuilt) setUnmarkingBuiltDeckId(deck.id); else handleToggleDeckBuilt(deck.id); }}
                                   title={deck.isBuilt ? "Unmark as built" : "Mark as built"}
                                 >Built</button>
                               )}

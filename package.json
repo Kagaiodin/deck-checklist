@@ -10,7 +10,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "verify": "npm run build && npm run test:coverage",
+    "verify": "npm run lint && npm run build && npm run test:coverage",
     "preview": "npm run build && wrangler dev",
     "deploy": "npm run build && wrangler deploy",
     "css:index": "sh scripts/css-index.sh",

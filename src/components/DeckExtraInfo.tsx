@@ -21,7 +21,7 @@ export function DeckExtraInfo({ extraInfo, isLoading }: Props) {
   });
 
   useEffect(() => {
-    try { localStorage.setItem(LS_KEY, open ? "1" : "0"); } catch {}
+    try { localStorage.setItem(LS_KEY, open ? "1" : "0"); } catch { /* storage unavailable: not remembered */ }
   }, [open]);
 
   if (!extraInfo && !isLoading) return null;

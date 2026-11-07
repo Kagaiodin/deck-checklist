@@ -22,6 +22,8 @@ export const MANAGED_KEYS = [
   "fetchlist-last-vendor",
   "fetchlist-vendor-last-used",
   "fetchlist:onboarding:dismissed",
+  // Holds deck ids, so real and demo dismissals must not mix.
+  "fetchlist-coachmark-dismissed-decks",
 ] as const;
 
 export function isDemoActive(storage: Storage): boolean {

@@ -35,7 +35,7 @@ interface Props {
   onToggleCommander?: (cardId: string) => void;
 }
 
-export function CardRowSheet({ card, deckId: _deckId, onClose, onSetSource, onRemoveCard, isCommander = false, commanderCapReached = false, onToggleCommander }: Props) {
+export function CardRowSheet({ card, onClose, onSetSource, onRemoveCard, isCommander = false, commanderCapReached = false, onToggleCommander }: Props) {
   const [visible, setVisible] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const sheetRef = useRef<HTMLDivElement>(null);

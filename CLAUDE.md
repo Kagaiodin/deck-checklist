@@ -6,7 +6,7 @@
 - State managed via DeckProvider (src/store/)
 
 ## Testing
-- `npm test` / `npm run test:watch` / `npm run test:coverage`; `npm run verify` = build + coverage (what CI runs)
+- `npm test` / `npm run test:watch` / `npm run test:coverage`; `npm run verify` = lint + build + coverage (what CI runs). `eslint-suppressions.json` freezes existing React Compiler violations; after fixing one, run `npx eslint . --prune-suppressions`
 - Vitest config is separate from vite.config.ts (jsdom vs. Workers plugin) — do not merge them
 - Tests live in a `__tests__/` folder next to the code they cover (utils, store, hooks,
   `src/features/<feature>/`). New utils, store logic, hooks, and interactive components
@@ -15,8 +15,9 @@
 
 ## Demo mode
 - Demo data lives in `src/features/demo/demoData.ts`; the localStorage keys it swaps are `MANAGED_KEYS` in `demoMode.ts`.
-- When adding a feature, a new persisted localStorage key, or a data-shape change, consider the demo: does it need sample data,
-  a new managed key (so it is isolated from real data and backups), or an update to `demoData.test.ts`? Say so in the PR.
+- New localStorage keys: `src/__tests__/storageKeys.test.ts` fails until the key is in `MANAGED_KEYS` or its `DEMO_EXEMPT` list,
+  and when a second module writes an existing key.
+- When adding a feature or changing a data shape, consider whether the demo needs sample data or an update to `demoData.test.ts`. Say so in the PR.
 - Demo decks must stay full 100-card Commander lists (singleton apart from basics).
 
 ## Design workflow

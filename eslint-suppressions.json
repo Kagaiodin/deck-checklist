@@ -1,0 +1,82 @@
+{
+  "src/App.tsx": {
+    "react-hooks/set-state-in-effect": {
+      "count": 1
+    }
+  },
+  "src/components/Checklist.tsx": {
+    "react-hooks/set-state-in-effect": {
+      "count": 2
+    }
+  },
+  "src/components/ErrorQueue.tsx": {
+    "react-hooks/set-state-in-effect": {
+      "count": 1
+    }
+  },
+  "src/features/collection/CollectionPage.tsx": {
+    "react-hooks/set-state-in-effect": {
+      "count": 1
+    },
+    "react-hooks/use-memo": {
+      "count": 3
+    }
+  },
+  "src/features/orders/NewOrderSheet.tsx": {
+    "react-hooks/refs": {
+      "count": 1
+    },
+    "react-hooks/set-state-in-effect": {
+      "count": 1
+    }
+  },
+  "src/features/orders/OrdersPage.tsx": {
+    "react-hooks/purity": {
+      "count": 1
+    },
+    "react-hooks/set-state-in-effect": {
+      "count": 1
+    }
+  },
+  "src/features/profile/ProfileExportImport.tsx": {
+    "react-hooks/set-state-in-effect": {
+      "count": 1
+    }
+  },
+  "src/features/trade/TradeWorkspace.tsx": {
+    "react-hooks/purity": {
+      "count": 1
+    },
+    "react-hooks/refs": {
+      "count": 1
+    },
+    "react-hooks/set-state-in-effect": {
+      "count": 1
+    }
+  },
+  "src/features/trade/components/CardSearchSheet.tsx": {
+    "react-hooks/set-state-in-effect": {
+      "count": 1
+    }
+  },
+  "src/features/trade/components/ControlPanel.tsx": {
+    "react-hooks/purity": {
+      "count": 1
+    }
+  },
+  "src/features/trade/hooks/useTrade.ts": {
+    "react-hooks/refs": {
+      "count": 1
+    }
+  },
+  "src/features/transactions/ledger/LedgerPanel.tsx": {
+    "react-hooks/set-state-in-effect": {
+      "count": 1
+    }
+  },
+  "src/hooks/useDialogKeys.ts": {
+    "react-hooks/refs": {
+      "count": 2
+    }
+  }
+}
