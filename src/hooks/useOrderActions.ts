@@ -1,5 +1,5 @@
 import type { Dispatch, SetStateAction } from "react";
-import type { DeckNotification, Order } from "../types/index";
+import type { Order } from "../types/index";
 import type { DeckAction } from "../store/decks";
 import type { CollectionStore } from "../store/collection";
 import { mergeOrderCardsIntoCollection } from "../utils/csvParser";
@@ -60,31 +60,19 @@ export function useOrderActions({
     // Update order status
     setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: "cancelled" as const } : o));
 
-    // Unset source + manuallyTagged on deck-linked cards so collection can re-tag
-    const cardsByDeck = cardsByDeckFor(order);
-    for (const [deckId, cardIds] of cardsByDeck) {
-      dispatch({ type: "UNSET_CARD_SOURCES", payload: { deckId, cardIds } });
-    }
-
-    // Re-apply collection now that manuallyTagged is cleared (the Collection itself didn't change)
-    const current = collectionStore.get();
-    if (Object.keys(current).length > 0) {
-      dispatch({ type: "APPLY_COLLECTION", payload: current });
-    }
-
-    // Add deck notifications so user knows which cards to review
-    const label = orderLabelForNotification(order);
-    for (const [deckId, cardIds] of cardsByDeck) {
-      const notification: DeckNotification = {
-        id: `${orderId}_${deckId}`,
-        type: "order_cancelled",
+    // The reducer clears only cards still tagged "ordered", re-tags them and notifies their decks.
+    const linesByDeck = Object.fromEntries(cardsByDeckFor(order));
+    if (Object.keys(linesByDeck).length === 0) return;
+    dispatch({
+      type: "CANCEL_ORDER_LINES",
+      payload: {
         orderId,
-        orderLabel: label,
-        affectedCardIds: cardIds,
+        orderLabel: orderLabelForNotification(order),
+        linesByDeck,
+        collection: collectionStore.get(),
         createdAt: Date.now(),
-      };
-      dispatch({ type: "ADD_NOTIFICATION", payload: { deckId, notification } });
-    }
+      },
+    });
   }
 
   return { handleMarkReceived, handleMarkCancelled };

@@ -376,70 +376,62 @@ describe("ADD_CARD", () => {
   });
 });
 
-// ── UNSET_CARD_SOURCES ────────────────────────────────────────────────────────
+// ── CANCEL_ORDER_LINES ────────────────────────────────────────────────────────
 
-describe("UNSET_CARD_SOURCES", () => {
-  it("clears source and manuallyTagged on the specified cards", () => {
-    const cards = [
-      makeCard({ id: "c1", name: "Lightning Bolt", source: "ordered", manuallyTagged: true }),
-      makeCard({ id: "c2", name: "Lava Spike", source: "owned", manuallyTagged: true }),
-    ];
-    const initial = { decks: [makeDeck({ id: "d1", name: "Burn", cards })] };
-    const state = deckReducer(initial, {
-      type: "UNSET_CARD_SOURCES",
-      payload: { deckId: "d1", cardIds: ["c1"] },
-    });
-    expect(state.decks[0].cards[0].source).toBeUndefined();
-    expect(state.decks[0].cards[0].manuallyTagged).toBe(false);
-    // c2 untouched
-    expect(state.decks[0].cards[1].source).toBe("owned");
-    expect(state.decks[0].cards[1].manuallyTagged).toBe(true);
+describe("CANCEL_ORDER_LINES", () => {
+  const cancel = (linesByDeck: Record<string, string[]>, collection = {}) => ({
+    type: "CANCEL_ORDER_LINES" as const,
+    payload: { orderId: "o1", orderLabel: "Card Kingdom", linesByDeck, collection, createdAt: 7 },
   });
 
-  it("does not affect other decks", () => {
+  it("clears the Ordered tag on linked cards and leaves cards the user re-tagged alone", () => {
+    const cards = [
+      makeCard({ id: "c1", name: "Lightning Bolt", source: "ordered", manuallyTagged: true }),
+      makeCard({ id: "c2", name: "Lava Spike", source: "proxy", manuallyTagged: true }),
+      makeCard({ id: "c3", name: "Rift Bolt", source: "ordered", manuallyTagged: true }),
+    ];
+    const initial = { decks: [makeDeck({ id: "d1", name: "Burn", cards })] };
+    const state = deckReducer(initial, cancel({ d1: ["c1", "c2"] }));
+    const [c1, c2, c3] = state.decks[0].cards;
+    expect([c1.source, c1.manuallyTagged]).toEqual([undefined, false]);
+    expect([c2.source, c2.manuallyTagged]).toEqual(["proxy", true]);
+    expect([c3.source, c3.manuallyTagged]).toEqual(["ordered", true]); // not on the order
+  });
+
+  it("re-tags cleared cards from the Collection", () => {
+    const cards = [makeCard({ id: "c1", name: "Lightning Bolt", source: "ordered", manuallyTagged: true })];
+    const initial = { decks: [makeDeck({ id: "d1", name: "Burn", cards })] };
+    const state = deckReducer(initial, cancel({ d1: ["c1"] }, { "lightning bolt": [{ quantity: 1 }] }));
+    expect(state.decks[0].cards[0].source).toBe("owned");
+  });
+
+  it("notifies each deck where cards were cleared, listing only those cards", () => {
+    const initial = {
+      decks: [
+        makeDeck({ id: "d1", name: "Burn", cards: [
+          makeCard({ id: "c1", name: "Lightning Bolt", source: "ordered", manuallyTagged: true }),
+          makeCard({ id: "c2", name: "Lava Spike", source: "owned", manuallyTagged: true }),
+        ] }),
+        makeDeck({ id: "d2", name: "Storm", cards: [makeCard({ id: "c3", name: "Dark Ritual", source: "proxy", manuallyTagged: true })] }),
+      ],
+    };
+    const state = deckReducer(initial, cancel({ d1: ["c1", "c2"], d2: ["c3"] }));
+    expect(state.decks[0].notifications).toEqual([{
+      id: "o1_d1", type: "order_cancelled", orderId: "o1", orderLabel: "Card Kingdom", affectedCardIds: ["c1"], createdAt: 7,
+    }]);
+    expect(state.decks[1].notifications).toBeUndefined();
+    expect(state.decks[1]).toBe(initial.decks[1]);
+  });
+
+  it("does not affect decks the order doesn't link to", () => {
     const initial = {
       decks: [
         makeDeck({ id: "d1", name: "Burn", cards: [makeCard({ id: "c1", name: "Lightning Bolt", source: "ordered", manuallyTagged: true })] }),
-        makeDeck({ id: "d2", name: "Storm", cards: [makeCard({ id: "c2", name: "Dark Ritual",   source: "ordered", manuallyTagged: true })] }),
+        makeDeck({ id: "d2", name: "Storm", cards: [makeCard({ id: "c2", name: "Dark Ritual", source: "ordered", manuallyTagged: true })] }),
       ],
     };
-    const state = deckReducer(initial, {
-      type: "UNSET_CARD_SOURCES",
-      payload: { deckId: "d1", cardIds: ["c1"] },
-    });
-    expect(state.decks[1].cards[0].source).toBe("ordered"); // d2 untouched
-  });
-});
-
-// ── ADD_NOTIFICATION ──────────────────────────────────────────────────────────
-
-describe("ADD_NOTIFICATION", () => {
-  it("appends a notification to the target deck", () => {
-    const initial = { decks: [makeDeck({ id: "d1", name: "Burn" })] };
-    const notification = {
-      id: "n1",
-      type: "order_cancelled" as const,
-      orderId: "order1",
-      orderLabel: "TCGPlayer — May 15",
-      affectedCardIds: ["c1", "c2"],
-      createdAt: Date.now(),
-    };
-    const state = deckReducer(initial, {
-      type: "ADD_NOTIFICATION",
-      payload: { deckId: "d1", notification },
-    });
-    expect(state.decks[0].notifications).toHaveLength(1);
-    expect(state.decks[0].notifications![0].id).toBe("n1");
-  });
-
-  it("appends to existing notifications", () => {
-    const existing = { id: "n0", type: "order_cancelled" as const, orderId: "o0", orderLabel: "Old", affectedCardIds: [], createdAt: 0 };
-    const initial = { decks: [makeDeck({ id: "d1", name: "Burn", notifications: [existing] })] };
-    const state = deckReducer(initial, {
-      type: "ADD_NOTIFICATION",
-      payload: { deckId: "d1", notification: { id: "n1", type: "order_cancelled", orderId: "o1", orderLabel: "New", affectedCardIds: [], createdAt: 1 } },
-    });
-    expect(state.decks[0].notifications).toHaveLength(2);
+    const state = deckReducer(initial, cancel({ d1: ["c1"] }));
+    expect(state.decks[1]).toBe(initial.decks[1]);
   });
 });
 

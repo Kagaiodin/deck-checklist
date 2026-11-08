@@ -103,51 +103,28 @@ describe("useOrderActions", () => {
       expect(applyUpdater(setOrders, [order()])[0].status).toBe("cancelled");
     });
 
-    it("unsets card sources per deck and does not touch the collection store", () => {
+    it("sends the order's deck-linked lines and the current Collection to the reducer", () => {
       const { result, dispatch, store } = setup([order()], { "sol ring": [{ quantity: 1 }] });
       const before = store.getSnapshot();
       act(() => result.current.handleMarkCancelled("o1"));
-      expect(dispatch).toHaveBeenCalledWith({ type: "UNSET_CARD_SOURCES", payload: { deckId: "d1", cardIds: ["c1", "c2"] } });
-      expect(dispatch).toHaveBeenCalledWith({ type: "UNSET_CARD_SOURCES", payload: { deckId: "d2", cardIds: ["c3"] } });
-      expect(store.getSnapshot()).toBe(before);
-    });
-
-    it("re-applies the collection only when it is non-empty", () => {
-      const withCollection = setup([order()], { "sol ring": [{ quantity: 1 }] });
-      act(() => withCollection.result.current.handleMarkCancelled("o1"));
-      expect(withCollection.dispatch).toHaveBeenCalledWith({
-        type: "APPLY_COLLECTION",
-        payload: { "sol ring": [{ quantity: 1 }] },
-      });
-
-      const empty = setup([order()]);
-      act(() => empty.result.current.handleMarkCancelled("o1"));
-      expect(empty.dispatch.mock.calls.some(([a]) => a.type === "APPLY_COLLECTION")).toBe(false);
-    });
-
-    it("adds one notification per affected deck, labelled with vendor and date", () => {
-      const { result, dispatch } = setup([order({ orderDate: new Date("2026-10-15T12:00:00Z").getTime() })]);
-      act(() => result.current.handleMarkCancelled("o1"));
-      const notes = dispatch.mock.calls.map(([a]) => a).filter(a => a.type === "ADD_NOTIFICATION");
-      expect(notes).toHaveLength(2);
-      expect(notes[0].payload).toEqual({
-        deckId: "d1",
-        notification: {
-          id: "o1_d1",
-          type: "order_cancelled",
+      expect(dispatch).toHaveBeenCalledTimes(1);
+      expect(dispatch).toHaveBeenCalledWith({
+        type: "CANCEL_ORDER_LINES",
+        payload: {
           orderId: "o1",
-          orderLabel: "Card Kingdom — October 15",
-          affectedCardIds: ["c1", "c2"],
+          orderLabel: "Card Kingdom",
+          linesByDeck: { d1: ["c1", "c2"], d2: ["c3"] },
+          collection: { "sol ring": [{ quantity: 1 }] },
           createdAt: Date.now(),
         },
       });
+      expect(store.getSnapshot()).toBe(before);
     });
 
-    it("labels with the vendor alone when the order has no date", () => {
-      const { result, dispatch } = setup([order()]);
+    it("labels the order with vendor and date", () => {
+      const { result, dispatch } = setup([order({ orderDate: new Date("2026-10-15T12:00:00Z").getTime() })]);
       act(() => result.current.handleMarkCancelled("o1"));
-      const note = dispatch.mock.calls.map(([a]) => a).find(a => a.type === "ADD_NOTIFICATION")!;
-      expect(note.payload.notification.orderLabel).toBe("Card Kingdom");
+      expect(dispatch.mock.calls[0][0].payload.orderLabel).toBe("Card Kingdom — October 15");
     });
 
     it("dispatches no deck actions for an order with only freeform cards", () => {

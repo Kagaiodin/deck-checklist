@@ -22,8 +22,7 @@ export type DeckAction =
   | { type: "UPDATE_CARD_QUANTITY"; payload: { deckId: string; cardId: string; quantity: number } }
   | { type: "ADD_CARD"; payload: { deckId: string; card: import("../types/index").Card } }
   | { type: "APPLY_COLLECTION"; payload: Collection }
-  | { type: "UNSET_CARD_SOURCES"; payload: { deckId: string; cardIds: string[] } }
-  | { type: "ADD_NOTIFICATION"; payload: { deckId: string; notification: DeckNotification } }
+  | { type: "CANCEL_ORDER_LINES"; payload: CancelOrderLines }
   | { type: "DISMISS_NOTIFICATION"; payload: { deckId: string; notificationId: string } }
   | { type: "SET_DECKS"; payload: Deck[] }
   | { type: "SET_EXTRA_INFO"; payload: { deckId: string; extraInfo: DeckExtraInfo } }
@@ -32,7 +31,39 @@ export type DeckAction =
   | { type: "TOGGLE_COMMANDER"; payload: { deckId: string; cardId: string } }
   | { type: "DISMISS_COMMANDER_PROMPT"; payload: { deckId: string } };
 
+/** An Order being cancelled: its deck-linked lines, grouped by deck (GLOSSARY: Cancelling). */
+export interface CancelOrderLines {
+  orderId: string;
+  orderLabel: string;
+  linesByDeck: Record<string, string[]>;
+  collection: Collection;
+  createdAt: number;
+}
+
 export const MAX_COMMANDERS = 2;
+
+/**
+ * Cancelling an Order: linked cards still tagged "ordered" lose the tag and are re-tagged from the
+ * Collection. Cards the user re-tagged since are left alone. The deck is told which cards to review.
+ */
+function cancelOrderLines(deck: Deck, cardIds: string[], p: CancelOrderLines): Deck {
+  const cleared = deck.cards.filter(c => cardIds.includes(c.id) && c.source === "ordered").map(c => c.id);
+  if (cleared.length === 0) return deck;
+  const reset = deck.cards.map(c => cleared.includes(c.id) ? { ...c, source: undefined, manuallyTagged: false } : c);
+  const notification: DeckNotification = {
+    id: `${p.orderId}_${deck.id}`,
+    type: "order_cancelled",
+    orderId: p.orderId,
+    orderLabel: p.orderLabel,
+    affectedCardIds: cleared,
+    createdAt: p.createdAt,
+  };
+  return {
+    ...deck,
+    cards: applyCollectionToCards(reset, p.collection),
+    notifications: [...(deck.notifications ?? []), notification],
+  };
+}
 
 /** Sources a Built deck keeps: a proxy the user tagged, and a borrowed card (it isn't the user's). */
 function keptWhenBuilt(c: Card): AcquisitionSource | undefined {
@@ -210,32 +241,13 @@ export function deckReducer(state: DeckState, action: DeckAction): DeckState {
             : d
         )
       };
-    case "UNSET_CARD_SOURCES":
-      // Clears source AND manuallyTagged so collection can re-tag these cards
+    case "CANCEL_ORDER_LINES": {
+      const { linesByDeck } = action.payload;
       return {
         ...state,
-        decks: state.decks.map(d =>
-          d.id === action.payload.deckId
-            ? {
-                ...d,
-                cards: d.cards.map(c =>
-                  action.payload.cardIds.includes(c.id)
-                    ? { ...c, source: undefined, manuallyTagged: false }
-                    : c
-                )
-              }
-            : d
-        )
+        decks: state.decks.map(d => linesByDeck[d.id] ? cancelOrderLines(d, linesByDeck[d.id], action.payload) : d),
       };
-    case "ADD_NOTIFICATION":
-      return {
-        ...state,
-        decks: state.decks.map(d =>
-          d.id === action.payload.deckId
-            ? { ...d, notifications: [...(d.notifications ?? []), action.payload.notification] }
-            : d
-        )
-      };
+    }
     case "DISMISS_NOTIFICATION":
       return {
         ...state,
