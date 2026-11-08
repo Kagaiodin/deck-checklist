@@ -319,14 +319,8 @@ function AppInner() {
     try {
       const result = await validateDecklist([{ count: 1, name: newName }]);
       if (result.cards.length > 0) {
-        const remapped = result.cards[0];
-        const currentDeck = state.decks.find(d => d.id === activeDeckId);
-        if (currentDeck) {
-          dispatch({
-            type: "SET_CARDS",
-            payload: { deckId: activeDeckId, cards: [...currentDeck.cards, remapped] }
-          });
-        }
+        // ADD_CARD appends to the deck as it is now, not as it was when the lookup started.
+        dispatch({ type: "ADD_CARD", payload: { deckId: activeDeckId, card: result.cards[0] } });
         setErrors(prev =>
           prev.map(e => e.originalName === originalName ? { ...e, searchName: newName, resolved: true } : e)
         );
