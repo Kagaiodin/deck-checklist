@@ -1,4 +1,4 @@
-import type { Deck, Collection, DeckNotification, DeckExtraInfo } from "../types/index";
+import type { Card, Deck, Collection, DeckNotification, DeckExtraInfo } from "../types/index";
 import { applyCollectionToCards } from "../utils/csvParser";
 import { useReducer, createContext, useContext, createElement, useEffect, useLayoutEffect } from "react";
 import { collectionStore } from "./collection";
@@ -29,16 +29,37 @@ export type DeckAction =
   | { type: "SET_EXTRA_INFO"; payload: { deckId: string; extraInfo: DeckExtraInfo } }
   | { type: "SET_DECK_PRICES"; payload: { deckId: string; prices: Record<string, number | null>; updatedAt?: number } }
   | { type: "TOGGLE_DECK_BUILT"; payload: string }
+  | { type: "SET_DECK_BUILT"; payload: { deckId: string; built: boolean; collection: Collection } }
   | { type: "TOGGLE_COMMANDER"; payload: { deckId: string; cardId: string } }
   | { type: "DISMISS_COMMANDER_PROMPT"; payload: { deckId: string } };
 
 export const MAX_COMMANDERS = 2;
 
+/** A Built deck's cards: every card acquired, and owned unless the user tagged it a proxy (GLOSSARY: Built). */
+function builtCards(cards: Card[]): Card[] {
+  return cards.map(c => ({
+    ...c,
+    acquired: true,
+    source: c.manuallyTagged && c.source === "proxy" ? "proxy" : "owned",
+    manuallyTagged: true,
+  }));
+}
+
+/** Unmarking Built: clear every checkbox and tag, then re-tag from the Collection. */
+function unbuiltCards(cards: Card[], collection: Collection): Card[] {
+  const reset = cards.map(c => ({ ...c, acquired: false, source: undefined, manuallyTagged: false }));
+  return applyCollectionToCards(reset, collection);
+}
+
 // Exported for unit testing
 export function deckReducer(state: DeckState, action: DeckAction): DeckState {
   switch (action.type) {
-    case "ADD_DECK":
-      return { ...state, decks: [...state.decks, action.payload] };
+    case "ADD_DECK": {
+      const deck = action.payload;
+      const name = deck.name.trim() || `Deck ${state.decks.length + 1}`;
+      const cards = deck.isBuilt ? builtCards(deck.cards) : deck.cards;
+      return { ...state, decks: [...state.decks, { ...deck, name, cards }] };
+    }
     case "DELETE_DECK":
       return { ...state, decks: state.decks.filter(d => d.id !== action.payload) };
     case "RENAME_DECK":
@@ -250,6 +271,18 @@ export function deckReducer(state: DeckState, action: DeckAction): DeckState {
               }
             : d
         ),
+      };
+    }
+    case "SET_DECK_BUILT": {
+      const { deckId, built, collection } = action.payload;
+      return {
+        ...state,
+        decks: state.decks.map(d => {
+          if (d.id !== deckId) return d;
+          return built
+            ? { ...d, isBuilt: true, cards: builtCards(d.cards) }
+            : { ...d, isBuilt: false, cards: unbuiltCards(d.cards, collection) };
+        }),
       };
     }
     case "TOGGLE_DECK_BUILT":

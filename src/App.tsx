@@ -242,26 +242,13 @@ function AppInner() {
 
       const result = await validateDecklist(parsed, p => setProgress(p));
 
-      // Auto-tag owned cards from collection before creating deck
-      const current = collectionStore.get();
-      const collectionTagged = Object.keys(current).length > 0
-        ? applyCollectionToCards(result.cards, current)
-        : result.cards;
-
-      const taggedCards = importAsBuilt
-        ? collectionTagged.map(c => ({
-            ...c,
-            acquired: true,
-            source: ((c.manuallyTagged && c.source === "proxy") ? "proxy" : "owned") as AcquisitionSource,
-            manuallyTagged: true,
-          }))
-        : collectionTagged;
+      // Auto-tag owned cards from collection before creating deck; the reducer applies the Built rule.
+      const taggedCards = applyCollectionToCards(result.cards, collectionStore.get());
 
       const id = crypto.randomUUID();
-      const name = deckName.trim() || `Deck ${state.decks.length + 1}`;
       const deck: Deck = {
         id,
-        name,
+        name: deckName,
         url: deckUrl.trim() || undefined,
         format: deckFormat.trim() || undefined,
         cards: taggedCards,
@@ -296,31 +283,8 @@ function AppInner() {
 
   function handleToggleDeckBuilt(deckId: string) {
     const deck = state.decks.find(d => d.id === deckId);
-    dispatch({ type: "TOGGLE_DECK_BUILT", payload: deckId });
     if (!deck) return;
-    if (!deck.isBuilt) {
-      // Marking as built — set all cards to acquired + owned
-      dispatch({
-        type: "SET_CARDS",
-        payload: {
-          deckId,
-          cards: deck.cards.map(c => ({
-            ...c,
-            acquired: true,
-            source: ((c.manuallyTagged && c.source === "proxy") ? "proxy" : "owned") as AcquisitionSource,
-            manuallyTagged: true,
-          })),
-        },
-      });
-    } else {
-      // Unmarking as built — clear checkboxes and re-apply collection tagging
-      const reset = deck.cards.map(c => ({ ...c, acquired: false, source: undefined, manuallyTagged: false }));
-      const current = collectionStore.get();
-      const retagged = Object.keys(current).length > 0
-        ? applyCollectionToCards(reset, current)
-        : reset;
-      dispatch({ type: "SET_CARDS", payload: { deckId, cards: retagged } });
-    }
+    dispatch({ type: "SET_DECK_BUILT", payload: { deckId, built: !deck.isBuilt, collection: collectionStore.get() } });
   }
 
   function handleToggleAcquired(cardId: string) {
