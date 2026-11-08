@@ -5,6 +5,17 @@ import { parseDecklist } from "../../utils/parser";
 import { validateDecklist, type ValidationProgress } from "../../utils/validator";
 import { applyCollectionToCards } from "../../utils/csvParser";
 
+/** What the user has filled in on the import panel but not imported yet. */
+export interface ImportDraft {
+  decklist: string;
+  name: string;
+  url: string;
+  format: string;
+  built: boolean;
+}
+
+export const EMPTY_IMPORT_DRAFT: ImportDraft = { decklist: "", name: "", url: "", format: "", built: false };
+
 export const EMPTY_DECKLIST_MESSAGE = "No valid card lines found. Use the format: 4 Lightning Bolt";
 
 export interface DecklistResult {

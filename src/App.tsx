@@ -23,7 +23,7 @@ import { TransactionsPage, type TransactionsTab } from "./features/transactions/
 import type { TradeOrigin } from "./features/trade/TradePage";
 import type { TradeSeed } from "./features/trade/seedCard";
 import { DeckImportPanel, type ImportedDeck } from "./features/deck-import/DeckImportPanel";
-import { lookupCard } from "./features/deck-import/deckImport";
+import { lookupCard, EMPTY_IMPORT_DRAFT, type ImportDraft } from "./features/deck-import/deckImport";
 import { OnboardingModal } from "./features/onboarding/OnboardingModal";
 import { BackupControls } from "./features/backup/BackupControls";
 import { ImportBackupModal } from "./features/backup/ImportBackupModal";
@@ -79,6 +79,8 @@ function AppInner() {
   const [tradeKey, setTradeKey] = useState(0);
   const [tradeSeed, setTradeSeed] = useState<TradeSeed | undefined>(undefined);
   const [showImport, setShowImport] = useState(false);
+  // The unsent Decklist lives here, not in the panel, so it survives Cancel and a trip to another tab.
+  const [importDraft, setImportDraft] = useState<ImportDraft>(EMPTY_IMPORT_DRAFT);
   const [renamingDeckId, setRenamingDeckId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(() => {
@@ -230,6 +232,7 @@ function AppInner() {
     setAllErrors(prev => ({ ...prev, [id]: errors }));
     setActiveDeckId(id);
     setShowImport(false);
+    setImportDraft(EMPTY_IMPORT_DRAFT);
 
     // Fire-and-forget enrichment (tokens + alt printings)
     setEnrichingDeckIds(prev => new Set(prev).add(id));
@@ -903,7 +906,7 @@ function AppInner() {
 
             <div className="deck-content">
               {/* ── Import panel ─────────────────────────────────────────── */}
-              {showImport && <DeckImportPanel onImported={handleDeckImported} onCancel={() => setShowImport(false)} />}
+              {showImport && <DeckImportPanel draft={importDraft} setDraft={setImportDraft} onImported={handleDeckImported} onCancel={() => setShowImport(false)} />}
 
               {/* ── Mobile deck switcher bar (hidden on desktop) ─────────── */}
               <div className="mobile-deck-bar">

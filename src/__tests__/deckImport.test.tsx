@@ -41,4 +41,30 @@ describe("importing a Decklist", () => {
     expect(stored(ERRORS_KEY)).toEqual({ [deck.id]: [{ originalName: "Lightnig Bolt", searchName: "Lightnig Bolt", resolved: false }] });
     expect(screen.queryByRole("button", { name: "Import & Validate" })).not.toBeInTheDocument();
   });
+
+  it("keeps an unsent Decklist across Cancel and a trip to another tab, and clears it after import", async () => {
+    const user = userEvent.setup();
+    renderApp();
+    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false, status: 503, json: async () => ({}) })));
+    const decklist = () => screen.getByPlaceholderText(/4 Lightning Bolt/);
+
+    await user.click(screen.getByTitle("New deck"));
+    await user.type(screen.getByPlaceholderText("Deck name (optional)"), "Rings");
+    await user.type(decklist(), "1 Sol Ring");
+    await user.click(screen.getByRole("button", { name: /Cancel/ }));
+    await user.click(screen.getByTitle("New deck"));
+    expect(decklist()).toHaveValue("1 Sol Ring");
+
+    await user.click(screen.getByRole("button", { name: /^Collection/ }));
+    await user.click(screen.getByRole("button", { name: /^Decks/ }));
+    await user.click(screen.getByTitle("New deck"));
+    expect(decklist()).toHaveValue("1 Sol Ring");
+    expect(screen.getByPlaceholderText("Deck name (optional)")).toHaveValue("Rings");
+
+    await user.click(screen.getByRole("button", { name: "Import & Validate" }));
+    await waitFor(() => expect(screen.queryByRole("button", { name: "Import & Validate" })).not.toBeInTheDocument());
+    await user.click(screen.getByTitle("New deck"));
+    expect(decklist()).toHaveValue("");
+    expect(screen.getByPlaceholderText("Deck name (optional)")).toHaveValue("");
+  });
 });

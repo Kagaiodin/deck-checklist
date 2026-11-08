@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, type Dispatch, type SetStateAction } from "react";
 import type { Card, ErrorQueueItem } from "../../types/index";
 import type { ValidationProgress } from "../../utils/validator";
 import { formatOptions } from "../../utils/deckFormats";
 import { ProgressTracker } from "../../components/ProgressTracker";
 import { collectionStore } from "../../store/collection";
-import { importDecklist, archidektDeckId, fetchArchidektDecklist } from "./deckImport";
+import { importDecklist, archidektDeckId, fetchArchidektDecklist, type ImportDraft } from "./deckImport";
 
 /** A Deck import that succeeded: the deck to create and its Deck errors. */
 export interface ImportedDeck {
@@ -17,17 +17,27 @@ export interface ImportedDeck {
 }
 
 interface Props {
+  draft: ImportDraft;
+  setDraft: Dispatch<SetStateAction<ImportDraft>>;
   onImported: (deck: ImportedDeck) => void;
   onCancel: () => void;
 }
 
-/** The Import Decklist panel: paste, upload or fetch a Decklist, then look it up and hand back a deck. */
-export function DeckImportPanel({ onImported, onCancel }: Props) {
-  const [importText, setImportText] = useState("");
-  const [deckName, setDeckName] = useState("");
-  const [deckUrl, setDeckUrl] = useState("");
-  const [deckFormat, setDeckFormat] = useState("");
-  const [importAsBuilt, setImportAsBuilt] = useState(false);
+/**
+ * The Import Decklist panel: paste, upload or fetch a Decklist, then look it up and hand back a deck.
+ * Closing it keeps the draft; the caller clears it once the deck is imported.
+ */
+export function DeckImportPanel({ draft, setDraft, onImported, onCancel }: Props) {
+  const { decklist: importText, name: deckName, url: deckUrl, format: deckFormat, built: importAsBuilt } = draft;
+  // Updaters, not values: an Archidekt fetch or file read finishes after the user may have typed more.
+  const edit = <K extends keyof ImportDraft>(key: K) =>
+    (value: ImportDraft[K] | ((prev: ImportDraft[K]) => ImportDraft[K])) =>
+      setDraft(d => ({ ...d, [key]: typeof value === "function" ? (value as (p: ImportDraft[K]) => ImportDraft[K])(d[key]) : value }));
+  const setImportText = edit("decklist");
+  const setDeckName = edit("name");
+  const setDeckUrl = edit("url");
+  const setDeckFormat = edit("format");
+  const setImportAsBuilt = edit("built");
   const [validating, setValidating] = useState(false);
   const [progress, setProgress] = useState<ValidationProgress>({ total: 0, validated: 0 });
   const [importError, setImportError] = useState<string | null>(null);
@@ -167,7 +177,7 @@ export function DeckImportPanel({ onImported, onCancel }: Props) {
           onChange={e => {
             const file = e.target.files?.[0];
             if (!file) return;
-            if (!deckName) setDeckName(file.name.replace(/\.[^.]+$/, ""));
+            setDeckName(prev => prev || file.name.replace(/\.[^.]+$/, ""));
             const reader = new FileReader();
             reader.onload = ev => setImportText(ev.target?.result as string ?? "");
             reader.readAsText(file);

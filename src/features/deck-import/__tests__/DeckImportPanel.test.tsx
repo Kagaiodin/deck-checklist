@@ -2,7 +2,9 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { Card } from "../../../types/index";
+import { useState } from "react";
 import { DeckImportPanel } from "../DeckImportPanel";
+import { EMPTY_IMPORT_DRAFT, type ImportDraft } from "../deckImport";
 
 const validateDecklist = vi.hoisted(() => vi.fn());
 vi.mock("../../../utils/validator", () => ({ validateDecklist }));
@@ -21,7 +23,11 @@ afterEach(() => { vi.unstubAllGlobals(); });
 function setup() {
   const onImported = vi.fn();
   const onCancel = vi.fn();
-  render(<DeckImportPanel onImported={onImported} onCancel={onCancel} />);
+  function Harness() {
+    const [draft, setDraft] = useState<ImportDraft>(EMPTY_IMPORT_DRAFT);
+    return <DeckImportPanel draft={draft} setDraft={setDraft} onImported={onImported} onCancel={onCancel} />;
+  }
+  render(<Harness />);
   return { onImported, onCancel, user: userEvent.setup() };
 }
 
