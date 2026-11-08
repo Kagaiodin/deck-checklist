@@ -31,11 +31,11 @@ export type DeckAction =
   | { type: "TOGGLE_COMMANDER"; payload: { deckId: string; cardId: string } }
   | { type: "DISMISS_COMMANDER_PROMPT"; payload: { deckId: string } };
 
-/** An Order being cancelled: its deck-linked lines, grouped by deck (GLOSSARY: Cancelling). */
+/** An Order being cancelled: the card ids of its deck-linked lines, grouped by deck (GLOSSARY: Cancelling). */
 export interface CancelOrderLines {
   orderId: string;
   orderLabel: string;
-  linesByDeck: Record<string, string[]>;
+  cardIdsByDeck: Record<string, string[]>;
   collection: Collection;
   createdAt: number;
 }
@@ -242,10 +242,10 @@ export function deckReducer(state: DeckState, action: DeckAction): DeckState {
         )
       };
     case "CANCEL_ORDER_LINES": {
-      const { linesByDeck } = action.payload;
+      const { cardIdsByDeck } = action.payload;
       return {
         ...state,
-        decks: state.decks.map(d => linesByDeck[d.id] ? cancelOrderLines(d, linesByDeck[d.id], action.payload) : d),
+        decks: state.decks.map(d => cardIdsByDeck[d.id] ? cancelOrderLines(d, cardIdsByDeck[d.id], action.payload) : d),
       };
     }
     case "DISMISS_NOTIFICATION":

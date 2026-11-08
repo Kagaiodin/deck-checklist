@@ -379,9 +379,9 @@ describe("ADD_CARD", () => {
 // ── CANCEL_ORDER_LINES ────────────────────────────────────────────────────────
 
 describe("CANCEL_ORDER_LINES", () => {
-  const cancel = (linesByDeck: Record<string, string[]>, collection = {}) => ({
+  const cancel = (cardIdsByDeck: Record<string, string[]>, collection = {}) => ({
     type: "CANCEL_ORDER_LINES" as const,
-    payload: { orderId: "o1", orderLabel: "Card Kingdom", linesByDeck, collection, createdAt: 7 },
+    payload: { orderId: "o1", orderLabel: "Card Kingdom", cardIdsByDeck, collection, createdAt: 7 },
   });
 
   it("clears the Ordered tag on linked cards and leaves cards the user re-tagged alone", () => {

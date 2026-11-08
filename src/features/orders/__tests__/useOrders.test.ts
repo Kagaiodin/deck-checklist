@@ -155,7 +155,7 @@ describe("useOrders", () => {
         payload: {
           orderId: "o1",
           orderLabel: "Card Kingdom — October 15",
-          linesByDeck: { d1: ["c1", "c2"], d2: ["c3"] },
+          cardIdsByDeck: { d1: ["c1", "c2"], d2: ["c3"] },
           collection: { "sol ring": [{ quantity: 1 }] },
           createdAt: Date.now(),
         },

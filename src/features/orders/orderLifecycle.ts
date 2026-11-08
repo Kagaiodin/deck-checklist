@@ -4,7 +4,7 @@ import type { Order, OrderStatus } from "../../types/index";
 const RECENT_VENDOR_LIMIT = 6;
 
 /** Only an Active Order can be received or cancelled. Received and Cancelled are final. */
-export function canSettle(order: Order): boolean {
+export function isActive(order: Order): boolean {
   return order.status === "active";
 }
 
@@ -14,7 +14,7 @@ export function withStatus(orders: Order[], orderId: string, status: Exclude<Ord
 }
 
 /** Deck-linked lines of an Order, as card ids grouped by deck id. Freeform lines are skipped. */
-export function linesByDeck(order: Order): Record<string, string[]> {
+export function cardIdsByDeck(order: Order): Record<string, string[]> {
   const byDeck: Record<string, string[]> = {};
   for (const line of order.cards) {
     if (line.deckId && line.cardId) (byDeck[line.deckId] ??= []).push(line.cardId);

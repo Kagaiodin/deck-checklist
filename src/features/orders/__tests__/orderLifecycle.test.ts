@@ -1,16 +1,16 @@
 import { describe, it, expect } from "vitest";
-import { canSettle, linesByDeck, orderLabel, withRecentVendor, withStatus } from "../orderLifecycle";
+import { isActive, cardIdsByDeck, orderLabel, withRecentVendor, withStatus } from "../orderLifecycle";
 import type { Order } from "../../../types/index";
 
 const order = (over: Partial<Order> = {}): Order => ({
   id: "o1", createdAt: 1, vendor: "Card Kingdom", status: "active", cards: [], ...over,
 });
 
-describe("canSettle", () => {
+describe("isActive", () => {
   it("allows only an active order to be received or cancelled", () => {
-    expect(canSettle(order())).toBe(true);
-    expect(canSettle(order({ status: "received" }))).toBe(false);
-    expect(canSettle(order({ status: "cancelled" }))).toBe(false);
+    expect(isActive(order())).toBe(true);
+    expect(isActive(order({ status: "received" }))).toBe(false);
+    expect(isActive(order({ status: "cancelled" }))).toBe(false);
   });
 });
 
@@ -21,7 +21,7 @@ describe("withStatus", () => {
   });
 });
 
-describe("linesByDeck", () => {
+describe("cardIdsByDeck", () => {
   it("groups deck-linked lines by deck and skips freeform lines", () => {
     const o = order({
       cards: [
@@ -31,11 +31,11 @@ describe("linesByDeck", () => {
         { cardName: "Freeform Card", quantity: 2 },
       ],
     });
-    expect(linesByDeck(o)).toEqual({ d1: ["c1", "c2"], d2: ["c3"] });
+    expect(cardIdsByDeck(o)).toEqual({ d1: ["c1", "c2"], d2: ["c3"] });
   });
 
   it("is empty for an order with only freeform lines", () => {
-    expect(linesByDeck(order({ cards: [{ cardName: "X", quantity: 1 }] }))).toEqual({});
+    expect(cardIdsByDeck(order({ cards: [{ cardName: "X", quantity: 1 }] }))).toEqual({});
   });
 });
 
