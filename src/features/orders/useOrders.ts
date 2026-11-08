@@ -28,12 +28,11 @@ export function useOrders({ collectionStore, dispatch }: OrdersDeps) {
     setOrders(latest.current);
   }, [setOrders]);
 
-  const create = useCallback((order: Order) => commit(prev => [order, ...prev]), [commit]);
-
-  const recordVendor = useCallback(
-    (vendor: string) => setRecentVendors(prev => withRecentVendor(prev, vendor)),
-    [setRecentVendors],
-  );
+  /** Adds the Order, from the buy flow or the New Order sheet, and records its vendor. */
+  const create = useCallback((order: Order) => {
+    commit(prev => [order, ...prev]);
+    setRecentVendors(prev => withRecentVendor(prev, order.vendor));
+  }, [commit, setRecentVendors]);
 
   /** Replaces the Order. A received Order's edited lines don't change the Collection. */
   const update = useCallback(
@@ -77,5 +76,5 @@ export function useOrders({ collectionStore, dispatch }: OrdersDeps) {
 
   const activeCount = orders.filter(o => o.status === "active").length;
 
-  return { orders, recentVendors, activeCount, create, recordVendor, update, remove, receive, cancel };
+  return { orders, recentVendors, activeCount, create, update, remove, receive, cancel };
 }

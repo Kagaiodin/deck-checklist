@@ -64,11 +64,12 @@ describe("useOrders", () => {
       expect(store.getSnapshot()).toBe(before);
     });
 
-    it("records vendors in the recent-vendor list", () => {
+    it("records a new order's vendor in the recent-vendor list", () => {
       const { result } = setup();
-      act(() => result.current.recordVendor("Card Kingdom"));
-      expect(result.current.recentVendors).toEqual(["Card Kingdom"]);
-      expect(JSON.parse(storage.get(VENDOR_HISTORY_KEY)!)).toEqual(["Card Kingdom"]);
+      act(() => result.current.create(order({ vendor: "Card Kingdom" })));
+      act(() => result.current.create(order({ id: "o2", vendor: "TCGplayer" })));
+      expect(result.current.recentVendors).toEqual(["TCGplayer", "Card Kingdom"]);
+      expect(JSON.parse(storage.get(VENDOR_HISTORY_KEY)!)).toEqual(["TCGplayer", "Card Kingdom"]);
     });
 
     it("counts active orders", () => {

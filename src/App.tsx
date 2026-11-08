@@ -1188,7 +1188,7 @@ function AppInner() {
                 orders: orders.orders,
                 decks: state.decks,
                 recentVendors: orders.recentVendors,
-                onCreateOrder: (order, vendor) => { orders.create(order); orders.recordVendor(vendor); },
+                onCreateOrder: orders.create,
                 onUpdateOrder: orders.update,
                 onMarkReceived: orders.receive,
                 onMarkCancelled: orders.cancel,
