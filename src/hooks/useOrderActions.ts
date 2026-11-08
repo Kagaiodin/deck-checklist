@@ -38,7 +38,7 @@ export function useOrderActions({
 }: OrderActionsDeps) {
   function handleMarkReceived(orderId: string) {
     const order = orders.find(o => o.id === orderId);
-    if (!order) return;
+    if (!order || order.status !== "active") return;
 
     // Update order status
     setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: "received" as const } : o));
@@ -55,7 +55,7 @@ export function useOrderActions({
 
   function handleMarkCancelled(orderId: string) {
     const order = orders.find(o => o.id === orderId);
-    if (!order) return;
+    if (!order || order.status !== "active") return;
 
     // Update order status
     setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: "cancelled" as const } : o));

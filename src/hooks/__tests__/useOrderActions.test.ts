@@ -79,6 +79,14 @@ describe("useOrderActions", () => {
       expect(store.getMeta()).toEqual({ fileName: "Order receipt", importedAt: Date.now(), cardCount: 4 });
     });
 
+    it.each(["received", "cancelled"] as const)("does nothing for a %s order", status => {
+      const { result, setOrders, store, dispatch } = setup([order({ status })]);
+      act(() => result.current.handleMarkReceived("o1"));
+      expect(setOrders).not.toHaveBeenCalled();
+      expect(store.get()).toEqual({});
+      expect(dispatch).not.toHaveBeenCalled();
+    });
+
     it("does nothing for an unknown order id", () => {
       const { result, setOrders, store, dispatch } = setup([order()]);
       act(() => result.current.handleMarkReceived("missing"));
@@ -145,6 +153,13 @@ describe("useOrderActions", () => {
     it("dispatches no deck actions for an order with only freeform cards", () => {
       const { result, dispatch } = setup([order({ cards: [{ cardName: "X", quantity: 1 }] })]);
       act(() => result.current.handleMarkCancelled("o1"));
+      expect(dispatch).not.toHaveBeenCalled();
+    });
+
+    it.each(["received", "cancelled"] as const)("does nothing for a %s order", status => {
+      const { result, setOrders, dispatch } = setup([order({ status })], { "sol ring": [{ quantity: 1 }] });
+      act(() => result.current.handleMarkCancelled("o1"));
+      expect(setOrders).not.toHaveBeenCalled();
       expect(dispatch).not.toHaveBeenCalled();
     });
 
