@@ -7,12 +7,12 @@ import { parseDecklist } from "./utils/parser";
 import { enrichDeckExtraInfo } from "./utils/validator";
 import { refreshDeckPrices, needsPriceRefresh } from "./utils/deckCost";
 import { useLocalStorage } from "./hooks/useLocalStorage";
-import { useOrderActions } from "./hooks/useOrderActions";
+import { useOrders } from "./features/orders/useOrders";
 import { useTradeLedger } from "./features/transactions/ledger/useTradeLedger";
 import { Checklist } from "./components/Checklist";
 import { EmptyState } from "./components/EmptyState";
 import { ErrorQueue } from "./components/ErrorQueue";
-import type { Deck, ErrorQueueItem, AcquisitionSource, Order } from "./types/index";
+import type { Deck, ErrorQueueItem, AcquisitionSource } from "./types/index";
 import { formatOptions } from "./utils/deckFormats";
 import { getDeckColorIdentity, formatRelativeDate, getDeckDomain } from "./utils/deckUtils";
 import { CollectionPage } from "./features/collection/CollectionPage";
@@ -45,7 +45,7 @@ import type { ToastInput } from "./types/index";
 import { BuyListSheet } from "./features/card-purchase/BuyListSheet";
 import { useBuyFlow } from "./features/card-purchase/useBuyFlow";
 import { collectionStore, useCollection } from "./store/collection";
-import { ERRORS_KEY, ORDERS_KEY, VENDOR_HISTORY_KEY, ONBOARDING_DISMISSED_KEY, SIDEBAR_COLLAPSED_KEY } from "./store/storageKeys";
+import { ERRORS_KEY, ONBOARDING_DISMISSED_KEY, SIDEBAR_COLLAPSED_KEY } from "./store/storageKeys";
 import "./features/card-purchase/buy-flow.css";
 
 /** Where the Calculator's back control returns to, for each place it can be opened from. */
@@ -167,9 +167,6 @@ function AppInner() {
   // ── Collection (one shared store; handlers read it fresh with collectionStore.get()) ──
   const { collection } = useCollection();
 
-  // ── Orders state ──────────────────────────────────────────────────────────
-  const [orders, setOrders] = useLocalStorage<Order[]>(ORDERS_KEY, []);
-  const [recentVendors, setRecentVendors] = useLocalStorage<string[]>(VENDOR_HISTORY_KEY, []);
   const [notificationFilterIds, setNotificationFilterIds] = useState<string[] | null>(null);
 
   // ── Toast system ──────────────────────────────────────────────────────────
@@ -338,26 +335,8 @@ function AppInner() {
     setActiveDeckId(id);
   }
 
-  // ── Order handlers ────────────────────────────────────────────────────────
-  function handleCreateOrder(order: Order, vendor: string) {
-    setOrders(prev => [order, ...prev]);
-    setRecentVendors(prev => {
-      const next = [vendor, ...prev.filter(v => v.toLowerCase() !== vendor.toLowerCase())];
-      return next.slice(0, 6);
-    });
-  }
-
-  function handleDeleteOrder(id: string) {
-    setOrders(prev => prev.filter(o => o.id !== id));
-  }
-
-  function handleUpdateOrder(updated: Order) {
-    setOrders(prev => prev.map(o => o.id === updated.id ? updated : o));
-  }
-
-  const { handleMarkReceived, handleMarkCancelled } = useOrderActions({
-    orders, setOrders, collectionStore, dispatch,
-  });
+  // ── Orders ────────────────────────────────────────────────────────────────
+  const orders = useOrders({ collectionStore, dispatch });
 
   const { entries: ledger, logTrade, deleteEntry: deleteLedgerEntry } = useTradeLedger({
     collectionStore,
@@ -506,7 +485,7 @@ function AppInner() {
   const buyFlow = useBuyFlow({
     toBuyCards,
     deckId: activeDeckId,
-    onCreateOrder: (order) => setOrders(prev => [order, ...prev]),
+    onCreateOrder: orders.create,
     onViewOrder: () => { setTxSubTab("buys"); switchView("transactions"); },
     nextOrderId: () => crypto.randomUUID(),
   });
@@ -609,8 +588,8 @@ function AppInner() {
             onClick={() => switchView("transactions")}
           >
             Transactions
-            {orders.filter(o => o.status === "active").length > 0 && (
-              <span className="nav-badge">{orders.filter(o => o.status === "active").length}</span>
+            {orders.activeCount > 0 && (
+              <span className="nav-badge">{orders.activeCount}</span>
             )}
           </button>
         </nav>
@@ -1206,14 +1185,14 @@ function AppInner() {
               ledgerOpenId={ledgerOpenId}
               onLedgerOpenChange={setLedgerOpenId}
               ordersProps={{
-                orders,
+                orders: orders.orders,
                 decks: state.decks,
-                recentVendors,
-                onCreateOrder: handleCreateOrder,
-                onUpdateOrder: handleUpdateOrder,
-                onMarkReceived: handleMarkReceived,
-                onMarkCancelled: handleMarkCancelled,
-                onDeleteOrder: handleDeleteOrder,
+                recentVendors: orders.recentVendors,
+                onCreateOrder: (order, vendor) => { orders.create(order); orders.recordVendor(vendor); },
+                onUpdateOrder: orders.update,
+                onMarkReceived: orders.receive,
+                onMarkCancelled: orders.cancel,
+                onDeleteOrder: orders.remove,
                 onOpenBuyList: () => buyFlow.openBuySheet(),
               }}
             />

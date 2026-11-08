@@ -11,7 +11,7 @@ Name identifiers with `GLOSSARY.md` terms: `collection`, `printing`, `collection
 Persisted state that more than one part of the app reads or writes lives in one module-level store under `src/store/` ([ADR 0001](docs/adr/0001-collection-external-store.md)). Do not keep a second `useLocalStorage` copy of it. Two copies of the Collection drifted and lost edits (#189, #191).
 
 - Components and providers import the singleton (`collectionStore`, `useCollection()`), as `App.tsx` and `CollectionPage.tsx` do.
-- Hooks receive the store as a dependency instead of importing it, so tests can pass `memoryCollectionStore()`. See `useTradeLedger({ collectionStore })` and `useOrderActions({ collectionStore, ... })`.
+- Hooks receive the store as a dependency instead of importing it, so tests can pass `memoryCollectionStore()`. See `useTradeLedger({ collectionStore })` and `useOrders({ collectionStore, dispatch })`.
 
 Known exception: the decks live in `DeckProvider`'s reducer, which loads and saves them itself (#204). That meets the rule's aim: one in-memory owner, every change dispatched, so nothing saves a stale copy. Move them to a store if code outside React needs to read them live. The backup module doesn't: it reads and writes storage, then reloads the page (#206).
 
@@ -24,5 +24,3 @@ Known exception: a backup import (`src/features/backup/backup.ts`) computes the 
 ## Hooks take readers, not render-time values
 
 A handler that runs later (on click, after an await) must read current state, not the value captured at the last render. Pass hooks something to read from: a store or a `get()` function. Do not pass the value itself. `useTradeLedger` reads `collectionStore.get()` when a trade is logged. A captured value goes stale as soon as another writer changes the state between render and call, which is how #189 happened.
-
-Known exception: `useOrderActions` still takes `orders` as a value. Move it to a reader when that hook is next changed.
