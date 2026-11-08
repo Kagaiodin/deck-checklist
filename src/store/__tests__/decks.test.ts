@@ -34,6 +34,30 @@ describe("ADD_DECK", () => {
     expect(state.decks[0].id).toBe("d1");
   });
 
+  it("names an unnamed deck after its position", () => {
+    const initial = { decks: [makeDeck({ id: "d1", name: "Burn" })] };
+    const state = deckReducer(initial, { type: "ADD_DECK", payload: makeDeck({ id: "d2", name: "  " }) });
+    expect(state.decks[1].name).toBe("Deck 2");
+  });
+
+  it("applies the Built rule to a deck that arrives Built", () => {
+    const cards = [
+      makeCard({ id: "c1", name: "Bolt", source: "ordered" }),
+      makeCard({ id: "c2", name: "Fake", source: "proxy", manuallyTagged: true }),
+    ];
+    const state = deckReducer(emptyState, { type: "ADD_DECK", payload: makeDeck({ id: "d1", name: "Burn", cards, isBuilt: true }) });
+    expect(state.decks[0].cards.map(c => [c.acquired, c.source, c.manuallyTagged])).toEqual([
+      [true, "owned", true],
+      [true, "proxy", true],
+    ]);
+  });
+
+  it("leaves the cards of a deck that isn't Built alone", () => {
+    const cards = [makeCard({ id: "c1", name: "Bolt", source: "ordered" })];
+    const state = deckReducer(emptyState, { type: "ADD_DECK", payload: makeDeck({ id: "d1", name: "Burn", cards }) });
+    expect(state.decks[0].cards).toEqual(cards);
+  });
+
   it("preserves existing decks", () => {
     const initial = { decks: [makeDeck({ id: "d1", name: "Burn" })] };
     const state = deckReducer(initial, {
@@ -146,6 +170,29 @@ describe("TOGGLE_ACQUIRED", () => {
       payload: { deckId: "d1", cardId: "c1" },
     });
     expect(state.decks[0].isBuilt).toBe(true);
+  });
+
+  it("checking the last card marks the deck Built and applies the Built rule", () => {
+    const cards = [
+      makeCard({ id: "c1", name: "Lightning Bolt", acquired: false }),
+      makeCard({ id: "c2", name: "Shock", acquired: true, source: "ordered" }),
+      makeCard({ id: "c3", name: "Fake", acquired: true, source: "proxy", manuallyTagged: true }),
+    ];
+    const initial = { decks: [makeDeck({ id: "d1", name: "Burn", cards })] };
+    const state = deckReducer(initial, { type: "TOGGLE_ACQUIRED", payload: { deckId: "d1", cardId: "c1" } });
+    expect(state.decks[0].isBuilt).toBe(true);
+    expect(state.decks[0].cards.map(c => [c.acquired, c.source])).toEqual([[true, "owned"], [true, "owned"], [true, "proxy"]]);
+  });
+
+  it("checking a card while others are unchecked leaves the deck unbuilt", () => {
+    const cards = [
+      makeCard({ id: "c1", name: "Lightning Bolt", acquired: false }),
+      makeCard({ id: "c2", name: "Shock", acquired: false, source: "ordered" }),
+    ];
+    const initial = { decks: [makeDeck({ id: "d1", name: "Burn", cards })] };
+    const state = deckReducer(initial, { type: "TOGGLE_ACQUIRED", payload: { deckId: "d1", cardId: "c1" } });
+    expect(state.decks[0].isBuilt).toBeUndefined();
+    expect(state.decks[0].cards[1].source).toBe("ordered");
   });
 
   it("does not set isBuilt on a deck that was never built", () => {
@@ -612,5 +659,41 @@ describe("DISMISS_COMMANDER_PROMPT", () => {
   it("sets the flag", () => {
     const s = deckReducer({ decks: [makeDeck({ id: "d1", name: "D" })] }, { type: "DISMISS_COMMANDER_PROMPT", payload: { deckId: "d1" } });
     expect(s.decks[0].commanderPromptDismissed).toBe(true);
+  });
+});
+
+describe("SET_DECK_BUILT", () => {
+  const cards = [
+    makeCard({ id: "c1", name: "Bolt", quantity: 2, source: "ordered" }),
+    makeCard({ id: "c2", name: "Fake", source: "proxy", manuallyTagged: true }),
+    makeCard({ id: "c3", name: "Ponder", source: "in_binder", manuallyTagged: true }),
+  ];
+  const initial = () => ({ decks: [makeDeck({ id: "d1", name: "Burn", cards }), makeDeck({ id: "d2", name: "Other", cards })] });
+
+  it("marking applies the Built rule to that deck only", () => {
+    const s = deckReducer(initial(), { type: "SET_DECK_BUILT", payload: { deckId: "d1", built: true, collection: {} } });
+    expect(s.decks[0].isBuilt).toBe(true);
+    expect(s.decks[0].cards.map(c => [c.acquired, c.source])).toEqual([[true, "owned"], [true, "proxy"], [true, "owned"]]);
+    expect(s.decks[1].cards).toEqual(cards);
+  });
+
+  it("marking keeps borrowed cards borrowed", () => {
+    const deck = makeDeck({ id: "d1", name: "Burn", cards: [makeCard({ id: "c1", name: "Bolt", source: "borrowed" })] });
+    const s = deckReducer({ decks: [deck] }, { type: "SET_DECK_BUILT", payload: { deckId: "d1", built: true, collection: {} } });
+    expect(s.decks[0].cards[0]).toMatchObject({ acquired: true, source: "borrowed", manuallyTagged: true });
+  });
+
+  it("unmarking clears checkboxes and tags, then re-tags from the Collection", () => {
+    const built = deckReducer(initial(), { type: "SET_DECK_BUILT", payload: { deckId: "d1", built: true, collection: {} } });
+    const s = deckReducer(built, {
+      type: "SET_DECK_BUILT",
+      payload: { deckId: "d1", built: false, collection: { bolt: [{ quantity: 2 }], fake: [{ quantity: 0 }] } },
+    });
+    expect(s.decks[0].isBuilt).toBe(false);
+    expect(s.decks[0].cards.map(c => [c.acquired, c.source, c.manuallyTagged])).toEqual([
+      [false, "owned", false],
+      [false, undefined, false],
+      [false, undefined, false],
+    ]);
   });
 });

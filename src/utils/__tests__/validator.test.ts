@@ -289,6 +289,14 @@ describe("validateDecklist", () => {
     expect(errors[0].resolved).toBe(false);
   });
 
+  it("records the Decklist count on a Deck error", async () => {
+    mockFetch({ data: [], not_found: [{ name: "Xyzzy Card" }] }, null);
+
+    const { errors } = await validateDecklist([{ count: 3, name: "Xyzzy Card" }, { count: 1, name: "xyzzy card" }]);
+
+    expect(errors[0].count).toBe(4);
+  });
+
   it("handles a mix of found, fuzzy-resolved, and unresolvable cards", async () => {
     const fuzzy = makeScryCard({ id: "fz1", name: "Counterspell", colors: ["U"] });
     vi.stubGlobal(

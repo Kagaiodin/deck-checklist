@@ -33,3 +33,16 @@ _Avoid_: Setting
 **Backup**:
 A single-file copy of the user's User data and the Working state worth keeping, made by exporting or by saving to Drive. *Importing* a Backup either merges it into this device's data or replaces it; *loading* from Drive always replaces. The trade in progress is never part of a Backup.
 _Avoid_: Profile export
+
+**Decklist**:
+The lines a user pastes, uploads or fetches from Archidekt to make a deck: one card per line with a count.
+_Avoid_: List, import text
+
+**Deck import**:
+Turning a Decklist into a new deck: each card is looked up on Scryfall and tagged from the Collection. Not to be confused with importing a Backup.
+
+**Deck error**:
+A Decklist line Scryfall couldn't match. It stays queued on its deck until the user remaps it to a real card or dismisses it.
+
+**Built**:
+A deck the user has finished assembling. Every card counts as acquired, and as owned unless it is a proxy the user tagged or a borrowed card. Unmarking a Built deck clears its checkboxes and re-tags it from the Collection.

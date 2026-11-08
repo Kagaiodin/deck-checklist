@@ -4,18 +4,15 @@ import "./tokens.css";
 import "./App.css";
 import { DeckProvider, useDecks } from "./store/decks";
 import { parseDecklist } from "./utils/parser";
-import { validateDecklist, enrichDeckExtraInfo } from "./utils/validator";
+import { enrichDeckExtraInfo } from "./utils/validator";
 import { refreshDeckPrices, needsPriceRefresh } from "./utils/deckCost";
-import type { ValidationProgress } from "./utils/validator";
 import { useLocalStorage } from "./hooks/useLocalStorage";
 import { useOrderActions } from "./hooks/useOrderActions";
 import { useTradeLedger } from "./features/transactions/ledger/useTradeLedger";
 import { Checklist } from "./components/Checklist";
 import { EmptyState } from "./components/EmptyState";
 import { ErrorQueue } from "./components/ErrorQueue";
-import { ProgressTracker } from "./components/ProgressTracker";
 import type { Deck, ErrorQueueItem, AcquisitionSource, Order } from "./types/index";
-import { applyCollectionToCards } from "./utils/csvParser";
 import { formatOptions } from "./utils/deckFormats";
 import { getDeckColorIdentity, formatRelativeDate, getDeckDomain } from "./utils/deckUtils";
 import { CollectionPage } from "./features/collection/CollectionPage";
@@ -25,6 +22,8 @@ import { extractPayload } from "./utils/tradeShare";
 import { TransactionsPage, type TransactionsTab } from "./features/transactions/TransactionsPage";
 import type { TradeOrigin } from "./features/trade/TradePage";
 import type { TradeSeed } from "./features/trade/seedCard";
+import { DeckImportPanel, type ImportedDeck } from "./features/deck-import/DeckImportPanel";
+import { lookupCard, EMPTY_IMPORT_DRAFT, type ImportDraft } from "./features/deck-import/deckImport";
 import { OnboardingModal } from "./features/onboarding/OnboardingModal";
 import { BackupControls } from "./features/backup/BackupControls";
 import { ImportBackupModal } from "./features/backup/ImportBackupModal";
@@ -70,15 +69,7 @@ const openedWithTradeLink = () => isTradePath() || extractPayload(window.locatio
 function AppInner() {
   const { state, dispatch } = useDecks();
   const [activeDeckId, setActiveDeckId] = useState<string | null>(null);
-  const [importText, setImportText] = useState("");
-  const [deckName, setDeckName] = useState("");
-  const [deckUrl, setDeckUrl] = useState("");
-  const [deckFormat, setDeckFormat] = useState("");
-  const [importAsBuilt, setImportAsBuilt] = useState(false);
   const [allErrors, setAllErrors] = useLocalStorage<Record<string, ErrorQueueItem[]>>(ERRORS_KEY, {});
-  const [validating, setValidating] = useState(false);
-  const [progress, setProgress] = useState<ValidationProgress>({ total: 0, validated: 0 });
-  const [importError, setImportError] = useState<string | null>(null);
   const [view, setView] = useState<"decks" | "collection" | "transactions">(() => (openedWithTradeLink() ? "transactions" : "decks"));
   const [txSubTab, setTxSubTab] = useState<TransactionsTab>(() => (openedWithTradeLink() ? "binder" : "buys"));
   // The Calculator renders inside Transactions, replacing the sub-tab body. `tradeOrigin` is where
@@ -88,15 +79,14 @@ function AppInner() {
   const [tradeKey, setTradeKey] = useState(0);
   const [tradeSeed, setTradeSeed] = useState<TradeSeed | undefined>(undefined);
   const [showImport, setShowImport] = useState(false);
+  // The unsent Decklist lives here, not in the panel, so it survives Cancel and a trip to another tab.
+  const [importDraft, setImportDraft] = useState<ImportDraft>(EMPTY_IMPORT_DRAFT);
   const [renamingDeckId, setRenamingDeckId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(() => {
     try { return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) !== "true"; }
     catch { return true; }
   });
-  const [archidektFetching, setArchidektFetching] = useState(false);
-  const [archidektError, setArchidektError] = useState<string | null>(null);
-  const [showFormats, setShowFormats] = useState(false);
   const [deckPickerOpen, setDeckPickerOpen] = useState(false);
   const [sidebarSearch, setSidebarSearch] = useState("");
   const [deletingDeckId, setDeletingDeckId] = useState<string | null>(null);
@@ -226,118 +216,42 @@ function AppInner() {
     }));
   }
 
-  async function handleImport() {
-    if (!importText.trim()) return;
-    setImportError(null);
-    setValidating(true);
-    setProgress({ total: 0, validated: 0 });
+  function handleDeckImported({ name, url, format, built, cards, errors }: ImportedDeck) {
+    const id = crypto.randomUUID();
+    const deck: Deck = {
+      id,
+      name,
+      url,
+      format,
+      cards,
+      createdAt: Date.now(),
+      isBuilt: built || undefined,
+      pricesUpdatedAt: cards.some(c => c.price !== undefined) ? Date.now() : undefined,
+    };
+    dispatch({ type: "ADD_DECK", payload: deck });
+    setAllErrors(prev => ({ ...prev, [id]: errors }));
+    setActiveDeckId(id);
+    setShowImport(false);
+    setImportDraft(EMPTY_IMPORT_DRAFT);
 
-    try {
-      const parsed = parseDecklist(importText);
-      if (parsed.length === 0) {
-        setImportError("No valid card lines found. Use the format: 4 Lightning Bolt");
-        setValidating(false);
-        return;
-      }
-
-      const result = await validateDecklist(parsed, p => setProgress(p));
-
-      // Auto-tag owned cards from collection before creating deck
-      const current = collectionStore.get();
-      const collectionTagged = Object.keys(current).length > 0
-        ? applyCollectionToCards(result.cards, current)
-        : result.cards;
-
-      const taggedCards = importAsBuilt
-        ? collectionTagged.map(c => ({
-            ...c,
-            acquired: true,
-            source: ((c.manuallyTagged && c.source === "proxy") ? "proxy" : "owned") as AcquisitionSource,
-            manuallyTagged: true,
-          }))
-        : collectionTagged;
-
-      const id = crypto.randomUUID();
-      const name = deckName.trim() || `Deck ${state.decks.length + 1}`;
-      const deck: Deck = {
-        id,
-        name,
-        url: deckUrl.trim() || undefined,
-        format: deckFormat.trim() || undefined,
-        cards: taggedCards,
-        createdAt: Date.now(),
-        isBuilt: importAsBuilt || undefined,
-        pricesUpdatedAt: taggedCards.some(c => c.price !== undefined) ? Date.now() : undefined,
-      };
-
-      dispatch({ type: "ADD_DECK", payload: deck });
-      setAllErrors(prev => ({ ...prev, [id]: result.errors }));
-      setActiveDeckId(id);
-
-      // Fire-and-forget enrichment (tokens + alt printings)
-      setEnrichingDeckIds(prev => new Set(prev).add(id));
-      enrichDeckExtraInfo(taggedCards).then(extraInfo => {
-        dispatch({ type: "SET_EXTRA_INFO", payload: { deckId: id, extraInfo } });
-      }).finally(() => {
-        setEnrichingDeckIds(prev => { const next = new Set(prev); next.delete(id); return next; });
-      });
-      setImportText("");
-      setDeckName("");
-      setDeckUrl("");
-      setDeckFormat("");
-      setImportAsBuilt(false);
-      setShowImport(false);
-    } catch (e) {
-      setImportError(e instanceof Error ? e.message : "Validation failed. Please try again.");
-    } finally {
-      setValidating(false);
-    }
+    // Fire-and-forget enrichment (tokens + alt printings)
+    setEnrichingDeckIds(prev => new Set(prev).add(id));
+    enrichDeckExtraInfo(cards).then(extraInfo => {
+      dispatch({ type: "SET_EXTRA_INFO", payload: { deckId: id, extraInfo } });
+    }).finally(() => {
+      setEnrichingDeckIds(prev => { const next = new Set(prev); next.delete(id); return next; });
+    });
   }
 
   function handleToggleDeckBuilt(deckId: string) {
     const deck = state.decks.find(d => d.id === deckId);
-    dispatch({ type: "TOGGLE_DECK_BUILT", payload: deckId });
     if (!deck) return;
-    if (!deck.isBuilt) {
-      // Marking as built — set all cards to acquired + owned
-      dispatch({
-        type: "SET_CARDS",
-        payload: {
-          deckId,
-          cards: deck.cards.map(c => ({
-            ...c,
-            acquired: true,
-            source: ((c.manuallyTagged && c.source === "proxy") ? "proxy" : "owned") as AcquisitionSource,
-            manuallyTagged: true,
-          })),
-        },
-      });
-    } else {
-      // Unmarking as built — clear checkboxes and re-apply collection tagging
-      const reset = deck.cards.map(c => ({ ...c, acquired: false, source: undefined, manuallyTagged: false }));
-      const current = collectionStore.get();
-      const retagged = Object.keys(current).length > 0
-        ? applyCollectionToCards(reset, current)
-        : reset;
-      dispatch({ type: "SET_CARDS", payload: { deckId, cards: retagged } });
-    }
+    dispatch({ type: "SET_DECK_BUILT", payload: { deckId, built: !deck.isBuilt, collection: collectionStore.get() } });
   }
 
   function handleToggleAcquired(cardId: string) {
     if (!activeDeckId) return;
     dispatch({ type: "TOGGLE_ACQUIRED", payload: { deckId: activeDeckId, cardId } });
-
-    // Auto-mark as built when the last card is checked off
-    const deck = state.decks.find(d => d.id === activeDeckId);
-    if (deck && !deck.isBuilt) {
-      const card = deck.cards.find(c => c.id === cardId);
-      if (card && !card.acquired) {
-        const allOthersAcquired = deck.cards.every(c => c.id === cardId || c.acquired);
-        if (allOthersAcquired && deck.cards.length > 0) {
-          dispatch({ type: "TOGGLE_DECK_BUILT", payload: activeDeckId });
-        }
-      }
-    }
   }
 
   function handleSetSource(cardId: string, source: AcquisitionSource | undefined) {
@@ -378,15 +292,14 @@ function AppInner() {
   async function handleAddCard(line: string): Promise<{ success: boolean; error?: string }> {
     if (!activeDeckId) return { success: false, error: "No deck selected." };
     try {
-      const parsed = parseDecklist(line);
-      if (parsed.length === 0) return { success: false, error: "Invalid card format." };
-      const result = await validateDecklist(parsed);
-      if (result.cards.length > 0) {
-        const [tagged] = applyCollectionToCards(result.cards, collectionStore.get());
-        dispatch({ type: "ADD_CARD", payload: { deckId: activeDeckId, card: tagged } });
+      const [entry] = parseDecklist(line);
+      if (!entry) return { success: false, error: "Invalid card format." };
+      const card = await lookupCard(entry, { collection: collectionStore.get });
+      if (card) {
+        dispatch({ type: "ADD_CARD", payload: { deckId: activeDeckId, card } });
         return { success: true };
       }
-      return { success: false, error: `"${parsed[0].name}" not found on Scryfall.` };
+      return { success: false, error: `"${entry.name}" not found on Scryfall.` };
     } catch {
       return { success: false, error: "Validation failed. Please try again." };
     }
@@ -394,17 +307,12 @@ function AppInner() {
 
   async function handleRemap(originalName: string, newName: string) {
     if (!activeDeckId) return;
+    const count = errors.find(e => e.originalName === originalName)?.count ?? 1;
     try {
-      const result = await validateDecklist([{ count: 1, name: newName }]);
-      if (result.cards.length > 0) {
-        const remapped = result.cards[0];
-        const currentDeck = state.decks.find(d => d.id === activeDeckId);
-        if (currentDeck) {
-          dispatch({
-            type: "SET_CARDS",
-            payload: { deckId: activeDeckId, cards: [...currentDeck.cards, remapped] }
-          });
-        }
+      const card = await lookupCard({ name: newName, count }, { collection: collectionStore.get });
+      if (card) {
+        // ADD_CARD appends to the deck as it is now, not as it was when the lookup started.
+        dispatch({ type: "ADD_CARD", payload: { deckId: activeDeckId, card } });
         setErrors(prev =>
           prev.map(e => e.originalName === originalName ? { ...e, searchName: newName, resolved: true } : e)
         );
@@ -466,34 +374,6 @@ function AppInner() {
   function handleDismissNotification(deckId: string, notificationId: string) {
     dispatch({ type: "DISMISS_NOTIFICATION", payload: { deckId, notificationId } });
     setNotificationFilterIds(null);
-  }
-
-  // ── Archidekt import ───────────────────────────────────────────────────────
-  function getArchidektId(url: string): string | null {
-    const match = url.match(/archidekt\.com\/decks\/(\d+)/i);
-    return match ? match[1] : null;
-  }
-
-  async function fetchFromArchidekt() {
-    const deckId = getArchidektId(deckUrl);
-    if (!deckId) return;
-    setArchidektFetching(true);
-    setArchidektError(null);
-    try {
-      const res = await fetch(`/api/archidekt?id=${deckId}`);
-      if (!res.ok) throw new Error(`Archidekt returned ${res.status} — is the deck public?`);
-      const data = await res.json();
-      const lines = (data.cards as { quantity: number; categories: string[]; card: { oracleCard: { name: string } } }[])
-        .filter(c => !c.categories?.includes("Maybeboard"))
-        .map(c => `${c.quantity} ${c.card.oracleCard.name}`)
-        .join("\n");
-      setImportText(lines);
-      if (!deckName.trim()) setDeckName(data.name ?? "");
-    } catch (e) {
-      setArchidektError(e instanceof Error ? e.message : "Failed to fetch from Archidekt.");
-    } finally {
-      setArchidektFetching(false);
-    }
   }
 
   function handleDeleteDeck(id: string) {
@@ -1026,131 +906,7 @@ function AppInner() {
 
             <div className="deck-content">
               {/* ── Import panel ─────────────────────────────────────────── */}
-              {showImport && (
-                <section className="import-panel">
-                  <div className="import-panel-header">
-                    <h2>Import Decklist</h2>
-                    <button className="btn btn-secondary btn-sm" onClick={() => setShowImport(false)}>✕ Cancel</button>
-                  </div>
-                  <div className="import-formats">
-                    <button className="import-formats-toggle" onClick={() => setShowFormats(v => !v)}>
-                      {showFormats ? "▾" : "▸"} Supported formats
-                    </button>
-                    {showFormats && (
-                      <div className="import-formats-body">
-                        <div className="import-format-row">
-                          <span className="import-format-label">Plain decklist</span>
-                          <code>4 Lightning Bolt</code>
-                        </div>
-                        <div className="import-format-row">
-                          <span className="import-format-label">Moxfield export</span>
-                          <code>1 Sol Ring (SLD) 912 *F*</code>
-                          <span className="import-format-note">Set codes & foil markers stripped automatically</span>
-                        </div>
-                        <div className="import-format-row">
-                          <span className="import-format-label">Double-faced cards</span>
-                          <code>1 Bala Ged Recovery / Bala Ged Sanctuary (ZNR) 180</code>
-                          <span className="import-format-note">Back face stripped, front face used</span>
-                        </div>
-                        <div className="import-format-row">
-                          <span className="import-format-label">Archidekt URL</span>
-                          <code>archidekt.com/decks/365563/…</code>
-                          <span className="import-format-note">Paste URL above → click Fetch to auto-import</span>
-                        </div>
-                        <div className="import-format-row">
-                          <span className="import-format-label">.txt file</span>
-                          <span className="import-format-note">Any of the above formats, one card per line</span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  <div className="import-name-row">
-                    <input
-                      className="deck-name-input"
-                      placeholder="Deck name (optional)"
-                      value={deckName}
-                      onChange={e => setDeckName(e.target.value)}
-                      disabled={validating}
-                    />
-                    <select
-                      className="deck-name-input deck-format-input"
-                      aria-label="Deck format"
-                      value={deckFormat}
-                      onChange={e => setDeckFormat(e.target.value)}
-                      disabled={validating}
-                    >
-                      <option value="">Format (optional)</option>
-                      {formatOptions().map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
-                    </select>
-                  </div>
-                  <div className="url-field-row">
-                    <input
-                      className="deck-name-input"
-                      placeholder="Deck URL (optional) — paste an Archidekt URL to auto-import"
-                      value={deckUrl}
-                      onChange={e => { setDeckUrl(e.target.value); setArchidektError(null); }}
-                      disabled={validating || archidektFetching}
-                    />
-                    {getArchidektId(deckUrl) && (
-                      <button
-                        className="btn btn-primary btn-sm archidekt-fetch-btn"
-                        onClick={fetchFromArchidekt}
-                        disabled={archidektFetching || validating}
-                      >
-                        {archidektFetching ? "Fetching…" : "Fetch from Archidekt"}
-                      </button>
-                    )}
-                  </div>
-                  {archidektError && <p className="import-error">{archidektError}</p>}
-                  <label className="import-built-row">
-                    <input
-                      type="checkbox"
-                      checked={importAsBuilt}
-                      onChange={e => setImportAsBuilt(e.target.checked)}
-                      disabled={validating}
-                    />
-                    This deck is already built
-                  </label>
-                  <label className="file-upload-label">
-                    <input
-                      type="file"
-                      accept=".txt"
-                      className="file-upload-input"
-                      disabled={validating}
-                      onChange={e => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        if (!deckName) setDeckName(file.name.replace(/\.[^.]+$/, ""));
-                        const reader = new FileReader();
-                        reader.onload = ev => setImportText(ev.target?.result as string ?? "");
-                        reader.readAsText(file);
-                        e.target.value = "";
-                      }}
-                    />
-                    Upload .txt file
-                  </label>
-                  <textarea
-                    className="import-textarea"
-                    placeholder={"4 Lightning Bolt\n2 Snapcaster Mage\n1 Black Lotus"}
-                    value={importText}
-                    onChange={e => setImportText(e.target.value)}
-                    disabled={validating}
-                    rows={typeof window !== "undefined" && window.innerWidth < 640 ? 8 : 16}
-                  />
-                  {importError && <p className="import-error">{importError}</p>}
-                  {validating && <ProgressTracker progress={progress} />}
-                  {!importText.trim() && !validating && (
-                    <p className="import-hint">Paste a decklist to enable import.</p>
-                  )}
-                  <button
-                    className="btn btn-primary"
-                    onClick={handleImport}
-                    disabled={validating || !importText.trim()}
-                  >
-                    {validating ? "Validating…" : "Import & Validate"}
-                  </button>
-                </section>
-              )}
+              {showImport && <DeckImportPanel draft={importDraft} setDraft={setImportDraft} onImported={handleDeckImported} onCancel={() => setShowImport(false)} />}
 
               {/* ── Mobile deck switcher bar (hidden on desktop) ─────────── */}
               <div className="mobile-deck-bar">

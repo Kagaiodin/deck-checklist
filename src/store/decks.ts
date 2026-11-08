@@ -1,4 +1,4 @@
-import type { Deck, Collection, DeckNotification, DeckExtraInfo } from "../types/index";
+import type { AcquisitionSource, Card, Deck, Collection, DeckNotification, DeckExtraInfo } from "../types/index";
 import { applyCollectionToCards } from "../utils/csvParser";
 import { useReducer, createContext, useContext, createElement, useEffect, useLayoutEffect } from "react";
 import { collectionStore } from "./collection";
@@ -28,17 +28,39 @@ export type DeckAction =
   | { type: "SET_DECKS"; payload: Deck[] }
   | { type: "SET_EXTRA_INFO"; payload: { deckId: string; extraInfo: DeckExtraInfo } }
   | { type: "SET_DECK_PRICES"; payload: { deckId: string; prices: Record<string, number | null>; updatedAt?: number } }
-  | { type: "TOGGLE_DECK_BUILT"; payload: string }
+  | { type: "SET_DECK_BUILT"; payload: { deckId: string; built: boolean; collection: Collection } }
   | { type: "TOGGLE_COMMANDER"; payload: { deckId: string; cardId: string } }
   | { type: "DISMISS_COMMANDER_PROMPT"; payload: { deckId: string } };
 
 export const MAX_COMMANDERS = 2;
 
+/** Sources a Built deck keeps: a proxy the user tagged, and a borrowed card (it isn't the user's). */
+function keptWhenBuilt(c: Card): AcquisitionSource | undefined {
+  if (c.source === "borrowed") return "borrowed";
+  if (c.manuallyTagged && c.source === "proxy") return "proxy";
+  return undefined;
+}
+
+/** A Built deck's cards: every card acquired, and owned unless it is a proxy or borrowed (GLOSSARY: Built). */
+function builtCards(cards: Card[]): Card[] {
+  return cards.map(c => ({ ...c, acquired: true, source: keptWhenBuilt(c) ?? "owned", manuallyTagged: true }));
+}
+
+/** Unmarking Built: clear every checkbox and tag, then re-tag from the Collection. */
+function unbuiltCards(cards: Card[], collection: Collection): Card[] {
+  const reset = cards.map(c => ({ ...c, acquired: false, source: undefined, manuallyTagged: false }));
+  return applyCollectionToCards(reset, collection);
+}
+
 // Exported for unit testing
 export function deckReducer(state: DeckState, action: DeckAction): DeckState {
   switch (action.type) {
-    case "ADD_DECK":
-      return { ...state, decks: [...state.decks, action.payload] };
+    case "ADD_DECK": {
+      const deck = action.payload;
+      const name = deck.name.trim() || `Deck ${state.decks.length + 1}`;
+      const cards = deck.isBuilt ? builtCards(deck.cards) : deck.cards;
+      return { ...state, decks: [...state.decks, { ...deck, name, cards }] };
+    }
     case "DELETE_DECK":
       return { ...state, decks: state.decks.filter(d => d.id !== action.payload) };
     case "RENAME_DECK":
@@ -78,13 +100,14 @@ export function deckReducer(state: DeckState, action: DeckAction): DeckState {
           const target = d.cards.find(c => c.id === action.payload.cardId);
           // Unchecking a card means the deck is no longer fully acquired, so it can't stay Built.
           const unchecking = !!target?.acquired;
-          return {
-            ...d,
-            cards: d.cards.map(c =>
-              c.id === action.payload.cardId ? { ...c, acquired: !c.acquired } : c
-            ),
-            ...(unchecking && d.isBuilt ? { isBuilt: false } : {}),
-          };
+          const cards = d.cards.map(c =>
+            c.id === action.payload.cardId ? { ...c, acquired: !c.acquired } : c
+          );
+          // Checking the last card finishes the deck: it becomes Built, with the Built rule applied.
+          if (target && !unchecking && !d.isBuilt && cards.every(c => c.acquired)) {
+            return { ...d, isBuilt: true, cards: builtCards(cards) };
+          }
+          return { ...d, cards, ...(unchecking && d.isBuilt ? { isBuilt: false } : {}) };
         })
       };
     case "SET_CARD_SOURCE":
@@ -252,13 +275,18 @@ export function deckReducer(state: DeckState, action: DeckAction): DeckState {
         ),
       };
     }
-    case "TOGGLE_DECK_BUILT":
+    case "SET_DECK_BUILT": {
+      const { deckId, built, collection } = action.payload;
       return {
         ...state,
-        decks: state.decks.map(d =>
-          d.id === action.payload ? { ...d, isBuilt: !d.isBuilt } : d
-        ),
+        decks: state.decks.map(d => {
+          if (d.id !== deckId) return d;
+          return built
+            ? { ...d, isBuilt: true, cards: builtCards(d.cards) }
+            : { ...d, isBuilt: false, cards: unbuiltCards(d.cards, collection) };
+        }),
       };
+    }
     default:
       return state;
   }

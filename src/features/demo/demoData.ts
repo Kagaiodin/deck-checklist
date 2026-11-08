@@ -52,8 +52,8 @@ const DECK_A: Row[] = [
   ["Lightning Greaves", 1, "", "Artifact — Equipment", "owned", 18],
   ["Sol Ring", 1, "", "Artifact", "owned", 1.5],
   ["Command Tower", 1, "", "Land", "owned", 0.4],
-  ["Sylvan Library", 1, "G", "Enchantment", "ordered", 22],
-  ["Heroic Intervention", 1, "G", "Instant", "need", 8],
+  ["Sylvan Library", 1, "G", "Enchantment", "owned", 22],
+  ["Heroic Intervention", 1, "G", "Instant", "owned", 8],
   ["Elvish Visionary", 1, "G", "Creature", "owned", 0.2],
   ["Wellwisher", 1, "G", "Creature", "owned", 0.2],
   ["Heritage Druid", 1, "G", "Creature", "owned", 0.4],
@@ -125,7 +125,7 @@ const DECK_B: Row[] = [
   ["Counterspell", 1, "U", "Instant", "owned", 2],
   ["Swords to Plowshares", 1, "W", "Instant", "owned", 3],
   ["Path to Exile", 1, "W", "Instant", "owned", 3.5],
-  ["Smothering Tithe", 1, "W", "Enchantment", "need", 24],
+  ["Smothering Tithe", 1, "W", "Enchantment", "ordered", 24],
   ["Vampiric Tutor", 1, "B", "Instant", "need", 30],
   ["Toxic Deluge", 1, "B", "Sorcery", "owned", 9],
   ["Dockside Extortionist", 1, "R", "Creature", "need", 16],
@@ -349,7 +349,7 @@ export function buildDemoData(now: number): DemoValues {
     },
     {
       id: "demo-order-3", createdAt: now - 1 * DAY, vendor: "ManaPool", status: "active",
-      cards: [line(a, "Sylvan Library"), line(c, "Treasure Cruise")],
+      cards: [line(b, "Smothering Tithe"), line(c, "Treasure Cruise")],
     },
     {
       id: "demo-order-4", createdAt: now - 20 * DAY, vendor: "Card Kingdom", orderDate: now - 20 * DAY,

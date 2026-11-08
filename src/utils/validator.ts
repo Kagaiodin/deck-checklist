@@ -166,7 +166,8 @@ export async function validateDecklist(
         allErrors.push({
           originalName: nf.name,
           searchName: nf.name,
-          resolved: false
+          resolved: false,
+          count: quantityMap.get(nf.name.toLowerCase()) ?? 1,
         });
       }
     }
