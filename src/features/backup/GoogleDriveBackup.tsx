@@ -1,25 +1,17 @@
-import type { TradeLogEntry } from "../../types/trade";
 import { useEffect, useState } from "react";
-import type { Deck, ErrorQueueItem, Collection, CollectionMeta, Order, ImportCounts, ProfileExport } from "../../types/index";
+import type { Deck } from "../../types/index";
 import {
   supportsGoogleDrive, getConnectedEmail, isConnected, isExpired,
   connect, disconnect, saveToDrive, loadFromDrive, DriveError,
 } from "../../utils/googleDrive";
 import { DriveConflictModal } from "./DriveConflictModal";
-import type { ToastInput } from "./ProfileExportImport";
+import type { ToastInput } from "../../types/index";
 import "./GoogleDriveBackup.css";
 import { isDemoActiveNow, DEMO_BACKUP_HINT } from "../demo/demoMode";
+import { buildBackup, hasReplaceableUserData, importBackup, parseBackup, readStoredValues, type ParsedBackupFile } from "./backup";
+import { DRIVE_BACKUP_UNREADABLE, importFailure, type ImportSource } from "./backupMessages";
 
 interface Props {
-  decks: Deck[];
-  allErrors: Record<string, ErrorQueueItem[]>;
-  collection: Collection;
-  collectionMeta: CollectionMeta | null;
-  orders: Order[];
-  tradeLedger?: TradeLogEntry[];
-  binderExcluded?: string[];
-  vendorHistory: string[];
-  onImport: (data: ProfileExport, replace: boolean) => ImportCounts;
   showToast: (t: ToastInput) => void;
   // Sidebar (desktop, sibling to the Tier 1 chip) vs mobile deck-picker sheet
   // footer (its own boxed unit) — see docs/specs/google-drive-integration-design-brief.md
@@ -41,8 +33,11 @@ function initialOf(email: string): string {
   return email.charAt(0).toUpperCase();
 }
 
-function countCards(decks: Deck[]): number {
-  return decks.reduce((sum, d) => sum + d.cards.length, 0);
+type DeckSummary = { deckCount: number; cardCount: number };
+
+/** What the conflict modal shows for one side: how many decks, and card rows across them. */
+function summarize(decks: Deck[]): DeckSummary {
+  return { deckCount: decks.length, cardCount: decks.reduce((sum, d) => sum + d.cards.length, 0) };
 }
 
 function relativeTime(from: Date): string {
@@ -54,15 +49,15 @@ function relativeTime(from: Date): string {
   return `${hours}h ago`;
 }
 
-export function GoogleDriveBackup({
-  decks, allErrors, collection, collectionMeta, orders, tradeLedger, binderExcluded, vendorHistory,
-  onImport, showToast, variant,
-}: Props) {
+/** Save the Backup to Drive, or load Drive's copy over this device's data. Load always replaces. */
+export function GoogleDriveBackup({ showToast, variant }: Props) {
   const [status, setStatus] = useState<"idle" | "connecting" | "saving" | "loading">("idle");
   const [connectedEmail, setConnectedEmail] = useState<string | null>(getConnectedEmail());
   const [driveError, setDriveError] = useState<{ kind: DriveError["kind"]; message: string } | null>(null);
-  const [lastSync, setLastSync] = useState<{ verb: "Saved" | "Loaded"; at: Date } | null>(null);
-  const [conflict, setConflict] = useState<{ contents: string; modifiedTime: string } | null>(null);
+  // Only Save sets this: a Load reloads the page, and its toast says it worked.
+  const [lastSync, setLastSync] = useState<{ verb: "Saved"; at: Date } | null>(null);
+  // Both sides are counted when Load is clicked: Drive's from the parsed file, this device's from storage.
+  const [conflict, setConflict] = useState<{ parsed: ParsedBackupFile; modifiedTime: string; local: DeckSummary } | null>(null);
   const [, forceTick] = useState(0);
 
   // Keep the "· 2m ago" meta line fresh without a full data refetch.
@@ -84,24 +79,10 @@ export function GoogleDriveBackup({
     );
   }
 
-  function buildPayload(): ProfileExport {
-    return {
-      version: 1,
-      exportedAt: new Date().toISOString(),
-      decks, errors: allErrors, collection, collectionMeta, orders, vendorHistory, tradeLedger, binderExcluded,
-    };
-  }
-
-  function applyDriveContents(text: string): boolean {
-    let parsed: ProfileExport;
-    try {
-      parsed = JSON.parse(text);
-    } catch {
-      setDriveError({ kind: "unknown", message: "The Drive backup couldn't be read." });
-      return false;
-    }
-    onImport(parsed, true);
-    return true;
+  /** Imports Drive's copy, replacing this device's data; the page reloads on success. */
+  function applyDriveBackup(parsed: ParsedBackupFile, source: ImportSource): void {
+    const result = importBackup(parsed, { mode: "replace", source });
+    if (!result.ok) setDriveError({ kind: "unknown", message: importFailure(result.reason) });
   }
 
   async function handleConnect() {
@@ -130,7 +111,9 @@ export function GoogleDriveBackup({
     setStatus("saving");
     setDriveError(null);
     try {
-      await saveToDrive(JSON.stringify(buildPayload()));
+      const backup = buildBackup(window.localStorage);
+      if (!backup) return;
+      await saveToDrive(JSON.stringify(backup));
       setLastSync({ verb: "Saved", at: new Date() });
       showToast({ title: "Saved to Drive", variant: "success", autoDismiss: 2000 });
     } catch (err) {
@@ -149,12 +132,14 @@ export function GoogleDriveBackup({
         showToast({ title: "No backup in Drive yet", sub: "Save first to create one.", variant: "neutral", autoDismiss: 2500 });
         return;
       }
-      const hasLocalData = decks.length > 0 || Object.keys(collection).length > 0 || orders.length > 0 || (tradeLedger?.length ?? 0) > 0;
-      if (hasLocalData) {
-        setConflict(result);
-      } else if (applyDriveContents(result.contents)) {
-        setLastSync({ verb: "Loaded", at: new Date() });
-        showToast({ title: "Loaded from Drive", variant: "success", autoDismiss: 2000 });
+      // Validate before asking anything: an unreadable file shouldn't open the "Keep which version?" choice.
+      const parsed = parseBackup(result.contents);
+      if (!parsed.ok) {
+        setDriveError({ kind: "unknown", message: DRIVE_BACKUP_UNREADABLE });
+      } else if (hasReplaceableUserData(window.localStorage)) {
+        setConflict({ parsed, modifiedTime: result.modifiedTime, local: summarize(readStoredValues(window.localStorage).decks) });
+      } else {
+        applyDriveBackup(parsed, "drive");
       }
     } catch (err) {
       setDriveError(err as DriveError);
@@ -165,11 +150,8 @@ export function GoogleDriveBackup({
 
   function resolveKeepDrive() {
     if (!conflict) return;
-    if (applyDriveContents(conflict.contents)) {
-      setLastSync({ verb: "Loaded", at: new Date() });
-      showToast({ title: "Loaded Drive version", variant: "success", autoDismiss: 2000 });
-    }
     setConflict(null);
+    applyDriveBackup(conflict.parsed, "drive-conflict");
   }
 
   function resolveKeepLocal() {
@@ -190,15 +172,7 @@ export function GoogleDriveBackup({
   const expired = !driveError && isExpired();
   const showNotice = !!driveError || expired;
 
-  let driveConflictSummary = null;
-  if (conflict) {
-    let driveCounts = { deckCount: 0, cardCount: 0 };
-    try {
-      const parsed = JSON.parse(conflict.contents) as ProfileExport;
-      driveCounts = { deckCount: (parsed.decks ?? []).length, cardCount: countCards(parsed.decks ?? []) };
-    } catch { /* malformed backup — counts stay at 0, modal still lets the user choose */ }
-    driveConflictSummary = { modifiedTime: conflict.modifiedTime, ...driveCounts };
-  }
+  const driveConflictSummary = conflict && { modifiedTime: conflict.modifiedTime, ...summarize(conflict.parsed.backup.decks ?? []) };
 
   return (
     <div className={`gdrive gdrive--${variant}`}>
@@ -263,7 +237,7 @@ export function GoogleDriveBackup({
       {conflict && driveConflictSummary && (
         <DriveConflictModal
           drive={driveConflictSummary}
-          local={{ deckCount: decks.length, cardCount: countCards(decks) }}
+          local={conflict.local}
           onKeepDrive={resolveKeepDrive}
           onKeepLocal={resolveKeepLocal}
         />

@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
-import { useBinderExcluded, useBinderExcludedList, writeBinderExcluded, sanitizeExcluded } from "../useBinder";
+import { useBinderExcluded, useBinderExcludedList, writeBinderExcluded } from "../useBinder";
+import { sanitizeExcluded } from "../../../../utils/binderExcluded";
 
 beforeEach(() => {
   const store = new Map<string, string>();

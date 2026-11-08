@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import { ProfileExportImport } from "../ProfileExportImport";
+import { BackupControls } from "../BackupControls";
 import { clearLinkedHandle } from "../../../utils/fileSystemAccess";
 import { installMemoryLocalStorage, restoreLocalStorage } from "../../demo/__tests__/memoryStorage";
 
@@ -29,19 +29,13 @@ function makeHandle(name: string, overrides: Partial<globalThis.FileSystemFileHa
 }
 
 const baseProps = {
-  decks: [],
-  allErrors: {},
-  collection: {},
-  collectionMeta: null,
-  orders: [],
-  vendorHistory: [],
-  onImport: vi.fn().mockReturnValue({ newDecks: 0, newCards: 0, newOrders: 0 }),
   showToast: vi.fn(),
   importPanelOpen: false,
   onToggleImportPanel: vi.fn(),
 };
 
-describe("ProfileExportImport — File System Access save/load", () => {
+describe("BackupControls — File System Access save/load", () => {
+  beforeEach(() => { installMemoryLocalStorage(); });
   afterEach(() => {
     // @ts-expect-error test cleanup
     delete window.showSaveFilePicker;
@@ -49,21 +43,22 @@ describe("ProfileExportImport — File System Access save/load", () => {
     delete window.showOpenFilePicker;
     clearLinkedHandle();
     vi.restoreAllMocks();
+    restoreLocalStorage();
   });
 
   it("falls back to a plain download when the API is unsupported", async () => {
     const clickSpy = mockAnchorClick();
     const showToast = vi.fn();
 
-    render(<ProfileExportImport {...baseProps} showToast={showToast} />);
+    render(<BackupControls {...baseProps} showToast={showToast} />);
     fireEvent.click(screen.getByText("↓ Export backup"));
 
     await waitFor(() => expect(showToast).toHaveBeenCalled());
     expect(clickSpy).toHaveBeenCalled();
-    expect(showToast.mock.calls[0][0].title).toBe("Profile exported");
+    expect(showToast.mock.calls[0][0].title).toBe("Backup exported");
   });
 
-  it("includes the trade ledger and Binder exclude list in the backup, on the v1 envelope", async () => {
+  it("exports what's saved, trade ledger and Binder exclude list included, on the v1 envelope", async () => {
     let captured = "";
     const OrigBlob = globalThis.Blob;
     vi.spyOn(globalThis, "Blob").mockImplementation(function (parts?: BlobPart[], opts?: BlobPropertyBag) {
@@ -74,7 +69,10 @@ describe("ProfileExportImport — File System Access save/load", () => {
     URL.revokeObjectURL = vi.fn();
     mockAnchorClick();
     const entry = { id: "e1", date: 1, cardsOut: [], cardsIn: [], cash: { out: 0, in: 3 }, totals: { out: 0, in: 3 } };
-    render(<ProfileExportImport {...baseProps} tradeLedger={[entry]} binderExcluded={["sol ring"]} />);
+    const storage = window.localStorage;
+    storage.setItem("mtg-checklist-trade-ledger-v1", JSON.stringify([entry]));
+    storage.setItem("mtg-checklist-binder-excluded-v1", JSON.stringify(["sol ring"]));
+    render(<BackupControls {...baseProps} />);
     fireEvent.click(screen.getByText("↓ Export backup"));
     await waitFor(() => expect(captured).not.toBe(""));
     const payload = JSON.parse(captured);
@@ -89,7 +87,7 @@ describe("ProfileExportImport — File System Access save/load", () => {
     window.showSaveFilePicker = showSaveFilePicker;
     const showToast = vi.fn();
 
-    render(<ProfileExportImport {...baseProps} showToast={showToast} />);
+    render(<BackupControls {...baseProps} showToast={showToast} />);
     fireEvent.click(screen.getByText("↓ Export backup"));
 
     await waitFor(() => expect(showSaveFilePicker).toHaveBeenCalledTimes(1));
@@ -108,7 +106,7 @@ describe("ProfileExportImport — File System Access save/load", () => {
     const clickSpy = mockAnchorClick();
     const showToast = vi.fn();
 
-    render(<ProfileExportImport {...baseProps} showToast={showToast} />);
+    render(<BackupControls {...baseProps} showToast={showToast} />);
     fireEvent.click(screen.getByText("↓ Export backup"));
 
     await waitFor(() => expect(window.showSaveFilePicker).toHaveBeenCalled());
@@ -117,14 +115,14 @@ describe("ProfileExportImport — File System Access save/load", () => {
   });
 });
 
-describe("ProfileExportImport — demo mode", () => {
+describe("BackupControls — demo mode", () => {
   afterEach(() => { vi.restoreAllMocks(); restoreLocalStorage(); });
 
   it("disables export and import and explains why, without downloading anything", () => {
     installMemoryLocalStorage().setItem("fetchlist:demo:active", "true");
     const clickSpy = mockAnchorClick();
 
-    render(<ProfileExportImport {...baseProps} />);
+    render(<BackupControls {...baseProps} />);
 
     const exportBtn = screen.getByText("↓ Export backup");
     const importBtn = screen.getByText("↑ Import backup");
@@ -137,7 +135,7 @@ describe("ProfileExportImport — demo mode", () => {
 
   it("leaves the controls enabled outside demo mode", () => {
     installMemoryLocalStorage();
-    render(<ProfileExportImport {...baseProps} />);
+    render(<BackupControls {...baseProps} />);
     expect(screen.getByText("↓ Export backup")).toBeEnabled();
     expect(screen.queryByText("Exit demo mode to back up your data")).not.toBeInTheDocument();
   });

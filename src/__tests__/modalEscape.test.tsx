@@ -4,7 +4,7 @@ import type { ReactElement } from "react";
 import { DemoConfirmModal } from "../features/demo/DemoConfirmModal";
 import { TradeSheet } from "../features/trade/components/TradeSheet";
 import { OnboardingModal } from "../features/onboarding/OnboardingModal";
-import { ImportBackupModal } from "../features/profile/ImportBackupModal";
+import { ImportBackupModal } from "../features/backup/ImportBackupModal";
 import { CollectionOverflowSheet } from "../features/collection/components/CollectionOverflowSheet";
 
 // Every modal must close on Escape. Axe cannot check keyboard behaviour, so this is the
@@ -18,7 +18,7 @@ const cases: Case[] = [
   ["DemoConfirmModal", close => <DemoConfirmModal onCancel={close} onConfirm={noop} />],
   ["TradeSheet", close => <TradeSheet title="Trade" chip="x" onClose={close} footer={null}><input /></TradeSheet>],
   ["OnboardingModal", close => <OnboardingModal onDismiss={close} onImportDeck={noop} />],
-  ["ImportBackupModal", close => <ImportBackupModal onImport={() => ({ newDecks: 0, newCards: 0, newOrders: 0 })} showToast={noop} onClose={close} />],
+  ["ImportBackupModal", close => <ImportBackupModal onClose={close} />],
   ["CollectionOverflowSheet", close => <CollectionOverflowSheet collectionMeta={null} onClose={close} onUploadClick={noop} onBulkEditClick={noop} />, 400],
 ];
 

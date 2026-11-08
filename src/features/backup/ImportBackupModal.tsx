@@ -1,16 +1,15 @@
 import { useEffect, useRef, useState } from "react";
-import type { ImportCounts, ProfileExport } from "../../types/index";
-import type { ToastInput } from "./ProfileExportImport";
 import { supportsFileSystemAccess, pickOpenHandle, readLinkedFile } from "../../utils/fileSystemAccess";
+import { importBackup, parseBackup } from "./backup";
+import { backupFileError, importFailure } from "./backupMessages";
 import "./ImportBackupModal.css";
 
 interface Props {
-  onImport: (data: ProfileExport, replace: boolean) => ImportCounts;
-  showToast: (t: ToastInput) => void;
   onClose: () => void;
 }
 
-export function ImportBackupModal({ onImport, showToast, onClose }: Props) {
+/** Picks a Backup file and imports it. A successful import reloads the page, which shows the summary toast. */
+export function ImportBackupModal({ onClose }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
   const chooseFileRef = useRef<HTMLButtonElement>(null);
@@ -51,52 +50,16 @@ export function ImportBackupModal({ onImport, showToast, onClose }: Props) {
   }, [onClose]);
 
   function processImportedJson(rawText: string): void {
-    let raw: unknown;
-    try {
-      raw = JSON.parse(rawText);
-    } catch {
-      setPanelError("File could not be read. Make sure it's a Fetchlist backup (.json).");
+    const parsed = parseBackup(rawText);
+    if (!parsed.ok) {
+      setPanelError(backupFileError(parsed.error));
       return;
     }
-
-    // Shape validation
-    if (!raw || typeof raw !== "object" || !("version" in raw) ||
-        !("decks" in raw || "collection" in raw || "orders" in raw)) {
-      setPanelError("This doesn't look like a Fetchlist backup file.");
+    const result = importBackup(parsed, { mode: replaceMode ? "replace" : "merge", source: "file" });
+    if (!result.ok) {
+      setPanelError(importFailure(result.reason));
       return;
     }
-
-    const data = raw as ProfileExport;
-
-    // Warn for future versions but still attempt import
-    if ((data.version as number) > 1) {
-      showToast({
-        title: "Newer backup format",
-        sub: "Some data may not import correctly.",
-        variant: "warn",
-      });
-    }
-
-    const counts = onImport(data, replaceMode);
-
-    // Build toast summary — omit zero-count domains
-    const parts: string[] = [];
-    if (counts.newDecks > 0) parts.push(`${counts.newDecks} deck${counts.newDecks !== 1 ? "s" : ""}`);
-    if (counts.newCards > 0) parts.push(`${counts.newCards} collection cards`);
-    if (counts.newOrders > 0) parts.push(`${counts.newOrders} order${counts.newOrders !== 1 ? "s" : ""}`);
-    if (counts.newTrades) parts.push(`${counts.newTrades} trade${counts.newTrades !== 1 ? "s" : ""}`);
-
-    if (parts.length === 0) {
-      showToast({
-        title: "Nothing new to import",
-        sub: "All items already exist locally.",
-        variant: "neutral",
-        autoDismiss: 3000,
-      });
-    } else {
-      showToast({ title: "Import complete", sub: `${parts.join(" · ")} added`, variant: "success" });
-    }
-
     onClose();
   }
 
@@ -121,7 +84,7 @@ export function ImportBackupModal({ onImport, showToast, onClose }: Props) {
       processImportedJson(text);
     } catch (err) {
       if ((err as DOMException)?.name === "AbortError") return; // user dismissed the picker
-      setPanelError("File could not be read. Make sure it's a Fetchlist backup (.json).");
+      setPanelError(backupFileError("unreadable"));
     }
   }
 

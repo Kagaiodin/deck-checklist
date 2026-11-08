@@ -13,8 +13,10 @@ import { STORAGE_KEYS } from "../store/storageKeys";
 /** Keys written from more than one module on purpose. Each entry needs a reason and a way out. */
 const SHARED_WRITERS: Record<string, string> = {};
 
-// demo/ swaps every managed key by design (its own demo:* keys are its bookkeeping, not app data); useLocalStorage.ts is the generic hook itself.
-const SKIP = [/__tests__\//, /^test\//, /\.test\.tsx?$/, /^features\/demo\//, /^hooks\/useLocalStorage\.ts$/];
+// demo/ swaps every managed key by design (its own demo:* keys are its bookkeeping, not app data); so does
+// backup.ts, which writes every backed-up key on import and then reloads, keeping no copy in memory.
+// useLocalStorage.ts is the generic hook itself.
+const SKIP = [/__tests__\//, /^test\//, /\.test\.tsx?$/, /^features\/demo\//, /^features\/backup\/backup\.ts$/, /^hooks\/useLocalStorage\.ts$/];
 
 type Usage = { writers: Set<string>; readers: Set<string>; hookCopies: string[] };
 

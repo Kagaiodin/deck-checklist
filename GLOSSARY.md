@@ -29,3 +29,7 @@ _Avoid_: Settings, cache
 **Preference**:
 How the user likes the app to look: theme, accent, a collapsed sidebar, an open panel. It isn't tied to any data, so demo mode leaves it alone.
 _Avoid_: Setting
+
+**Backup**:
+A single-file copy of the user's User data and the Working state worth keeping, made by exporting or by saving to Drive. *Importing* a Backup either merges it into this device's data or replaces it; *loading* from Drive always replaces. The trade in progress is never part of a Backup.
+_Avoid_: Profile export

@@ -1,14 +1,14 @@
 /*
- * ProfileExportImport.css
- * Styles for the profile export/import feature:
+ * BackupControls.css
+ * Styles for the backup controls:
  *   - .sidebar-footer   (the Export / Import button row)
  *   - .toast-container  (toast notification system — shared by all future features)
  * The import panel itself is a top-level modal — see ImportBackupModal.css.
- * Imported by ProfileExportImport.tsx.
+ * Imported by BackupControls.tsx.
  */
 
 /* ── Wrapper — escapes the sidebar's 16px padding on 3 sides ────────────── */
-.profile-export-import {
+.backup-controls {
   margin: 0 -16px -16px;
   flex-shrink: 0;
 }

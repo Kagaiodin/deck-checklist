@@ -1,4 +1,4 @@
-// Thin wrapper around the File System Access API, used by ProfileExportImport
+// Thin wrapper around the File System Access API, used by BackupControls
 // to link a single local backup file for silent save/load after the first pick.
 // Unsupported browsers (Safari, Firefox, mobile) fall back to download/upload
 // in the caller — this module simply reports itself unavailable there.
