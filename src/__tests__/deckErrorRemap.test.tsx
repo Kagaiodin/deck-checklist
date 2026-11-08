@@ -57,4 +57,35 @@ describe("remapping a Deck error", () => {
     const cards = (stored(DECKS_KEY) as Deck[])[0].cards;
     expect(cards.map(c => [c.name, c.acquired])).toEqual([["Sol Ring", true], ["Lightning Bolt", false]]);
   });
+
+  it("adds the remapped card with the error's count, tagged from the Collection", async () => {
+    validateDecklist.mockImplementation(async (parsed: { count: number; name: string }[]) =>
+      ({ cards: parsed.map(p => card(p.name, p.count)), errors: [] }));
+    const user = userEvent.setup();
+    const { stored } = renderApp({ storage: seed({
+      errors: [{ originalName: "Lightnig Bolt", searchName: "Lightnig Bolt", resolved: false, count: 4 }],
+      collection: { "lightning bolt": [{ quantity: 4 }] },
+    }) });
+    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false, status: 503, json: async () => ({}) })));
+
+    await startRemap(user, "Lightning Bolt");
+
+    await waitFor(() => expect((stored(DECKS_KEY) as Deck[])[0].cards).toHaveLength(2));
+    expect((stored(DECKS_KEY) as Deck[])[0].cards[1]).toMatchObject({ name: "Lightning Bolt", quantity: 4, source: "owned" });
+    expect(stored(ERRORS_KEY).d1[0]).toMatchObject({ searchName: "Lightning Bolt", resolved: true });
+  });
+
+  it("adds one copy for a Deck error saved without a count", async () => {
+    validateDecklist.mockImplementation(async (parsed: { count: number; name: string }[]) =>
+      ({ cards: parsed.map(p => card(p.name, p.count)), errors: [] }));
+    const user = userEvent.setup();
+    const { stored } = renderApp({ storage: seed({ errors: [{ originalName: "Lightnig Bolt", searchName: "Lightnig Bolt", resolved: false }] }) });
+    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false, status: 503, json: async () => ({}) })));
+
+    await startRemap(user, "Lightning Bolt");
+
+    await waitFor(() => expect((stored(DECKS_KEY) as Deck[])[0].cards).toHaveLength(2));
+    expect((stored(DECKS_KEY) as Deck[])[0].cards[1]).toMatchObject({ name: "Lightning Bolt", quantity: 1 });
+    expect((stored(DECKS_KEY) as Deck[])[0].cards[1].source).toBeUndefined();
+  });
 });

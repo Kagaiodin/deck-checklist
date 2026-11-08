@@ -99,6 +99,8 @@ export interface ErrorQueueItem {
   originalName: string;
   searchName: string;
   resolved: boolean;
+  /** How many copies the Decklist line asked for. Absent on errors saved before it was recorded: treat as 1. */
+  count?: number;
 }
 
 // ── Orders ────────────────────────────────────────────────────────────────────

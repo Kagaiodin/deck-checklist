@@ -4,7 +4,7 @@ import "./tokens.css";
 import "./App.css";
 import { DeckProvider, useDecks } from "./store/decks";
 import { parseDecklist } from "./utils/parser";
-import { validateDecklist, enrichDeckExtraInfo } from "./utils/validator";
+import { enrichDeckExtraInfo } from "./utils/validator";
 import { refreshDeckPrices, needsPriceRefresh } from "./utils/deckCost";
 import { useLocalStorage } from "./hooks/useLocalStorage";
 import { useOrderActions } from "./hooks/useOrderActions";
@@ -316,11 +316,12 @@ function AppInner() {
 
   async function handleRemap(originalName: string, newName: string) {
     if (!activeDeckId) return;
+    const count = errors.find(e => e.originalName === originalName)?.count ?? 1;
     try {
-      const result = await validateDecklist([{ count: 1, name: newName }]);
-      if (result.cards.length > 0) {
+      const card = await lookupCard({ name: newName, count }, { collection: collectionStore.get });
+      if (card) {
         // ADD_CARD appends to the deck as it is now, not as it was when the lookup started.
-        dispatch({ type: "ADD_CARD", payload: { deckId: activeDeckId, card: result.cards[0] } });
+        dispatch({ type: "ADD_CARD", payload: { deckId: activeDeckId, card } });
         setErrors(prev =>
           prev.map(e => e.originalName === originalName ? { ...e, searchName: newName, resolved: true } : e)
         );
