@@ -90,14 +90,23 @@ describe("buildDemoData", () => {
     expect(data["mtg-checklist-errors"]).toBe("{}");
   });
 
-  it("has three decks at different stages: nearly done and Built, mid-build, just started", () => {
+  it("has three decks at different stages: Built, mid-build, just started", () => {
     expect(decks).toHaveLength(3);
     const [a, b, c] = decks;
-    expect(progress(a)).toBeGreaterThan(0.85);
+    expect(progress(a)).toBe(1);
     expect(a.isBuilt).toBe(true);
     expect(progress(b)).toBeGreaterThan(0.3);
     expect(progress(b)).toBeLessThan(0.7);
     expect(progress(c)).toBeLessThan(0.4);
+  });
+
+  it("follows the Built rule on every Built deck: all acquired, owned unless proxy or borrowed", () => {
+    for (const d of decks.filter((d) => d.isBuilt)) {
+      for (const c of d.cards) {
+        expect(c.acquired).toBe(true);
+        expect(["owned", "proxy", "borrowed"]).toContain(c.source);
+      }
+    }
   });
 
   it("builds full 100-card Commander decks, singleton apart from basic lands", () => {
