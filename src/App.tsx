@@ -29,15 +29,15 @@ import { OnboardingModal } from "./features/onboarding/OnboardingModal";
 import { BackupControls } from "./features/backup/BackupControls";
 import { ImportBackupModal } from "./features/backup/ImportBackupModal";
 import { GoogleDriveBackup } from "./features/backup/GoogleDriveBackup";
-import { consumeImportToasts } from "./features/backup/backup";
+import { consumeImportToasts, BACKUP_IMPORTED_KEY } from "./features/backup/backup";
 import { exportBackup } from "./features/backup/saveBackupFile";
 import { ThemeToggle } from "./components/ThemeToggle";
 import { BugIcon, LightbulbIcon } from "./components/MenuIcons";
 import { DemoBanner } from "./features/demo/DemoBanner";
 import { DemoConfirmModal } from "./features/demo/DemoConfirmModal";
 import { DemoMenuItem } from "./features/demo/DemoMenuItem";
-import { useStorageSwapSync } from "./hooks/useStorageSwapSync";
-import { isDemoActive, hasRealData, DEMO_BACKUP_HINT } from "./features/demo/demoMode";
+import { useReloadOnOtherTabWrite } from "./hooks/useReloadOnOtherTabWrite";
+import { isDemoActive, hasRealData, DEMO_BACKUP_HINT, DEMO_ACTIVE_KEY, DEMO_VERSION_KEY } from "./features/demo/demoMode";
 import {
   startDemo, leaveDemo, consumeRecoveredFlag, hasPendingLinkConfirm, clearPendingLinkConfirm,
 } from "./features/demo/demoControl";
@@ -50,6 +50,10 @@ import { ERRORS_KEY, ORDERS_KEY, VENDOR_HISTORY_KEY, ONBOARDING_DISMISSED_KEY, S
 import "./features/card-purchase/buy-flow.css";
 
 /** Where the Calculator's back control returns to, for each place it can be opened from. */
+// Another tab writes one of these when it replaces the saved data wholesale: entering or leaving
+// demo mode, refreshing the sample data, importing a Backup. This tab then reloads.
+const DATA_REPLACED_KEYS = [DEMO_ACTIVE_KEY, DEMO_VERSION_KEY, BACKUP_IMPORTED_KEY];
+
 const TRADE_RETURN: Record<TradeOrigin, { view: "collection" | "transactions"; subTab?: TransactionsTab }> = {
   collection: { view: "collection" },
   binder: { view: "transactions", subTab: "binder" },
@@ -137,7 +141,7 @@ function AppInner() {
   // Enter/exit write storage and reload, so this is stable for the page's lifetime.
   const demoActive = isDemoActive(window.localStorage);
   const [demoConfirmOpen, setDemoConfirmOpen] = useState(hasPendingLinkConfirm);
-  useStorageSwapSync();
+  useReloadOnOtherTabWrite(DATA_REPLACED_KEYS);
 
   useEffect(() => {
     for (const toast of consumeImportToasts()) showToast(toast);
