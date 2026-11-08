@@ -108,6 +108,23 @@ describe("DeckImportPanel", () => {
     expect(screen.getByPlaceholderText("Deck name (optional)")).toHaveValue("Mine");
   });
 
+  it("keeps a name the user types while the Archidekt fetch is still running", async () => {
+    let respond!: () => void;
+    vi.stubGlobal("fetch", vi.fn(() => new Promise(resolve => {
+      respond = () => resolve({
+        ok: true,
+        json: async () => ({ name: "Elves", cards: [{ quantity: 1, categories: [], card: { oracleCard: { name: "Selvala" } } }] }),
+      });
+    })));
+    const { user } = setup();
+    await user.type(screen.getByPlaceholderText(/Deck URL/), "archidekt.com/decks/42");
+    await user.click(screen.getByRole("button", { name: "Fetch from Archidekt" }));
+    await user.type(screen.getByPlaceholderText("Deck name (optional)"), "Mine");
+    respond();
+    await waitFor(() => expect(decklistBox()).toHaveValue("1 Selvala"));
+    expect(screen.getByPlaceholderText("Deck name (optional)")).toHaveValue("Mine");
+  });
+
   it("shows a failed Archidekt fetch", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false, status: 404 })));
     const { user } = setup();
