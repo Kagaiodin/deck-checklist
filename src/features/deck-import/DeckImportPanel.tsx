@@ -28,12 +28,12 @@ interface Props {
  * Closing it keeps the draft; the caller clears it once the deck is imported.
  */
 export function DeckImportPanel({ draft, setDraft, onImported, onCancel }: Props) {
-  const { decklist: importText, name: deckName, url: deckUrl, format: deckFormat, built: importAsBuilt } = draft;
+  const { decklist, name: deckName, url: deckUrl, format: deckFormat, built: importAsBuilt } = draft;
   // Updaters, not values: an Archidekt fetch or file read finishes after the user may have typed more.
   const edit = <K extends keyof ImportDraft>(key: K) =>
     (value: ImportDraft[K] | ((prev: ImportDraft[K]) => ImportDraft[K])) =>
       setDraft(d => ({ ...d, [key]: typeof value === "function" ? (value as (p: ImportDraft[K]) => ImportDraft[K])(d[key]) : value }));
-  const setImportText = edit("decklist");
+  const setDecklist = edit("decklist");
   const setDeckName = edit("name");
   const setDeckUrl = edit("url");
   const setDeckFormat = edit("format");
@@ -46,12 +46,12 @@ export function DeckImportPanel({ draft, setDraft, onImported, onCancel }: Props
   const [archidektError, setArchidektError] = useState<string | null>(null);
 
   async function handleImport() {
-    if (!importText.trim()) return;
+    if (!decklist.trim()) return;
     setImportError(null);
     setValidating(true);
     setProgress({ total: 0, validated: 0 });
     try {
-      const { cards, errors } = await importDecklist(importText, { collection: collectionStore.get, onProgress: setProgress });
+      const { cards, errors } = await importDecklist(decklist, { collection: collectionStore.get, onProgress: setProgress });
       onImported({
         name: deckName.trim(),
         url: deckUrl.trim() || undefined,
@@ -73,9 +73,9 @@ export function DeckImportPanel({ draft, setDraft, onImported, onCancel }: Props
     setArchidektFetching(true);
     setArchidektError(null);
     try {
-      const { decklist, name } = await fetchArchidektDecklist(deckId);
-      setImportText(decklist);
-      setDeckName(prev => (prev.trim() ? prev : name));
+      const fetched = await fetchArchidektDecklist(deckId);
+      setDecklist(fetched.decklist);
+      setDeckName(prev => (prev.trim() ? prev : fetched.name));
     } catch (e) {
       setArchidektError(e instanceof Error ? e.message : "Failed to fetch from Archidekt.");
     } finally {
@@ -179,7 +179,7 @@ export function DeckImportPanel({ draft, setDraft, onImported, onCancel }: Props
             if (!file) return;
             setDeckName(prev => prev || file.name.replace(/\.[^.]+$/, ""));
             const reader = new FileReader();
-            reader.onload = ev => setImportText(ev.target?.result as string ?? "");
+            reader.onload = ev => setDecklist(ev.target?.result as string ?? "");
             reader.readAsText(file);
             e.target.value = "";
           }}
@@ -189,20 +189,20 @@ export function DeckImportPanel({ draft, setDraft, onImported, onCancel }: Props
       <textarea
         className="import-textarea"
         placeholder={"4 Lightning Bolt\n2 Snapcaster Mage\n1 Black Lotus"}
-        value={importText}
-        onChange={e => setImportText(e.target.value)}
+        value={decklist}
+        onChange={e => setDecklist(e.target.value)}
         disabled={validating}
         rows={typeof window !== "undefined" && window.innerWidth < 640 ? 8 : 16}
       />
       {importError && <p className="import-error">{importError}</p>}
       {validating && <ProgressTracker progress={progress} />}
-      {!importText.trim() && !validating && (
+      {!decklist.trim() && !validating && (
         <p className="import-hint">Paste a decklist to enable import.</p>
       )}
       <button
         className="btn btn-primary"
         onClick={handleImport}
-        disabled={validating || !importText.trim()}
+        disabled={validating || !decklist.trim()}
       >
         {validating ? "Validating…" : "Import & Validate"}
       </button>
