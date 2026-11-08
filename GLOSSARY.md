@@ -45,4 +45,4 @@ Turning a Decklist into a new deck: each card is looked up on Scryfall and tagge
 A Decklist line Scryfall couldn't match. It stays queued on its deck until the user remaps it to a real card or dismisses it.
 
 **Built**:
-A deck the user has finished assembling. Every card counts as acquired, and as owned unless the user tagged it a proxy. Unmarking a Built deck clears its checkboxes and re-tags it from the Collection.
+A deck the user has finished assembling. Every card counts as acquired, and as owned unless it is a proxy the user tagged or a borrowed card. Unmarking a Built deck clears its checkboxes and re-tags it from the Collection.

@@ -1,4 +1,4 @@
-import type { Card, Deck, Collection, DeckNotification, DeckExtraInfo } from "../types/index";
+import type { AcquisitionSource, Card, Deck, Collection, DeckNotification, DeckExtraInfo } from "../types/index";
 import { applyCollectionToCards } from "../utils/csvParser";
 import { useReducer, createContext, useContext, createElement, useEffect, useLayoutEffect } from "react";
 import { collectionStore } from "./collection";
@@ -34,14 +34,16 @@ export type DeckAction =
 
 export const MAX_COMMANDERS = 2;
 
-/** A Built deck's cards: every card acquired, and owned unless the user tagged it a proxy (GLOSSARY: Built). */
+/** Sources a Built deck keeps: a proxy the user tagged, and a borrowed card (it isn't the user's). */
+function keptWhenBuilt(c: Card): AcquisitionSource | undefined {
+  if (c.source === "borrowed") return "borrowed";
+  if (c.manuallyTagged && c.source === "proxy") return "proxy";
+  return undefined;
+}
+
+/** A Built deck's cards: every card acquired, and owned unless it is a proxy or borrowed (GLOSSARY: Built). */
 function builtCards(cards: Card[]): Card[] {
-  return cards.map(c => ({
-    ...c,
-    acquired: true,
-    source: c.manuallyTagged && c.source === "proxy" ? "proxy" : "owned",
-    manuallyTagged: true,
-  }));
+  return cards.map(c => ({ ...c, acquired: true, source: keptWhenBuilt(c) ?? "owned", manuallyTagged: true }));
 }
 
 /** Unmarking Built: clear every checkbox and tag, then re-tag from the Collection. */

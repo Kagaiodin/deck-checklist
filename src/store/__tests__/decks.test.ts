@@ -666,7 +666,7 @@ describe("SET_DECK_BUILT", () => {
   const cards = [
     makeCard({ id: "c1", name: "Bolt", quantity: 2, source: "ordered" }),
     makeCard({ id: "c2", name: "Fake", source: "proxy", manuallyTagged: true }),
-    makeCard({ id: "c3", name: "Ponder", source: "borrowed", manuallyTagged: true }),
+    makeCard({ id: "c3", name: "Ponder", source: "in_binder", manuallyTagged: true }),
   ];
   const initial = () => ({ decks: [makeDeck({ id: "d1", name: "Burn", cards }), makeDeck({ id: "d2", name: "Other", cards })] });
 
@@ -675,6 +675,12 @@ describe("SET_DECK_BUILT", () => {
     expect(s.decks[0].isBuilt).toBe(true);
     expect(s.decks[0].cards.map(c => [c.acquired, c.source])).toEqual([[true, "owned"], [true, "proxy"], [true, "owned"]]);
     expect(s.decks[1].cards).toEqual(cards);
+  });
+
+  it("marking keeps borrowed cards borrowed", () => {
+    const deck = makeDeck({ id: "d1", name: "Burn", cards: [makeCard({ id: "c1", name: "Bolt", source: "borrowed" })] });
+    const s = deckReducer({ decks: [deck] }, { type: "SET_DECK_BUILT", payload: { deckId: "d1", built: true, collection: {} } });
+    expect(s.decks[0].cards[0]).toMatchObject({ acquired: true, source: "borrowed", manuallyTagged: true });
   });
 
   it("unmarking clears checkboxes and tags, then re-tags from the Collection", () => {
