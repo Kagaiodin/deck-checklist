@@ -28,7 +28,6 @@ export type DeckAction =
   | { type: "SET_DECKS"; payload: Deck[] }
   | { type: "SET_EXTRA_INFO"; payload: { deckId: string; extraInfo: DeckExtraInfo } }
   | { type: "SET_DECK_PRICES"; payload: { deckId: string; prices: Record<string, number | null>; updatedAt?: number } }
-  | { type: "TOGGLE_DECK_BUILT"; payload: string }
   | { type: "SET_DECK_BUILT"; payload: { deckId: string; built: boolean; collection: Collection } }
   | { type: "TOGGLE_COMMANDER"; payload: { deckId: string; cardId: string } }
   | { type: "DISMISS_COMMANDER_PROMPT"; payload: { deckId: string } };
@@ -99,13 +98,14 @@ export function deckReducer(state: DeckState, action: DeckAction): DeckState {
           const target = d.cards.find(c => c.id === action.payload.cardId);
           // Unchecking a card means the deck is no longer fully acquired, so it can't stay Built.
           const unchecking = !!target?.acquired;
-          return {
-            ...d,
-            cards: d.cards.map(c =>
-              c.id === action.payload.cardId ? { ...c, acquired: !c.acquired } : c
-            ),
-            ...(unchecking && d.isBuilt ? { isBuilt: false } : {}),
-          };
+          const cards = d.cards.map(c =>
+            c.id === action.payload.cardId ? { ...c, acquired: !c.acquired } : c
+          );
+          // Checking the last card finishes the deck: it becomes Built, with the Built rule applied.
+          if (target && !unchecking && !d.isBuilt && cards.every(c => c.acquired)) {
+            return { ...d, isBuilt: true, cards: builtCards(cards) };
+          }
+          return { ...d, cards, ...(unchecking && d.isBuilt ? { isBuilt: false } : {}) };
         })
       };
     case "SET_CARD_SOURCE":
@@ -285,13 +285,6 @@ export function deckReducer(state: DeckState, action: DeckAction): DeckState {
         }),
       };
     }
-    case "TOGGLE_DECK_BUILT":
-      return {
-        ...state,
-        decks: state.decks.map(d =>
-          d.id === action.payload ? { ...d, isBuilt: !d.isBuilt } : d
-        ),
-      };
     default:
       return state;
   }
