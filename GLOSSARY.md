@@ -46,3 +46,17 @@ A Decklist line Scryfall couldn't match. It stays queued on its deck until the u
 
 **Built**:
 A deck the user has finished assembling. Every card counts as acquired, and as owned unless it is a proxy the user tagged or a borrowed card. Unmarking a Built deck clears its checkboxes and re-tags it from the Collection.
+
+**Order**:
+Cards bought from a vendor, tracked until they arrive. An Order is Active until the user receives or cancels it; Received and Cancelled are final. The Transactions tab labels Orders "Buys".
+_Avoid_: Buy, purchase
+
+**Order line**:
+One card on an Order, with a quantity and optional price. It is either linked to a card in a deck or freeform (not tied to any deck).
+_Avoid_: Order card
+
+**Receiving** an Order:
+Adds each Order line's quantity to the Collection and marks every linked deck card as owned, whatever it was tagged before. Editing or deleting an Order afterwards leaves the Collection as receiving changed it.
+
+**Cancelling** an Order:
+Clears the "Ordered" tag on linked deck cards that still carry it, so the Collection can re-tag them, and tells each affected deck which cards to review. Cards the user has re-tagged since are left alone.
