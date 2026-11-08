@@ -33,9 +33,7 @@ export async function importDecklist(
 ): Promise<DecklistResult> {
   const parsed = parseDecklist(decklist);
   if (parsed.length === 0) throw new Error(EMPTY_DECKLIST_MESSAGE);
-  const { cards, errors } = await validateDecklist(parsed, onProgress);
-  // Read the Collection after the lookup, so a change made while it ran is seen.
-  return { cards: applyCollectionToCards(cards, collection()), errors };
+  return lookUpAndTag(parsed, collection, onProgress);
 }
 
 /** Looks up one card and tags it from `collection`; null when Scryfall has no match. */
@@ -43,10 +41,19 @@ export async function lookupCard(
   { name, count }: { name: string; count: number },
   { collection }: { collection: () => Collection },
 ): Promise<Card | null> {
-  const { cards } = await validateDecklist([{ count, name }]);
-  if (cards.length === 0) return null;
-  const [tagged] = applyCollectionToCards([cards[0]], collection());
-  return tagged;
+  const { cards } = await lookUpAndTag([{ count, name }], collection);
+  return cards[0] ?? null;
+}
+
+// The one pipeline step every path shares: Scryfall lookup, then Collection tagging.
+async function lookUpAndTag(
+  parsed: { count: number; name: string }[],
+  collection: () => Collection,
+  onProgress?: (p: ValidationProgress) => void,
+): Promise<DecklistResult> {
+  const { cards, errors } = await validateDecklist(parsed, onProgress);
+  // Read the Collection after the lookup, so a change made while it ran is seen.
+  return { cards: applyCollectionToCards(cards, collection()), errors };
 }
 
 // ── Archidekt ─────────────────────────────────────────────────────────────────
