@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import type { ToastInput } from "../../types/index";
 import { getLinkedFileName, pickSaveHandle } from "../../utils/fileSystemAccess";
 import { GoogleDriveBackup } from "./GoogleDriveBackup";
-import { backupFileName, saveBackupFile, saveToast } from "./saveBackupFile";
+import { backupFileName, exportBackup } from "./saveBackupFile";
 import "./BackupControls.css";
 import { isDemoActiveNow, DEMO_BACKUP_HINT } from "../demo/demoMode";
 import "../demo/demo.css";
@@ -28,10 +28,8 @@ export function BackupControls({ showToast, importPanelOpen, onToggleImportPanel
   }, [importPanelOpen]);
 
   async function handleExport() {
-    const result = await saveBackupFile();
+    const result = await exportBackup(showToast);
     if (result.kind === "linked") setLinkedFileName(result.fileName);
-    const toast = saveToast(result);
-    if (toast) showToast(toast);
   }
 
   async function handleChangeLinkedFile() {
@@ -45,7 +43,7 @@ export function BackupControls({ showToast, importPanelOpen, onToggleImportPanel
 
   // ── Render ───────────────────────────────────────────────────────────────────
   return (
-    <div className="profile-export-import">
+    <div className="backup-controls">
       <div className="sidebar-footer-group">
         {linkedFileName && (
           <div className="linked-file-chip">

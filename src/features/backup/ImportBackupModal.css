@@ -1,6 +1,6 @@
 /*
  * ImportBackupModal.css
- * Pop-out for importing a profile backup — reuses the OnboardingModal
+ * Pop-out for importing a backup — reuses the OnboardingModal
  * pattern (centered dialog on desktop, bottom sheet on mobile) so the
  * panel isn't constrained by the sidebar's width/height.
  */

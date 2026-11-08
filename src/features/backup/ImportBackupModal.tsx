@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { supportsFileSystemAccess, pickOpenHandle, readLinkedFile } from "../../utils/fileSystemAccess";
-import { importBackup, parseBackup, IMPORT_STORAGE_ERROR } from "./backup";
-import { DEMO_BACKUP_HINT } from "../demo/demoMode";
+import { importBackup, parseBackup } from "./backup";
+import { backupFileError, importFailure } from "./backupMessages";
 import "./ImportBackupModal.css";
 
 interface Props {
@@ -52,18 +52,12 @@ export function ImportBackupModal({ onClose }: Props) {
   function processImportedJson(rawText: string): void {
     const parsed = parseBackup(rawText);
     if (!parsed.ok) {
-      setPanelError(
-        parsed.error === "unreadable" ? "File could not be read. Make sure it's a Fetchlist backup (.json)."
-        : parsed.error === "not-a-backup" ? "This doesn't look like a Fetchlist backup file."
-        : "Part of this backup is damaged, so nothing was imported.",
-      );
+      setPanelError(backupFileError(parsed.error));
       return;
     }
-    const result = importBackup(parsed.backup, {
-      mode: replaceMode ? "replace" : "merge", source: "file", newerVersion: parsed.newerVersion,
-    });
+    const result = importBackup(parsed, { mode: replaceMode ? "replace" : "merge", source: "file" });
     if (!result.ok) {
-      setPanelError(result.reason === "storage" ? IMPORT_STORAGE_ERROR : DEMO_BACKUP_HINT);
+      setPanelError(importFailure(result.reason));
       return;
     }
     onClose();
@@ -90,7 +84,7 @@ export function ImportBackupModal({ onClose }: Props) {
       processImportedJson(text);
     } catch (err) {
       if ((err as DOMException)?.name === "AbortError") return; // user dismissed the picker
-      setPanelError("File could not be read. Make sure it's a Fetchlist backup (.json).");
+      setPanelError(backupFileError("unreadable"));
     }
   }
 

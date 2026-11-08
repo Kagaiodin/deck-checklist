@@ -42,7 +42,7 @@ export function mergeCollections(base: Collection, incoming: Collection): { merg
  * same cards seen from two devices. Printings already in stored form never merge with each other.
  * Hands back `collection` itself when nothing needed changing.
  */
-function normalizeSets(collection: Collection): Collection {
+export function normalizeSets(collection: Collection): Collection {
   const stored = (p: CollectionPrinting) => p.set === normalizeSet(p.set);
   let out: Collection | null = null;
   for (const [name, printings] of Object.entries(collection)) {

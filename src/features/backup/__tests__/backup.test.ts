@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, type Mock } from "vitest";
 import {
-  BACKUP_FIELDS, BACKUP_IMPORTED_KEY, IMPORT_FLASH_KEY, buildBackup, consumeImportToasts, hasBackedUpUserData,
-  importBackup, importToasts, parseBackup, planImport, readStoredValues, type BackupDeps,
+  BACKUP_FIELDS, BACKUP_IMPORTED_KEY, IMPORT_FLASH_KEY, buildBackup, hasReplaceableUserData,
+  importBackup, parseBackup, planImport, readStoredValues, type BackupDeps, type ParsedBackupFile,
 } from "../backup";
 import { MemoryStorage } from "../../demo/__tests__/memoryStorage";
 import type { Backup } from "../../../types/index";
@@ -31,6 +31,9 @@ function seeded(values: Partial<Record<keyof typeof KEYS, unknown>>): MemoryStor
 function deps(storage: Storage): BackupDeps & { session: MemoryStorage; reload: Mock<() => void> } {
   return { storage, session: new MemoryStorage(), reload: vi.fn<() => void>(), now: () => NOW };
 }
+
+/** A file that passed parseBackup. */
+const file = (backup: Backup): ParsedBackupFile => ({ ok: true, backup, newerVersion: false });
 
 const stored = (storage: Storage, field: keyof typeof KEYS) => JSON.parse(storage.getItem(KEYS[field]) ?? "null");
 
@@ -69,6 +72,17 @@ describe("buildBackup", () => {
       decks: LOCAL.decks, errors: LOCAL.errors, collection: LOCAL.collection, collectionMeta: LOCAL.collectionMeta,
       orders: LOCAL.orders, vendorHistory: LOCAL.vendorHistory, tradeLedger: LOCAL.tradeLedger, binderExcluded: LOCAL.binderExcluded,
     }));
+  });
+
+  it("exports the Collection and exclude list as the app keeps them, even when storage still has old forms", () => {
+    // Saved before printing identity (#197): a lowercase set, plus a case twin of a stored printing.
+    const storage = seeded({
+      collection: { "sol ring": [{ quantity: 2, set: "C21", collectorNumber: "263" }, { quantity: 1, set: "c21", collectorNumber: "263" }], "brainstorm": [{ quantity: 1, set: "sta", collectorNumber: "13" }] },
+      binderExcluded: ["sol ring", 7],
+    });
+    const backup = buildBackup(storage, NOW)!;
+    expect(backup.collection).toEqual({ "sol ring": [{ quantity: 2, set: "C21", collectorNumber: "263" }], "brainstorm": [{ quantity: 1, set: "STA", collectorNumber: "13" }] });
+    expect(backup.binderExcluded).toEqual(["sol ring"]);
   });
 
   it("fills in empty values for anything not saved yet, or unreadable", () => {
@@ -160,6 +174,15 @@ describe("planImport", () => {
     expect(next).toEqual({ decks: [], errors: {}, collection: {}, collectionMeta: null, orders: [order("o9")], vendorHistory: [], tradeLedger: [], binderExcluded: [] });
   });
 
+  it("tags decks against the normalized Collection, so case twins count once", () => {
+    // Two copies needed; the backup holds one Printing twice under two set spellings, which is one copy.
+    const twoRings = { ...deck("d1"), cards: [{ id: "c1", name: "Sol Ring", quantity: 2, acquired: false }] };
+    const incoming = { version: 1, collection: { "sol ring": [{ quantity: 1, set: "C21", collectorNumber: "263" }, { quantity: 1, set: "c21", collectorNumber: "263" }] } } as unknown as Backup;
+    const { next } = planImport(readStoredValues(seeded({ decks: [twoRings] })), incoming, "merge");
+    expect(next.collection["sol ring"]).toEqual([{ quantity: 1, set: "C21", collectorNumber: "263" }]);
+    expect(next.decks[0].cards[0].source).toBeUndefined();
+  });
+
   it("tags the decks against the resulting Collection", () => {
     const ringDeck = { ...deck("d1"), cards: [{ id: "c1", name: "Sol Ring", quantity: 1, acquired: false }] };
     const { next } = planImport(readStoredValues(seeded({ decks: [ringDeck] })), { version: 1, collection: { "sol ring": [{ quantity: 1 }] } } as unknown as Backup, "merge");
@@ -171,7 +194,7 @@ describe("importBackup", () => {
   it("writes every field, signals other tabs, leaves the toast for after the reload, and reloads", () => {
     const storage = seeded(LOCAL);
     const d = deps(storage);
-    const result = importBackup(V1_BACKUP, { mode: "merge", source: "file" }, d);
+    const result = importBackup(file(V1_BACKUP), { mode: "merge", source: "file" }, d);
     expect(result).toEqual({ ok: true, counts: { newDecks: 1, newCards: 1, newOrders: 1, newTrades: 1 } });
     expect(stored(storage, "decks").map((x: { id: string }) => x.id)).toEqual(["d1", "d2"]);
     expect(stored(storage, "binderExcluded")).toEqual(["sol ring", "mana crypt"]);
@@ -185,7 +208,7 @@ describe("importBackup", () => {
   it("never touches the trade in progress", () => {
     const storage = seeded(LOCAL);
     storage.setItem("fetchlist-trade", '{"mine":[1],"theirs":[]}');
-    importBackup(V1_BACKUP, { mode: "replace", source: "drive" }, deps(storage));
+    importBackup(file(V1_BACKUP), { mode: "replace", source: "drive" }, deps(storage));
     expect(storage.getItem("fetchlist-trade")).toBe('{"mine":[1],"theirs":[]}');
   });
 
@@ -193,7 +216,7 @@ describe("importBackup", () => {
     const storage = seeded(LOCAL);
     storage.failOn.add(KEYS.tradeLedger);
     const d = deps(storage);
-    expect(importBackup(V1_BACKUP, { mode: "replace", source: "file" }, d)).toEqual({ ok: false, reason: "storage" });
+    expect(importBackup(file(V1_BACKUP), { mode: "replace", source: "file" }, d)).toEqual({ ok: false, reason: "storage" });
     for (const field of Object.keys(LOCAL) as (keyof typeof LOCAL)[]) expect(stored(storage, field)).toEqual(LOCAL[field]);
     expect(storage.getItem(BACKUP_IMPORTED_KEY)).toBeNull();
     expect(d.session.getItem(IMPORT_FLASH_KEY)).toBeNull();
@@ -203,7 +226,7 @@ describe("importBackup", () => {
   it("removes keys that weren't there before when rolling back", () => {
     const storage = new MemoryStorage();
     storage.failOn.add(KEYS.binderExcluded);
-    importBackup(V1_BACKUP, { mode: "replace", source: "file" }, deps(storage));
+    importBackup(file(V1_BACKUP), { mode: "replace", source: "file" }, deps(storage));
     expect(storage.getItem(KEYS.decks)).toBeNull();
   });
 
@@ -211,7 +234,7 @@ describe("importBackup", () => {
     const storage = seeded({ decks: [deck("sample")] });
     storage.setItem("fetchlist:demo:active", "true");
     const d = deps(storage);
-    expect(importBackup(V1_BACKUP, { mode: "replace", source: "file" }, d)).toEqual({ ok: false, reason: "demo" });
+    expect(importBackup(file(V1_BACKUP), { mode: "replace", source: "file" }, d)).toEqual({ ok: false, reason: "demo" });
     expect(stored(storage, "decks")).toEqual([deck("sample")]);
     expect(d.reload).not.toHaveBeenCalled();
   });
@@ -220,47 +243,21 @@ describe("importBackup", () => {
     const storage = seeded({});
     const d = deps(storage);
     d.session.failOn.add(IMPORT_FLASH_KEY);
-    expect(importBackup(V1_BACKUP, { mode: "merge", source: "file" }, d)).toMatchObject({ ok: true });
+    expect(importBackup(file(V1_BACKUP), { mode: "merge", source: "file" }, d)).toMatchObject({ ok: true });
     expect(d.reload).toHaveBeenCalledOnce();
   });
 });
 
-describe("hasBackedUpUserData", () => {
+describe("hasReplaceableUserData", () => {
   it("counts User data a Drive load would replace, deck errors included", () => {
-    expect(hasBackedUpUserData(new MemoryStorage())).toBe(false);
-    expect(hasBackedUpUserData(seeded({ errors: { d1: [] } }))).toBe(true);
-    expect(hasBackedUpUserData(seeded({ decks: [deck("d1")] }))).toBe(true);
+    expect(hasReplaceableUserData(new MemoryStorage())).toBe(false);
+    expect(hasReplaceableUserData(seeded({ errors: { d1: [] } }))).toBe(true);
+    expect(hasReplaceableUserData(seeded({ decks: [deck("d1")] }))).toBe(true);
   });
 
   it("ignores Working state and the trade in progress, which a Drive load doesn't cost the user", () => {
     const storage = seeded({ vendorHistory: ["TCGplayer"], binderExcluded: ["x"], collectionMeta: LOCAL.collectionMeta, decks: [], collection: {} });
     storage.setItem("fetchlist-trade", '{"mine":[1],"theirs":[]}');
-    expect(hasBackedUpUserData(storage)).toBe(false);
-  });
-});
-
-describe("import toasts", () => {
-  const zero = { newDecks: 0, newCards: 0, newOrders: 0, newTrades: 0 };
-
-  it("summarises a file import, omitting zero counts and pluralising", () => {
-    expect(importToasts("file", { ...zero, newDecks: 2, newCards: 3 }, false)).toEqual([
-      { title: "Import complete", sub: "2 decks · 3 collection cards added", variant: "success" },
-    ]);
-    expect(importToasts("file", { ...zero, newDecks: 1, newOrders: 2 }, false)[0].sub).toBe("1 deck · 2 orders added");
-    expect(importToasts("file", zero, false)).toEqual([
-      { title: "Nothing new to import", sub: "All items already exist locally.", variant: "neutral", autoDismiss: 3000 },
-    ]);
-  });
-
-  it("names a Drive load, and warns first about a newer format", () => {
-    expect(importToasts("drive", zero, false).map(t => t.title)).toEqual(["Loaded from Drive"]);
-    expect(importToasts("drive-conflict", zero, true).map(t => t.title)).toEqual(["Newer backup format", "Loaded Drive version"]);
-  });
-
-  it("are shown once", () => {
-    const session = new MemoryStorage();
-    session.setItem(IMPORT_FLASH_KEY, JSON.stringify(importToasts("drive", zero, false)));
-    expect(consumeImportToasts(session).map(t => t.title)).toEqual(["Loaded from Drive"]);
-    expect(consumeImportToasts(session)).toEqual([]);
+    expect(hasReplaceableUserData(storage)).toBe(false);
   });
 });

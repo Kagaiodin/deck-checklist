@@ -156,6 +156,24 @@ describe("GoogleDriveBackup", () => {
     expect(JSON.parse(sessionStorage.getItem("fetchlist:backup:flash")!)).toEqual([expect.objectContaining({ title: "Loaded Drive version" })]);
   });
 
+  it("rejects an unreadable Drive file before asking which version to keep", async () => {
+    storage.setItem("mtg-checklist-decks", JSON.stringify([deck]));
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(jsonResponse({ email: "kagaiodin@gmail.com" }))
+      .mockResolvedValueOnce(jsonResponse({ files: [{ id: "file-1", modifiedTime: "2026-07-01T00:00:00Z" }] }))
+      .mockResolvedValueOnce({ ok: true, status: 200, text: async () => "{not json" } as unknown as Response);
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<GoogleDriveBackup {...baseProps} />);
+    fireEvent.click(screen.getByRole("button", { name: /connect google drive/i }));
+    await screen.findByText("kagaiodin@gmail.com");
+
+    fireEvent.click(screen.getByRole("button", { name: /load/i }));
+    await screen.findByText("The Drive backup couldn't be read.");
+    expect(screen.queryByText("Keep which version?")).not.toBeInTheDocument();
+    expect(JSON.parse(storage.getItem("mtg-checklist-decks")!)).toEqual([deck]);
+  });
+
   it("rejects a Drive file that isn't a backup without touching local data", async () => {
     const fetchMock = vi.fn()
       .mockResolvedValueOnce(jsonResponse({ email: "kagaiodin@gmail.com" }))

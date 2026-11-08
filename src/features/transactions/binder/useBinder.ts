@@ -3,13 +3,9 @@ import type { Collection, Deck } from "../../../types/index";
 import { useCommittedInfo } from "../../collection/hooks/useCommittedInfo";
 import { deriveBinder, type Binder } from "./binderSurplus";
 import { BINDER_EXCLUDED_KEY } from "../../../store/storageKeys";
+import { sanitizeExcluded } from "../../../utils/binderExcluded";
 
 const CHANGE_EVENT = "fetchlist:binder-excluded-change";
-
-/** Backups are untrusted: keep only string keys. */
-export function sanitizeExcluded(raw: unknown): string[] {
-  return Array.isArray(raw) ? raw.filter((k): k is string => typeof k === "string") : [];
-}
 
 /** Raw stored text (null if unset or storage is blocked). */
 function readRaw(): string | null {

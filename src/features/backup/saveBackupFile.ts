@@ -4,6 +4,7 @@
 import type { ToastInput } from "../../types/index";
 import { supportsFileSystemAccess, getLinkedFileName, pickSaveHandle, writeLinkedFile } from "../../utils/fileSystemAccess";
 import { buildBackup } from "./backup";
+import { saveToast } from "./backupMessages";
 
 export type SaveResult =
   | { kind: "linked"; fileName: string | null }
@@ -39,11 +40,10 @@ export async function saveBackupFile(storage: Storage = window.localStorage): Pr
   return { kind: "downloaded", fileName };
 }
 
-/** The toast for a finished export, or null when there is nothing to say. */
-export function saveToast(result: SaveResult): ToastInput | null {
-  switch (result.kind) {
-    case "linked": return { title: "Saved to file", sub: result.fileName ?? undefined, variant: "success", autoDismiss: 2000 };
-    case "downloaded": return { title: "Profile exported", sub: result.fileName, variant: "success", autoDismiss: 2000 };
-    default: return null;
-  }
+/** Exports and tells the user how it went. Both export buttons call this. */
+export async function exportBackup(showToast: (t: ToastInput) => void): Promise<SaveResult> {
+  const result = await saveBackupFile();
+  const toast = saveToast(result);
+  if (toast) showToast(toast);
+  return result;
 }

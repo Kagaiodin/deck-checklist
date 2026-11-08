@@ -30,7 +30,7 @@ import { BackupControls } from "./features/backup/BackupControls";
 import { ImportBackupModal } from "./features/backup/ImportBackupModal";
 import { GoogleDriveBackup } from "./features/backup/GoogleDriveBackup";
 import { consumeImportToasts } from "./features/backup/backup";
-import { saveBackupFile, saveToast } from "./features/backup/saveBackupFile";
+import { exportBackup } from "./features/backup/saveBackupFile";
 import { ThemeToggle } from "./components/ThemeToggle";
 import { BugIcon, LightbulbIcon } from "./components/MenuIcons";
 import { DemoBanner } from "./features/demo/DemoBanner";
@@ -868,10 +868,7 @@ function AppInner() {
                     <div className="deck-picker-export-row">
                       <button className="btn btn-ghost btn-sm" disabled={demoActive} onClick={() => {
                         // Export is fire-and-forget — no need to close the sheet
-                        void saveBackupFile().then(result => {
-                          const toast = saveToast(result);
-                          if (toast) showToast(toast);
-                        });
+                        void exportBackup(showToast);
                       }}>↓ Export backup</button>
                       <button
                         className={`btn btn-ghost btn-sm${importPanelOpen ? " active" : ""}`}

@@ -8,7 +8,8 @@ import { DriveConflictModal } from "./DriveConflictModal";
 import type { ToastInput } from "../../types/index";
 import "./GoogleDriveBackup.css";
 import { isDemoActiveNow, DEMO_BACKUP_HINT } from "../demo/demoMode";
-import { buildBackup, hasBackedUpUserData, importBackup, parseBackup, readStoredValues, IMPORT_STORAGE_ERROR, type ImportSource } from "./backup";
+import { buildBackup, hasReplaceableUserData, importBackup, parseBackup, readStoredValues, type ParsedBackupFile } from "./backup";
+import { DRIVE_BACKUP_UNREADABLE, importFailure, type ImportSource } from "./backupMessages";
 
 interface Props {
   showToast: (t: ToastInput) => void;
@@ -32,8 +33,11 @@ function initialOf(email: string): string {
   return email.charAt(0).toUpperCase();
 }
 
-function countCards(decks: Deck[]): number {
-  return decks.reduce((sum, d) => sum + d.cards.length, 0);
+type DeckSummary = { deckCount: number; cardCount: number };
+
+/** What the conflict modal shows for one side: how many decks, and card rows across them. */
+function summarize(decks: Deck[]): DeckSummary {
+  return { deckCount: decks.length, cardCount: decks.reduce((sum, d) => sum + d.cards.length, 0) };
 }
 
 function relativeTime(from: Date): string {
@@ -52,8 +56,8 @@ export function GoogleDriveBackup({ showToast, variant }: Props) {
   const [driveError, setDriveError] = useState<{ kind: DriveError["kind"]; message: string } | null>(null);
   // Only Save sets this: a Load reloads the page, and its toast says it worked.
   const [lastSync, setLastSync] = useState<{ verb: "Saved"; at: Date } | null>(null);
-  // `local` is counted when Load is clicked, from storage.
-  const [conflict, setConflict] = useState<{ contents: string; modifiedTime: string; local: { deckCount: number; cardCount: number } } | null>(null);
+  // Both sides are counted when Load is clicked: Drive's from the parsed file, this device's from storage.
+  const [conflict, setConflict] = useState<{ parsed: ParsedBackupFile; modifiedTime: string; local: DeckSummary } | null>(null);
   const [, forceTick] = useState(0);
 
   // Keep the "· 2m ago" meta line fresh without a full data refetch.
@@ -76,14 +80,9 @@ export function GoogleDriveBackup({ showToast, variant }: Props) {
   }
 
   /** Imports Drive's copy, replacing this device's data; the page reloads on success. */
-  function applyDriveContents(text: string, source: ImportSource): void {
-    const parsed = parseBackup(text);
-    if (!parsed.ok) {
-      setDriveError({ kind: "unknown", message: "The Drive backup couldn't be read." });
-      return;
-    }
-    const result = importBackup(parsed.backup, { mode: "replace", source, newerVersion: parsed.newerVersion });
-    if (!result.ok) setDriveError({ kind: "unknown", message: result.reason === "storage" ? IMPORT_STORAGE_ERROR : DEMO_BACKUP_HINT });
+  function applyDriveBackup(parsed: ParsedBackupFile, source: ImportSource): void {
+    const result = importBackup(parsed, { mode: "replace", source });
+    if (!result.ok) setDriveError({ kind: "unknown", message: importFailure(result.reason) });
   }
 
   async function handleConnect() {
@@ -133,11 +132,14 @@ export function GoogleDriveBackup({ showToast, variant }: Props) {
         showToast({ title: "No backup in Drive yet", sub: "Save first to create one.", variant: "neutral", autoDismiss: 2500 });
         return;
       }
-      if (hasBackedUpUserData(window.localStorage)) {
-        const { decks } = readStoredValues(window.localStorage);
-        setConflict({ ...result, local: { deckCount: decks.length, cardCount: countCards(decks) } });
+      // Validate before asking anything: an unreadable file shouldn't open the "Keep which version?" choice.
+      const parsed = parseBackup(result.contents);
+      if (!parsed.ok) {
+        setDriveError({ kind: "unknown", message: DRIVE_BACKUP_UNREADABLE });
+      } else if (hasReplaceableUserData(window.localStorage)) {
+        setConflict({ parsed, modifiedTime: result.modifiedTime, local: summarize(readStoredValues(window.localStorage).decks) });
       } else {
-        applyDriveContents(result.contents, "drive");
+        applyDriveBackup(parsed, "drive");
       }
     } catch (err) {
       setDriveError(err as DriveError);
@@ -149,7 +151,7 @@ export function GoogleDriveBackup({ showToast, variant }: Props) {
   function resolveKeepDrive() {
     if (!conflict) return;
     setConflict(null);
-    applyDriveContents(conflict.contents, "drive-conflict");
+    applyDriveBackup(conflict.parsed, "drive-conflict");
   }
 
   function resolveKeepLocal() {
@@ -170,15 +172,7 @@ export function GoogleDriveBackup({ showToast, variant }: Props) {
   const expired = !driveError && isExpired();
   const showNotice = !!driveError || expired;
 
-  let driveConflictSummary = null;
-  if (conflict) {
-    let driveCounts = { deckCount: 0, cardCount: 0 };
-    try {
-      const parsed = JSON.parse(conflict.contents) as { decks?: Deck[] };
-      driveCounts = { deckCount: (parsed.decks ?? []).length, cardCount: countCards(parsed.decks ?? []) };
-    } catch { /* malformed backup — counts stay at 0, modal still lets the user choose */ }
-    driveConflictSummary = { modifiedTime: conflict.modifiedTime, ...driveCounts };
-  }
+  const driveConflictSummary = conflict && { modifiedTime: conflict.modifiedTime, ...summarize(conflict.parsed.backup.decks ?? []) };
 
   return (
     <div className={`gdrive gdrive--${variant}`}>

@@ -55,7 +55,7 @@ describe("BackupControls — File System Access save/load", () => {
 
     await waitFor(() => expect(showToast).toHaveBeenCalled());
     expect(clickSpy).toHaveBeenCalled();
-    expect(showToast.mock.calls[0][0].title).toBe("Profile exported");
+    expect(showToast.mock.calls[0][0].title).toBe("Backup exported");
   });
 
   it("exports what's saved, trade ledger and Binder exclude list included, on the v1 envelope", async () => {
