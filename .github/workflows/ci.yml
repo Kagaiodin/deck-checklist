@@ -2,8 +2,11 @@ name: CI
 
 on:
   pull_request:
+    # `labeled` so adding `run-visual` starts a run with the visual checks forced on.
+    types: [opened, synchronize, reopened, labeled]
   push:
     branches: [main]
+  workflow_dispatch:
 
 # Cancel superseded runs on the same branch/PR.
 concurrency:
@@ -31,9 +34,34 @@ jobs:
       # The logic lives in package.json so other CI systems can call the same script.
       - run: npm run verify
 
+  # Decides whether `contrast` and `a11y` run. The skip list lives in scripts/needs-visual-checks.sh (#216); this job
+  # only calls it. Pushes to main, manual runs and PRs labelled `run-visual` always run them. `verify` is not gated.
+  changes:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      visual: ${{ steps.check.outputs.visual }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0  # the three-dot diff needs the merge base
+
+      - id: check
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+          FORCE: ${{ contains(github.event.pull_request.labels.*.name, 'run-visual') }}
+        run: |
+          if [ "$EVENT" != pull_request ] || [ "$FORCE" = true ]; then visual=true
+          else visual=$(sh scripts/needs-visual-checks.sh "origin/$BASE_REF"); fi
+          echo "visual=$visual" >> "$GITHUB_OUTPUT"
+
   # DL-CONTRAST-01: every visible text pair on the captured screens must be >= AA (docs/specs/design-rules-ci-spec.md).
   # One job per theme × accent; the logic lives in `npm run test:contrast`.
   contrast:
+    needs: changes
+    # Runs unless the `changes` job said `false`, so a failed `changes` job doesn't skip the gate.
+    if: ${{ !cancelled() && needs.changes.outputs.visual != 'false' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     # Playwright's official image already holds Chromium and its system libraries. `playwright install --with-deps`
@@ -66,6 +94,9 @@ jobs:
   # axe-core WCAG 2.2 AA gate (docs/specs/a11y-gate-spec.md). Dark indigo only: most rules are theme-independent and
   # colour contrast has its own job. The logic lives in `npm run test:a11y`. Same image-tag rule as the contrast job.
   a11y:
+    needs: changes
+    # Runs unless the `changes` job said `false`, so a failed `changes` job doesn't skip the gate.
+    if: ${{ !cancelled() && needs.changes.outputs.visual != 'false' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     container:
