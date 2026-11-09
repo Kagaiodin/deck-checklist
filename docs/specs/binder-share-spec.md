@@ -35,7 +35,7 @@ Everything happens in the browser. A Share link carries its snapshot in the URL 
   Callers own the version prefix, the hash key and the shape checks.
 - **Trade links don't change.** They stay `#trade=v1.` with zlib `deflate`. `encodeTrade` and `decodeTrade` call the codec. The existing `tradeShare` tests are the regression check, and must pass with no changes to the tests.
 - `MAX_SHARE_URL_LENGTH` (4000) moves to the codec, and so does `isShareUrlTooLong`. The cap is set by chat apps (Discord's free message limit is 2000), not by browsers.
-- **Card names stay in the link.** Identifying cards by set + collector number would make links about 3× smaller. The cost is a Scryfall lookup every time a link opens, which brings in Scryfall's rate limits (#223) and needs a connection. Revisit only if real Binders often go over the cap, and only once #223's client exists.
+- **Card names stay in the link.** Identifying cards by set + collector number would make links about 3× smaller. The cost is a Scryfall lookup every time a link opens, which brings in Scryfall's rate limits (#223) and needs a connection. Revisit only if real Binders often go over the cap, and only once #223's client exists. If the cap becomes a problem, try a bundled card-name list first (#227, ~2,700 cards, no server). Short links backed by encrypted storage (#228) are parked as the first backend.
 
 ## 3. Binder payload: `src/utils/binderShare.ts`
 
