@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import type { Card, Order, OrderCard } from "../../types/index";
 import { LAST_VENDOR_KEY, VENDOR_LAST_USED_KEY } from "../../store/storageKeys";
+import { loadJson, saveJson } from "../../store/savedJson";
 
 // ── Vendor definitions ────────────────────────────────────────────────────────
 
@@ -59,18 +60,11 @@ function setLastVendorId(vendorId: string): void {
 }
 
 function getVendorLastUsed(): Record<string, number> {
-  try {
-    const raw = localStorage.getItem(VENDOR_LAST_USED_KEY);
-    return raw ? (JSON.parse(raw) as Record<string, number>) : {};
-  } catch { return {}; }
+  return loadJson<Record<string, number>>(VENDOR_LAST_USED_KEY, {});
 }
 
 function recordVendorUsed(vendorId: string): void {
-  try {
-    const map = getVendorLastUsed();
-    map[vendorId] = Date.now();
-    localStorage.setItem(VENDOR_LAST_USED_KEY, JSON.stringify(map));
-  } catch { /* ignore */ }
+  saveJson(VENDOR_LAST_USED_KEY, { ...getVendorLastUsed(), [vendorId]: Date.now() });
 }
 
 // ── Types ─────────────────────────────────────────────────────────────────────

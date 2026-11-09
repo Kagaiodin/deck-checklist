@@ -8,15 +8,19 @@ import { STORAGE_KEYS } from "../store/storageKeys";
 //    even when both sit in one module (App.tsx's two decks copies, #204).
 // 2. Every key is registered in src/store/storageKeys.ts with its kind, which decides whether
 //    demo mode swaps it, so new persisted data cannot leak between demo and real data unnoticed.
-// Keys must be string literals or string constants so this scan can resolve them.
+// Keys must be string literals or string constants so this scan can resolve them, passed straight to
+// localStorage, useLocalStorage, or loadJson / saveJson (store/savedJson.ts).
 
 /** Keys written from more than one module on purpose. Each entry needs a reason and a way out. */
 const SHARED_WRITERS: Record<string, string> = {};
 
 // demo/ swaps every managed key by design (its own demo:* keys are its bookkeeping, not app data); so does
 // backup.ts, which writes every backed-up key on import and then reloads, keeping no copy in memory.
-// useLocalStorage.ts is the generic hook itself.
-const SKIP = [/__tests__\//, /^test\//, /\.test\.tsx?$/, /^features\/demo\//, /^features\/backup\/backup\.ts$/, /^hooks\/useLocalStorage\.ts$/];
+// useLocalStorage.ts and store/savedJson.ts are the generic hook and helpers themselves.
+const SKIP = [/__tests__\//, /^test\//, /\.test\.tsx?$/, /^features\/demo\//, /^features\/backup\/backup\.ts$/, /^hooks\/useLocalStorage\.ts$/, /^store\/savedJson\.ts$/];
+
+// Calls that take a key as their first argument: true for a write, false for a read.
+const KEYED_CALLS: Record<string, boolean> = { useLocalStorage: true, saveJson: true, loadJson: false };
 
 type Usage = { writers: Set<string>; readers: Set<string>; hookCopies: string[] };
 
@@ -73,8 +77,9 @@ function scan() {
       if (ts.isCallExpression(node)) {
         const callee = node.expression;
         let write: boolean | undefined;
+        // Only for the copies check (rule 1); KEYED_CALLS decides read or write.
         const isHookCall = ts.isIdentifier(callee) && callee.text === "useLocalStorage";
-        if (isHookCall) write = true;
+        if (ts.isIdentifier(callee) && Object.hasOwn(KEYED_CALLS, callee.text)) write = KEYED_CALLS[callee.text];
         else if (ts.isPropertyAccessExpression(callee) && /(^|\.)localStorage$/.test(callee.expression.getText(sf))) {
           const method = callee.name.text;
           if (method === "getItem") write = false;
@@ -139,7 +144,7 @@ describe("localStorage keys", () => {
     const unused = [...registered].filter(k => !usage.has(k));
     expect(
       unused,
-      "No module reads or writes this key as `localStorage.getItem/setItem/removeItem(KEY)` or `useLocalStorage(KEY)`, so the scan thinks the app doesn't use it. If you moved the calls behind an injected storage parameter (`storage.getItem(KEY)`), the scan can't see them: call `window.localStorage` with the key constant directly, for example in an adapter with one method per key. Otherwise drop the stale STORAGE_KEYS entry.",
+      "No module reads or writes this key as `localStorage.getItem/setItem/removeItem(KEY)`, `useLocalStorage(KEY)` or `loadJson/saveJson(KEY)`, so the scan thinks the app doesn't use it. If you moved the calls behind an injected storage parameter (`storage.getItem(KEY)`), the scan can't see them: call `loadJson`/`saveJson` or `window.localStorage` with the key constant directly, for example in an adapter with one method per key. Otherwise drop the stale STORAGE_KEYS entry.",
     ).toEqual([]);
   });
 });

@@ -3,6 +3,7 @@ import type { Collection, Deck } from "../../../types/index";
 import { useCommittedInfo } from "../../collection/hooks/useCommittedInfo";
 import { deriveBinder, type Binder } from "./binderSurplus";
 import { BINDER_EXCLUDED_KEY } from "../../../store/storageKeys";
+import { parseJson, saveJson } from "../../../store/savedJson";
 import { sanitizeExcluded } from "../../../utils/binderExcluded";
 
 const CHANGE_EVENT = "fetchlist:binder-excluded-change";
@@ -14,7 +15,7 @@ function readRaw(): string | null {
 
 /** Parses stored text into a clean list; anything unreadable is an empty list. */
 function parseExcluded(raw: string | null): string[] {
-  try { return sanitizeExcluded(JSON.parse(raw ?? "[]")); } catch { return []; }
+  return parseJson(raw, [], sanitizeExcluded);
 }
 
 /** Reads the exclude list straight from storage. */
@@ -24,7 +25,7 @@ export function readBinderExcluded(): string[] {
 
 /** Writes the list and tells every live reader (Binder, backups) to re-read it. */
 export function writeBinderExcluded(list: string[]) {
-  try { window.localStorage.setItem(BINDER_EXCLUDED_KEY, JSON.stringify(list)); } catch { /* quota */ }
+  saveJson(BINDER_EXCLUDED_KEY, list);
   window.dispatchEvent(new Event(CHANGE_EVENT));
 }
 

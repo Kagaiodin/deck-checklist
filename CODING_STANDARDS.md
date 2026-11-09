@@ -15,6 +15,8 @@ Persisted state that more than one part of the app reads or writes lives in one 
 
 Known exception: the decks and their Deck errors live in `DeckProvider`'s reducer, which loads and saves them itself (#204, #214). That meets the rule's aim: one in-memory owner, every change dispatched, so nothing saves a stale copy. Move them to a store if code outside React needs to read them live. The backup module doesn't: it reads and writes storage, then reloads the page (#206).
 
+Load and save JSON with `loadJson` / `saveJson` from `src/store/savedJson.ts` (or `parseJson` on text you already have), not a hand-rolled `JSON.parse` in a try/catch. They hold one rule: missing, unreadable or `null` data gives the fallback, and a failed save keeps the change in memory. When the saved shape can't be trusted, pass a `check` that validates it; a `check` that throws means nothing usable is saved, so the fallback is used. Fixing up data worth keeping (the Collection's set codes) goes outside it, or one bad entry would silently replace everything (#207). Backup and demo mode are the exceptions: backup reports unreadable data, and demo mode moves raw values between keys.
+
 ## The store derives its own values
 
 Values computed from a store's state belong to the store, not its callers. The Collection's `cardCount` is one example: `collectionStore.update()` keeps it in step with the Collection. Callers pass the new state plus anything only they know, such as a `source` label or an import's file name. They do not compute counts or meta themselves.

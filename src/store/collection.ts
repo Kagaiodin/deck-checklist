@@ -2,6 +2,7 @@ import { useSyncExternalStore } from "react";
 import type { Collection, CollectionMeta, CollectionPrinting } from "../types/index";
 import { normalizeSet, samePrinting } from "../utils/printing";
 import { COLLECTION_KEY, COLLECTION_META_KEY } from "./storageKeys";
+import { parseJson } from "./savedJson";
 
 /** Where the store keeps the Collection between sessions. One method per key, so key ownership stays visible. */
 export interface CollectionStorage {
@@ -68,13 +69,9 @@ function withSet(p: CollectionPrinting, set: string | undefined): CollectionPrin
   return next;
 }
 
-function parse<T>(load: () => string | null, fallback: T): T {
-  try {
-    const raw = load();
-    return raw ? (JSON.parse(raw) as T) ?? fallback : fallback;
-  } catch {
-    return fallback;
-  }
+/** Saved text from the injected storage; blocked storage reads as nothing saved. */
+function loadRaw(load: () => string | null): string | null {
+  try { return load(); } catch { return null; }
 }
 
 export function createCollectionStore(storage: CollectionStorage) {
@@ -84,8 +81,10 @@ export function createCollectionStore(storage: CollectionStorage) {
   /** Loads on first use, so anything that rewrites storage at boot (demo refresh) runs first. */
   function current(): CollectionState {
     state ??= {
-      collection: normalizeSets(parse<Collection>(() => storage.loadCollection(), {})),
-      meta: parse<CollectionMeta | null>(() => storage.loadMeta(), null),
+      // Outside parseJson: a printing normalizeSets can't fix must not read as "nothing saved",
+      // or the next commit would save an empty Collection over the real one.
+      collection: normalizeSets(parseJson<Collection>(loadRaw(() => storage.loadCollection()), {})),
+      meta: parseJson<CollectionMeta | null>(loadRaw(() => storage.loadMeta()), null),
     };
     return state;
   }
