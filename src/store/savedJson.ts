@@ -1,5 +1,6 @@
 // Loading and saving JSON in localStorage, with one rule for every owner of saved data (#207).
-// The rule and its exceptions are in CODING_STANDARDS.md ("Shared persisted state").
+// The rule and its exceptions are in CODING_STANDARDS.md, under "Shared persisted state lives in one
+// external store".
 //
 // The storageKeys scan reads `loadJson` / `saveJson` calls as reads / writes of their first
 // argument, so pass the key as a string constant.
