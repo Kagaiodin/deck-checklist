@@ -13,7 +13,7 @@ Persisted state that more than one part of the app reads or writes lives in one 
 - Components and providers import the singleton (`collectionStore`, `useCollection()`), as `App.tsx` and `CollectionPage.tsx` do.
 - Hooks receive the store as a dependency instead of importing it, so tests can pass `memoryCollectionStore()`. See `useTradeLedger({ collectionStore })` and `useOrders({ collectionStore, dispatch })`.
 
-Known exception: the decks live in `DeckProvider`'s reducer, which loads and saves them itself (#204). That meets the rule's aim: one in-memory owner, every change dispatched, so nothing saves a stale copy. Move them to a store if code outside React needs to read them live. The backup module doesn't: it reads and writes storage, then reloads the page (#206).
+Known exception: the decks and their Deck errors live in `DeckProvider`'s reducer, which loads and saves them itself (#204, #214). That meets the rule's aim: one in-memory owner, every change dispatched, so nothing saves a stale copy. Move them to a store if code outside React needs to read them live. The backup module doesn't: it reads and writes storage, then reloads the page (#206).
 
 ## The store derives its own values
 
