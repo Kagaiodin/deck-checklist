@@ -8,6 +8,7 @@
 
 ## Testing
 - `npm test` / `npm run test:watch` / `npm run test:coverage`; `npm run verify` = lint + build + coverage (what CI runs). `eslint-suppressions.json` freezes existing React Compiler violations; after fixing one, run `npx eslint . --prune-suppressions`
+- Contrast and a11y CI skip PRs that change only paths on the skip list in `scripts/needs-visual-checks.sh`. When the app or a gate script starts reading a listed path, take it off the list (its test catches quoted paths, not computed ones).
 - Vitest config is separate from vite.config.ts (jsdom vs. Workers plugin) — do not merge them
 - Tests live in a `__tests__/` folder next to the code they cover (utils, store, hooks,
   `src/features/<feature>/`). New utils, store logic, hooks, and interactive components
