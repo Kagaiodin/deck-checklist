@@ -1,16 +1,20 @@
-import type { AcquisitionSource, Card, Deck, Collection, DeckNotification, DeckExtraInfo } from "../types/index";
+import type { AcquisitionSource, Card, Deck, Collection, DeckNotification, DeckExtraInfo, ErrorQueueItem } from "../types/index";
 import { applyCollectionToCards } from "../utils/csvParser";
 import { useReducer, createContext, useContext, createElement, useEffect, useLayoutEffect } from "react";
 import { collectionStore } from "./collection";
-import { DECKS_KEY } from "./storageKeys";
+import { DECKS_KEY, ERRORS_KEY } from "./storageKeys";
 import type { Dispatch, ReactNode } from "react";
 
-type DeckState = {
+/** Each deck's Deck errors, by deck id. Kept beside the decks so a deck and its errors change together. */
+export type DeckErrors = Record<string, ErrorQueueItem[]>;
+
+export type DeckState = {
   decks: Deck[];
+  errors: DeckErrors;
 };
 
 export type DeckAction =
-  | { type: "ADD_DECK"; payload: Deck }
+  | { type: "ADD_DECK"; payload: Deck; errors?: ErrorQueueItem[] }
   | { type: "DELETE_DECK"; payload: string }
   | { type: "RENAME_DECK"; payload: { id: string; name: string } }
   | { type: "SET_DECK_FORMAT"; payload: { id: string; format: string | undefined } }
@@ -29,7 +33,9 @@ export type DeckAction =
   | { type: "SET_DECK_PRICES"; payload: { deckId: string; prices: Record<string, number | null>; updatedAt?: number } }
   | { type: "SET_DECK_BUILT"; payload: { deckId: string; built: boolean; collection: Collection } }
   | { type: "TOGGLE_COMMANDER"; payload: { deckId: string; cardId: string } }
-  | { type: "DISMISS_COMMANDER_PROMPT"; payload: { deckId: string } };
+  | { type: "DISMISS_COMMANDER_PROMPT"; payload: { deckId: string } }
+  | { type: "REMAP_DECK_ERROR"; payload: { deckId: string; originalName: string; searchName: string; card?: Card } }
+  | { type: "DISMISS_DECK_ERROR"; payload: { deckId: string; originalName: string } };
 
 /** An Order being cancelled: the card ids of its deck-linked lines, grouped by deck (GLOSSARY: Cancelling). */
 export interface CancelOrderLines {
@@ -78,6 +84,13 @@ function builtCards(cards: Card[]): Card[] {
 }
 
 /** Unmarking Built: clear every checkbox and tag, then re-tag from the Collection. */
+/** Applies `change` to one of a deck's errors. */
+function updateError(errors: DeckErrors, deckId: string, originalName: string, change: Partial<ErrorQueueItem>): DeckErrors {
+  const queue = errors[deckId];
+  if (!queue) return errors;
+  return { ...errors, [deckId]: queue.map(e => e.originalName === originalName ? { ...e, ...change } : e) };
+}
+
 function unbuiltCards(cards: Card[], collection: Collection): Card[] {
   const reset = cards.map(c => ({ ...c, acquired: false, source: undefined, manuallyTagged: false }));
   return applyCollectionToCards(reset, collection);
@@ -90,10 +103,14 @@ export function deckReducer(state: DeckState, action: DeckAction): DeckState {
       const deck = action.payload;
       const name = deck.name.trim() || `Deck ${state.decks.length + 1}`;
       const cards = deck.isBuilt ? builtCards(deck.cards) : deck.cards;
-      return { ...state, decks: [...state.decks, { ...deck, name, cards }] };
+      const errors = action.errors ? { ...state.errors, [deck.id]: action.errors } : state.errors;
+      return { ...state, decks: [...state.decks, { ...deck, name, cards }], errors };
     }
-    case "DELETE_DECK":
-      return { ...state, decks: state.decks.filter(d => d.id !== action.payload) };
+    case "DELETE_DECK": {
+      const errors = { ...state.errors };
+      delete errors[action.payload];
+      return { ...state, decks: state.decks.filter(d => d.id !== action.payload), errors };
+    }
     case "RENAME_DECK":
       return {
         ...state,
@@ -299,6 +316,21 @@ export function deckReducer(state: DeckState, action: DeckAction): DeckState {
         }),
       };
     }
+    case "REMAP_DECK_ERROR": {
+      // A remap finishes after a Scryfall lookup; if the deck was deleted meanwhile there is nothing to update.
+      const { deckId, originalName, searchName, card } = action.payload;
+      if (!state.decks.some(d => d.id === deckId)) return state;
+      const errors = updateError(state.errors, deckId, originalName, card ? { searchName, resolved: true } : { searchName });
+      if (!card) return { ...state, errors };
+      // Appends to the deck as it is now, not as it was when the lookup started.
+      return {
+        ...state,
+        decks: state.decks.map(d => d.id === deckId ? { ...d, cards: [...d.cards, card] } : d),
+        errors,
+      };
+    }
+    case "DISMISS_DECK_ERROR":
+      return { ...state, errors: updateError(state.errors, action.payload.deckId, action.payload.originalName, { resolved: true }) };
     default:
       return state;
   }
@@ -306,28 +338,37 @@ export function deckReducer(state: DeckState, action: DeckAction): DeckState {
 
 const DeckContext = createContext<{ state: DeckState; dispatch: Dispatch<DeckAction> } | undefined>(undefined);
 
-function loadDecks(): Deck[] {
+// Each key is named at its localStorage call, so the storageKeys scan can see who writes it.
+function parseSaved<T>(read: () => string | null, empty: T): T {
   try {
-    const raw = window.localStorage.getItem(DECKS_KEY);
-    return raw ? (JSON.parse(raw) as Deck[]) : [];
+    const raw = read();
+    return raw ? (JSON.parse(raw) as T) : empty;
   } catch {
-    return [];
+    return empty;
+  }
+}
+
+function trySave(write: () => void) {
+  try {
+    write();
+  } catch {
+    // Quota exceeded or storage unavailable: keep working in memory.
   }
 }
 
 /**
- * Owns the decks: loads them from localStorage once and saves them after every change, so there is
- * no second copy to drift (#204). `initialDecks` replaces the saved decks; tests use it.
+ * Owns the decks and their Deck errors: loads each from localStorage once and saves it after every
+ * change, so there is no second copy to drift (#204, #214). `initialDecks` and `initialErrors`
+ * replace what is saved; tests use them.
  */
-export function DeckProvider({ children, initialDecks }: { children: ReactNode; initialDecks?: Deck[] }) {
-  const [state, dispatch] = useReducer(deckReducer, initialDecks, decks => ({ decks: decks ?? loadDecks() }));
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(DECKS_KEY, JSON.stringify(state.decks));
-    } catch {
-      // Quota exceeded or storage unavailable: keep working in memory.
-    }
-  }, [state.decks]);
+export function DeckProvider({ children, initialDecks, initialErrors }: { children: ReactNode; initialDecks?: Deck[]; initialErrors?: DeckErrors }) {
+  const [state, dispatch] = useReducer(deckReducer, undefined, () => ({
+    decks: initialDecks ?? parseSaved<Deck[]>(() => window.localStorage.getItem(DECKS_KEY), []),
+    errors: initialErrors ?? parseSaved<DeckErrors>(() => window.localStorage.getItem(ERRORS_KEY), {}),
+  }));
+  // Separate effects, so changing one doesn't rewrite the other.
+  useEffect(() => { trySave(() => window.localStorage.setItem(DECKS_KEY, JSON.stringify(state.decks))); }, [state.decks]);
+  useEffect(() => { trySave(() => window.localStorage.setItem(ERRORS_KEY, JSON.stringify(state.errors))); }, [state.errors]);
   // Every Collection change re-tags decks. The starting Collection doesn't: stored decks already match it.
   // Layout effects run before children's passive effects, so a change made on mount isn't missed.
   useLayoutEffect(() => {

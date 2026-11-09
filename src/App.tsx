@@ -12,7 +12,7 @@ import { useTradeLedger } from "./features/transactions/ledger/useTradeLedger";
 import { Checklist } from "./components/Checklist";
 import { EmptyState } from "./components/EmptyState";
 import { ErrorQueue } from "./components/ErrorQueue";
-import type { Deck, ErrorQueueItem, AcquisitionSource } from "./types/index";
+import type { Deck, AcquisitionSource } from "./types/index";
 import { formatOptions } from "./utils/deckFormats";
 import { getDeckColorIdentity, formatRelativeDate, getDeckDomain } from "./utils/deckUtils";
 import { CollectionPage } from "./features/collection/CollectionPage";
@@ -45,7 +45,7 @@ import type { ToastInput } from "./types/index";
 import { BuyListSheet } from "./features/card-purchase/BuyListSheet";
 import { useBuyFlow } from "./features/card-purchase/useBuyFlow";
 import { collectionStore, useCollection } from "./store/collection";
-import { ERRORS_KEY, ONBOARDING_DISMISSED_KEY, SIDEBAR_COLLAPSED_KEY } from "./store/storageKeys";
+import { ONBOARDING_DISMISSED_KEY, SIDEBAR_COLLAPSED_KEY } from "./store/storageKeys";
 import "./features/card-purchase/buy-flow.css";
 
 /** Where the Calculator's back control returns to, for each place it can be opened from. */
@@ -69,7 +69,6 @@ const openedWithTradeLink = () => isTradePath() || extractPayload(window.locatio
 function AppInner() {
   const { state, dispatch } = useDecks();
   const [activeDeckId, setActiveDeckId] = useState<string | null>(null);
-  const [allErrors, setAllErrors] = useLocalStorage<Record<string, ErrorQueueItem[]>>(ERRORS_KEY, {});
   const [view, setView] = useState<"decks" | "collection" | "transactions">(() => (openedWithTradeLink() ? "transactions" : "decks"));
   const [txSubTab, setTxSubTab] = useState<TransactionsTab>(() => (openedWithTradeLink() ? "binder" : "buys"));
   // The Calculator renders inside Transactions, replacing the sub-tab body. `tradeOrigin` is where
@@ -203,15 +202,7 @@ function AppInner() {
     });
   }, [activeDeck, dispatch]);
 
-  const errors = activeDeckId ? (allErrors[activeDeckId] ?? []) : [];
-
-  function setErrors(updater: ErrorQueueItem[] | ((prev: ErrorQueueItem[]) => ErrorQueueItem[])) {
-    if (!activeDeckId) return;
-    setAllErrors(prev => ({
-      ...prev,
-      [activeDeckId]: typeof updater === "function" ? updater(prev[activeDeckId] ?? []) : updater
-    }));
-  }
+  const errors = activeDeckId ? (state.errors[activeDeckId] ?? []) : [];
 
   function handleDeckImported({ name, url, format, built, cards, errors }: ImportedDeck) {
     const id = crypto.randomUUID();
@@ -225,8 +216,7 @@ function AppInner() {
       isBuilt: built || undefined,
       pricesUpdatedAt: cards.some(c => c.price !== undefined) ? Date.now() : undefined,
     };
-    dispatch({ type: "ADD_DECK", payload: deck });
-    setAllErrors(prev => ({ ...prev, [id]: errors }));
+    dispatch({ type: "ADD_DECK", payload: deck, errors });
     setActiveDeckId(id);
     setShowImport(false);
     setImportDraft(EMPTY_IMPORT_DRAFT);
@@ -304,29 +294,19 @@ function AppInner() {
 
   async function handleRemap(originalName: string, newName: string) {
     if (!activeDeckId) return;
+    const deckId = activeDeckId;
     const count = errors.find(e => e.originalName === originalName)?.count ?? 1;
     try {
       const card = await lookupCard({ name: newName, count }, { collection: collectionStore.get });
-      if (card) {
-        // ADD_CARD appends to the deck as it is now, not as it was when the lookup started.
-        dispatch({ type: "ADD_CARD", payload: { deckId: activeDeckId, card } });
-        setErrors(prev =>
-          prev.map(e => e.originalName === originalName ? { ...e, searchName: newName, resolved: true } : e)
-        );
-      } else {
-        setErrors(prev =>
-          prev.map(e => e.originalName === originalName ? { ...e, searchName: newName } : e)
-        );
-      }
+      dispatch({ type: "REMAP_DECK_ERROR", payload: { deckId, originalName, searchName: newName, card: card ?? undefined } });
     } catch {
       // leave the error in queue if the remap lookup fails
     }
   }
 
   function handleDismiss(originalName: string) {
-    setErrors(prev =>
-      prev.map(e => e.originalName === originalName ? { ...e, resolved: true } : e)
-    );
+    if (!activeDeckId) return;
+    dispatch({ type: "DISMISS_DECK_ERROR", payload: { deckId: activeDeckId, originalName } });
   }
 
   function handleCreateBlankDeck() {
@@ -357,7 +337,6 @@ function AppInner() {
 
   function handleDeleteDeck(id: string) {
     dispatch({ type: "DELETE_DECK", payload: id });
-    setAllErrors(prev => { const next = { ...prev }; delete next[id]; return next; });
     if (activeDeckId === id) setActiveDeckId(null);
   }
 

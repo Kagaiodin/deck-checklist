@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { render, screen, fireEvent, act } from "@testing-library/react";
 import { DeckProvider, useDecks } from "../decks";
 import { collectionStore } from "../collection";
-import { DECKS_KEY } from "../storageKeys";
+import { DECKS_KEY, ERRORS_KEY } from "../storageKeys";
 import { MemoryStorage } from "../../features/demo/__tests__/memoryStorage";
 import type { Card, Deck } from "../../types/index";
 
@@ -97,6 +97,51 @@ describe("DeckProvider — saved decks", () => {
     render(<DeckProvider><AddDeckButton deck={makeDeck({ id: "d1", name: "Burn" })} /></DeckProvider>);
     fireEvent.click(screen.getByRole("button"));
     expect(saved()?.map(d => d.id)).toEqual(["d1"]);
+  });
+});
+
+// ── Deck errors ───────────────────────────────────────────────────────────────
+
+describe("DeckProvider — saved Deck errors", () => {
+  const savedErrors = () => JSON.parse(storage.getItem(ERRORS_KEY) ?? "null") as unknown;
+  const error = { originalName: "Lightnig Bolt", searchName: "Lightnig Bolt", resolved: false };
+
+  function ErrorCount({ deckId }: { deckId: string }) {
+    const { state } = useDecks();
+    return <span data-testid="errors">{(state.errors[deckId] ?? []).length}</span>;
+  }
+
+  function DeleteButton({ id }: { id: string }) {
+    const { dispatch } = useDecks();
+    return <button onClick={() => dispatch({ type: "DELETE_DECK", payload: id })}>Delete</button>;
+  }
+
+  it("starts from the saved errors", () => {
+    storage.setItem(ERRORS_KEY, JSON.stringify({ d1: [error] }));
+    render(<DeckProvider><ErrorCount deckId="d1" /></DeckProvider>);
+    expect(screen.getByTestId("errors").textContent).toBe("1");
+  });
+
+  it("starts with no errors when the saved errors can't be read", () => {
+    storage.setItem(ERRORS_KEY, "{oops");
+    render(<DeckProvider><ErrorCount deckId="d1" /></DeckProvider>);
+    expect(screen.getByTestId("errors").textContent).toBe("0");
+  });
+
+  it("initialErrors replaces the saved errors", () => {
+    storage.setItem(ERRORS_KEY, JSON.stringify({ d1: [error] }));
+    render(<DeckProvider initialErrors={{}}><ErrorCount deckId="d1" /></DeckProvider>);
+    expect(screen.getByTestId("errors").textContent).toBe("0");
+  });
+
+  it("saves the errors after every change", () => {
+    render(
+      <DeckProvider initialDecks={[makeDeck({ id: "d1", name: "Burn" }), makeDeck({ id: "d2", name: "Other" })]} initialErrors={{ d1: [error], d2: [error] }}>
+        <DeleteButton id="d1" />
+      </DeckProvider>
+    );
+    fireEvent.click(screen.getByRole("button"));
+    expect(savedErrors()).toEqual({ d2: [error] });
   });
 });
 
