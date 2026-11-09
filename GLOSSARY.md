@@ -15,6 +15,14 @@ _Avoid_: Version, copy
 **Trade line**:
 One row of a trade: a card, its finish, condition and price. Two Trade lines with the same Printing stay separate when their condition or price differ, so a Trade line is not a Printing.
 
+**Binder**:
+The user's spare cards: copies owned beyond what their decks need, minus cards they chose to keep. It's what they'd trade away.
+_Avoid_: Trade binder, tradeables
+
+**Share link**:
+A link that carries a read-only snapshot of a trade, Binder or checklist inside the link itself. Opening it never changes the viewer's own data.
+_Avoid_: Public link
+
 **Collection meta**:
 Where the Collection came from (file name, import time) and its card-name count. Absent until the first import or first card added.
 
