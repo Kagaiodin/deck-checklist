@@ -298,7 +298,7 @@ function AppInner() {
     const count = errors.find(e => e.originalName === originalName)?.count ?? 1;
     try {
       const card = await lookupCard({ name: newName, count }, { collection: collectionStore.get });
-      dispatch({ type: "REMAP_DECK_ERROR", payload: { deckId, originalName, searchName: newName, card: card ?? undefined } });
+      dispatch({ type: "REMAP_DECK_ERROR", payload: { deckId, originalName, searchName: newName, card } });
     } catch {
       // leave the error in queue if the remap lookup fails
     }

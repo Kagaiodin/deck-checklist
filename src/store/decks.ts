@@ -34,7 +34,7 @@ export type DeckAction =
   | { type: "SET_DECK_BUILT"; payload: { deckId: string; built: boolean; collection: Collection } }
   | { type: "TOGGLE_COMMANDER"; payload: { deckId: string; cardId: string } }
   | { type: "DISMISS_COMMANDER_PROMPT"; payload: { deckId: string } }
-  | { type: "REMAP_DECK_ERROR"; payload: { deckId: string; originalName: string; searchName: string; card?: Card } }
+  | { type: "REMAP_DECK_ERROR"; payload: { deckId: string; originalName: string; searchName: string; card: Card | null } }
   | { type: "DISMISS_DECK_ERROR"; payload: { deckId: string; originalName: string } };
 
 /** An Order being cancelled: the card ids of its deck-linked lines, grouped by deck (GLOSSARY: Cancelling). */
@@ -83,7 +83,6 @@ function builtCards(cards: Card[]): Card[] {
   return cards.map(c => ({ ...c, acquired: true, source: keptWhenBuilt(c) ?? "owned", manuallyTagged: true }));
 }
 
-/** Unmarking Built: clear every checkbox and tag, then re-tag from the Collection. */
 /** Applies `change` to one of a deck's errors. */
 function updateError(errors: DeckErrors, deckId: string, originalName: string, change: Partial<ErrorQueueItem>): DeckErrors {
   const queue = errors[deckId];
@@ -91,6 +90,7 @@ function updateError(errors: DeckErrors, deckId: string, originalName: string, c
   return { ...errors, [deckId]: queue.map(e => e.originalName === originalName ? { ...e, ...change } : e) };
 }
 
+/** Unmarking Built: clear every checkbox and tag, then re-tag from the Collection. */
 function unbuiltCards(cards: Card[], collection: Collection): Card[] {
   const reset = cards.map(c => ({ ...c, acquired: false, source: undefined, manuallyTagged: false }));
   return applyCollectionToCards(reset, collection);
@@ -107,6 +107,7 @@ export function deckReducer(state: DeckState, action: DeckAction): DeckState {
       return { ...state, decks: [...state.decks, { ...deck, name, cards }], errors };
     }
     case "DELETE_DECK": {
+      if (!state.decks.some(d => d.id === action.payload)) return state;
       const errors = { ...state.errors };
       delete errors[action.payload];
       return { ...state, decks: state.decks.filter(d => d.id !== action.payload), errors };
@@ -318,6 +319,7 @@ export function deckReducer(state: DeckState, action: DeckAction): DeckState {
     }
     case "REMAP_DECK_ERROR": {
       // A remap finishes after a Scryfall lookup; if the deck was deleted meanwhile there is nothing to update.
+      // `card` is null when Scryfall found no match.
       const { deckId, originalName, searchName, card } = action.payload;
       if (!state.decks.some(d => d.id === deckId)) return state;
       const errors = updateError(state.errors, deckId, originalName, card ? { searchName, resolved: true } : { searchName });
@@ -330,6 +332,7 @@ export function deckReducer(state: DeckState, action: DeckAction): DeckState {
       };
     }
     case "DISMISS_DECK_ERROR":
+      if (!state.decks.some(d => d.id === action.payload.deckId)) return state;
       return { ...state, errors: updateError(state.errors, action.payload.deckId, action.payload.originalName, { resolved: true }) };
     default:
       return state;

@@ -741,7 +741,7 @@ describe("Deck errors", () => {
   it("REMAP_DECK_ERROR without a card records the search name and keeps the error queued", () => {
     const s = deckReducer(withErrors(), {
       type: "REMAP_DECK_ERROR",
-      payload: { deckId: "d1", originalName: "Lightnig Bolt", searchName: "Lightning Blot" },
+      payload: { deckId: "d1", originalName: "Lightnig Bolt", searchName: "Lightning Blot", card: null },
     });
     expect(s.decks[0].cards).toEqual([]);
     expect(s.errors.d1[0]).toEqual({ ...bolt, searchName: "Lightning Blot" });
@@ -763,9 +763,21 @@ describe("Deck errors", () => {
     expect(s.errors.d2).toEqual([other]);
   });
 
+  it("DELETE_DECK for an unknown deck does nothing", () => {
+    const initial = withErrors();
+    expect(deckReducer(initial, { type: "DELETE_DECK", payload: "gone" })).toBe(initial);
+  });
+
+  it("DISMISS_DECK_ERROR for an unknown deck leaves its leftover errors alone", () => {
+    const initial: DeckState = { ...withErrors(), errors: { ...withErrors().errors, gone: [other] } };
+    const s = deckReducer(initial, { type: "DISMISS_DECK_ERROR", payload: { deckId: "gone", originalName: "Sol Rnig" } });
+    expect(s).toBe(initial);
+  });
+
   it("DISMISS_DECK_ERROR for a deck with no errors does nothing", () => {
     const initial = withErrors();
-    const s = deckReducer(initial, { type: "DISMISS_DECK_ERROR", payload: { deckId: "gone", originalName: "Sol Rnig" } });
-    expect(s.errors).toBe(initial.errors);
+    const added = deckReducer(initial, { type: "ADD_DECK", payload: makeDeck({ id: "d3", name: "Clean" }) });
+    const s = deckReducer(added, { type: "DISMISS_DECK_ERROR", payload: { deckId: "d3", originalName: "Sol Rnig" } });
+    expect(s.errors).toBe(added.errors);
   });
 });
