@@ -23,6 +23,7 @@ Everything happens in the browser. A Share link carries its snapshot in the URL 
 - "Start a trade" seeded from a shared Binder.
 - A subset picker. "Keep these" is the way to hide a card.
 - Prices. Condition isn't recorded in the Collection.
+- Printings. A shared row is a card name and a spare count. Seeing one card's printings is #226.
 
 ## 2. Shared encoding: `src/utils/shareCodec.ts`
 
@@ -43,12 +44,10 @@ Everything happens in the browser. A Share link carries its snapshot in the URL 
 - **Wire shape:** minified JSON arrays, with no keys and no objects per card (measured about 13% smaller than trade-style objects):
   ```ts
   type WireBinder = [v: 1, t: number, rows: WireRow[]];
-  type WireRow = [name: string, spare: number, ...printings: string[]];
-  // printing: "<set> <collectorNumber>" with a trailing "*" when foil, e.g. "mh2 123*". Set lowercased.
+  type WireRow = [name: string, spare: number];
   ```
   - `name` is the display name (`BinderRow.name`). `spare` is `BinderRow.surplus`.
-  - Printings with no set are left out. A row's printing list can be empty.
-  - Per-printing quantities aren't sent. They count copies *owned*, not spare, so a shared "MH2 ×4" next to "1 spare" would mislead.
+  - **No printings.** Collector numbers barely compress. One printing per row costs about 6 more characters per card, and every printing costs about 9. That would cut the cap from about 300 names to 175–200. Copies are free: four spare copies are one row with `spare: 4`.
 - **Contents:** the Binder exactly as the user sees it, `rows` only. Cards under "Keep these" are never sent.
 - **Functions:**
   - `encodeBinder(rows, now)` builds the link payload.
@@ -56,10 +55,10 @@ Everything happens in the browser. A Share link carries its snapshot in the URL 
   - `extractBinderPayload(hash)` returns the payload part of the hash, or null when it isn't a binder link.
   - `decodeBinder(payload)` returns `{ ok: true; rows: SharedBinderRow[]; sharedAt: number } | { ok: false; reason: "version" | "malformed" }` and never throws.
     - **Version:** check the prefix first, as `decodeTrade` does. An unknown `vN` gives `"version"`.
-    - **Shape checks:** name is a non-empty string, spare is a whole number ≥ 1, every printing matches `/^\S+ \S+\*?$/`. Anything else gives `"malformed"`.
-- **`binderToText(rows)`:** one line per card, `2× Lightning Bolt`, with no printings. Used for the over-cap fallback.
+    - **Shape checks:** each row is exactly `[name, spare]`, where name is a non-empty string and spare is a whole number ≥ 1. Anything else gives `"malformed"`.
+- **`binderToText(rows)`:** one line per card, `2× Lightning Bolt`. Used for the over-cap fallback.
 
-**Measured on the 114-card demo Collection:** about 1,500 characters. Expect about 300–350 cards to fit under the cap.
+**Measured on the 114-name demo Collection:** about 1,500 characters, or about 13 per unique card name. Expect about 300 names to fit under the cap, and about 150 under Discord's 2000.
 
 ## 4. Sharing (`BinderPanel.tsx`)
 
@@ -81,9 +80,7 @@ Everything happens in the browser. A Share link carries its snapshot in the URL 
   - "Back to my Binder" clears the hash and shows the viewer's own Binder.
   - The date comes from `sharedAt`.
 - **Shared rows** reuse the Binder row markup:
-  - Name, a set/foil subtitle from the first printing, and the spare count.
-  - Desktop: a "▸ N printings" toggle when there are 2+ printings, listing their labels with no quantity column.
-  - Phone: the row sheet lists the printings.
+  - Name and spare count only: no subtitle, no printings toggle, no phone row sheet.
   - No Exclude, no "Add to new trade", no "Keep these", no Share button.
 - **States:**
   - **Decoding:** "Opening shared Binder…".
@@ -106,7 +103,7 @@ Everything happens in the browser. A Share link carries its snapshot in the URL 
 - **`src/utils/__tests__/shareCodec.test.ts`:** round trip for both formats, and corrupt input throws.
 - **`src/utils/__tests__/tradeShare.test.ts`:** unchanged and still passing.
 - **`src/utils/__tests__/binderShare.test.ts`:**
-  - Round trip with names, spare counts, printings (foil and non-foil) and a row with none.
+  - Round trip of names and spare counts. Printings on the source rows aren't encoded.
   - Rows from "Keep these" aren't encoded.
   - An unknown version gives `"version"`. Garbage, truncated input and bad row shapes give `"malformed"`.
   - A 600-card Binder is over the cap.
