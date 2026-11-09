@@ -37,10 +37,10 @@ const isSide = (s: unknown): s is TradeSide =>
 
 /** Reads the saved local trade. Anything unreadable falls back to an empty trade. */
 export function loadLocalTrade(): Trade {
-  return loadJson(TRADE_STORAGE_KEY, emptyTrade(), readTrade);
+  return loadJson(TRADE_STORAGE_KEY, emptyTrade(), checkTrade);
 }
 
-function readTrade(value: unknown): Trade {
+function checkTrade(value: unknown): Trade {
   const p = value as Partial<Trade>;
   if (!isSide(p.mine) || !isSide(p.theirs)) return emptyTrade();
   return {

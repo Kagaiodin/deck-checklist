@@ -81,7 +81,9 @@ export function createCollectionStore(storage: CollectionStorage) {
   /** Loads on first use, so anything that rewrites storage at boot (demo refresh) runs first. */
   function current(): CollectionState {
     state ??= {
-      collection: parseJson<Collection>(loadRaw(() => storage.loadCollection()), {}, v => normalizeSets(v as Collection)),
+      // Outside parseJson: a printing normalizeSets can't fix must not read as "nothing saved",
+      // or the next commit would save an empty Collection over the real one.
+      collection: normalizeSets(parseJson<Collection>(loadRaw(() => storage.loadCollection()), {})),
       meta: parseJson<CollectionMeta | null>(loadRaw(() => storage.loadMeta()), null),
     };
     return state;

@@ -49,6 +49,13 @@ describe("createCollectionStore — loading", () => {
     expect(createCollectionStore(throwing).getMeta()).toBeNull();
   });
 
+  it("doesn't treat a printing it can't fix up as nothing saved (#207)", () => {
+    // An empty Collection here would be saved over the real one on the next change.
+    const { storage } = fakeStorage({ collection: JSON.stringify({ Bolt: [null] }) });
+    expect(() => createCollectionStore(storage).get()).toThrow();
+    expect(storage.saveCollection).not.toHaveBeenCalled();
+  });
+
   it("reads storage once, then serves the in-memory value", () => {
     const { storage, data } = fakeStorage({ collection: JSON.stringify(bolt) });
     const store = createCollectionStore(storage);

@@ -77,8 +77,9 @@ function scan() {
       if (ts.isCallExpression(node)) {
         const callee = node.expression;
         let write: boolean | undefined;
+        // Only for the copies check (rule 1); KEYED_CALLS decides read or write.
         const isHookCall = ts.isIdentifier(callee) && callee.text === "useLocalStorage";
-        if (ts.isIdentifier(callee) && callee.text in KEYED_CALLS) write = KEYED_CALLS[callee.text];
+        if (ts.isIdentifier(callee) && Object.hasOwn(KEYED_CALLS, callee.text)) write = KEYED_CALLS[callee.text];
         else if (ts.isPropertyAccessExpression(callee) && /(^|\.)localStorage$/.test(callee.expression.getText(sf))) {
           const method = callee.name.text;
           if (method === "getItem") write = false;

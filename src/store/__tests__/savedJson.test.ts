@@ -21,20 +21,20 @@ describe("parseJson", () => {
     expect(parseJson(raw, ["fallback"])).toEqual(["fallback"]);
   });
 
-  it("passes the parsed value to read and returns what it returns", () => {
-    const read = vi.fn((v: unknown) => (v as number[]).filter(n => n > 1));
-    expect(parseJson("[1,2,3]", [], read)).toEqual([2, 3]);
-    expect(read).toHaveBeenCalledWith([1, 2, 3]);
+  it("passes the parsed value to check and returns what it returns", () => {
+    const check = vi.fn((v: unknown) => (v as number[]).filter(n => n > 1));
+    expect(parseJson("[1,2,3]", [], check)).toEqual([2, 3]);
+    expect(check).toHaveBeenCalledWith([1, 2, 3]);
   });
 
-  it("gives the fallback when read throws", () => {
+  it("gives the fallback when check throws", () => {
     expect(parseJson("[1]", "fallback", () => { throw new Error("bad shape"); })).toBe("fallback");
   });
 
-  it("doesn't call read for a saved null", () => {
-    const read = vi.fn();
-    parseJson("null", 0, read);
-    expect(read).not.toHaveBeenCalled();
+  it("doesn't call check for a saved null", () => {
+    const check = vi.fn();
+    parseJson("null", 0, check);
+    expect(check).not.toHaveBeenCalled();
   });
 });
 
