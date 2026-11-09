@@ -14,6 +14,7 @@ import { fetchPrices, priceKey } from "../../../utils/scryfallSearch";
 import type { ScryfallPrinting } from "../../../utils/scryfallSearch";
 import { normalizeSet } from "../../../utils/printing";
 import { TRADE_STORAGE_KEY } from "../../../store/storageKeys";
+import { loadJson, saveJson } from "../../../store/savedJson";
 
 const HISTORY_LIMIT = 50;
 
@@ -36,32 +37,25 @@ const isSide = (s: unknown): s is TradeSide =>
 
 /** Reads the saved local trade. Anything unreadable falls back to an empty trade. */
 export function loadLocalTrade(): Trade {
-  try {
-    const raw = window.localStorage.getItem(TRADE_STORAGE_KEY);
-    if (!raw) return emptyTrade();
-    const p = JSON.parse(raw) as Partial<Trade>;
-    if (!isSide(p.mine) || !isSide(p.theirs)) return emptyTrade();
-    return {
-      mine: p.mine,
-      theirs: p.theirs,
-      settings: {
-        discountPct: Number.isFinite(p.settings?.discountPct) ? p.settings!.discountPct : DEFAULT_SETTINGS.discountPct,
-        tolerancePct: Number.isFinite(p.settings?.tolerancePct) ? p.settings!.tolerancePct : DEFAULT_SETTINGS.tolerancePct,
-      },
-      readOnly: false,
-    };
-  } catch {
-    return emptyTrade();
-  }
+  return loadJson(TRADE_STORAGE_KEY, emptyTrade(), readTrade);
 }
 
-function saveLocalTrade(trade: Trade) {
-  try {
-    const { mine, theirs, settings } = trade;
-    window.localStorage.setItem(TRADE_STORAGE_KEY, JSON.stringify({ mine, theirs, settings }));
-  } catch {
-    // quota exceeded — ignore
-  }
+function readTrade(value: unknown): Trade {
+  const p = value as Partial<Trade>;
+  if (!isSide(p.mine) || !isSide(p.theirs)) return emptyTrade();
+  return {
+    mine: p.mine,
+    theirs: p.theirs,
+    settings: {
+      discountPct: Number.isFinite(p.settings?.discountPct) ? p.settings!.discountPct : DEFAULT_SETTINGS.discountPct,
+      tolerancePct: Number.isFinite(p.settings?.tolerancePct) ? p.settings!.tolerancePct : DEFAULT_SETTINGS.tolerancePct,
+    },
+    readOnly: false,
+  };
+}
+
+function saveLocalTrade({ mine, theirs, settings }: Trade) {
+  saveJson(TRADE_STORAGE_KEY, { mine, theirs, settings });
 }
 
 // ── Reducer ───────────────────────────────────────────────────────────────────

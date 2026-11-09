@@ -3,6 +3,7 @@ import { applyCollectionToCards } from "../utils/csvParser";
 import { useReducer, createContext, useContext, createElement, useEffect, useLayoutEffect } from "react";
 import { collectionStore } from "./collection";
 import { DECKS_KEY, ERRORS_KEY } from "./storageKeys";
+import { loadJson, saveJson } from "./savedJson";
 import type { Dispatch, ReactNode } from "react";
 
 /** Each deck's Deck errors, by deck id. Kept beside the decks so a deck and its errors change together. */
@@ -341,24 +342,6 @@ export function deckReducer(state: DeckState, action: DeckAction): DeckState {
 
 const DeckContext = createContext<{ state: DeckState; dispatch: Dispatch<DeckAction> } | undefined>(undefined);
 
-// Each key is named at its localStorage call, so the storageKeys scan can see who writes it.
-function parseSaved<T>(read: () => string | null, empty: T): T {
-  try {
-    const raw = read();
-    return raw ? (JSON.parse(raw) as T) : empty;
-  } catch {
-    return empty;
-  }
-}
-
-function trySave(write: () => void) {
-  try {
-    write();
-  } catch {
-    // Quota exceeded or storage unavailable: keep working in memory.
-  }
-}
-
 /**
  * Owns the decks and their Deck errors: loads each from localStorage once and saves it after every
  * change, so there is no second copy to drift (#204, #214). `initialDecks` and `initialErrors`
@@ -366,12 +349,12 @@ function trySave(write: () => void) {
  */
 export function DeckProvider({ children, initialDecks, initialErrors }: { children: ReactNode; initialDecks?: Deck[]; initialErrors?: DeckErrors }) {
   const [state, dispatch] = useReducer(deckReducer, undefined, () => ({
-    decks: initialDecks ?? parseSaved<Deck[]>(() => window.localStorage.getItem(DECKS_KEY), []),
-    errors: initialErrors ?? parseSaved<DeckErrors>(() => window.localStorage.getItem(ERRORS_KEY), {}),
+    decks: initialDecks ?? loadJson<Deck[]>(DECKS_KEY, []),
+    errors: initialErrors ?? loadJson<DeckErrors>(ERRORS_KEY, {}),
   }));
   // Separate effects, so changing one doesn't rewrite the other.
-  useEffect(() => { trySave(() => window.localStorage.setItem(DECKS_KEY, JSON.stringify(state.decks))); }, [state.decks]);
-  useEffect(() => { trySave(() => window.localStorage.setItem(ERRORS_KEY, JSON.stringify(state.errors))); }, [state.errors]);
+  useEffect(() => { saveJson(DECKS_KEY, state.decks); }, [state.decks]);
+  useEffect(() => { saveJson(ERRORS_KEY, state.errors); }, [state.errors]);
   // Every Collection change re-tags decks. The starting Collection doesn't: stored decks already match it.
   // Layout effects run before children's passive effects, so a change made on mount isn't missed.
   useLayoutEffect(() => {
