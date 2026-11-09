@@ -5,8 +5,11 @@
     <!-- Anti-flash: set theme attributes before any CSS renders -->
     <script>
       (function() {
-        var mode   = localStorage.getItem("fl-theme-mode")   || "dark";
-        var accent = localStorage.getItem("fl-theme-accent") || "indigo";
+        var mode = "dark", accent = "indigo";
+        try {
+          mode   = localStorage.getItem("fl-theme-mode")   || mode;
+          accent = localStorage.getItem("fl-theme-accent") || accent;
+        } catch (e) { /* storage blocked: defaults */ }
         document.documentElement.setAttribute("data-mode",   mode);
         document.documentElement.setAttribute("data-accent", accent);
       })();

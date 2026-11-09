@@ -27,7 +27,7 @@ What the app remembers about how the user works, rather than what they made: Col
 _Avoid_: Settings, cache
 
 **Preference**:
-How the user likes the app to look: theme, accent, a collapsed sidebar, an open panel. It isn't tied to any data, so demo mode leaves it alone.
+How the user likes the app to look: the theme (dark or light mode and an accent color), a collapsed sidebar, an open panel. It isn't tied to any data, so demo mode leaves it alone.
 _Avoid_: Setting
 
 **Backup**:

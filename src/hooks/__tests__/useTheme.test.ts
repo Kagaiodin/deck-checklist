@@ -59,4 +59,41 @@ describe("useTheme", () => {
     expect(localStorage.getItem("fl-theme-accent")).toBe("emerald");
     expect(localStorage.getItem("fl-theme-mode")).toBe("light");
   });
+
+  it("falls back to dark/indigo when a saved value is unknown", () => {
+    localStorage.setItem("fl-theme-mode", "sepia");
+    localStorage.setItem("fl-theme-accent", "purple");
+    const { result } = renderHook(() => useTheme());
+    expect(result.current.mode).toBe("dark");
+    expect(result.current.accent).toBe("indigo");
+    expect(document.documentElement.getAttribute("data-accent")).toBe("indigo");
+    // The first save replaces the unknown values.
+    expect(localStorage.getItem("fl-theme-mode")).toBe("dark");
+    expect(localStorage.getItem("fl-theme-accent")).toBe("indigo");
+  });
+
+  it("falls back to dark/indigo when storage can't be read", () => {
+    blockStorage();
+    const { result } = renderHook(() => useTheme());
+    expect(result.current.mode).toBe("dark");
+    expect(result.current.accent).toBe("indigo");
+    expect(document.documentElement.getAttribute("data-mode")).toBe("dark");
+  });
+
+  it("keeps a choice in memory when storage can't be written", () => {
+    blockStorage();
+    const { result } = renderHook(() => useTheme());
+    act(() => result.current.setMode("light"));
+    act(() => result.current.setAccent("ember"));
+    expect(result.current.mode).toBe("light");
+    expect(document.documentElement.getAttribute("data-mode")).toBe("light");
+    expect(document.documentElement.getAttribute("data-accent")).toBe("ember");
+  });
 });
+
+function blockStorage() {
+  Object.defineProperty(globalThis, "localStorage", {
+    value: { getItem: () => { throw new Error("denied"); }, setItem: () => { throw new Error("denied"); } },
+    configurable: true, writable: true,
+  });
+}
