@@ -48,13 +48,9 @@ jobs:
 
       - id: check
         env:
-          EVENT: ${{ github.event_name }}
           BASE_REF: ${{ github.base_ref }}
-          FORCE: ${{ contains(github.event.pull_request.labels.*.name, 'run-visual') }}
-        run: |
-          if [ "$EVENT" != pull_request ] || [ "$FORCE" = true ]; then visual=true
-          else visual=$(sh scripts/needs-visual-checks.sh "origin/$BASE_REF"); fi
-          echo "visual=$visual" >> "$GITHUB_OUTPUT"
+          VISUAL_CHECKS_FORCE: ${{ github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'run-visual') }}
+        run: echo "visual=$(sh scripts/needs-visual-checks.sh "origin/$BASE_REF")" >> "$GITHUB_OUTPUT"
 
   # DL-CONTRAST-01: every visible text pair on the captured screens must be >= AA (docs/specs/design-rules-ci-spec.md).
   # One job per theme × accent; the logic lives in `npm run test:contrast`.

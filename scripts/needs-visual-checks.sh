@@ -5,8 +5,14 @@
 #   sh scripts/needs-visual-checks.sh origin/main   # files changed on this branch since it left origin/main
 #   git diff --name-only ... | sh scripts/needs-visual-checks.sh -   # judge a file list from stdin
 # Fails open: a git error or an empty file list prints `true`, so a broken check never skips the gate.
-# CI (.github/workflows/ci.yml, `changes` job) calls this; pushes to main and the `run-visual` label bypass it there.
+# VISUAL_CHECKS_FORCE=true prints `true` without looking at the diff. CI (.github/workflows/ci.yml, `changes` job) sets
+# it for pushes to main, manual runs and PRs labelled `run-visual`.
 set -u
+
+if [ "${VISUAL_CHECKS_FORCE:-}" = true ]; then
+  echo "needs-visual-checks: VISUAL_CHECKS_FORCE=true; running the checks" >&2
+  echo true; exit 0
+fi
 
 if [ "${1:-}" = "-" ]; then
   files=$(cat)

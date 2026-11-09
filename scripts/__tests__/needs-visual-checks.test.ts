@@ -6,8 +6,12 @@ import { fileURLToPath } from "node:url";
 const script = fileURLToPath(new URL("../needs-visual-checks.sh", import.meta.url));
 
 /** Runs the script in stdin mode with one changed path per line; returns its stdout. */
-const check = (files: string[]) =>
-  execFileSync("sh", [script, "-"], { input: files.join("\n"), stdio: ["pipe", "pipe", "ignore"] })
+const check = (files: string[], env: Record<string, string> = {}) =>
+  execFileSync("sh", [script, "-"], {
+    input: files.join("\n"),
+    stdio: ["pipe", "pipe", "ignore"],
+    env: { ...process.env, VISUAL_CHECKS_FORCE: "", ...env },
+  })
     .toString()
     .trim();
 
@@ -51,6 +55,10 @@ describe("needs-visual-checks.sh", () => {
 
   it("runs on an empty file list (nothing to judge, so don't skip)", () => {
     expect(check([])).toBe("true");
+  });
+
+  it("runs a docs-only change when VISUAL_CHECKS_FORCE=true (push to main, run-visual label)", () => {
+    expect(check(["README.md"], { VISUAL_CHECKS_FORCE: "true" })).toBe("true");
   });
 
   it("runs when the base ref doesn't exist (fails open)", () => {
