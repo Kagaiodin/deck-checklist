@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { deckReducer } from "../decks";
+import { deckReducer, type DeckState } from "../decks";
 import type { Deck } from "../../types/index";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -22,7 +22,7 @@ function makeCard(overrides: Partial<Deck["cards"][number]> & { id: string; name
   };
 }
 
-const emptyState = { decks: [] };
+const emptyState = { errors: {}, decks: [] };
 
 // ── ADD_DECK ──────────────────────────────────────────────────────────────────
 
@@ -35,7 +35,7 @@ describe("ADD_DECK", () => {
   });
 
   it("names an unnamed deck after its position", () => {
-    const initial = { decks: [makeDeck({ id: "d1", name: "Burn" })] };
+    const initial = { errors: {}, decks: [makeDeck({ id: "d1", name: "Burn" })] };
     const state = deckReducer(initial, { type: "ADD_DECK", payload: makeDeck({ id: "d2", name: "  " }) });
     expect(state.decks[1].name).toBe("Deck 2");
   });
@@ -59,7 +59,7 @@ describe("ADD_DECK", () => {
   });
 
   it("preserves existing decks", () => {
-    const initial = { decks: [makeDeck({ id: "d1", name: "Burn" })] };
+    const initial = { errors: {}, decks: [makeDeck({ id: "d1", name: "Burn" })] };
     const state = deckReducer(initial, {
       type: "ADD_DECK",
       payload: makeDeck({ id: "d2", name: "Control" }),
@@ -73,6 +73,7 @@ describe("ADD_DECK", () => {
 describe("DELETE_DECK", () => {
   it("removes the deck with the given id", () => {
     const initial = {
+      errors: {},
       decks: [makeDeck({ id: "d1", name: "Burn" }), makeDeck({ id: "d2", name: "Control" })],
     };
     const state = deckReducer(initial, { type: "DELETE_DECK", payload: "d1" });
@@ -81,7 +82,7 @@ describe("DELETE_DECK", () => {
   });
 
   it("does nothing if the id does not exist", () => {
-    const initial = { decks: [makeDeck({ id: "d1", name: "Burn" })] };
+    const initial = { errors: {}, decks: [makeDeck({ id: "d1", name: "Burn" })] };
     const state = deckReducer(initial, { type: "DELETE_DECK", payload: "nope" });
     expect(state.decks).toHaveLength(1);
   });
@@ -91,7 +92,7 @@ describe("DELETE_DECK", () => {
 
 describe("RENAME_DECK", () => {
   it("updates the name of the target deck", () => {
-    const initial = { decks: [makeDeck({ id: "d1", name: "Old Name" })] };
+    const initial = { errors: {}, decks: [makeDeck({ id: "d1", name: "Old Name" })] };
     const state = deckReducer(initial, {
       type: "RENAME_DECK",
       payload: { id: "d1", name: "New Name" },
@@ -101,6 +102,7 @@ describe("RENAME_DECK", () => {
 
   it("does not affect other decks", () => {
     const initial = {
+      errors: {},
       decks: [makeDeck({ id: "d1", name: "Burn" }), makeDeck({ id: "d2", name: "Control" })],
     };
     const state = deckReducer(initial, {
@@ -115,7 +117,7 @@ describe("RENAME_DECK", () => {
 
 describe("SET_CARDS", () => {
   it("replaces the card list for the target deck", () => {
-    const initial = { decks: [makeDeck({ id: "d1", name: "Burn" })] };
+    const initial = { errors: {}, decks: [makeDeck({ id: "d1", name: "Burn" })] };
     const newCards = [makeCard({ id: "c1", name: "Lightning Bolt" })];
     const state = deckReducer(initial, {
       type: "SET_CARDS",
@@ -131,7 +133,7 @@ describe("SET_CARDS", () => {
 describe("TOGGLE_ACQUIRED", () => {
   it("flips acquired from false to true", () => {
     const card = makeCard({ id: "c1", name: "Lightning Bolt", acquired: false });
-    const initial = { decks: [makeDeck({ id: "d1", name: "Burn", cards: [card] })] };
+    const initial = { errors: {}, decks: [makeDeck({ id: "d1", name: "Burn", cards: [card] })] };
     const state = deckReducer(initial, {
       type: "TOGGLE_ACQUIRED",
       payload: { deckId: "d1", cardId: "c1" },
@@ -141,7 +143,7 @@ describe("TOGGLE_ACQUIRED", () => {
 
   it("flips acquired from true to false", () => {
     const card = makeCard({ id: "c1", name: "Lightning Bolt", acquired: true });
-    const initial = { decks: [makeDeck({ id: "d1", name: "Burn", cards: [card] })] };
+    const initial = { errors: {}, decks: [makeDeck({ id: "d1", name: "Burn", cards: [card] })] };
     const state = deckReducer(initial, {
       type: "TOGGLE_ACQUIRED",
       payload: { deckId: "d1", cardId: "c1" },
@@ -154,7 +156,7 @@ describe("TOGGLE_ACQUIRED", () => {
       makeCard({ id: "c1", name: "Lightning Bolt", acquired: true }),
       makeCard({ id: "c2", name: "Shock", acquired: true }),
     ];
-    const initial = { decks: [makeDeck({ id: "d1", name: "Burn", cards, isBuilt: true })] };
+    const initial = { errors: {}, decks: [makeDeck({ id: "d1", name: "Burn", cards, isBuilt: true })] };
     const state = deckReducer(initial, {
       type: "TOGGLE_ACQUIRED",
       payload: { deckId: "d1", cardId: "c1" },
@@ -164,7 +166,7 @@ describe("TOGGLE_ACQUIRED", () => {
 
   it("keeps isBuilt when checking a card in a built deck", () => {
     const card = makeCard({ id: "c1", name: "Lightning Bolt", acquired: false });
-    const initial = { decks: [makeDeck({ id: "d1", name: "Burn", cards: [card], isBuilt: true })] };
+    const initial = { errors: {}, decks: [makeDeck({ id: "d1", name: "Burn", cards: [card], isBuilt: true })] };
     const state = deckReducer(initial, {
       type: "TOGGLE_ACQUIRED",
       payload: { deckId: "d1", cardId: "c1" },
@@ -178,7 +180,7 @@ describe("TOGGLE_ACQUIRED", () => {
       makeCard({ id: "c2", name: "Shock", acquired: true, source: "ordered" }),
       makeCard({ id: "c3", name: "Fake", acquired: true, source: "proxy", manuallyTagged: true }),
     ];
-    const initial = { decks: [makeDeck({ id: "d1", name: "Burn", cards })] };
+    const initial = { errors: {}, decks: [makeDeck({ id: "d1", name: "Burn", cards })] };
     const state = deckReducer(initial, { type: "TOGGLE_ACQUIRED", payload: { deckId: "d1", cardId: "c1" } });
     expect(state.decks[0].isBuilt).toBe(true);
     expect(state.decks[0].cards.map(c => [c.acquired, c.source])).toEqual([[true, "owned"], [true, "owned"], [true, "proxy"]]);
@@ -189,7 +191,7 @@ describe("TOGGLE_ACQUIRED", () => {
       makeCard({ id: "c1", name: "Lightning Bolt", acquired: false }),
       makeCard({ id: "c2", name: "Shock", acquired: false, source: "ordered" }),
     ];
-    const initial = { decks: [makeDeck({ id: "d1", name: "Burn", cards })] };
+    const initial = { errors: {}, decks: [makeDeck({ id: "d1", name: "Burn", cards })] };
     const state = deckReducer(initial, { type: "TOGGLE_ACQUIRED", payload: { deckId: "d1", cardId: "c1" } });
     expect(state.decks[0].isBuilt).toBeUndefined();
     expect(state.decks[0].cards[1].source).toBe("ordered");
@@ -197,7 +199,7 @@ describe("TOGGLE_ACQUIRED", () => {
 
   it("does not set isBuilt on a deck that was never built", () => {
     const card = makeCard({ id: "c1", name: "Lightning Bolt", acquired: true });
-    const initial = { decks: [makeDeck({ id: "d1", name: "Burn", cards: [card] })] };
+    const initial = { errors: {}, decks: [makeDeck({ id: "d1", name: "Burn", cards: [card] })] };
     const state = deckReducer(initial, {
       type: "TOGGLE_ACQUIRED",
       payload: { deckId: "d1", cardId: "c1" },
@@ -211,7 +213,7 @@ describe("TOGGLE_ACQUIRED", () => {
 describe("SET_CARD_SOURCE", () => {
   it("sets the source on the target card", () => {
     const card = makeCard({ id: "c1", name: "Lightning Bolt" });
-    const initial = { decks: [makeDeck({ id: "d1", name: "Burn", cards: [card] })] };
+    const initial = { errors: {}, decks: [makeDeck({ id: "d1", name: "Burn", cards: [card] })] };
     const state = deckReducer(initial, {
       type: "SET_CARD_SOURCE",
       payload: { deckId: "d1", cardId: "c1", source: "ordered" },
@@ -221,7 +223,7 @@ describe("SET_CARD_SOURCE", () => {
 
   it("sets manuallyTagged to true", () => {
     const card = makeCard({ id: "c1", name: "Lightning Bolt" });
-    const initial = { decks: [makeDeck({ id: "d1", name: "Burn", cards: [card] })] };
+    const initial = { errors: {}, decks: [makeDeck({ id: "d1", name: "Burn", cards: [card] })] };
     const state = deckReducer(initial, {
       type: "SET_CARD_SOURCE",
       payload: { deckId: "d1", cardId: "c1", source: "proxy" },
@@ -231,7 +233,7 @@ describe("SET_CARD_SOURCE", () => {
 
   it("clears the source when payload source is undefined", () => {
     const card = makeCard({ id: "c1", name: "Lightning Bolt", source: "owned" });
-    const initial = { decks: [makeDeck({ id: "d1", name: "Burn", cards: [card] })] };
+    const initial = { errors: {}, decks: [makeDeck({ id: "d1", name: "Burn", cards: [card] })] };
     const state = deckReducer(initial, {
       type: "SET_CARD_SOURCE",
       payload: { deckId: "d1", cardId: "c1", source: undefined },
@@ -249,7 +251,7 @@ describe("BULK_SET_SOURCE", () => {
       makeCard({ id: "c2", name: "Lava Spike" }),
       makeCard({ id: "c3", name: "Shard Volley" }),
     ];
-    const initial = { decks: [makeDeck({ id: "d1", name: "Burn", cards })] };
+    const initial = { errors: {}, decks: [makeDeck({ id: "d1", name: "Burn", cards })] };
     const state = deckReducer(initial, {
       type: "BULK_SET_SOURCE",
       payload: { deckId: "d1", cardIds: ["c1", "c2"], source: "ordered" },
@@ -261,7 +263,7 @@ describe("BULK_SET_SOURCE", () => {
 
   it("sets manuallyTagged to true on all targeted cards", () => {
     const cards = [makeCard({ id: "c1", name: "Lightning Bolt" })];
-    const initial = { decks: [makeDeck({ id: "d1", name: "Burn", cards })] };
+    const initial = { errors: {}, decks: [makeDeck({ id: "d1", name: "Burn", cards })] };
     const state = deckReducer(initial, {
       type: "BULK_SET_SOURCE",
       payload: { deckId: "d1", cardIds: ["c1"], source: "borrowed" },
@@ -275,7 +277,7 @@ describe("BULK_SET_SOURCE", () => {
 describe("APPLY_COLLECTION", () => {
   it("marks a card as 'owned' when the collection covers the quantity", () => {
     const card = makeCard({ id: "c1", name: "Lightning Bolt", quantity: 4 });
-    const initial = { decks: [makeDeck({ id: "d1", name: "Burn", cards: [card] })] };
+    const initial = { errors: {}, decks: [makeDeck({ id: "d1", name: "Burn", cards: [card] })] };
     const state = deckReducer(initial, {
       type: "APPLY_COLLECTION",
       payload: { "lightning bolt": [{ quantity: 4 }] },
@@ -291,7 +293,7 @@ describe("APPLY_COLLECTION", () => {
       source: "proxy",
       manuallyTagged: true,
     });
-    const initial = { decks: [makeDeck({ id: "d1", name: "Burn", cards: [card] })] };
+    const initial = { errors: {}, decks: [makeDeck({ id: "d1", name: "Burn", cards: [card] })] };
     const state = deckReducer(initial, {
       type: "APPLY_COLLECTION",
       payload: { "lightning bolt": [{ quantity: 10 }] },
@@ -301,6 +303,7 @@ describe("APPLY_COLLECTION", () => {
 
   it("applies across multiple decks", () => {
     const initial = {
+      errors: {},
       decks: [
         makeDeck({ id: "d1", name: "Burn", cards: [makeCard({ id: "c1", name: "Lightning Bolt", quantity: 4 })] }),
         makeDeck({ id: "d2", name: "Storm", cards: [makeCard({ id: "c2", name: "Lightning Bolt", quantity: 1 })] }),
@@ -323,7 +326,7 @@ describe("REMOVE_CARD", () => {
       makeCard({ id: "c1", name: "Lightning Bolt" }),
       makeCard({ id: "c2", name: "Lava Spike" }),
     ];
-    const initial = { decks: [makeDeck({ id: "d1", name: "Burn", cards })] };
+    const initial = { errors: {}, decks: [makeDeck({ id: "d1", name: "Burn", cards })] };
     const state = deckReducer(initial, {
       type: "REMOVE_CARD",
       payload: { deckId: "d1", cardId: "c1" },
@@ -338,7 +341,7 @@ describe("REMOVE_CARD", () => {
 describe("UPDATE_CARD_QUANTITY", () => {
   it("updates the quantity of the target card", () => {
     const card = makeCard({ id: "c1", name: "Lightning Bolt", quantity: 2 });
-    const initial = { decks: [makeDeck({ id: "d1", name: "Burn", cards: [card] })] };
+    const initial = { errors: {}, decks: [makeDeck({ id: "d1", name: "Burn", cards: [card] })] };
     const state = deckReducer(initial, {
       type: "UPDATE_CARD_QUANTITY",
       payload: { deckId: "d1", cardId: "c1", quantity: 4 },
@@ -351,7 +354,7 @@ describe("UPDATE_CARD_QUANTITY", () => {
 
 describe("ADD_CARD", () => {
   it("appends a card to the deck", () => {
-    const initial = { decks: [makeDeck({ id: "d1", name: "Burn" })] };
+    const initial = { errors: {}, decks: [makeDeck({ id: "d1", name: "Burn" })] };
     const newCard = makeCard({ id: "c1", name: "Lightning Bolt" });
     const state = deckReducer(initial, {
       type: "ADD_CARD",
@@ -363,6 +366,7 @@ describe("ADD_CARD", () => {
 
   it("does not affect other decks", () => {
     const initial = {
+      errors: {},
       decks: [
         makeDeck({ id: "d1", name: "Burn" }),
         makeDeck({ id: "d2", name: "Control" }),
@@ -390,7 +394,7 @@ describe("CANCEL_ORDER_LINES", () => {
       makeCard({ id: "c2", name: "Lava Spike", source: "proxy", manuallyTagged: true }),
       makeCard({ id: "c3", name: "Rift Bolt", source: "ordered", manuallyTagged: true }),
     ];
-    const initial = { decks: [makeDeck({ id: "d1", name: "Burn", cards })] };
+    const initial = { errors: {}, decks: [makeDeck({ id: "d1", name: "Burn", cards })] };
     const state = deckReducer(initial, cancel({ d1: ["c1", "c2"] }));
     const [c1, c2, c3] = state.decks[0].cards;
     expect([c1.source, c1.manuallyTagged]).toEqual([undefined, false]);
@@ -400,13 +404,14 @@ describe("CANCEL_ORDER_LINES", () => {
 
   it("re-tags cleared cards from the Collection", () => {
     const cards = [makeCard({ id: "c1", name: "Lightning Bolt", source: "ordered", manuallyTagged: true })];
-    const initial = { decks: [makeDeck({ id: "d1", name: "Burn", cards })] };
+    const initial = { errors: {}, decks: [makeDeck({ id: "d1", name: "Burn", cards })] };
     const state = deckReducer(initial, cancel({ d1: ["c1"] }, { "lightning bolt": [{ quantity: 1 }] }));
     expect(state.decks[0].cards[0].source).toBe("owned");
   });
 
   it("notifies each deck where cards were cleared, listing only those cards", () => {
     const initial = {
+      errors: {},
       decks: [
         makeDeck({ id: "d1", name: "Burn", cards: [
           makeCard({ id: "c1", name: "Lightning Bolt", source: "ordered", manuallyTagged: true }),
@@ -425,6 +430,7 @@ describe("CANCEL_ORDER_LINES", () => {
 
   it("does not affect decks the order doesn't link to", () => {
     const initial = {
+      errors: {},
       decks: [
         makeDeck({ id: "d1", name: "Burn", cards: [makeCard({ id: "c1", name: "Lightning Bolt", source: "ordered", manuallyTagged: true })] }),
         makeDeck({ id: "d2", name: "Storm", cards: [makeCard({ id: "c2", name: "Dark Ritual", source: "ordered", manuallyTagged: true })] }),
@@ -443,7 +449,7 @@ describe("DISMISS_NOTIFICATION", () => {
       { id: "n1", type: "order_cancelled" as const, orderId: "o1", orderLabel: "A", affectedCardIds: [], createdAt: 0 },
       { id: "n2", type: "order_cancelled" as const, orderId: "o2", orderLabel: "B", affectedCardIds: [], createdAt: 1 },
     ];
-    const initial = { decks: [makeDeck({ id: "d1", name: "Burn", notifications })] };
+    const initial = { errors: {}, decks: [makeDeck({ id: "d1", name: "Burn", notifications })] };
     const state = deckReducer(initial, {
       type: "DISMISS_NOTIFICATION",
       payload: { deckId: "d1", notificationId: "n1" },
@@ -456,7 +462,7 @@ describe("DISMISS_NOTIFICATION", () => {
     const notifications = [
       { id: "n1", type: "order_cancelled" as const, orderId: "o1", orderLabel: "A", affectedCardIds: [], createdAt: 0 },
     ];
-    const initial = { decks: [makeDeck({ id: "d1", name: "Burn", notifications })] };
+    const initial = { errors: {}, decks: [makeDeck({ id: "d1", name: "Burn", notifications })] };
     const state = deckReducer(initial, {
       type: "DISMISS_NOTIFICATION",
       payload: { deckId: "d1", notificationId: "nope" },
@@ -469,7 +475,7 @@ describe("DISMISS_NOTIFICATION", () => {
 
 describe("SET_DECK_FORMAT", () => {
   it("sets the format on the target deck", () => {
-    const initial = { decks: [makeDeck({ id: "d1", name: "Burn" })] };
+    const initial = { errors: {}, decks: [makeDeck({ id: "d1", name: "Burn" })] };
     const state = deckReducer(initial, {
       type: "SET_DECK_FORMAT",
       payload: { id: "d1", format: "Modern" },
@@ -478,7 +484,7 @@ describe("SET_DECK_FORMAT", () => {
   });
 
   it("clears the format when payload is undefined", () => {
-    const initial = { decks: [makeDeck({ id: "d1", name: "Burn", format: "Modern" })] };
+    const initial = { errors: {}, decks: [makeDeck({ id: "d1", name: "Burn", format: "Modern" })] };
     const state = deckReducer(initial, {
       type: "SET_DECK_FORMAT",
       payload: { id: "d1", format: undefined },
@@ -488,6 +494,7 @@ describe("SET_DECK_FORMAT", () => {
 
   it("does not affect other decks", () => {
     const initial = {
+      errors: {},
       decks: [
         makeDeck({ id: "d1", name: "Burn" }),
         makeDeck({ id: "d2", name: "Control", format: "Legacy" }),
@@ -506,6 +513,7 @@ describe("SET_DECK_FORMAT", () => {
 describe("SET_DECKS", () => {
   it("replaces the entire deck list", () => {
     const initial = {
+      errors: {},
       decks: [makeDeck({ id: "d1", name: "Burn" }), makeDeck({ id: "d2", name: "Control" })],
     };
     const newDecks = [makeDeck({ id: "d3", name: "Storm" })];
@@ -515,7 +523,7 @@ describe("SET_DECKS", () => {
   });
 
   it("can set decks to an empty list", () => {
-    const initial = { decks: [makeDeck({ id: "d1", name: "Burn" })] };
+    const initial = { errors: {}, decks: [makeDeck({ id: "d1", name: "Burn" })] };
     const state = deckReducer(initial, { type: "SET_DECKS", payload: [] });
     expect(state.decks).toHaveLength(0);
   });
@@ -525,7 +533,7 @@ describe("SET_DECKS", () => {
 
 describe("default branch", () => {
   it("returns state unchanged for an unknown action type", () => {
-    const initial = { decks: [makeDeck({ id: "d1", name: "Burn" })] };
+    const initial = { errors: {}, decks: [makeDeck({ id: "d1", name: "Burn" })] };
     // @ts-expect-error — intentionally sending an unknown action type
     const state = deckReducer(initial, { type: "UNKNOWN_ACTION" });
     expect(state).toBe(initial); // same reference — no copy made
@@ -537,6 +545,7 @@ describe("default branch", () => {
 
 describe("SET_DECK_PRICES", () => {
   const base = () => ({
+    errors: {},
     decks: [
       makeDeck({
         id: "d1",
@@ -594,6 +603,7 @@ describe("SET_DECK_PRICES", () => {
 
   it("preserves card source, acquired state and quantity", () => {
     const initial = {
+      errors: {},
       decks: [makeDeck({ id: "d1", name: "X", cards: [makeCard({ id: "a", name: "A", source: "need_to_buy", quantity: 3, acquired: true })] })],
     };
     const state = deckReducer(initial, {
@@ -611,9 +621,9 @@ describe("TOGGLE_COMMANDER", () => {
     makeCard({ id: "c1", name: "A" }), makeCard({ id: "c2", name: "B" }),
     makeCard({ id: "c3", name: "C" }), makeCard({ id: "c4", name: "Four", quantity: 4 }),
   ];
-  const toggle = (state: { decks: Deck[] }, cardId: string) =>
+  const toggle = (state: DeckState, cardId: string) =>
     deckReducer(state, { type: "TOGGLE_COMMANDER", payload: { deckId: "d1", cardId } });
-  const base = () => ({ decks: [makeDeck({ id: "d1", name: "D", cards })] });
+  const base = () => ({ errors: {}, decks: [makeDeck({ id: "d1", name: "D", cards })] });
 
   it("adds and removes a commander", () => {
     const on = toggle(base(), "c1");
@@ -649,7 +659,7 @@ describe("TOGGLE_COMMANDER", () => {
 
 describe("DISMISS_COMMANDER_PROMPT", () => {
   it("sets the flag", () => {
-    const s = deckReducer({ decks: [makeDeck({ id: "d1", name: "D" })] }, { type: "DISMISS_COMMANDER_PROMPT", payload: { deckId: "d1" } });
+    const s = deckReducer({ errors: {}, decks: [makeDeck({ id: "d1", name: "D" })] }, { type: "DISMISS_COMMANDER_PROMPT", payload: { deckId: "d1" } });
     expect(s.decks[0].commanderPromptDismissed).toBe(true);
   });
 });
@@ -660,7 +670,7 @@ describe("SET_DECK_BUILT", () => {
     makeCard({ id: "c2", name: "Fake", source: "proxy", manuallyTagged: true }),
     makeCard({ id: "c3", name: "Ponder", source: "in_binder", manuallyTagged: true }),
   ];
-  const initial = () => ({ decks: [makeDeck({ id: "d1", name: "Burn", cards }), makeDeck({ id: "d2", name: "Other", cards })] });
+  const initial = () => ({ errors: {}, decks: [makeDeck({ id: "d1", name: "Burn", cards }), makeDeck({ id: "d2", name: "Other", cards })] });
 
   it("marking applies the Built rule to that deck only", () => {
     const s = deckReducer(initial(), { type: "SET_DECK_BUILT", payload: { deckId: "d1", built: true, collection: {} } });
@@ -671,7 +681,7 @@ describe("SET_DECK_BUILT", () => {
 
   it("marking keeps borrowed cards borrowed", () => {
     const deck = makeDeck({ id: "d1", name: "Burn", cards: [makeCard({ id: "c1", name: "Bolt", source: "borrowed" })] });
-    const s = deckReducer({ decks: [deck] }, { type: "SET_DECK_BUILT", payload: { deckId: "d1", built: true, collection: {} } });
+    const s = deckReducer({ errors: {}, decks: [deck] }, { type: "SET_DECK_BUILT", payload: { deckId: "d1", built: true, collection: {} } });
     expect(s.decks[0].cards[0]).toMatchObject({ acquired: true, source: "borrowed", manuallyTagged: true });
   });
 
@@ -687,5 +697,87 @@ describe("SET_DECK_BUILT", () => {
       [false, undefined, false],
       [false, undefined, false],
     ]);
+  });
+});
+
+// ── Deck errors ───────────────────────────────────────────────────────────────
+
+describe("Deck errors", () => {
+  const bolt = { originalName: "Lightnig Bolt", searchName: "Lightnig Bolt", resolved: false, count: 2 };
+  const other = { originalName: "Sol Rnig", searchName: "Sol Rnig", resolved: false };
+  const withErrors = (): DeckState => ({
+    decks: [makeDeck({ id: "d1", name: "Burn" }), makeDeck({ id: "d2", name: "Other" })],
+    errors: { d1: [bolt, other], d2: [other] },
+  });
+
+  it("ADD_DECK queues the new deck's errors", () => {
+    const s = deckReducer({ errors: {}, decks: [] }, { type: "ADD_DECK", payload: makeDeck({ id: "d1", name: "Burn" }), errors: [bolt] });
+    expect(s.errors).toEqual({ d1: [bolt] });
+  });
+
+  it("ADD_DECK without errors leaves the errors alone", () => {
+    const initial = withErrors();
+    const s = deckReducer(initial, { type: "ADD_DECK", payload: makeDeck({ id: "d3", name: "New" }) });
+    expect(s.errors).toBe(initial.errors);
+  });
+
+  it("DELETE_DECK drops the deck's errors with the deck", () => {
+    const s = deckReducer(withErrors(), { type: "DELETE_DECK", payload: "d1" });
+    expect(s.decks.map(d => d.id)).toEqual(["d2"]);
+    expect(s.errors).toEqual({ d2: [other] });
+  });
+
+  it("REMAP_DECK_ERROR with a card adds it and resolves the error", () => {
+    const card = makeCard({ id: "c1", name: "Lightning Bolt", quantity: 2 });
+    const s = deckReducer(withErrors(), {
+      type: "REMAP_DECK_ERROR",
+      payload: { deckId: "d1", originalName: "Lightnig Bolt", searchName: "Lightning Bolt", card },
+    });
+    expect(s.decks[0].cards).toEqual([card]);
+    expect(s.errors.d1).toEqual([{ ...bolt, searchName: "Lightning Bolt", resolved: true }, other]);
+    expect(s.errors.d2).toEqual([other]);
+  });
+
+  it("REMAP_DECK_ERROR without a card records the search name and keeps the error queued", () => {
+    const s = deckReducer(withErrors(), {
+      type: "REMAP_DECK_ERROR",
+      payload: { deckId: "d1", originalName: "Lightnig Bolt", searchName: "Lightning Blot", card: null },
+    });
+    expect(s.decks[0].cards).toEqual([]);
+    expect(s.errors.d1[0]).toEqual({ ...bolt, searchName: "Lightning Blot" });
+  });
+
+  it("REMAP_DECK_ERROR for a deleted deck does nothing", () => {
+    const initial = deckReducer(withErrors(), { type: "DELETE_DECK", payload: "d1" });
+    const s = deckReducer(initial, {
+      type: "REMAP_DECK_ERROR",
+      payload: { deckId: "d1", originalName: "Lightnig Bolt", searchName: "Lightning Bolt", card: makeCard({ id: "c1", name: "Lightning Bolt" }) },
+    });
+    expect(s).toBe(initial);
+    expect("d1" in s.errors).toBe(false);
+  });
+
+  it("DISMISS_DECK_ERROR resolves only that error", () => {
+    const s = deckReducer(withErrors(), { type: "DISMISS_DECK_ERROR", payload: { deckId: "d1", originalName: "Sol Rnig" } });
+    expect(s.errors.d1).toEqual([bolt, { ...other, resolved: true }]);
+    expect(s.errors.d2).toEqual([other]);
+  });
+
+  it("DELETE_DECK for an unknown deck does nothing", () => {
+    const initial = withErrors();
+    expect(deckReducer(initial, { type: "DELETE_DECK", payload: "gone" })).toBe(initial);
+  });
+
+  it("DISMISS_DECK_ERROR for an unknown deck leaves its leftover errors alone", () => {
+    const initial: DeckState = { ...withErrors(), errors: { ...withErrors().errors, gone: [other] } };
+    const s = deckReducer(initial, { type: "DISMISS_DECK_ERROR", payload: { deckId: "gone", originalName: "Sol Rnig" } });
+    expect(s).toBe(initial);
+  });
+
+  it("DISMISS_DECK_ERROR for a deck with no errors does nothing", () => {
+    const initial = withErrors();
+    const added = deckReducer(initial, { type: "ADD_DECK", payload: makeDeck({ id: "d3", name: "Clean" }) });
+    const s = deckReducer(added, { type: "DISMISS_DECK_ERROR", payload: { deckId: "d3", originalName: "Sol Rnig" } });
+    expect(s.errors).toBe(added.errors);
   });
 });
