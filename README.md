@@ -16,6 +16,12 @@ A Magic: The Gathering deck acquisition tracker. Paste a decklist, validate it a
 - **Export** — download missing cards or proxy list as `.txt`
 - **Edit mode** — add, remove, or adjust card quantities after import
 - **Multiple decks** — manage any number of decks, each stored locally in the browser
+- **Collection** — import or add the cards you own; decks auto-tag cards you already have
+- **Trade calculator** — build a trade, compare both sides' value, and share it as a link
+- **Orders** — track cards bought from a vendor until they arrive; receiving an order adds them to your collection
+- **Transactions** — your buys and trades in one log, plus a Binder of spare cards you could trade away
+- **Backup** — export everything to a file, or save to and load from Google Drive
+- **Demo mode** — explore the app with sample decks and data, then return to your own untouched
 - **Mobile friendly** — responsive layout with bottom sheet pickers and touch-optimised controls
 
 ## Tech Stack
