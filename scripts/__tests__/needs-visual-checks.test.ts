@@ -61,7 +61,15 @@ describe("needs-visual-checks.sh", () => {
   });
 
   it("runs a docs-only change when VISUAL_CHECKS_FORCE=true (push to main, run-visual label)", () => {
-    expect(check(["README.md"], { VISUAL_CHECKS_FORCE: "true" })).toBe("true");
+    // With FORCE set the script exits without reading stdin, so Node writing the list (`check`)
+    // races that exit and can fail with EPIPE. A shell pipe leaves the broken pipe to printf.
+    const out = execFileSync("sh", ["-c", 'printf "README.md\n" | sh "$0" -', script], {
+      stdio: ["ignore", "pipe", "ignore"],
+      env: { ...process.env, VISUAL_CHECKS_FORCE: "true" },
+    });
+    expect(out.toString().trim()).toBe("true");
+    // The same list without FORCE skips the checks, so the assertion above depends on FORCE.
+    expect(check(["README.md"])).toBe("false");
   });
 
   it("runs when the base ref doesn't exist (fails open)", () => {
